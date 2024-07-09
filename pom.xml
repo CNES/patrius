@@ -1,0 +1,294 @@
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>fr.cnes.sirius.patrius</groupId>
+    <artifactId>patrius</artifactId>
+    <packaging>jar</packaging>
+    <version>4.8.1</version>
+    <name>CNES space flight dynamics library</name>
+    <description>
+PATRIUS is a core space dynamics Java library that enables to quickly develop high level algorithms such as orbit extrapolator. PATRIUS contains several sub-libraries that work together and cover low level classes (i.e.: such as matrix, vectors, orbits parameters) as well as high level classes and interfaces (i.e.: numerical propagators, attitude laws, manoeuvers sequences).
+
+All the main domains of space dynamics are available:
+
+    Analysis, algebra and geometry core library (quaternions, derivable functions, integrators …)
+    Core objects for space dynamics (dates, orbits, frames...)
+    Orbit propagation: analytical, semi-analytical and numerical propagators, a full set of force models
+    Maneuvers: impulsive or continuous thrust, sequences
+    Attitude: extensible set of attitude laws, sequences and guidance framework
+    Events: event detection (orbital, sensor events, etc.) and post-processing (chronograms)
+    Spacecraft: characteristics of mass, geometry (drag force), sensors field of view, etc.
+
+  </description>
+    <url>https://patrius.cnes.fr</url>
+    <properties>
+        <!-- Custom properties -->
+        <!-- Java source version -->
+        <pdb.sourcever>1.8</pdb.sourcever>
+        <!-- Plugins versions -->
+        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
+        <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
+        <maven.source.plugin.version>2.3</maven.source.plugin.version>
+        <maven.install.plugin.version>2.5.2</maven.install.plugin.version>
+        <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
+        <build.helper.maven.plugin.version>3.0.0</build.helper.maven.plugin.version>
+        <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
+        <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
+        <maven.bundle.plugin.version>2.3.7</maven.bundle.plugin.version>
+    </properties>
+    <!-- distribution management -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+    <!-- GIT CNES GITHUB OU GITLAB A METTRE A JOUR PATRIUS N'EXISTE PAS -->
+    <scm>
+        <connection>scm:git:git://github.com/CNES/patrius.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/CNES/patrius.git</developerConnection>
+        <url>https://github.com/CNES/patrius/tree/master</url>
+    </scm>
+    <organization>
+        <name>CNES</name>
+        <url>https://cnes.fr</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+	<developers>
+		<developer>
+			<name>CNES</name>
+			<email>patrius@cnes.fr</email>
+			<organization>CNES</organization>
+			<organizationUrl>https://cnes.fr</organizationUrl>
+		</developer>
+	</developers>
+    <dependencies>
+        <dependency>
+            <groupId>net.jafama</groupId>
+            <artifactId>jafama</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+        <!-- Tests -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>6.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!-- create source jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.source.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>create-source-jar</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${build.helper.maven.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${basedir}/target/patrius-${project.version}-sources.jar</file>
+                                    <type>source-jar</type>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <source>${pdb.sourcever}</source>
+                    <target>${pdb.sourcever}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <!-- javadoc jar artifact -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.plugin.version}</version>
+                <configuration>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <encoding>UTF-8</encoding>
+                    <!-- Default configuration for all reports -->
+                    <!-- Custom tags -->
+                    <tags>
+                        <tag>
+                            <name>description</name>
+                            <placement>a</placement>
+                            <head>Description :</head>
+                        </tag>
+                        <tag>
+                            <name>input</name>
+                            <placement>a</placement>
+                            <head>Input :</head>
+                        </tag>
+                        <tag>
+                            <name>nonRegressionVersion</name>
+                            <placement>a</placement>
+                            <head>Last non-regression version :</head>
+                        </tag>
+                        <tag>
+                            <name>output</name>
+                            <placement>a</placement>
+                            <head>Output :</head>
+                        </tag>
+                        <tag>
+                            <name>precondition</name>
+                            <placement>a</placement>
+                            <head>Preconditions :</head>
+                        </tag>
+                        <tag>
+                            <name>referenceVersion</name>
+                            <placement>a</placement>
+                            <head>Reference version :</head>
+                        </tag>
+                        <tag>
+                            <name>testPassCriteria</name>
+                            <placement>a</placement>
+                            <head>Expected test results :</head>
+                        </tag>
+                        <tag>
+                            <name>testType</name>
+                            <placement>a</placement>
+                            <head>Test type :</head>
+                        </tag>
+                        <tag>
+                            <name>testedFeature</name>
+                            <placement>a</placement>
+                            <head>Tested features :</head>
+                        </tag>
+                        <tag>
+                            <name>testedMethod</name>
+                            <placement>a</placement>
+                            <head>Tested methods :</head>
+                        </tag>
+                        <tag>
+                            <name>useSample</name>
+                            <placement>a</placement>
+                            <head>Use sample :</head>
+                        </tag>
+                        <tag>
+                            <name>featureTitle</name>
+                            <placement>a</placement>
+                            <head>Feature title :</head>
+                        </tag>
+                        <tag>
+                            <name>featureDescription</name>
+                            <placement>a</placement>
+                            <head>Feature description :</head>
+                        </tag>
+                        <tag>
+                            <name>coveredRequirements</name>
+                            <placement>a</placement>
+                            <head>Covered requirements :</head>
+                        </tag>
+                        <tag>
+                            <name>concurrency</name>
+                            <placement>a</placement>
+                            <head>Concurrency :</head>
+                        </tag>
+                        <tag>
+                            <name>concurrency.comment</name>
+                            <placement>a</placement>
+                            <head>Concurrency comment :</head>
+                        </tag>
+                        <tag>
+                            <name>comments</name>
+                            <placement>a</placement>
+                            <head>Additional comments :</head>
+                        </tag>
+                    </tags>
+                    <!-- Do not raise Javadoc compilation errors (Java 8) -->
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>${maven.gpg.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <keyname>3684928C118ADF49</keyname>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>${maven.install.plugin.version}</version>
+                <configuration>
+                    <createChecksum>true</createChecksum>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
