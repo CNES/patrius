@@ -28,13 +28,14 @@ All the main domains of space dynamics are available:
         <!-- Java source version -->
         <pdb.sourcever>1.8</pdb.sourcever>
         <!-- Plugins versions -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
         <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
         <maven.source.plugin.version>2.3</maven.source.plugin.version>
         <maven.install.plugin.version>2.5.2</maven.install.plugin.version>
         <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
         <build.helper.maven.plugin.version>3.0.0</build.helper.maven.plugin.version>
-        <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
         <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
         <maven.bundle.plugin.version>2.3.7</maven.bundle.plugin.version>
     </properties>
@@ -261,23 +262,6 @@ All the main domains of space dynamics are available:
                         <goals>
                             <goal>jar</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>${maven.gpg.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                        <configuration>
-                            <keyname>3684928C118ADF49</keyname>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
