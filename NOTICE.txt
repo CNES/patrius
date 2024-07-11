@@ -1,0 +1,115 @@
+PATRIUS
+Copyright 2011-2017 CNES
+
+Historically, PATRIUS had the two following dependencies:
+ - Commons-Math 3.1 (Copyright 2001-2012 The Apache Software Foundation) for Math features.
+ - Orekit 5.9 (Copyright 2002-2012 CS Systèmes d'Information) for low-level space flight
+ dynamics features.
+Since version 4.0, these libraries have been merged into PATRIUS.
+Commons-Math is now in the package fr.cnes.sirius.patrius.math.
+Orekit is now merged with patrius packages in the global package
+fr.cnes.sirius.patrius (see file headers for more information).
+
+===============================================================================
+
+The NRLMSISE00 class in package fr.cnes.sirius.patrius.forces.atmospheres.MSIS2000
+is adapted from the C source code of the NRLMSISE-00 model implemented by Dominik
+Brodowski.
+
+===============================================================================
+
+Package fr.cnes.sirius.patrius.math comes from Apache Commons Math
+Copyright 2001-2012 The Apache Software Foundation
+
+This product includes software developed by
+The Apache Software Foundation (http://www.apache.org/).
+
+===============================================================================
+
+The BracketFinder (package fr.cnes.sirius.patrius.math.optimization.univariate)
+and PowellOptimizer (package fr.cnes.sirius.patrius.math.optimization.general)
+classes are based on the Python code in module "optimize.py" (version 0.5)
+developed by Travis E. Oliphant for the SciPy library (http://www.scipy.org/)
+Copyright © 2003-2009 SciPy Developers.
+===============================================================================
+
+The LinearConstraint, LinearObjectiveFunction, LinearOptimizer,
+RelationShip, SimplexSolver and SimplexTableau classes in package
+fr.cnes.sirius.patrius.math.optimization.linear include software developed by
+Benjamin McCann (http://www.benmccann.com) and distributed with
+the following copyright: Copyright 2009 Google Inc.
+===============================================================================
+
+This product includes software developed by the
+University of Chicago, as Operator of Argonne National
+Laboratory.
+The LevenbergMarquardtOptimizer class in package
+fr.cnes.sirius.patrius.math.optimization.general includes software
+translated from the lmder, lmpar and qrsolv Fortran routines
+from the Minpack package
+Minpack Copyright Notice (1999) University of Chicago.  All rights reserved
+===============================================================================
+
+The GraggBulirschStoerIntegrator class in package
+fr.cnes.sirius.patrius.math.ode.nonstiff includes software translated
+from the odex Fortran routine developed by E. Hairer and G. Wanner.
+Original source copyright:
+Copyright (c) 2004, Ernst Hairer
+===============================================================================
+
+The EigenDecompositionImpl class in package
+fr.cnes.sirius.patrius.math.linear includes software translated
+from some LAPACK Fortran routines.  Original source copyright:
+Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+===============================================================================
+
+The MersenneTwister class in package fr.cnes.sirius.patrius.math.random
+includes software translated from the 2002-01-26 version of
+the Mersenne-Twister generator written in C by Makoto Matsumoto and Takuji
+Nishimura. Original source copyright:
+Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
+All rights reserved
+===============================================================================
+
+The LocalizedFormatsTest class in the unit tests is an adapted version of
+the OrekitMessagesTest class from the orekit library distributed under the
+terms of the Apache 2 licence. Original source copyright:
+Copyright 2010 CS Systèmes d'Information
+===============================================================================
+
+The creation of the package "o.a.c.m.analysis.integration.gauss" was inspired
+by an original code donated by Sébastien Brisard.
+===============================================================================
+
+Some low-level space flight dynamics comes from Orekit.
+Copyright 2002-2012 CS Systèmes d'Information
+
+Orekit includes software developed by
+CS Systèmes d'Information (http://www.c-s.fr/)
+
+Orekit includes software developed by
+Bruce R. Bowman (HQ AFSPC, Space Analysis Division)
+
+Orekit includes software translated from original work developed by
+David A. Vallado, Paul Crawford, Richard Hujsak, T.S. Kelso
+
+Orekit includes software translated from original work developed by
+Felix R. Hoots, Ronald L. Roehrich
+
+Orekit includes software translated from original work developed by
+R. Biancale, S. Bruinsma (CNES)
+
+Orekit includes software translated from original work developed by
+Mickaël Gastineau (CNRS - Observatoire de Paris - IMCCE)
+
+Orekit includes software translated from original work developed by
+The Apache Software Foundation (http://www.apache.org/)
+
+Orekit depends on software developed by
+The Apache Software Foundation (http://www.apache.org/)
+
+===============================================================================
+
+The complete text of licenses and disclaimers associated with the the original
+sources enumerated above at the time of code translation are in the LICENSE.txt
+file.
