@@ -1,17 +1,15 @@
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>fr.cnes.sirius.patrius</groupId>
-    <artifactId>patrius</artifactId>
-    <packaging>jar</packaging>
-    <version>4.10.4</version>
-    <name>CNES space flight dynamics library</name>
-    <description>
-PATRIUS is a core space dynamics Java library that enables to quickly develop high level algorithms such as orbit extrapolator. PATRIUS contains several sub-libraries that work together and cover low level classes (i.e.: such as matrix, vectors, orbits parameters) as well as high level classes and interfaces (i.e.: numerical propagators, attitude laws, manoeuvers sequences).
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>fr.cnes.sirius.patrius</groupId>
+	<artifactId>patrius</artifactId>
+	<version>4.10.4</version>
+	<packaging>jar</packaging>
+	<name>CNES space flight dynamics library</name>
+	<description>
+	PATRIUS is a core space dynamics Java library that enables to quickly develop high level algorithms such as orbit extrapolator. PATRIUS contains several sub-libraries that work together and cover low level classes (i.e.: such as matrix, vectors, orbits parameters) as well as high level classes and interfaces (i.e.: numerical propagators, attitude laws, manoeuvers sequences).
 
-All the main domains of space dynamics are available:
+	All the main domains of space dynamics are available:
 
     Analysis, algebra and geometry core library (quaternions, derivable functions, integrators …)
     Core objects for space dynamics (dates, orbits, frames...)
@@ -21,26 +19,67 @@ All the main domains of space dynamics are available:
     Events: event detection (orbital, sensor events, etc.) and post-processing (chronograms)
     Spacecraft: characteristics of mass, geometry (drag force), sensors field of view, etc.
 
-  </description>
-    <url>https://patrius.cnes.fr</url>
-    <properties>
-        <!-- Custom properties -->
+	</description>
+	<url>https://patrius.cnes.fr</url>
+	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <!-- Java source version -->
-        <pdb.sourcever>1.8</pdb.sourcever>
-        <!-- Plugins versions -->
-        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
-        <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
-        <maven.source.plugin.version>2.3</maven.source.plugin.version>
-        <maven.install.plugin.version>2.5.2</maven.install.plugin.version>
-        <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
-        <build.helper.maven.plugin.version>3.0.0</build.helper.maven.plugin.version>
-        <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
-        <maven.bundle.plugin.version>3.4.0</maven.bundle.plugin.version>
-    </properties>
-    <!-- distribution management -->
-    <distributionManagement>
+		<!-- Custom properties -->
+		<!-- Java source version -->
+		<pdb.sourcever>1.8</pdb.sourcever>
+		<!-- Results directory for the validate class -->
+		<pdb.validate.results>${basedir}/target/validation-results</pdb.validate.results>
+		<!-- Results directory for misc. tests -->
+		<pdb.misc.results>${basedir}/target/misc-results</pdb.misc.results>
+		<!-- Plugins versions -->
+		<maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
+		<maven.source.plugin.version>2.3</maven.source.plugin.version>
+		<maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
+		<maven.dependency.plugin.version>2.9</maven.dependency.plugin.version>
+		<build.helper.maven.plugin.version>1.9.1</build.helper.maven.plugin.version>
+		<maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
+		<maven.clean.plugin.version>2.6</maven.clean.plugin.version>
+		<maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
+		<maven.install.plugin.version>2.5.2</maven.install.plugin.version>
+		<maven.site.plugin.version>3.7.1</maven.site.plugin.version>
+		<maven.resources.plugin.version>2.7</maven.resources.plugin.version>
+		<maven.jar.plugin.version>2.5</maven.jar.plugin.version>
+		<maven.javadoc.plugin.version>3.0.0</maven.javadoc.plugin.version>
+		<maven.bundle.plugin.version>3.4.0</maven.bundle.plugin.version>
+		<jacoco.maven.plugin.version>0.8.0</jacoco.maven.plugin.version>
+		<!-- Surefire configuration -->
+		<maven.surefire.runner>surefire-junit47</maven.surefire.runner>
+		<maven.surefire.junit.art>junit:junit</maven.surefire.junit.art>
+		<maven.surefire.testng.art>none:none</maven.surefire.testng.art>
+		<dependency.check.maven.plugin.version>7.1.1</dependency.check.maven.plugin.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>net.jafama</groupId>
+			<artifactId>jafama</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+		<!-- Tests -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>6.3</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<organization>
+		<name>CNES</name>
+	</organization>
+	
+	<!-- CNES change : CNES distribution management -->
+	<distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
@@ -49,229 +88,231 @@ All the main domains of space dynamics are available:
             <id>ossrh</id>
             <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
-    </distributionManagement>
-    <scm>
-        <connection>scm:git:git://github.com/CNES/patrius.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/CNES/patrius.git</developerConnection>
-        <url>https://github.com/CNES/patrius/tree/master</url>
-    </scm>
-    <organization>
-        <name>CNES</name>
-        <url>https://cnes.fr</url>
-    </organization>
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
-	<developers>
-		<developer>
-			<name>CNES</name>
-			<email>patrius@cnes.fr</email>
-			<organization>CNES</organization>
-			<organizationUrl>https://cnes.fr</organizationUrl>
-		</developer>
-	</developers>
-    <dependencies>
-        <dependency>
-            <groupId>net.jafama</groupId>
-            <artifactId>jafama</artifactId>
-            <version>2.3.1</version>
-        </dependency>
-        <!-- Tests -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.3</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-    <build>
-        <plugins>
-            <!-- create source jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven.source.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>create-source-jar</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${build.helper.maven.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>attach-artifact</goal>
-                        </goals>
-                        <configuration>
-                            <artifacts>
-                                <artifact>
-                                    <file>${basedir}/target/patrius-${project.version}-sources.jar</file>
-                                    <type>source-jar</type>
-                                </artifact>
-                            </artifacts>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
-                <configuration>
-                    <source>${pdb.sourcever}</source>
-                    <target>${pdb.sourcever}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
-                <configuration>
-                    <skipTests>true</skipTests>
-                </configuration>
-            </plugin>
-            <!-- javadoc jar artifact -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven.javadoc.plugin.version}</version>
-                <configuration>
-                    <charset>UTF-8</charset>
-                    <docencoding>UTF-8</docencoding>
-                    <encoding>UTF-8</encoding>
-                    <!-- Default configuration for all reports -->
-                    <!-- Custom tags -->
-                    <tags>
-                        <tag>
-                            <name>description</name>
-                            <placement>a</placement>
-                            <head>Description :</head>
-                        </tag>
-                        <tag>
-                            <name>input</name>
-                            <placement>a</placement>
-                            <head>Input :</head>
-                        </tag>
-                        <tag>
-                            <name>nonRegressionVersion</name>
-                            <placement>a</placement>
-                            <head>Last non-regression version :</head>
-                        </tag>
-                        <tag>
-                            <name>output</name>
-                            <placement>a</placement>
-                            <head>Output :</head>
-                        </tag>
-                        <tag>
-                            <name>precondition</name>
-                            <placement>a</placement>
-                            <head>Preconditions :</head>
-                        </tag>
-                        <tag>
-                            <name>referenceVersion</name>
-                            <placement>a</placement>
-                            <head>Reference version :</head>
-                        </tag>
-                        <tag>
-                            <name>testPassCriteria</name>
-                            <placement>a</placement>
-                            <head>Expected test results :</head>
-                        </tag>
-                        <tag>
-                            <name>testType</name>
-                            <placement>a</placement>
-                            <head>Test type :</head>
-                        </tag>
-                        <tag>
-                            <name>testedFeature</name>
-                            <placement>a</placement>
-                            <head>Tested features :</head>
-                        </tag>
-                        <tag>
-                            <name>testedMethod</name>
-                            <placement>a</placement>
-                            <head>Tested methods :</head>
-                        </tag>
-                        <tag>
-                            <name>useSample</name>
-                            <placement>a</placement>
-                            <head>Use sample :</head>
-                        </tag>
-                        <tag>
-                            <name>featureTitle</name>
-                            <placement>a</placement>
-                            <head>Feature title :</head>
-                        </tag>
-                        <tag>
-                            <name>featureDescription</name>
-                            <placement>a</placement>
-                            <head>Feature description :</head>
-                        </tag>
-                        <tag>
-                            <name>coveredRequirements</name>
-                            <placement>a</placement>
-                            <head>Covered requirements :</head>
-                        </tag>
-                        <tag>
-                            <name>concurrency</name>
-                            <placement>a</placement>
-                            <head>Concurrency :</head>
-                        </tag>
-                        <tag>
-                            <name>concurrency.comment</name>
-                            <placement>a</placement>
-                            <head>Concurrency comment :</head>
-                        </tag>
-                        <tag>
-                            <name>comments</name>
-                            <placement>a</placement>
-                            <head>Additional comments :</head>
-                        </tag>
-                    </tags>
-                    <!-- Do not raise Javadoc compilation errors (Java 8) -->
-                    <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>${maven.install.plugin.version}</version>
-                <configuration>
-                    <createChecksum>true</createChecksum>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+	</distributionManagement>
+	<build>
+		<resources>
+			<resource>
+				<directory>.</directory>
+				<includes>
+					<include>LICENSE.txt</include>
+					<include>NOTICE.txt</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven.compiler.plugin.version}</version>
+				<!-- States Java 1.8 is the main version to use -->
+				<configuration>
+					<source>${pdb.sourcever}</source>
+					<target>${pdb.sourcever}</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>${maven.dependency.plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>${build.helper.maven.plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>${maven.antrun.plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>${maven.clean.plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${maven.deploy.plugin.version}</version>
+			</plugin>		
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>${maven.install.plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>${maven.site.plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>${maven.resources.plugin.version}</version>
+			</plugin>
+
+			<!-- create source jar -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>${maven.source.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>create-source-jar</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Unit tests -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven.surefire.plugin.version}</version>
+				<dependencies>
+					<!-- For some reason, Maven 3 requires forcing surefire-junit47, while 
+						Maven 2 picks it without help -->
+					<dependency>
+						<groupId>org.apache.maven.surefire</groupId>
+						<artifactId>${maven.surefire.runner}</artifactId>
+						<version>${maven.surefire.plugin.version}</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<skip>false</skip>
+					<!-- Regular tests are JUnit tests, so no TestNG -->
+					<junitArtifactName>${maven.surefire.junit.art}</junitArtifactName>
+					<testNGArtifactName>${maven.surefire.testng.art}</testNGArtifactName>
+					<!-- Output directory for the Validate class -->
+					<!-- (needed here because of unit tests on Validate) -->
+					<systemPropertyVariables>
+						<pdb.validate.results>${pdb.validate.results}</pdb.validate.results>
+						<pdb.misc.results>${pdb.misc.results}</pdb.misc.results>
+					</systemPropertyVariables>
+					<!-- Maven 3 issue with site+cobertura workaround -->
+					<argLine>-showversion ${argLine}</argLine>
+					<testFailureIgnore>${maven.test.failure.ignore}</testFailureIgnore>
+					<!-- Includes and excludes compatible with commons-math -->
+					<!-- and the pull-src profile (so no need to override -->
+					<!-- this configuration in the pull-src profile) -->
+					<includes>
+						<include>**/Test*.java</include>
+						<include>**/*Test.java</include>
+						<include>**/*TestBinary.java</include>
+						<include>**/*TestPermutations.java</include>
+					</includes>
+					<excludes>
+						<exclude>**/*AbstractTest.java</exclude>
+						<exclude>**/TestUtils.java</exclude>
+					</excludes>
+					<!-- Saves stdout of each test to a file -->
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+				</configuration>
+			</plugin>
+			<!-- javadoc jar artifact -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${maven.javadoc.plugin.version}</version>
+				<configuration>
+					<!-- Default configuration for all reports -->
+					<additionalparam>-Xdoclint:none</additionalparam>
+					<additionalOptions>
+			            <additionalOption>-quiet</additionalOption>
+						<additionalOption>-Xdoclint:none</additionalOption>
+                        <additionalOption>--allow-script-in-comments</additionalOption>
+			        </additionalOptions>
+					<charset>UTF-8</charset>
+					<docencoding>UTF-8</docencoding>
+					<encoding>UTF-8</encoding>
+					<failOnError>false</failOnError>
+				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.maven.plugin.version}</version>
+				<configuration>
+					<destfile>${basedir}/target/coverage-reports/jacoco-unit.exec</destfile>
+					<datafile>${basedir}/target/coverage-reports/jacoco-unit.exec</datafile>
+				</configuration>
+				<executions>
+					<execution>
+						<id>jacoco-initialize</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-site</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	<profiles>
+		<profile>
+			<id>DEPENDENCYCHECK</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.owasp</groupId>
+						<artifactId>dependency-check-maven</artifactId>
+						<version>${dependency.check.maven.plugin.version}</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>check</goal>
+								</goals>
+								<configuration>
+									<skipTestScope>true</skipTestScope>
+									<failBuildOnAnyVulnerability>true</failBuildOnAnyVulnerability>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin> 
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	<reporting>
+		<plugins>
+<!-- Generates the aggregate javadoc files -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${maven.javadoc.plugin.version}</version>
+				<configuration>
+					<!-- Default configuration for all reports -->
+					<additionalparam>-Xdoclint:none</additionalparam>
+					<additionalOptions>
+			            <additionalOption>-quiet</additionalOption>
+						<additionalOption>-Xdoclint:none</additionalOption>
+                        <additionalOption>--allow-script-in-comments</additionalOption>
+			        </additionalOptions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</reporting>
+
 </project>
