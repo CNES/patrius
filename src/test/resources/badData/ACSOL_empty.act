@@ -1,6 +1,0 @@
-# Fichier activite solaire - format ACSOL.act
-# Origine des donnees : NOAA
-# Colonne 1 : JJ : Jour julien depuis 1950.0 (entier)
-# Colonne 2 : SEC : Nombre de secondes dans le jour (TUC)
-# Colonne 3 : F : Flux observe a la date JJ+SEC
-# Colonne 4-11 : AP1-AP8 : AP trihoraires sur les intervalles JJ+[0h,3h], ..., JJ+[21h,24h] (TUC)
