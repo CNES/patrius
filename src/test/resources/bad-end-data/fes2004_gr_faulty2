@@ -1,5 +1,0 @@
-Ocean tide model: FES2004 normalized model (fev. 2004) up to (80,80) in cm with ellips. corr.
-(long period from FES2002 up to (50,50) + equilibrium Om1/Om2, atmospheric tide NOT included)
-Doodson Darw  l   m    Csin+     Ccos+       Csin-     Ccos-       C+   eps+      C-   eps-  
- 55.565 Om1   2   0 -0.540594  0.000000    0.000000  0.000000   0.5406 270.000 0.0000   0.00
- 55.575 Om2   2   0 -0.005218  0.000000    NaN	0.000000   0.0052 270.000 0.0000   0.00
