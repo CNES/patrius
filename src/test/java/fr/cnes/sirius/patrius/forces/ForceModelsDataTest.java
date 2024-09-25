@@ -15,6 +15,7 @@
  *
  */
 /* HISTORY
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
 * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -48,7 +49,7 @@ import fr.cnes.sirius.patrius.assembly.properties.PropulsiveProperty;
 import fr.cnes.sirius.patrius.assembly.properties.TankProperty;
 import fr.cnes.sirius.patrius.attitudes.AttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.US76;
@@ -272,7 +273,7 @@ public class ForceModelsDataTest {
             3.986004418E14);
 
         // Setup celestial bodies
-        final List<CelestialBody> bodies = new ArrayList<>();
+        final List<CelestialPoint> bodies = new ArrayList<>();
         bodies.add(CelestialBodyFactory.getSun());
         bodies.add(CelestialBodyFactory.getMoon());
 

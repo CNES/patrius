@@ -18,6 +18,7 @@
 
 /*
  * HISTORY
+* VERSION:4.13:FA:FA-130:08/12/2023:[PATRIUS] Appel incorrect de getLLHCoordinates() dans la classe AeroModel
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -70,6 +71,7 @@ import fr.cnes.sirius.patrius.assembly.properties.AeroCrossSectionProperty;
 import fr.cnes.sirius.patrius.assembly.properties.AeroFacetProperty;
 import fr.cnes.sirius.patrius.assembly.properties.AeroSphereProperty;
 import fr.cnes.sirius.patrius.assembly.properties.features.Facet;
+import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
 import fr.cnes.sirius.patrius.forces.drag.DragSensitive;
@@ -1126,12 +1128,12 @@ public final class AeroModel extends Parameterizable implements DragSensitive {
             final double densityDH = this.atmosphere.getDensity(s.getDate(), posNewAlt, s.getFrame());
             final double dRhodH = MathLib.divide(densityDH - density, this.altitudeStep);
             final double longGeodCIRF = MathLib.atan2(position.getY(), position.getX());
-            final double latGeod = this.earthShape.buildPoint(position, s.getFrame(), s.getDate(), "satPoint")
-                .getLLHCoordinates().getLatitude();
-            final double coslatGeod = MathLib.cos(latGeod);
+            final double lat = this.earthShape.buildPoint(position, s.getFrame(), s.getDate(), "satPoint")
+                .getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude();
+            final double coslatGeod = MathLib.cos(lat);
             dRho[0] = MathLib.cos(longGeodCIRF) * coslatGeod * dRhodH;
             dRho[1] = MathLib.sin(longGeodCIRF) * coslatGeod * dRhodH;
-            dRho[2] = MathLib.sin(latGeod) * dRhodH;
+            dRho[2] = MathLib.sin(lat) * dRhodH;
 
             if (!computeGradientVelocity) {
                 // Throw exception since partial derivative wrt postion need partial derivative wrt velocity

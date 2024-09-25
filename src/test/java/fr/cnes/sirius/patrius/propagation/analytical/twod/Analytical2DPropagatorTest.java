@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] Rendre la classe QuaternionPolynomialSegment plus generique et ajouter de la coherence dans le package polynomials
@@ -64,6 +65,13 @@ import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.ElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
+import fr.cnes.sirius.patrius.events.detectors.NthOccurrenceDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
@@ -88,13 +96,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.ElevationDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
-import fr.cnes.sirius.patrius.propagation.events.NthOccurrenceDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;

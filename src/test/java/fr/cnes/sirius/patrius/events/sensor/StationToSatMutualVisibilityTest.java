@@ -18,6 +18,13 @@
  * @history creation 30/05/2012
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Ajout de conditions meteorologiques variables dans les modeles de troposphere
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -49,12 +56,21 @@ import fr.cnes.sirius.patrius.assembly.properties.GeometricProperty;
 import fr.cnes.sirius.patrius.assembly.properties.SensorProperty;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
+import fr.cnes.sirius.patrius.bodies.ApparentRadiusProvider;
+import fr.cnes.sirius.patrius.bodies.ConstantRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.StationToSatMutualVisibilityDetector;
+import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.frames.UpdatableFrame;
@@ -73,10 +89,6 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.ApparentRadiusProvider;
-import fr.cnes.sirius.patrius.propagation.events.ConstantRadiusProvider;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.signalpropagation.AngularCorrection;
 import fr.cnes.sirius.patrius.signalpropagation.ConstantMeteorologicalConditionsProvider;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditions;
@@ -163,7 +175,7 @@ public class StationToSatMutualVisibilityTest {
 
         // Orbit and propagator initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame EME2000Frame = FramesFactory.getEME2000();
+        final CelestialBodyFrame EME2000Frame = FramesFactory.getEME2000();
 
         final AttitudeProvider attitudeProv = new ConstantAttitudeLaw(FramesFactory.getEME2000(),
             Rotation.IDENTITY);
@@ -381,7 +393,7 @@ public class StationToSatMutualVisibilityTest {
 
         // Orbit and propagator initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame EME2000Frame = FramesFactory.getEME2000();
+        final CelestialBodyFrame EME2000Frame = FramesFactory.getEME2000();
 
         final AttitudeProvider attitudeProv = new ConstantAttitudeLaw(FramesFactory.getEME2000(),
             Rotation.IDENTITY);
@@ -515,6 +527,205 @@ public class StationToSatMutualVisibilityTest {
         final StationToSatMutualVisibilityDetector detectorCopy = (StationToSatMutualVisibilityDetector) detector
             .copy();
         Assert.assertEquals(detector.getMaxCheckInterval(), detectorCopy.getMaxCheckInterval(), 0);
+    }
 
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+        Utils.clear();
+
+        // Orbit and propagator initialization
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final CelestialBodyFrame EME2000Frame = FramesFactory.getEME2000();
+
+        final AttitudeProvider attitudeProv = new ConstantAttitudeLaw(FramesFactory.getEME2000(), Rotation.IDENTITY);
+        final double a = 7500000.;
+        final Orbit tISSOrbit = new KeplerianOrbit(a, 0., MathUtils.HALF_PI, 0., 0., 0., PositionAngle.TRUE,
+            EME2000Frame, date, Utils.mu);
+        new KeplerianPropagator(tISSOrbit, attitudeProv);
+        MathLib.sqrt(a * a * a / Utils.mu);
+
+        // station frame creation
+        final double r = 6000000.0;
+        final EllipsoidBodyShape earth = new OneAxisEllipsoid(r, 0.0, EME2000Frame);
+        final EllipsoidPoint point = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(), MathLib.toRadians(0),
+            MathLib.toRadians(180), 0., "");
+        final TopocentricFrame topoFrame = new TopocentricFrame(point, "Gstation");
+
+        // station sensor model
+        final String nameStationField = "circularStationField";
+        final double trueElevationToDetect = 8.6393797973719300E-01;
+        final double measuredElevationToDetect = 2.4688155038034136E-04 + trueElevationToDetect;
+        final CircularField stationField = new CircularField(nameStationField, MathUtils.HALF_PI
+                - measuredElevationToDetect, Vector3D.PLUS_K);
+        final GeometricStationAntenna station = new GeometricStationAntenna(topoFrame, stationField);
+
+        // building the assembly
+        final String mainBody = "mainBody";
+        final String secondPart = "secondPart";
+        final String solarPanel = "solarPanel";
+        final AssemblyBuilder builder = new AssemblyBuilder();
+
+        // sensors
+        // main part field
+        final String name = "circularField";
+        final Vector3D mainFieldDirection = Vector3D.PLUS_I;
+        final IFieldOfView mainField = new CircularField(name, FastMath.PI / 4., mainFieldDirection);
+
+        // Radius provider
+        final ApparentRadiusProvider radius = new ConstantRadiusProvider(0.);
+
+        // main part sensor property creation
+        final SensorProperty sensorProperty = new SensorProperty(mainFieldDirection);
+        sensorProperty.setMainFieldOfView(mainField);
+        sensorProperty.setMainTarget(station, radius);
+
+        // second part field
+        final String name2 = "circularField2";
+        final Vector3D mainFieldDirection2 = Vector3D.PLUS_I;
+        final IFieldOfView mainField2 = new CircularField(name2, FastMath.PI / 10., mainFieldDirection2);
+
+        // second part sensor property creation
+        final SensorProperty sensorProperty2 = new SensorProperty(mainFieldDirection2);
+        sensorProperty2.setMainFieldOfView(mainField2);
+        sensorProperty2.setMainTarget(station, radius);
+
+        // solar panel geometry property creation
+        final Vector3D solarPanelCenter = new Vector3D(0., 0., 20.);
+        final SolidShape solarPanelShape = new Plate(solarPanelCenter, Vector3D.PLUS_K, Vector3D.PLUS_J, 40., 20.);
+        final GeometricProperty solarPanelGeom = new GeometricProperty(solarPanelShape);
+
+        // assembly building
+        try {
+            // add main part
+            builder.addMainPart(mainBody);
+
+            // add second part
+            builder.addPart(secondPart, mainBody, Transform.IDENTITY);
+
+            // add sensors
+            builder.addProperty(sensorProperty, mainBody);
+            builder.addProperty(sensorProperty2, secondPart);
+
+            // add solar panel
+            builder.addPart(solarPanel, mainBody, Vector3D.PLUS_I, Rotation.IDENTITY);
+            builder.addProperty(solarPanelGeom, solarPanel);
+
+            // assembly INITIAL link to the tree of frames
+            final UpdatableFrame mainFrame = new UpdatableFrame(EME2000Frame, Transform.IDENTITY,
+                "mainFrame");
+            builder.initMainPartFrame(mainFrame);
+
+        } catch (final IllegalArgumentException e) {
+            Assert.fail();
+        }
+        final Assembly assembly = builder.returnAssembly();
+
+        // spacecraft sensor model
+        final SensorModel mainPartSensorModel = new SensorModel(assembly, mainBody);
+        new SensorModel(assembly, secondPart);
+
+        // tropospheric correction
+        final AngularCorrection correctionModel = new AzoulayModel(this.meteoConditionsProvider, this.altitude);
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED) for
+        // UPLINK & DOWNLINK
+        final StationToSatMutualVisibilityDetector eventDetector1Up = new StationToSatMutualVisibilityDetector(
+            mainPartSensorModel, station, correctionModel, false, 10., 1e-9, Action.CONTINUE, Action.CONTINUE, false,
+            false, LinkType.UPLINK);
+        final StationToSatMutualVisibilityDetector eventDetector2Up = (StationToSatMutualVisibilityDetector) eventDetector1Up
+            .copy();
+        eventDetector2Up.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        final StationToSatMutualVisibilityDetector eventDetector1Down = new StationToSatMutualVisibilityDetector(
+            mainPartSensorModel, station, correctionModel, false, 10., 1e-9, Action.CONTINUE, Action.CONTINUE, false,
+            false, LinkType.DOWNLINK);
+        final StationToSatMutualVisibilityDetector eventDetector2Down = (StationToSatMutualVisibilityDetector) eventDetector1Down
+            .copy();
+        eventDetector2Down.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1Up = new SignalPropagationWrapperDetector(eventDetector1Up);
+        final SignalPropagationWrapperDetector wrapper2Up = new SignalPropagationWrapperDetector(eventDetector2Up);
+        final SignalPropagationWrapperDetector wrapper1Down = new SignalPropagationWrapperDetector(eventDetector1Down);
+        final SignalPropagationWrapperDetector wrapper2Down = new SignalPropagationWrapperDetector(eventDetector2Down);
+
+        // Add them in the propagator, then propagate
+        final Propagator propagator = new KeplerianPropagator(tISSOrbit, attitudeProv);
+        propagator.addEventDetector(wrapper1Up);
+        propagator.addEventDetector(wrapper2Up);
+        propagator.addEventDetector(wrapper1Down);
+        propagator.addEventDetector(wrapper2Down);
+        final SpacecraftState finalState = propagator.propagate(date.shiftedBy(3600.));
+
+        // UPLINK
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1Up.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1Up.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.683"), 1e-3));
+        Assert.assertTrue(wrapper1Up.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.683"), 1e-3));
+        Assert.assertTrue(wrapper1Up.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.972"), 1e-3));
+        Assert.assertTrue(wrapper1Up.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.972"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2Up.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2Up.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.677"), 1e-3));
+        Assert.assertTrue(wrapper2Up.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.683"), 1e-3));
+        Assert.assertTrue(wrapper2Up.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.966"), 1e-3));
+        Assert.assertTrue(wrapper2Up.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.972"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(station, eventDetector1Up.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1Up.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1Up.getDatationChoice());
+
+        // DOWNLINK
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1Down.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1Down.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.683"), 1e-3));
+        Assert.assertTrue(wrapper1Down.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.683"), 1e-3));
+        Assert.assertTrue(wrapper1Down.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.972"), 1e-3));
+        Assert.assertTrue(wrapper1Down.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.972"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2Down.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2Down.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.683"), 1e-3));
+        Assert.assertTrue(wrapper2Down.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T12:50:34.689"), 1e-3));
+        Assert.assertTrue(wrapper2Down.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.972"), 1e-3));
+        Assert.assertTrue(wrapper2Down.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T12:56:04.978"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1Down.getEmitter(finalState));
+        Assert.assertEquals(station, eventDetector1Down.getReceiver(null));
+        Assert.assertEquals(DatationChoice.EMITTER, eventDetector1Down.getDatationChoice());
     }
 }

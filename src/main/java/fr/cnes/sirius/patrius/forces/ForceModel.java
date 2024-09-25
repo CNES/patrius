@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -31,10 +32,10 @@
  */
 package fr.cnes.sirius.patrius.forces;
 
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.parameter.IParameterizable;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -56,7 +57,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * </p>
  * <p>
  * Force models which create discontinuous acceleration patterns (typically for maneuvers start/stop or solar eclipses
- * entry/exit) must provide one or more {@link fr.cnes.sirius.patrius.propagation.events.EventDetector events detectors}
+ * entry/exit) must provide one or more {@link fr.cnes.sirius.patrius.events.EventDetector events detectors}
  * to the propagator thanks to their {@link #getEventsDetectors()} method. This method is called once just before
  * propagation starts. The events states will be checked by the propagator to ensure accurate propagation and proper
  * events handling.

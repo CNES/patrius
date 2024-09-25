@@ -18,6 +18,7 @@
  * @history creation 30/05/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2909:18/05/2021:Ajout des methodes getIntersectionPoint, getClosestPoint(Vector2D) et getAlpha()
@@ -36,6 +37,7 @@ package fr.cnes.sirius.patrius.fieldsofview;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import fr.cnes.sirius.patrius.events.detectors.GroundMaskElevationDetector;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.AzimuthElevationCalculator;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
@@ -43,7 +45,6 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.math.utils.BinarySearchIndexClosedOpen;
 import fr.cnes.sirius.patrius.math.utils.ISearchIndex;
-import fr.cnes.sirius.patrius.propagation.events.GroundMaskElevationDetector;
 
 /**
  * <p>

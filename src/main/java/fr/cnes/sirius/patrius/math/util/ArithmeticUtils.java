@@ -8,9 +8,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -26,12 +27,16 @@
 package fr.cnes.sirius.patrius.math.util;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooLargeException;
 import fr.cnes.sirius.patrius.math.exception.util.Localizable;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 //CHECKSTYLE: stop CommentRatio check
@@ -40,7 +45,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Some useful, arithmetics related, additions to the built-in functions in {@link Math}.
- * 
+ *
  * @version $Id: ArithmeticUtils.java 18108 2017-10-04 06:45:27Z bignon $
  */
 public final class ArithmeticUtils {
@@ -65,7 +70,7 @@ public final class ArithmeticUtils {
 
     /**
      * Add two integers, checking for overflow.
-     * 
+     *
      * @param x
      *        an addend
      * @param y
@@ -86,7 +91,7 @@ public final class ArithmeticUtils {
 
     /**
      * Add two long integers, checking for overflow.
-     * 
+     *
      * @param a
      *        an addend
      * @param b
@@ -115,7 +120,7 @@ public final class ArithmeticUtils {
      * {@code ArithMeticException} is thrown.</li>
      * </ul>
      * </p>
-     * 
+     *
      * @param n
      *        the size of the set
      * @param k
@@ -203,7 +208,7 @@ public final class ArithmeticUtils {
      * Double.POSITIVE_INFINITY is returned</li>
      * </ul>
      * </p>
-     * 
+     *
      * @param n
      *        the size of the set
      * @param k
@@ -254,7 +259,7 @@ public final class ArithmeticUtils {
      * <li> {@code 0 <= k <= n } (otherwise {@code IllegalArgumentException} is thrown)</li>
      * </ul>
      * </p>
-     * 
+     *
      * @param n
      *        the size of the set
      * @param k
@@ -331,7 +336,7 @@ public final class ArithmeticUtils {
      * thrown.</li>
      * </ul>
      * </p>
-     * 
+     *
      * @param n
      *        argument
      * @return {@code n!}
@@ -361,7 +366,7 @@ public final class ArithmeticUtils {
      * The result should be small enough to fit into a {@code double}: The
      * largest {@code n} for which {@code n! < Double.MAX_VALUE} is 170.
      * If the computed value exceeds {@code Double.MAX_VALUE}, {@code Double.POSITIVE_INFINITY} is returned.
-     * 
+     *
      * @param n
      *        Argument.
      * @return {@code n!}
@@ -381,7 +386,7 @@ public final class ArithmeticUtils {
 
     /**
      * Compute the natural logarithm of the factorial of {@code n}.
-     * 
+     *
      * @param n
      *        Argument.
      * @return {@code n!}
@@ -417,7 +422,7 @@ public final class ArithmeticUtils {
      * except for the special cases above.</li>
      * <li>The invocation {@code gcd(0, 0)} is the only one which returns {@code 0}.</li>
      * </ul>
-     * 
+     *
      * @param p
      *        Number.
      * @param q
@@ -500,7 +505,7 @@ public final class ArithmeticUtils {
      * <li>The result of {@code gcd(x, x)}, {@code gcd(0, x)} and {@code gcd(x, 0)} is the value of {@code x}.</li>
      * <li>The invocation {@code gcd(0, 0)} is the only one which returns {@code 0}.</li>
      * </ul>
-     * 
+     *
      * @param aIn
      *        Positive number.
      * @param bIn
@@ -561,7 +566,7 @@ public final class ArithmeticUtils {
      * , except for the special cases above.
      * <li>The invocation {@code gcd(0L, 0L)} is the only one which returns {@code 0L}.</li>
      * </ul>
-     * 
+     *
      * @param p
      *        Number.
      * @param q
@@ -652,7 +657,7 @@ public final class ArithmeticUtils {
      * an int value.</li>
      * <li>The result of {@code lcm(0, x)} and {@code lcm(x, 0)} is {@code 0} for any {@code x}.
      * </ul>
-     * 
+     *
      * @param a
      *        Number.
      * @param b
@@ -687,7 +692,7 @@ public final class ArithmeticUtils {
      * value.</li>
      * <li>The result of {@code lcm(0L, x)} and {@code lcm(x, 0L)} is {@code 0L} for any {@code x}.
      * </ul>
-     * 
+     *
      * @param a
      *        Number.
      * @param b
@@ -712,7 +717,7 @@ public final class ArithmeticUtils {
 
     /**
      * Multiply two integers, checking for overflow.
-     * 
+     *
      * @param x
      *        Factor.
      * @param y
@@ -733,7 +738,7 @@ public final class ArithmeticUtils {
 
     /**
      * Multiply two long integers, checking for overflow.
-     * 
+     *
      * @param a
      *        Factor.
      * @param b
@@ -790,7 +795,7 @@ public final class ArithmeticUtils {
 
     /**
      * Subtract two integers, checking for overflow.
-     * 
+     *
      * @param x
      *        Minuend.
      * @param y
@@ -811,7 +816,7 @@ public final class ArithmeticUtils {
 
     /**
      * Subtract two long integers, checking for overflow.
-     * 
+     *
      * @param a
      *        Value.
      * @param b
@@ -838,7 +843,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise an int to an int power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param eIn
@@ -869,7 +874,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise an int to a long power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param eIn
@@ -900,7 +905,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise a long to an int power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param eIn
@@ -930,7 +935,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise a long to a long power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param eIn
@@ -960,7 +965,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise a BigInteger to an int power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param e
@@ -979,7 +984,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise a BigInteger to a long power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param eIn
@@ -1010,7 +1015,7 @@ public final class ArithmeticUtils {
 
     /**
      * Raise a BigInteger to a BigInteger power.
-     * 
+     *
      * @param k
      *        Number to raise.
      * @param eIn
@@ -1047,7 +1052,7 @@ public final class ArithmeticUtils {
      * <p>
      * The preconditions are {@code 0 <= k <= n } (otherwise {@code NotPositiveException} is thrown)
      * </p>
-     * 
+     *
      * @param n
      *        the size of the set
      * @param k
@@ -1137,7 +1142,7 @@ public final class ArithmeticUtils {
 
     /**
      * Add two long integers, checking for overflow.
-     * 
+     *
      * @param a
      *        Addend.
      * @param b
@@ -1188,7 +1193,7 @@ public final class ArithmeticUtils {
 
     /**
      * Check binomial preconditions.
-     * 
+     *
      * @param n
      *        Size of the set.
      * @param k
@@ -1209,8 +1214,61 @@ public final class ArithmeticUtils {
     }
 
     /**
+     * Provide all the groups of groupSize elements among the provided elements.
+     *
+     * @param <T>
+     *        The type of the elements
+     * @param elements
+     *        The elements
+     * @param groupsSize
+     *        The size of the group
+     * @return all the combinations possible
+     * @throws IllegalArgumentException
+     *         if the groupSize exceeds the elements size
+     */
+    public static <T> List<List<T>> binomialCombinations(final List<T> elements, final int groupsSize) {
+        if (groupsSize > elements.size()) {
+            throw PatriusException
+                .createIllegalArgumentException(PatriusMessages.BINOMIAL_COMBINATIONS_INVALID_GROUPS_SIZE);
+        }
+        final List<List<T>> output = new ArrayList<>();
+        @SuppressWarnings("unchecked")
+        final T[] array = (T[]) java.lang.reflect.Array.newInstance(elements.get(0).getClass(), groupsSize);
+        recurtion(elements, groupsSize, 0, array, output);
+        return output;
+    }
+
+    /**
+     * Recursion method for the {@link #binomialCombinations} computation.
+     *
+     * @param <T>
+     *        The type of the elements
+     * @param elements
+     *        The elements
+     * @param groupsSize
+     *        The size of the group
+     * @param startPosition
+     *        Working variable for the recursion
+     * @param result
+     *        Working variable for the recursion
+     * @param results
+     *        List of the combinations
+     */
+    private static <T> void recurtion(final List<T> elements, final int groupsSize, final int startPosition,
+                                      final T[] result, final List<List<T>> results) {
+        if (groupsSize == 0) {
+            results.add(Arrays.asList(result.clone()));
+            return;
+        }
+        for (int i = startPosition; i <= elements.size() - groupsSize; i++) {
+            result[result.length - groupsSize] = elements.get(i);
+            recurtion(elements, groupsSize - 1, i + 1, result, results);
+        }
+    }
+
+    /**
      * Returns true if the argument is a power of two.
-     * 
+     *
      * @param n
      *        the number to test
      * @return true if the argument is a power of two

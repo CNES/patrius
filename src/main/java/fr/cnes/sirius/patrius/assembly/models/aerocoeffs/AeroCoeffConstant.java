@@ -117,4 +117,10 @@ public class AeroCoeffConstant implements AerodynamicCoefficient {
         list.add(this.aeroCoeff);
         return list;
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return "AeroCoeffConstant[Cst param: " + this.aeroCoeff.getName() + ":" + this.aeroCoeff.getValue() + "]";
+    }
 }

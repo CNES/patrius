@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -27,21 +28,17 @@
 package fr.cnes.sirius.patrius.math.parameter;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
-import fr.cnes.sirius.patrius.math.interval.ComparableInterval;
-import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
-import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.time.AbsoluteDateIntervalsList;
+import fr.cnes.sirius.patrius.time.IntervalMapSearcher;
+import fr.cnes.sirius.patrius.tools.cache.CacheEntry;
 
 /**
  * This class is used to define parameterizable interval functions. It is defined by a map of
@@ -51,85 +48,77 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * intervals}.
  * </p>
  * <p>
- * Each function parameters descriptor is enriched with a
- * {@link StandardFieldDescriptors#DATE_INTERVAL} corresponding to the interval where the parameter
- * is defined.
+ * Each function parameters descriptor is enriched with a {@link StandardFieldDescriptors#DATE_INTERVAL} corresponding
+ * to the interval where the parameter is defined.
  * </p>
  *
  * @author bonitt
  */
 public class IntervalsFunction extends Parameterizable implements IParamDiffFunction {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 4240076365289388871L;
 
-    /** Map of intervals and functions. */
-    @SuppressWarnings("PMD.LooseCoupling")
-    private final TreeMap<ComparableInterval<AbsoluteDate>, IParamDiffFunction> mapOfFunctions;
-
-    /*
-     * Implementation note: the map uses ComparableInterval(AbsoluteDate) keys instead of
-     * AbsoluteDateInterval because it's less computational intensive to instantiate this type in
-     * the method IntervalsFunction#searchFunctionToUse(AbsoluteDate) which is called very often.
-     * This technical choice has shown valuable gains on performances.
-     */
+    /** Efficient functions searcher. */
+    private final IntervalMapSearcher<IParamDiffFunction> functionsSearcher;
 
     /**
-     * Simple constructor with a list of {@link IParamDiffFunction functions} and a list of
-     * {@link AbsoluteDateInterval intervals}. Both lists should be the same size. They define each
+     * Simple constructor with a collection of {@link IParamDiffFunction functions} and a collection of
+     * {@link AbsoluteDateInterval intervals}. Both collections should be the same size. They define each
      * sub-function to apply on each interval. The intervals must not overlap with each other.
      * </p>
      * <p>
-     * Each function parameters descriptor is enriched with a
-     * {@link StandardFieldDescriptors#DATE_INTERVAL} corresponding to the interval where the
-     * parameter is defined.
+     * Each function parameters descriptor is updated with a {@link StandardFieldDescriptors#DATE_INTERVAL}
+     * corresponding to the interval where the parameter is defined.
      * </p>
      *
-     * @param functionsList
-     *        List of functions
-     * @param intervalsList
-     *        List of intervals
-     * @throws DimensionMismatchException if {@code functionsList.size() != intervalsList.size()}
-     * @throws IllegalArgumentException if some intervals from the specified list overlap with each
-     *         other
+     * @param functionsCollection
+     *        Collection of functions
+     * @param intervalsCollection
+     *        Collection of intervals
+     * @throws DimensionMismatchException
+     *         if {@code intervalsCollection.size() != functionsCollection.size()}
+     * @throws IllegalArgumentException
+     *         if some intervals from the specified collection overlap with each other<br>
+     *         if one of the functions of the functions collection is {@code null}
      */
-    public IntervalsFunction(final List<IParamDiffFunction> functionsList,
-            final List<AbsoluteDateInterval> intervalsList) {
+    public IntervalsFunction(final Collection<IParamDiffFunction> functionsCollection,
+                             final Collection<AbsoluteDateInterval> intervalsCollection) {
+        this(functionsCollection, intervalsCollection, true);
+    }
+
+    /**
+     * Simple constructor with a collection of {@link IParamDiffFunction functions} and a collection of
+     * {@link AbsoluteDateInterval intervals}. Both collections should be the same size. They define each
+     * sub-function to apply on each interval. The intervals must not overlap with each other.
+     *
+     * @param functionsCollection
+     *        Collection of functions
+     * @param intervalsCollection
+     *        Collection of intervals
+     * @param updateParamDescriptors
+     *        Indicate if parameters descriptor should be updated with a {@link StandardFieldDescriptors#DATE_INTERVAL}
+     *        corresponding to the interval where the parameter is defined.
+     * @throws DimensionMismatchException
+     *         if {@code intervalsCollection.size() != functionsCollection.size()}
+     * @throws IllegalArgumentException
+     *         if some intervals from the specified collection overlap with each other<br>
+     *         if one of the functions of the functions collection is {@code null}
+     */
+    public IntervalsFunction(final Collection<IParamDiffFunction> functionsCollection,
+                             final Collection<AbsoluteDateInterval> intervalsCollection,
+                             final boolean updateParamDescriptors) {
         super();
 
-        final int functionsListSize = functionsList.size();
-
-        // Check for size consistency
-        if (functionsListSize != intervalsList.size()) {
-            throw new DimensionMismatchException(functionsListSize, intervalsList.size());
-        }
-
-        // Build the map
-        this.mapOfFunctions = new TreeMap<>();
-
-        for (int i = 0; i < functionsListSize; i++) {
-            this.mapOfFunctions.put(intervalsList.get(i), functionsList.get(i));
-        }
-
-        // Check none interval overlaps another one
-        checkOverlap(this.mapOfFunctions);
-
-        // Update the parameters descriptors with the intervals
-        updateParametersDescriptors(this.mapOfFunctions);
-
-        // Add the parameters into the parameters list
-        final Collection<IParamDiffFunction> functions = this.mapOfFunctions.values();
-        for (final IParamDiffFunction function : functions) {
-            this.addAllParameters(function.getParameters());
-        }
+        this.functionsSearcher = new IntervalMapSearcher<>(intervalsCollection, functionsCollection);
+        updateParametersDescriptorsAndParameterizableList(updateParamDescriptors);
     }
 
     /**
      * Simple constructor to initialize directly the map of intervals and functions.
      * <p>
-     * Each function parameters descriptor is enriched with a
-     * {@link StandardFieldDescriptors#DATE_INTERVAL} corresponding to the interval where the
-     * parameter is defined.
+     * Each function parameters descriptor is enriched with a {@link StandardFieldDescriptors#DATE_INTERVAL}
+     * corresponding to the interval where the parameter is defined.
      * </p>
      * <p>
      * Note: the given map is stored with a shallow copy.
@@ -137,83 +126,70 @@ public class IntervalsFunction extends Parameterizable implements IParamDiffFunc
      *
      * @param mapOfFunctions
      *        Map of intervals and functions. Note that the map is not duplicated internally.
-     * @throws IllegalArgumentException if some intervals overlap with each other
+     * @throws IllegalArgumentException
+     *         if some intervals from the specified map overlap with each other<br>
+     *         if one of the objects of the map is {@code null}
+     * @throws NullArgumentException
+     *         if {@code mapOfFunctions} is {@code null}
      */
     public IntervalsFunction(final Map<AbsoluteDateInterval, IParamDiffFunction> mapOfFunctions) {
+        this(mapOfFunctions, true);
+    }
+
+    /**
+     * Simple constructor to initialize directly the map of intervals and functions.
+     * <p>
+     * Note: the given map is stored with a shallow copy.
+     * </p>
+     *
+     * @param mapOfFunctions
+     *        Map of intervals and functions. Note that the map is not duplicated internally.
+     * @param updateParamDescriptors
+     *        Indicate if parameters descriptor should be updated with a {@link StandardFieldDescriptors#DATE_INTERVAL}
+     *        corresponding to the interval where the parameter is defined.
+     * @throws IllegalArgumentException
+     *         if some intervals from the specified map overlap with each other<br>
+     *         if one of the objects of the map is {@code null}
+     * @throws NullArgumentException
+     *         if {@code mapOfFunctions} is {@code null}
+     */
+    public IntervalsFunction(final Map<AbsoluteDateInterval, IParamDiffFunction> mapOfFunctions,
+                             final boolean updateParamDescriptors) {
         super();
 
-        // Set the map
-        this.mapOfFunctions = new TreeMap<>();
-        this.mapOfFunctions.putAll(mapOfFunctions);
-
-        // Check none interval overlaps an other one
-        checkOverlap(this.mapOfFunctions);
-
-        // Update the parameters descriptors with the intervals
-        updateParametersDescriptors(this.mapOfFunctions);
-
-        // Add the parameters into the parameters list
-        final Collection<IParamDiffFunction> functions = this.mapOfFunctions.values();
-        for (final IParamDiffFunction function : functions) {
-            this.addAllParameters(function.getParameters());
-        }
+        this.functionsSearcher = new IntervalMapSearcher<>(mapOfFunctions);
+        updateParametersDescriptorsAndParameterizableList(updateParamDescriptors);
     }
 
     /**
-     * Evaluate each intervals couples to determine if they overlap (overlapping isn't allowed).
+     * Enrich the parameters descriptors with the interval and add all the parameters to the {@link Parameterizable}
+     * super implementation.
      * <p>
-     * Note: The given intervals stored in a TreeMap are already ordered chronologically.
+     * For each interval, the function's parameters get a new parameter descriptor with the current interval.
      * </p>
      *
-     * @param map
-     *        Map of intervals and functions
-     * @throws IllegalArgumentException if some intervals overlap with each other
+     * @param updateParameterDescriptors
+     *        Update the parameter descriptors with the intervals
      */
-    @SuppressWarnings("PMD.LooseCoupling")
-    private static void checkOverlap(
-            final TreeMap<ComparableInterval<AbsoluteDate>, IParamDiffFunction> map) {
+    private void updateParametersDescriptorsAndParameterizableList(final boolean updateParameterDescriptors) {
 
-        final Set<ComparableInterval<AbsoluteDate>> intervalsSet = map.keySet();
-
-        final Iterator<ComparableInterval<AbsoluteDate>> it = intervalsSet.iterator();
-        ComparableInterval<AbsoluteDate> currentInterval = it.next();
-        while (it.hasNext()) {
-            final ComparableInterval<AbsoluteDate> nextInterval = it.next();
-            if (currentInterval.overlaps(nextInterval)) {
-                throw PatriusException
-                        .createIllegalArgumentException(PatriusMessages.INTERVALS_OVERLAPPING_NOT_ALLOWED);
-            }
-            currentInterval = nextInterval;
-        }
-    }
-
-    /**
-     * Enrich the parameters descriptors with the interval.
-     * <p>
-     * For each interval key, the function's parameters get a new parameter descriptor with the
-     * current interval.
-     * </p>
-     *
-     * @param map
-     *        parameters map to update
-     */
-    @SuppressWarnings("PMD.LooseCoupling")
-    private static void updateParametersDescriptors(
-            final TreeMap<ComparableInterval<AbsoluteDate>, IParamDiffFunction> map) {
-
-        // Loop on each map entry to extract all the parameters for each interval
-        for (final Entry<ComparableInterval<AbsoluteDate>, IParamDiffFunction> entry : map
-                .entrySet()) {
+        // Loop on each cache entry to extract all the parameters for each interval
+        for (final CacheEntry<AbsoluteDateInterval, IParamDiffFunction> entry : this.functionsSearcher) {
             final AbsoluteDateInterval currentInterval = new AbsoluteDateInterval(entry.getKey());
             final IParamDiffFunction currentFunction = entry.getValue();
             final List<Parameter> parameters = currentFunction.getParameters();
 
-            // Loop on all parameters and update their descriptor with the current interval, then
-            // add them in the Parameterizable list
-            for (final Parameter parameter : parameters) {
-                final ParameterDescriptor descriptor = parameter.getDescriptor();
-                if (descriptor.isMutable()) {
-                    descriptor.addField(StandardFieldDescriptors.DATE_INTERVAL, currentInterval);
+            // Add the parameters of the function to the list of parameters
+            this.addAllParameters(parameters);
+
+            if (updateParameterDescriptors) {
+                // Loop on all parameters and update their descriptor with the current interval, then
+                // add them in the Parameterizable list
+                for (final Parameter parameter : parameters) {
+                    final ParameterDescriptor descriptor = parameter.getDescriptor();
+                    if (descriptor.isMutable()) {
+                        descriptor.addField(StandardFieldDescriptors.DATE_INTERVAL, currentInterval);
+                    }
                 }
             }
         }
@@ -222,23 +198,25 @@ public class IntervalsFunction extends Parameterizable implements IParamDiffFunc
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalStateException if the given date isn't contained by the intervals
+     * @throws IllegalStateException
+     *         if the provided date does not belong to any of the intervals
      */
     @Override
     public double value(final SpacecraftState s) {
         // Find the interval and the function to use, then compute the value
-        return this.searchFunctionToUse(s.getDate()).value(s);
+        return this.functionsSearcher.getData(s.getDate()).value(s);
     }
 
     /**
      * {@inheritDoc}
      *
-     * @throws IllegalStateException if the given date isn't contained by the intervals
+     * @throws IllegalStateException
+     *         if the provided date does not belong to any of the intervals
      */
     @Override
     public double derivativeValue(final Parameter p, final SpacecraftState s) {
         // Find the interval and the function to use, then compute the derivative
-        return this.searchFunctionToUse(s.getDate()).derivativeValue(p, s);
+        return this.functionsSearcher.getData(s.getDate()).derivativeValue(p, s);
     }
 
     /** {@inheritDoc} */
@@ -248,41 +226,62 @@ public class IntervalsFunction extends Parameterizable implements IParamDiffFunc
     }
 
     /**
-     * Private service to find the function to use.
+     * Getter for the available intervals.
      *
-     * @param date
-     *        current date
-     * @return function to use in the map of functions
-     * @throws IllegalStateException if the given date isn't contained by the intervals
+     * @return the available intervals
      */
-    private IParamDiffFunction searchFunctionToUse(final AbsoluteDate date) {
+    public AbsoluteDateIntervalsList getIntervals() {
+        return this.functionsSearcher.getIntervals();
+    }
 
-        /*
-         * Implementation note: this method uses the TreeMap#floorEntry(Object) intervals searching
-         * method as its complexity is O(log(n)) instead of a classic search with a linear approach
-         * of
-         * O(n).
-         * Some benchmarks have been made and have shown good performance improvements, especially
-         * when dealing with many intervals.
-         */
+    /**
+     * Getter for the functions associated to the {@link AbsoluteDateInterval intervals}.
+     *
+     * @return the functions
+     */
+    public List<IParamDiffFunction> getFunctions() {
+        return this.functionsSearcher.getData();
+    }
 
-        // Build the interval ]date ; +Infinity[ for searching in the map
-        final ComparableInterval<AbsoluteDate> dateInt = new ComparableInterval<>(
-                IntervalEndpointType.CLOSED, date, AbsoluteDate.FUTURE_INFINITY,
-                IntervalEndpointType.OPEN);
+    /**
+     * Getter for the association between {@link AbsoluteDateInterval intervals} and functions.
+     *
+     * @return the interval/functions association
+     */
+    public Map<AbsoluteDateInterval, IParamDiffFunction> getIntervalFunctionAssociation() {
+        return this.functionsSearcher.getIntervalDataAssociation();
+    }
 
-        // Search for the floor entry
-        // In other words: the greatest key <= ]date ; +Infinity[ (if doesn't exist -> null)
-        final Entry<ComparableInterval<AbsoluteDate>, IParamDiffFunction> entryOut = this.mapOfFunctions
-                .floorEntry(dateInt);
+    /**
+     * Getter for a String representation of this function.
+     * 
+     * @return a String representation of this function
+     */
+    @Override
+    public String toString() {
 
-        // Check if an entry has been found and that the given date is actually contained in the
-        // found interval (could be beyond)
-        if ((entryOut == null) || !entryOut.getKey().contains(date)) {
-            // The function is not defined at this date
-            throw PatriusException
-                    .createIllegalStateException(PatriusMessages.DATE_OUTSIDE_INTERVAL);
+        // Extract the information
+        final Map<AbsoluteDateInterval, IParamDiffFunction> intervalFunctionMap = getIntervalFunctionAssociation();
+
+        // Initialize the StringBuilder and the class information
+        final StringBuilder strBuilder = new StringBuilder();
+        final String className = this.getClass().getSimpleName() + ":";
+
+        strBuilder.append(className);
+        strBuilder.append('\n');
+
+        // Loop on each Map value to store the result
+        for (final Entry<AbsoluteDateInterval, IParamDiffFunction> intervalFunction : intervalFunctionMap.entrySet()) {
+            final AbsoluteDateInterval interval = intervalFunction.getKey();
+            final IParamDiffFunction function = intervalFunction.getValue();
+
+            // Add the info in the StringBuilder
+            strBuilder.append(interval);
+            strBuilder.append(": ");
+            strBuilder.append(function);
         }
-        return entryOut.getValue();
+
+        // Return the resulting String
+        return strBuilder.toString();
     }
 }

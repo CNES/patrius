@@ -19,6 +19,8 @@
   * VERSION::FA:1301:06/09/2017:Generalized EOP history
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -27,6 +29,8 @@
 package fr.cnes.sirius.patrius.frames.configuration;
 
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistory;
+import fr.cnes.sirius.patrius.frames.configuration.modprecession.MODPrecessionModel;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 
 /**
  * <p>
@@ -67,12 +71,11 @@ public final class FramesConfigurationBuilder {
      *        user configuration
      */
     public FramesConfigurationBuilder(final FramesConfiguration configIn) {
-
         this.setDiurnalRotation(configIn.getDiurnalRotationModel());
         this.setPolarMotion(configIn.getPolarMotionModel());
-        this.setPrecessionNutation(configIn.getPrecessionNutationModel());
+        this.setCIRFPrecessionNutation(configIn.getCIRFPrecessionNutationModel());
+        this.setMODPrecession(configIn.getMODPrecessionModel());
         this.setEOPHistory(configIn.getEOPHistory());
-
     }
 
     /**
@@ -106,13 +109,23 @@ public final class FramesConfigurationBuilder {
     }
 
     /**
-     * Setter for precession nutation provider in the builder.
+     * Setter for CIRF precession nutation provider in the builder.
      * 
      * @param precessionNutationModel
      *        precession nutation provider
      */
-    public void setPrecessionNutation(final PrecessionNutation precessionNutationModel) {
-        this.config.setPrecessionNutationModel(precessionNutationModel);
+    public void setCIRFPrecessionNutation(final PrecessionNutation precessionNutationModel) {
+        this.config.setCIRFPrecessionNutationModel(precessionNutationModel);
+    }
+
+    /**
+     * Setter for MOD precession provider in the builder.
+     * 
+     * @param modPrecessionModel
+     *        MOD Precession provider
+     */
+    public void setMODPrecession(final MODPrecessionModel modPrecessionModel) {
+        this.config.setMODPrecessionModel(modPrecessionModel);
     }
 
     /**

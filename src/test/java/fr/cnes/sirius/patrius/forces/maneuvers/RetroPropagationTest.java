@@ -18,6 +18,10 @@
  * @history creation 29/07/2014
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -61,6 +65,9 @@ import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractHarmonicGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
@@ -91,9 +98,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -510,7 +514,7 @@ public class RetroPropagationTest {
         // Test final mass is equal to the initial mass after propagation and retro-propagation
         Assert.assertEquals(s0.getMass("BODY"), sR.getMass("BODY"), MASS_EPSILON);
         // Test PVCoordinates
-        checkPVs(s0.getPVCoordinates(), sR.getPVCoordinates(), 1e-8, 1e-11);
+        checkPVs(s0.getPVCoordinates(), sR.getPVCoordinates(), 2e-8, 1e-11);
     }
 
     @Before
@@ -594,8 +598,8 @@ public class RetroPropagationTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER,
             loaderSSB);
 
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
+        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
 
         final GravityModel sunGravityModel = sun.getGravityModel();

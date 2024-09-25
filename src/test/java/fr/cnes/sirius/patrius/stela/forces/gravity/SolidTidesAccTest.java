@@ -16,12 +16,15 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
- * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -46,7 +49,9 @@ import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
@@ -95,9 +100,9 @@ public class SolidTidesAccTest {
     private final double tol_abs = 1e-19;
 
     /** Sun. */
-    private CelestialBody sun;
+    private CelestialPoint sun;
     /** Moon. */
-    private CelestialBody moon;
+    private CelestialPoint moon;
     /** Orbit. */
     private StelaEquinoctialOrbit stelaOrbit;
 
@@ -222,9 +227,9 @@ public class SolidTidesAccTest {
             public CelestialBodyEphemeris getEphemeris() {
                 return null;
             }
-            
+
             @Override
-            public void setEphemeris(CelestialBodyEphemeris ephemerisIn) {
+            public void setEphemeris(final CelestialBodyEphemeris ephemerisIn) {
             }
 
             @Override
@@ -234,7 +239,7 @@ public class SolidTidesAccTest {
             }
 
             @Override
-            public CelestialBodyFrame getInertialFrame(IAUPoleModelType iauPole) throws PatriusException {
+            public CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPole) throws PatriusException {
                 return null;
             }
 
@@ -266,38 +271,42 @@ public class SolidTidesAccTest {
                 return null;
             }
 
-			@Override
-			public BodyShape getShape() {
-				return null;
-			}
+            @Override
+            public CelestialBodyFrame getEclipticJ2000() {
+                return null;
+            }
 
-			@Override
-			public void setShape(final BodyShape shapeIn) {
-			}
+            @Override
+            public BodyShape getShape() {
+                return null;
+            }
 
-			@Override
+            @Override
+            public void setShape(final BodyShape shapeIn) {
+            }
+
+            @Override
             public GravityModel getGravityModel() {
-				return null;
-			}
+                return null;
+            }
 
-			@Override
+            @Override
             public void setGravityModel(final GravityModel gravityModelIn) {
-			}
+            }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
 
             @Override
-            public IAUPole getIAUPole() {
+            public CelestialBodyIAUOrientation getOrientation() {
                 return null;
             }
 
             @Override
-            public void setIAUPole(final IAUPole iauPoleIn) {   
+            public void setOrientation(final CelestialBodyOrientation celestialBodyOrientationIn) {
             }
 
             @Override
@@ -314,9 +323,9 @@ public class SolidTidesAccTest {
             public CelestialBodyEphemeris getEphemeris() {
                 return null;
             }
-            
+
             @Override
-            public void setEphemeris(CelestialBodyEphemeris ephemerisIn) {
+            public void setEphemeris(final CelestialBodyEphemeris ephemerisIn) {
             }
 
             @Override
@@ -326,7 +335,7 @@ public class SolidTidesAccTest {
             }
 
             @Override
-            public CelestialBodyFrame getInertialFrame(IAUPoleModelType iauPole) throws PatriusException {
+            public CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPole) throws PatriusException {
                 return null;
             }
 
@@ -358,42 +367,47 @@ public class SolidTidesAccTest {
                 return null;
             }
 
-			@Override
-			public BodyShape getShape() {
-				return null;
-			}
+            @Override
+            public BodyShape getShape() {
+                return null;
+            }
 
-			@Override
-			public void setShape(final BodyShape shapeIn) {
-			}
+            @Override
+            public void setShape(final BodyShape shapeIn) {
+            }
 
-			@Override
+            @Override
             public GravityModel getGravityModel() {
-				return null;
-			}
+                return null;
+            }
 
-			@Override
+            @Override
             public void setGravityModel(final GravityModel gravityModelIn) {
-			}
+            }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
 
             @Override
-            public IAUPole getIAUPole() {
+            public CelestialBodyIAUOrientation getOrientation() {
                 return null;
             }
 
             @Override
-            public void setIAUPole(final IAUPole iauPoleIn) {   
+            public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
             }
 
             @Override
             public void setGM(final double gmIn) {
+            }
+
+            @Override
+            public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+                // nothing to do
+                return null;
             }
         };
 

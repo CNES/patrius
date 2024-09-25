@@ -99,4 +99,10 @@ public class Vertex implements Serializable {
     protected void addNeighbors(final Triangle neighbor) {
         this.neighbors.add(neighbor);
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        return "VertexID: " + this.id;
+    }
 }

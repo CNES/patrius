@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2445:27/05/2020:optimisation de SolarActivityReader 
@@ -47,7 +48,7 @@ import fr.cnes.sirius.patrius.assembly.models.cook.CtCookModel;
 import fr.cnes.sirius.patrius.assembly.models.cook.GinsWallGasTemperature;
 import fr.cnes.sirius.patrius.assembly.models.cook.WallGasTemperatureProvider;
 import fr.cnes.sirius.patrius.assembly.properties.features.Facet;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
@@ -277,7 +278,7 @@ public class CookModelTest {
         Utils.setDataRoot("almanac");
 
         // Initialization
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF());
         final ExtendedAtmosphere atmosphere = new MSISE2000(new ContinuousMSISE2000SolarData(new ConstantSolarActivity(

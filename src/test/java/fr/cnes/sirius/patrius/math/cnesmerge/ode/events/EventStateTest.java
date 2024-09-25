@@ -18,6 +18,7 @@
  * @history created 13/12/2011
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -39,6 +40,7 @@ import fr.cnes.sirius.patrius.math.ode.events.EventHandler;
 import fr.cnes.sirius.patrius.math.ode.events.EventState;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DummyStepInterpolator;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepInterpolator;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * Unit tests for EventState.<br>
@@ -125,6 +127,15 @@ public class EventStateTest {
             public boolean shouldBeRemoved() {
                 return false;
             }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
+            }
         };
         final double maxChkInt = 20.;
         final double tolerance = 0.1;
@@ -195,6 +206,15 @@ public class EventStateTest {
             public boolean shouldBeRemoved() {
                 return false;
             }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
+            }
         };
         // 1) Simplest case : forward interpolator, no special case
         final StepInterpolator interpolator1 =
@@ -243,6 +263,15 @@ public class EventStateTest {
 
             @Override
             public boolean shouldBeRemoved() {
+                return false;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
                 return false;
             }
         };
@@ -310,6 +339,15 @@ public class EventStateTest {
             @Override
             public int getSlopeSelection() {
                 return 2;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
             }
         };
 

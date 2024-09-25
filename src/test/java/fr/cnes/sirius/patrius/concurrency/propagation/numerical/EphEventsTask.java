@@ -16,13 +16,16 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:DM:DM-3244:03/11/2022:[PATRIUS] Ajout propagation du signal dans ExtremaElevationDetector
- * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2898:15/11/2021:[PATRIUS] Hypothese geocentrique a supprimer pour la SRP 
  * VERSION:4.4:DM:DM-2153:04/10/2019:[PATRIUS] PVCoordinatePropagator
@@ -45,11 +48,19 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.NadirPointing;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.DihedralFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
 import fr.cnes.sirius.patrius.forces.atmospheres.DTM2000;
@@ -62,6 +73,7 @@ import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
 import fr.cnes.sirius.patrius.forces.radiation.RadiationSensitive;
 import fr.cnes.sirius.patrius.forces.radiation.SolarRadiationPressure;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -79,13 +91,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.PVCoordinatesPropagator;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.DihedralFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -311,7 +316,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(FJPLFILE,
             EphemerisType.MOON);
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
         return new ThirdBodyAttraction(moon.getGravityModel());
     }
 
@@ -326,7 +331,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(FJPLFILE,
             EphemerisType.SUN);
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
         return new ThirdBodyAttraction(sun.getGravityModel());
     }
 
@@ -341,7 +346,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(FJPLFILE,
             EphemerisType.MARS);
-        final CelestialBody mars = loader.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialBody mars = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MARS);
         return new ThirdBodyAttraction(mars.getGravityModel());
     }
 
@@ -356,7 +361,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(FJPLFILE,
             EphemerisType.JUPITER);
-        final CelestialBody jupiter = loader.loadCelestialBody(CelestialBodyFactory.JUPITER);
+        final CelestialBody jupiter = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.JUPITER);
         return new ThirdBodyAttraction(jupiter.getGravityModel());
     }
 
@@ -371,7 +376,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(FJPLFILE,
             EphemerisType.VENUS);
-        final CelestialBody venus = loader.loadCelestialBody(CelestialBodyFactory.VENUS);
+        final CelestialBody venus = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.VENUS);
         return new ThirdBodyAttraction(venus.getGravityModel());
     }
 
@@ -409,7 +414,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
      *         should not happen
      */
     private static ForceModel getDTM2000Force() throws PatriusException {
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.460, 1.0 / 298.257222101, itrf);
         final SolarInputs97to05 in = SolarInputs97to05.getInstance();
@@ -465,7 +470,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
 
         loaderSUN = new JPLCelestialBodyLoader(FJPLFILE, EphemerisType.SUN);
-        final CelestialBody sun = loaderSUN.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sun = loaderSUN.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         // Event detectors
         final Orbit initialOrbit = getOrbitLEO();
@@ -492,7 +497,7 @@ public class EphEventsTask extends AbstractSimpleParallelTaskImpl {
         final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader(FJPLFILE,
             EphemerisType.EARTH);
 
-        final CelestialBody earth = loaderEarth.loadCelestialBody(CelestialBodyFactory.EARTH);
+        final CelestialBody earth = (CelestialBody) loaderEarth.loadCelestialPoint(CelestialBodyFactory.EARTH);
 
         final double re = Constants.EGM96_EARTH_EQUATORIAL_RADIUS;
         // eclipse

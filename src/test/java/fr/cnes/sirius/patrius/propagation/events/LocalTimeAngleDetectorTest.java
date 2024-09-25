@@ -16,6 +16,12 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.11.1:FA:FA-78:30/06/2023:[PATRIUS] Reliquat DM 3258 sur les TU des détecteurs SolarTime et LocalTime
  * VERSION:4.11.1:FA:FA-89:30/06/2023:[PATRIUS] Problème dans la fonction g de LocalTimeAngleDetector - Retour en arrière
  * VERSION:4.11:DM:DM-3258:22/05/2023:[PATRIUS] Adaptation des detecteurs SolarTime et LocalTime pour l'interplanetaire
@@ -47,10 +53,19 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.LocalTimeAngleDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
@@ -69,15 +84,12 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.utils.exception.PropagationException;
 
 /**
  * Unit tests for {@link LocalTimeAngleDetector}.
@@ -131,13 +143,208 @@ public class LocalTimeAngleDetectorTest {
         iniDate = new AbsoluteDate("2011-11-09T12:00:00Z", TimeScalesFactory.getTT());
         final double mu = CelestialBodyFactory.getEarth().getGM();
 
-        orbitRetro = new CircularOrbit(8000000, 0, 0, MathLib.toRadians(98.0), 0, FastMath.PI / 2,
-            PositionAngle.TRUE, FramesFactory.getGCRF(), iniDate, mu);
+        orbitRetro = new CircularOrbit(8000000, 0, 0, MathLib.toRadians(98.0), 0, FastMath.PI / 2, PositionAngle.TRUE,
+                FramesFactory.getGCRF(), iniDate, mu);
 
-        orbitPro = new CircularOrbit(8000000, 0, 0, MathLib.toRadians(60.0), 0, FastMath.PI / 2,
-            PositionAngle.TRUE, FramesFactory.getGCRF(), iniDate, mu);
+        orbitPro = new CircularOrbit(8000000, 0, 0, MathLib.toRadians(60.0), 0, FastMath.PI / 2, PositionAngle.TRUE,
+                FramesFactory.getGCRF(), iniDate, mu);
 
         state = new SpacecraftState(orbitRetro);
+    }
+
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final LocalTimeAngleDetector eventDetector1 = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+            Action.CONTINUE, false, sun);
+        final LocalTimeAngleDetector eventDetector2 = (LocalTimeAngleDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final Propagator propagator = new KeplerianPropagator(orbitPro);
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(iniDate.shiftedBy(3 * 3600.));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:49:49.088"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:49:49.088"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T14:48:31.504"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T14:48:31.504"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:41:34.737"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:49:48.995"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T14:40:17.163"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T14:48:31.411"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(sun, eventDetector1.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+    }
+
+    /**
+     * @throws PatriusException
+     * @testType UT
+     * 
+     * @testedFeature {@link features#VVALIDATE_LOCAL_TIME_ANGLE_DETECTOR}
+     * 
+     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, fr.cnes.sirius.patrius.frames.CelestialBodyFrame, fr.cnes.sirius.patrius.propagation.events.Action, boolean, fr.cnes.sirius.patrius.bodies.CelestialBody, int) }
+     * 
+     * @description test of the slopeSelection parameter
+     * 
+     * @input constructor parameters: the local time angle, the max check
+     *        value, the threshold value, the celestial body frame, the action,
+     *        the remove boolean, the sun body and the slopeSelection.
+     * 
+     * @output a {@link LocalTimeDetector}
+     * 
+     * @testPassCriteria the {@link LocalTimeDetector} when initiated with increasing parameter only detect increasing
+     *                   event.
+     * 
+     * @throws PatriusException If error occurs in the propagation or in the detector creation
+     * 
+     * @referenceVersion 4.11
+     * 
+     * @nonRegressionVersion 4.11
+     */
+    @Test
+    public void testLocalTimeAngleDetectorIncreasingDecreasing() throws PatriusException {
+        // Detector in increasing mode
+        final LocalTimeAngleDetector detectorIncrease = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+                Action.CONTINUE, false, CelestialBodyFactory.getSun(), 0);
+        // Detector in decreasing mode
+        final LocalTimeAngleDetector detectorDecrease = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+                Action.CONTINUE, false, CelestialBodyFactory.getSun(), 1);
+        // Detector in increasing & decreasing mode
+        final LocalTimeAngleDetector detector = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+                Action.CONTINUE, false, CelestialBodyFactory.getSun());
+
+        final double period = orbitPro.getKeplerianPeriod();
+        final Propagator propagator = new KeplerianPropagator(orbitPro);
+
+        // Step handler to track longitude evolution during propagation
+        final MyStepHandler angleTracking = new MyStepHandler(iniDate, orbitPro.getFrame());
+        propagator.setMasterMode(10, angleTracking);
+
+        // Create one logger for each detector
+        final EventsLogger loggerIncrease = new EventsLogger();
+        final EventsLogger loggerDecrease = new EventsLogger();
+        final EventsLogger logger = new EventsLogger();
+
+        // Add the three different loggers to the propagator
+        propagator.addEventDetector(loggerIncrease.monitorDetector(detectorIncrease));
+        propagator.addEventDetector(loggerDecrease.monitorDetector(detectorDecrease));
+        propagator.addEventDetector(logger.monitorDetector(detector));
+
+        // Propagate
+        propagator.propagate(iniDate.shiftedBy(5 * period));
+        // Asserts
+        for (int i = 0; i < loggerIncrease.getLoggedEvents().size(); i++) {
+            Assert.assertTrue(loggerIncrease.getLoggedEvents().get(i).isIncreasing());
+        }
+        for (int j = 0; j < loggerDecrease.getLoggedEvents().size(); j++) {
+            Assert.assertFalse(loggerDecrease.getLoggedEvents().get(j).isIncreasing());
+        }
+        Assert.assertTrue(loggerIncrease.getLoggedEvents().size() + loggerDecrease.getLoggedEvents().size() == logger
+                .getLoggedEvents().size());
+        Assert.assertEquals(5, loggerIncrease.getLoggedEvents().size());
+        Assert.assertEquals(0, loggerDecrease.getLoggedEvents().size());
+        Assert.assertEquals(5, logger.getLoggedEvents().size());
+    }
+
+    /**
+     * @throws PatriusException
+     * @testType UT
+     * 
+     * @testedFeature {@link features#VVALIDATE_LOCAL_TIME_ANGLE_DETECTOR}
+     * 
+     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, fr.cnes.sirius.patrius.frames.CelestialBodyFrame, fr.cnes.sirius.patrius.propagation.events.Action, boolean, fr.cnes.sirius.patrius.bodies.CelestialBody, int) }
+     * 
+     * @description test of the slopeSelection parameter
+     * 
+     * @input constructor parameters: the local time angle, the max check
+     *        value, the threshold value, the celestial body frame, the action,
+     *        the remove boolean, the sun body and the slopeSelection.
+     * 
+     * @output a {@link LocalTimeDetector}
+     * 
+     * @testPassCriteria the {@link LocalTimeDetector} when initiated with increasing parameter only detect increasing
+     *                   event.
+     * 
+     * @throws PatriusException If error occurs in the propagation or in the detector creation
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testLocalTimeAngleDetectorIncreasingDecreasingBackward() throws PatriusException {
+        // Detector in increasing mode
+        final LocalTimeAngleDetector detectorIncrease = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+                Action.CONTINUE, false, CelestialBodyFactory.getSun(), 0);
+        // Detector in decreasing mode
+        final LocalTimeAngleDetector detectorDecrease = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+                Action.CONTINUE, false, CelestialBodyFactory.getSun(), 1);
+        // Detector in increasing & decreasing mode
+        final LocalTimeAngleDetector detector = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1e-6, null,
+                Action.CONTINUE, false, CelestialBodyFactory.getSun());
+
+        final double period = orbitPro.getKeplerianPeriod();
+        final Propagator propagator = new KeplerianPropagator(orbitPro);
+        propagator.propagate(iniDate.shiftedBy(5 * period));
+
+        // Step handler to track longitude evolution during propagation
+        final MyStepHandler angleTracking = new MyStepHandler(iniDate, orbitPro.getFrame());
+        propagator.setMasterMode(10, angleTracking);
+
+        // Create one logger for each detector
+        final EventsLogger loggerIncrease = new EventsLogger();
+        final EventsLogger loggerDecrease = new EventsLogger();
+        final EventsLogger logger = new EventsLogger();
+
+        // Add the three different loggers to the propagator
+        propagator.addEventDetector(loggerIncrease.monitorDetector(detectorIncrease));
+        propagator.addEventDetector(loggerDecrease.monitorDetector(detectorDecrease));
+        propagator.addEventDetector(logger.monitorDetector(detector));
+
+        // Propagate backward
+        propagator.propagate(iniDate);
+
+        // Asserts
+        Assert.assertEquals(5, loggerIncrease.getLoggedEvents().size());
+        Assert.assertEquals(0, loggerDecrease.getLoggedEvents().size());
+        Assert.assertEquals(5, logger.getLoggedEvents().size());
     }
 
     /**
@@ -194,14 +401,13 @@ public class LocalTimeAngleDetectorTest {
         // The constructor did not crash...
         Assert.assertNotNull(detector);
     }
-    
+
     /**
      * @testType UT
      * 
      * @testedFeature {@link features#VVALIDATE_LOCAL_TIME_ANGLE_DETECTOR}
      * 
-     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double,
-     *                fr.cnes.sirius.patrius.frames.CelestialBodyFrame) }
+     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, fr.cnes.sirius.patrius.frames.CelestialBodyFrame) }
      * 
      * @description simple constructor test
      * 
@@ -220,26 +426,23 @@ public class LocalTimeAngleDetectorTest {
      */
     @Test
     public void testLocalTimeAngleDetectorCelestialBodyFrame() throws PatriusException {
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final CelestialBodyFrame frame = new CelestialBodyFrame(FramesFactory.getGCRF(), Transform.IDENTITY, "Frame",
-            true, earth);
-        final LocalTimeAngleDetector detectorCelestialBody = new LocalTimeAngleDetector(-FastMath.PI,
-            600, 1.e-6, frame);
+                true, earth);
+        final LocalTimeAngleDetector detectorCelestialBody = new LocalTimeAngleDetector(-FastMath.PI, 600, 1.e-6, frame);
         // The constructor did not crash...
         Assert.assertNotNull(detectorCelestialBody);
     }
-    
+
     /**
      * @testType UT
      * 
      * @testedFeature {@link features#VALIDATE_LOCAL_TIME_ANGLE_DETECTOR}
      * 
-     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double,
-     *                fr.cnes.sirius.patrius.frames.CelestialBodyFrame)}
+     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, fr.cnes.sirius.patrius.frames.CelestialBodyFrame)}
      * 
      * @description tests
-     *              {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double,
-     *               fr.cnes.sirius.patrius.frames.CelestialBodyFrame)}
+     *              {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, fr.cnes.sirius.patrius.frames.CelestialBodyFrame)}
      * 
      * @input constructor
      * 
@@ -254,7 +457,7 @@ public class LocalTimeAngleDetectorTest {
      */
     @Test
     public void testExeptionNotPseudoInertialFrame() throws PatriusException {
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final CelestialBodyFrame frame = new CelestialBodyFrame(earth.getEME2000(), Transform.IDENTITY, "Frame", earth);
         try {
             new LocalTimeAngleDetector(-FastMath.PI, 600, 1.e-6, frame);
@@ -346,54 +549,42 @@ public class LocalTimeAngleDetectorTest {
         propagator.setMasterMode(10, angleTracking);
 
         // detects the position angle = 0:
-        final LocalTimeAngleDetector detector0 = new LocalTimeAngleDetector(FastMath.PI * 0){
+        final LocalTimeAngleDetector detector0 = new LocalTimeAngleDetector(FastMath.PI * 0) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
         // detects the position angle = 0.4 * PI:
-        final LocalTimeAngleDetector detector04 = new LocalTimeAngleDetector(FastMath.PI * 0.4){
+        final LocalTimeAngleDetector detector04 = new LocalTimeAngleDetector(FastMath.PI * 0.4) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
         // detects the position angle = PI:
-        final LocalTimeAngleDetector detectorPI = new LocalTimeAngleDetector(-FastMath.PI){
+        final LocalTimeAngleDetector detectorPI = new LocalTimeAngleDetector(-FastMath.PI) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
         // detects the position angle = - PI * 0.2:
-        final LocalTimeAngleDetector detector18 = new LocalTimeAngleDetector(-FastMath.PI * 0.2){
+        final LocalTimeAngleDetector detector18 = new LocalTimeAngleDetector(-FastMath.PI * 0.2) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -409,8 +600,8 @@ public class LocalTimeAngleDetectorTest {
         Assert.assertEquals(12, logger.getLoggedEvents().size());
         for (final LoggedEvent event : logger.getLoggedEvents()) {
             final SpacecraftState sstate = event.getState();
-            final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(sstate.getDate(),
-                sstate.getFrame()).getPosition();
+            final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(sstate.getDate(), sstate.getFrame())
+                    .getPosition();
             final Vector3D satellite = sstate.getPVCoordinates(sstate.getFrame()).getPosition();
             final Vector3D sun2 = new Vector3D(sun.getX(), sun.getY(), 0).normalize();
             final Vector3D satellite2 = new Vector3D(satellite.getX(), satellite.getY(), 0).normalize();
@@ -465,54 +656,42 @@ public class LocalTimeAngleDetectorTest {
         propagator.setMasterMode(10, angleTracking);
 
         // detects the position angle = 0:
-        final LocalTimeAngleDetector detector0 = new LocalTimeAngleDetector(FastMath.PI * 0){
+        final LocalTimeAngleDetector detector0 = new LocalTimeAngleDetector(FastMath.PI * 0) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
         // detects the position angle = 0.4 * PI:
-        final LocalTimeAngleDetector detector04 = new LocalTimeAngleDetector(FastMath.PI * 0.4){
+        final LocalTimeAngleDetector detector04 = new LocalTimeAngleDetector(FastMath.PI * 0.4) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
         // detects the position angle = PI:
-        final LocalTimeAngleDetector detectorPI = new LocalTimeAngleDetector(-FastMath.PI){
+        final LocalTimeAngleDetector detectorPI = new LocalTimeAngleDetector(-FastMath.PI) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
         // detects the position angle = - PI * 0.2:
-        final LocalTimeAngleDetector detector18 = new LocalTimeAngleDetector(-FastMath.PI * 0.2){
+        final LocalTimeAngleDetector detector18 = new LocalTimeAngleDetector(-FastMath.PI * 0.2) {
 
             private static final long serialVersionUID = 4529781719692037999L;
 
             @Override
-            public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -529,8 +708,8 @@ public class LocalTimeAngleDetectorTest {
         Assert.assertEquals(12, logger.getLoggedEvents().size());
         for (final LoggedEvent event : logger.getLoggedEvents()) {
             final SpacecraftState sstate = event.getState();
-            final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(sstate.getDate(),
-                sstate.getFrame()).getPosition();
+            final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(sstate.getDate(), sstate.getFrame())
+                    .getPosition();
             final Vector3D satellite = sstate.getPVCoordinates().getPosition();
             final Vector3D sun2 = new Vector3D(sun.getX(), sun.getY(), 0).normalize();
             final Vector3D satellite2 = new Vector3D(satellite.getX(), satellite.getY(), 0).normalize();
@@ -579,15 +758,15 @@ public class LocalTimeAngleDetectorTest {
         final AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(0.1, 60., absTOL, relTOL);
         final NumericalPropagator propagator = new NumericalPropagator(integrator);
         propagator.resetInitialState(new SpacecraftState(orbitRetro));
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator
-            .getInitialState().getMu())));
+        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator.getInitialState()
+                .getMu())));
         // detects the position angle = 3 * PI / 2:
         final LocalTimeAngleDetector detector = new LocalTimeAngleDetector(MathLib.toRadians(-1.568));
         propagator.addEventDetector(detector);
         final SpacecraftState curState = propagator.propagate(iniDate.shiftedBy(period));
         // re-implement the g-function:
-        final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(curState.getDate(),
-            curState.getFrame()).getPosition();
+        final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(curState.getDate(), curState.getFrame())
+                .getPosition();
         final Vector3D satellite = curState.getPVCoordinates(curState.getFrame()).getPosition();
         final Vector3D sun2 = new Vector3D(sun.getX(), sun.getY(), 0).normalize();
         final Vector3D satellite2 = new Vector3D(satellite.getX(), satellite.getY(), 0).normalize();
@@ -648,7 +827,7 @@ public class LocalTimeAngleDetectorTest {
      * 
      * @testedFeature {@link features#VALIDATE_LOCAL_TIME_ANGLE_DETECTOR}
      * 
-     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, Action, boolean, CelestialBody)}
+     * @testedMethod {@link LocalTimeAngleDetector#LocalTimeAngleDetector(double, double, double, Action, boolean, CelestialPoint)}
      * 
      * @description checks user Sun model is properly taken into account
      * 
@@ -656,7 +835,8 @@ public class LocalTimeAngleDetectorTest {
      * 
      * @output g value
      * 
-     * @testPassCriteria g value is the same when using default Sun and CelestialBodyFactory.getSun() and different when using MeeusSun
+     * @testPassCriteria g value is the same when using default Sun and CelestialBodyFactory.getSun() and different when
+     *                   using MeeusSun
      * 
      * @referenceVersion 4.6
      * 
@@ -666,15 +846,16 @@ public class LocalTimeAngleDetectorTest {
     public void sunConstructorTest() throws PatriusException {
         // Same detectors
         final EventDetector detector2 = new LocalTimeAngleDetector(-0.2, 0, 0, Action.CONTINUE, false);
-        final EventDetector detector3 = new LocalTimeAngleDetector(-0.2, 0, 0, Action.CONTINUE, false, CelestialBodyFactory.getSun());
+        final EventDetector detector3 = new LocalTimeAngleDetector(-0.2, 0, 0, Action.CONTINUE, false,
+                CelestialBodyFactory.getSun());
         // Different detector
         final EventDetector detector1 = new LocalTimeAngleDetector(-0.2, 0, 0, Action.CONTINUE, false, new MeeusSun());
         // Checks
         Assert.assertTrue(detector2.g(state) == detector3.g(state));
         Assert.assertFalse(detector1.g(state) == detector2.g(state));
-        
+
     }
-    
+
     /**
      * @testType UT
      * 
@@ -707,31 +888,32 @@ public class LocalTimeAngleDetectorTest {
         final CelestialBodyFrame marsFrame = CelestialBodyFactory.getMars().getInertialFrame(IAUPoleModelType.TRUE);
         // Mars moon orbit
         final Orbit moonOrbit = new KeplerianOrbit(9377.1E+03, 0.0151, FastMath.toRadians(1.075), 0.0, 0.0, 0.0,
-            PositionAngle.TRUE, marsFrame, iniDate, Constants.JPL_SSD_MARS_SYSTEM_GM);
+                PositionAngle.TRUE, marsFrame, iniDate, Constants.JPL_SSD_MARS_SYSTEM_GM);
         // Mars moon body
         final UserCelestialBody moonCelestialBody = new UserCelestialBody("", moonOrbit, 0,
-            IAUPoleFactory.getIAUPole(null), FramesFactory.getEME2000(), null);
+                IAUPoleFactory.getIAUPole(null), FramesFactory.getEME2000(), null);
 
         final Orbit spacecraftOrbit = new KeplerianOrbit(6000.0E+03, 0.009, FastMath.toRadians(2), 0.0, 0.0, 0.0,
-            PositionAngle.TRUE, marsFrame, iniDate, Constants.JPL_SSD_MARS_SYSTEM_GM);
+                PositionAngle.TRUE, marsFrame, iniDate, Constants.JPL_SSD_MARS_SYSTEM_GM);
         final double period = spacecraftOrbit.getKeplerianPeriod();
         final Propagator propagator = new KeplerianPropagator(spacecraftOrbit);
 
         // step handler to track longitude evolution during propagation
-        final MyStepHandler angleTracking = new MyStepHandler(iniDate, moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE));
+        final MyStepHandler angleTracking = new MyStepHandler(iniDate,
+                moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE));
         propagator.setMasterMode(10, angleTracking);
 
         // detects the position angle = 0:
         final LocalTimeAngleDetector detector0 = new LocalTimeAngleDetector(FastMath.PI * 0, 600, 1.e-6,
-            moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE), Action.CONTINUE);
+                moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE), Action.CONTINUE);
 
         // detects the position angle = 0.4 * PI:
         final LocalTimeAngleDetector detector04 = new LocalTimeAngleDetector(FastMath.PI * 0.4, 600, 1.e-6,
-            moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE), Action.CONTINUE);
+                moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE), Action.CONTINUE);
 
         // detects the position angle = PI:
         final LocalTimeAngleDetector detectorPI = new LocalTimeAngleDetector(-FastMath.PI, 600, 1.e-6,
-            moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE), Action.CONTINUE);
+                moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE), Action.CONTINUE);
 
         // creates the logger
         final EventsLogger logger = new EventsLogger();
@@ -745,10 +927,11 @@ public class LocalTimeAngleDetectorTest {
         for (final LoggedEvent event : logger.getLoggedEvents()) {
             // recreate the g function
             final SpacecraftState sstate = event.getState();
-            final Vector3D sun = CelestialBodyFactory.getSun().getPVCoordinates(sstate.getDate(),
-                moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE)).getPosition();
-            final Vector3D satellite = sstate.getPVCoordinates(moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE))
-                .getPosition();
+            final Vector3D sun = CelestialBodyFactory.getSun()
+                    .getPVCoordinates(sstate.getDate(), moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE))
+                    .getPosition();
+            final Vector3D satellite = sstate.getPVCoordinates(
+                    moonCelestialBody.getInertialFrame(IAUPoleModelType.TRUE)).getPosition();
             final Vector3D sun2 = new Vector3D(sun.getX(), sun.getY(), 0).normalize();
             final Vector3D satellite2 = new Vector3D(satellite.getX(), satellite.getY(), 0).normalize();
 
@@ -786,7 +969,7 @@ public class LocalTimeAngleDetectorTest {
         private final Frame bodyFrame;
 
         /** The Sun. */
-        private final CelestialBody sun;
+        private final CelestialPoint sun;
 
         /**
          * simple constructor
@@ -795,7 +978,8 @@ public class LocalTimeAngleDetectorTest {
          *        initialDate of propagation
          * @throws PatriusException
          */
-        public MyStepHandler(final AbsoluteDate date, final Frame frame) throws PatriusException {
+        public MyStepHandler(final AbsoluteDate date,
+                final Frame frame) throws PatriusException {
             this.results = new ArrayList<>();
             this.fromDate = date;
             this.bodyFrame = frame;
@@ -803,12 +987,13 @@ public class LocalTimeAngleDetectorTest {
         }
 
         @Override
-        public void init(final SpacecraftState s0, final AbsoluteDate t) {
+        public void init(final SpacecraftState s0,
+                final AbsoluteDate t) {
             // nothing to do
         }
 
         @Override
-        public void handleStep(final SpacecraftState s, final boolean isLast) throws PropagationException {
+        public void handleStep(final SpacecraftState s, final boolean isLast) {
 
             try {
                 // Getting the position of the satellite:
@@ -826,11 +1011,7 @@ public class LocalTimeAngleDetectorTest {
                     // angle:
                     angle = -angle;
                 }
-                final double[] currentResult =
-                {
-                    s.getDate().durationFrom(this.fromDate),
-                    angle
-                };
+                final double[] currentResult = { s.getDate().durationFrom(this.fromDate), angle };
 
                 this.results.add(currentResult);
             } catch (final PatriusException e) {

@@ -17,8 +17,11 @@
  * @history creation 16/03/2015
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
- *          lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC) 
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au
+ * lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC)
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3242:22/05/2023:[PATRIUS] Parametres circulaires pour orbites hyperboliques
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -39,7 +42,7 @@ package fr.cnes.sirius.patrius.orbits.orbitalparameters;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Plane;
@@ -534,7 +537,7 @@ public class CartesianParameters extends AbstractOrbitalParameters {
 
         try {
             // Get frame
-            final Frame frame = FramesFactory.getGCRF();
+            final CelestialBodyFrame frame = FramesFactory.getGCRF();
 
             // Build ellipsoid
             final OneAxisEllipsoid ellipsoid = new OneAxisEllipsoid(ae, f, frame);

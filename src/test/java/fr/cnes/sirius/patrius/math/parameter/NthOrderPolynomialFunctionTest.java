@@ -53,6 +53,8 @@ public class NthOrderPolynomialFunctionTest {
     private SpacecraftState state;
 
     /**
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Builds a new instance and tests the basic getters.
      *
      * @testedMethod {@link NthOrderPolynomialFunction#NthOrderPolynomialFunction(AbsoluteDate, int)}
@@ -68,7 +70,7 @@ public class NthOrderPolynomialFunctionTest {
 
         // Evaluate the first constructor: Build a 3rd order polynomial function
         NthOrderPolynomialFunction nOrderFct = new NthOrderPolynomialFunction(this.state.getDate(),
-                3);
+            3);
 
         // Evaluate the parameters consistency
         Assert.assertEquals(4, nOrderFct.getParameters().size());
@@ -91,19 +93,19 @@ public class NthOrderPolynomialFunctionTest {
         nOrderFct.getParameters().get(3).setValue(1.3);
 
         Assert.assertEquals(0.01 + (10. * 1.1) + (100. * 1.2) + (1000. * 1.3),
-                nOrderFct.value(this.state.shiftedBy(10.)), 0.);
+            nOrderFct.value(this.state.shiftedBy(10.)), 0.);
 
         // Check the behavior with others constructors
         nOrderFct = new NthOrderPolynomialFunction(this.state.getDate(), 1.1, 1.2, 1.3, 1.4);
 
         Assert.assertEquals(4, nOrderFct.getParameters().size());
-        Assert.assertTrue(nOrderFct.getParameters().get(0).getName().equals("A0"));
+        Assert.assertEquals("A0", nOrderFct.getParameters().get(0).getName());
         Assert.assertEquals(1.1, nOrderFct.getParameters().get(0).getValue(), 0.);
-        Assert.assertTrue(nOrderFct.getParameters().get(1).getName().equals("A1"));
+        Assert.assertEquals("A1", nOrderFct.getParameters().get(1).getName());
         Assert.assertEquals(1.2, nOrderFct.getParameters().get(1).getValue(), 0.);
-        Assert.assertTrue(nOrderFct.getParameters().get(2).getName().equals("A2"));
+        Assert.assertEquals("A2", nOrderFct.getParameters().get(2).getName());
         Assert.assertEquals(1.3, nOrderFct.getParameters().get(2).getValue(), 0.);
-        Assert.assertTrue(nOrderFct.getParameters().get(3).getName().equals("A3"));
+        Assert.assertEquals("A3", nOrderFct.getParameters().get(3).getName());
         Assert.assertEquals(1.4, nOrderFct.getParameters().get(3).getValue(), 0.);
 
         final Parameter paramA2 = new Parameter("a2", 3);
@@ -111,13 +113,14 @@ public class NthOrderPolynomialFunctionTest {
         final Parameter paramA0 = new Parameter("a0", 0.5);
         nOrderFct = new NthOrderPolynomialFunction(this.state.getDate(), paramA0, paramA1, paramA2);
 
-        Assert.assertTrue(nOrderFct.getParameters().get(0).equals(paramA0));
-        Assert.assertTrue(nOrderFct.getParameters().get(1).equals(paramA1));
-        Assert.assertTrue(nOrderFct.getParameters().get(2).equals(paramA2));
+        Assert.assertEquals(paramA0, nOrderFct.getParameters().get(0));
+        Assert.assertEquals(paramA1, nOrderFct.getParameters().get(1));
+        Assert.assertEquals(paramA2, nOrderFct.getParameters().get(2));
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the {@link NthOrderPolynomialFunction} values computation feature.
      * 
      * @testedMethod {@link NthOrderPolynomialFunction#value(SpacecraftState)}
@@ -144,15 +147,16 @@ public class NthOrderPolynomialFunctionTest {
 
         Assert.assertEquals(a0, nOrderFctTab[1].value(this.state), 0.);
         Assert.assertEquals(a0 + (a1 * 10.) + (a2 * 10. * 10.),
-                nOrderFctTab[1].value(this.state.shiftedBy(10.)), 0.);
+            nOrderFctTab[1].value(this.state.shiftedBy(10.)), 0.);
 
         Assert.assertEquals(a0, nOrderFctTab[2].value(this.state), 0.);
         Assert.assertEquals(a0 + (a1 * 2. * 10.) + (a2 * 2. * 10. * 10.),
-                nOrderFctTab[2].value(this.state.shiftedBy(10.)), 0.);
+            nOrderFctTab[2].value(this.state.shiftedBy(10.)), 0.);
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the {@link NthOrderPolynomialFunction} derivatives computation feature.
      * 
      * @testedMethod {@link NthOrderPolynomialFunction#derivativeValue(Parameter, SpacecraftState)}
@@ -166,15 +170,15 @@ public class NthOrderPolynomialFunctionTest {
         final Parameter paramA1 = new Parameter("a1", 2);
         final Parameter paramA0 = new Parameter("a0", 0.5);
         final NthOrderPolynomialFunction nOrderFct = new NthOrderPolynomialFunction(
-                this.state.getDate(), paramA0, paramA1, paramA2);
+            this.state.getDate(), paramA0, paramA1, paramA2);
 
         Assert.assertEquals(1.0, nOrderFct.derivativeValue(paramA0, this.state.shiftedBy(10.)), 0.);
         Assert.assertEquals(10.0, nOrderFct.derivativeValue(paramA1, this.state.shiftedBy(10.)), 0.);
         Assert.assertEquals(10.0 * 10.0,
-                nOrderFct.derivativeValue(paramA2, this.state.shiftedBy(10.)), 0.);
+            nOrderFct.derivativeValue(paramA2, this.state.shiftedBy(10.)), 0.);
         Assert.assertEquals(0.,
-                nOrderFct.derivativeValue(new Parameter("random", 1.), this.state.shiftedBy(10.)),
-                0.);
+            nOrderFct.derivativeValue(new Parameter("random", 1.), this.state.shiftedBy(10.)),
+            0.);
     }
 
     /**
@@ -194,7 +198,7 @@ public class NthOrderPolynomialFunctionTest {
         final Parameter paramA1 = new Parameter("a1", 2);
         final Parameter paramA0 = new Parameter("a0", 0.5);
         final NthOrderPolynomialFunction nOrderFct = new NthOrderPolynomialFunction(
-                this.state.getDate(), paramA0, paramA1, paramA2);
+            this.state.getDate(), paramA0, paramA1, paramA2);
 
         // Test constructor with a null attribute
         try {
@@ -236,7 +240,8 @@ public class NthOrderPolynomialFunctionTest {
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the function serialization / deserialization process.
      *
      * @testPassCriteria The function can be serialized and deserialized.
@@ -245,22 +250,35 @@ public class NthOrderPolynomialFunctionTest {
     public void testSerialization() throws PatriusException {
 
         final NthOrderPolynomialFunction nOrderFct = new NthOrderPolynomialFunction(
-                this.state.getDate(), 1.1, 1.2, 0.1);
+            this.state.getDate(), 1.1, 1.2, 0.1);
         final NthOrderPolynomialFunction deserializedFct = TestUtils.serializeAndRecover(nOrderFct);
 
         Assert.assertEquals(nOrderFct.value(this.state), deserializedFct.value(this.state), 0.);
         Assert.assertEquals(nOrderFct.value(this.state.shiftedBy(10.)),
-                deserializedFct.value(this.state.shiftedBy(10.)), 0.);
+            deserializedFct.value(this.state.shiftedBy(10.)), 0.);
     }
 
     /**
-     * Initial state initialization.
+     * @description Check the String representation method behavior.
+     *
+     * @testedMethod {@link NthOrderPolynomialFunction#toString()}
+     *
+     * @testPassCriteria The container String representation contains the expected information.
      */
+    @Test
+    public void testToString() {
+        final NthOrderPolynomialFunction nOrderFct = new NthOrderPolynomialFunction(this.state.getDate(), 1.1, 1.2, 0.1);
+        final String expectedText = "Value     : f = 1.1 + 1.2 * (t - t0) + 0.1 * (t - t0)^2\n"
+                + "Parameters: [A0; A1; A2]\n";
+        Assert.assertEquals(expectedText, nOrderFct.toString());
+    }
+
+    /** Initial state initialization. */
     @Before
     public void setUp() {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Orbit orbit = new KeplerianOrbit(7000000, 0.01, 0, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);
+            FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);
         this.state = new SpacecraftState(orbit);
     }
 }

@@ -18,6 +18,12 @@
  * @history creation 17/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
@@ -55,6 +61,9 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.PolyhedronsSet;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Segment;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.Euclidean2D;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.PolygonsSet;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.Vector2D;
 import fr.cnes.sirius.patrius.math.geometry.partitioning.Region;
 import fr.cnes.sirius.patrius.math.geometry.partitioning.RegionFactory;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -351,8 +360,8 @@ public final class PyramidalField implements IFieldOfView {
      * 
      * @return {@code true} if this field is convex 
      */
-    public boolean isConvex(){
-        if(!this.isConvexityComputed){
+    public boolean isConvex() {
+        if (!this.isConvexityComputed) {
             // check convexity
             this.isFieldConvex = isConvex(this.sideAxis);
             this.isConvexityComputed = true;
@@ -596,21 +605,86 @@ public final class PyramidalField implements IFieldOfView {
                 try {
                     vertices = polyhedronsSet.getBRep().getVertices();
                     facets = polyhedronsSet.getBRep().getFacets();
-                } catch (final MathRuntimeException mathException) {
-                    throw new PatriusException(PatriusMessages.FOV_UNION_OR_INTERSECTION_TOO_COMPLEX, mathException);
+                    merge = new PyramidalField(this.getName() + OR + otherFov.getName(), computeSideAxis(vertices,
+                            facets), polyhedronsSet);
+                } catch (final MathRuntimeException e) {
+                    // PolyhedronsSet did not work because the solution is too complex
+                    // Try with PolygonsSet
+                    // Limitation of PolygonsSet: infinite fields of view cannot be projected on the base 
+                    // of the pyramidal field
+                    merge = getUnionWithPolygonsSet(otherFov);
                 }
-                
-
-                // name of the new field of view 
-                final String newName = this.getName() + OR + otherFov.getName();
-
-                merge = new PyramidalField(newName, computeSideAxis(vertices, facets), polyhedronsSet);
             }
         }
 
         return merge;
     }
     
+    /**
+     * Build a new {@link PyramidalField} from the union between this field of view and the provided one.
+     * 
+     * <p>Method uses {@link PolygonsSet} class.</p>
+     * @param otherFov
+     *        the other field of view.
+     * 
+     * @return the union between the fields of view
+     * 
+     * @throws PatriusException
+     *         thrown if an error occurs with the binary space partition. Such error can occur if the
+     *         two fields are disjointed or if one of them is concave and leads to a hole in the middle of the
+     *         theoretical resulting field.
+     */
+    private PyramidalField getUnionWithPolygonsSet(final PyramidalField otherFov) throws PatriusException {
+        if (!isConvex() && !otherFov.isConvex()) {
+            // Geometry is too complex (non-convex geometry), PolygonsSet will probably not work
+            throw new PatriusException(PatriusMessages.FOV_UNION_OR_INTERSECTION_TOO_COMPLEX);
+        }
+        
+        // Project vertices in 2D in plane of normal +Z and going through point (0, 0, 1)
+        final Vector3D[] vertices3D1 = getSideAxis();
+        final Vector2D[][] vertices2D1 = new Vector2D[1][vertices3D1.length];
+        for (int i = 0; i < vertices3D1.length; i++) {
+            // Compute normalized vector such that Z component is 1
+            if (vertices3D1[i].getZ() == 0) {
+                throw new PatriusException(PatriusMessages.FOV_UNION_OR_INTERSECTION_TOO_COMPLEX);
+            }
+            final Vector3D normalizedVector = vertices3D1[i].scalarMultiply(1. / vertices3D1[i].getZ());
+            vertices2D1[0][i] = new Vector2D(normalizedVector.getX(), normalizedVector.getY());
+        }
+        final Vector3D[] vertices3D2 = otherFov.getSideAxis();
+        final Vector2D[][] vertices2D2 = new Vector2D[1][vertices3D2.length];
+        for (int i = 0; i < vertices3D2.length; i++) {
+            // Compute normalized vector such that Z component is 1
+            if (vertices3D2[i].getZ() == 0) {
+                throw new PatriusException(PatriusMessages.FOV_UNION_OR_INTERSECTION_TOO_COMPLEX);
+            }
+            final Vector3D normalizedVector = vertices3D2[i].scalarMultiply(1. / vertices3D2[i].getZ());
+            vertices2D2[0][i] = new Vector2D(normalizedVector.getX(), normalizedVector.getY());
+        }
+        final PolygonsSet polygonsSet1 = new PolygonsSet(vertices2D1);
+        final PolygonsSet polygonsSet2 = new PolygonsSet(vertices2D2);
+        // Union
+        final RegionFactory<Euclidean2D> factory2D = new RegionFactory<>();
+        final Region<Euclidean2D> unionPolygonsSets = factory2D.union(polygonsSet1.copySelf(),
+                polygonsSet2.copySelf());
+        final PolygonsSet polygonsSet = new PolygonsSet(unionPolygonsSets.getTree(true));
+        final Vector2D[][] vertices2D = polygonsSet.getVertices();
+
+        if (vertices2D.length == 0 ||vertices2D.length > 1) {
+            // Still too complex for PolygonsSet
+            throw new PatriusException(PatriusMessages.FOV_UNION_OR_INTERSECTION_TOO_COMPLEX);
+        }
+        
+        // Build side axis of merged pyramidal field
+        final Vector3D[] sAxis = new Vector3D[vertices2D[0].length];
+        for (int i = 0; i < vertices2D[0].length; i++) {
+            sAxis[i] = new Vector3D(vertices2D[0][i].getX(), vertices2D[0][i].getY(), 1);
+        }
+
+        // Build final merged pyramidal field
+        return new PyramidalField(this.getName() + OR + otherFov.getName(), sAxis);
+    }
+
     /**
      * Compute the vectors delimiting a {@link PyramidalField} with the provided vertices and facets.
      * 

@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -32,8 +35,10 @@
  */
 package fr.cnes.sirius.patrius.events.smallstepdetection;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.GradientModel;
 import fr.cnes.sirius.patrius.forces.radiation.RadiationSensitive;
@@ -48,8 +53,6 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -200,7 +203,7 @@ public class CustomSolarRadiationPressure extends JacobiansParameterizable imple
     }
 
     /**
-     * Get the lightning ratio ([0-1]).
+     * Get the lighting ratio ([0-1]).
      * 
      * @param position
      *        the satellite's position in the selected frame.
@@ -208,7 +211,7 @@ public class CustomSolarRadiationPressure extends JacobiansParameterizable imple
      *        in which is defined the position
      * @param date
      *        the date
-     * @return lightning ratio
+     * @return lighting ratio
      * @exception PatriusException
      *            if an error occurs
      */
@@ -237,7 +240,7 @@ public class CustomSolarRadiationPressure extends JacobiansParameterizable imple
         if (sunEarthAngle - alphaEarth + alphaSun <= 0.0) {
             result = 0.0;
         } else if (sunEarthAngle - alphaEarth - alphaSun < 0.0) {
-            // Compute a lightning ratio in penumbra
+            // Compute a lighting ratio in penumbra
 
             // result = (alphaSun + sunEarthAngle - alphaEarth) / (2*alphaSun);
 
@@ -294,7 +297,7 @@ public class CustomSolarRadiationPressure extends JacobiansParameterizable imple
      */
     @Override
     public EventDetector[] getEventsDetectors() {
-        CelestialBody earth;
+        CelestialPoint earth;
         EventDetector umbra = null;
         EventDetector penumbra = null;
 
@@ -413,7 +416,7 @@ public class CustomSolarRadiationPressure extends JacobiansParameterizable imple
     
     /** {@inheritDoc} */
     @Override
-    public void checkData(final AbsoluteDate start, final AbsoluteDate end) throws PatriusException {
+    public void checkData(final AbsoluteDate start, final AbsoluteDate end) {
         // Nothing to do
     }
 }

@@ -26,6 +26,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.attitudes.profiles;
 
 import java.io.IOException;

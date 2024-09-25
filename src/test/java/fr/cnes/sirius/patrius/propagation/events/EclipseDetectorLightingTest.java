@@ -16,6 +16,10 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -35,6 +39,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -136,20 +141,8 @@ public class EclipseDetectorLightingTest {
         double ratio = 0.0;
         Map<String, SpacecraftState> events = this.propagate(this.sun, this.aeS, this.moon, this.aeM, orbit, ratio, t);
         // The lighting ratio is 0, and the eclipse can not be total (R_ed>R_ing): no event is detected
-        boolean testOK = false;
-        try {
-            events.get(this.lighting + "IN").getA();
-        } catch (final NullPointerException e) {
-            testOK = true;
-        }
-        Assert.assertTrue(testOK);
-        testOK = false;
-        try {
-            events.get(this.lighting + "OUT").getA();
-        } catch (final NullPointerException e) {
-            testOK = true;
-        }
-        Assert.assertTrue(testOK);
+        Assert.assertNull(events.get(this.lighting + "IN"));
+        Assert.assertNull(events.get(this.lighting + "OUT"));
 
         // Test 2: the lighting ratio is 1:
         ratio = 1.0;
@@ -162,8 +155,8 @@ public class EclipseDetectorLightingTest {
         final SpacecraftState penumbraIn = events.get(this.penumbra + "IN");
         final SpacecraftState penumbraOut = events.get(this.penumbra + "OUT");
         // these lighting events must correspond to the penumbra events:
-        Assert.assertEquals(0.0, lighIn.getDate().durationFrom(penumbraIn.getDate()), 1E-4);
-        Assert.assertEquals(0.0, lighOut.getDate().durationFrom(penumbraOut.getDate()), 1E-4);
+        Assert.assertEquals(0.0, lighIn.getDate().durationFrom(penumbraIn.getDate()), 0.);
+        Assert.assertEquals(0.0, lighOut.getDate().durationFrom(penumbraOut.getDate()), 0.);
 
         // Test 3: lighting ratio is 0.9 and 0.8:
         ratio = 0.9;
@@ -171,7 +164,7 @@ public class EclipseDetectorLightingTest {
             this.propagate(this.sun, this.aeS, this.moon, this.aeM, orbit, ratio, t);
         // two lighting eclipse events and two penumbra are detected, the lighting events must be "contained"
         // in the interval defined by the two penumbra events.
-        Assert.assertEquals(4, events.size());
+        Assert.assertEquals(4, events1.size());
         final SpacecraftState lighIn1 = events1.get(this.lighting + "IN");
         final SpacecraftState lighOut1 = events1.get(this.lighting + "OUT");
         Assert.assertTrue(lighIn1.getDate().durationFrom(penumbraIn.getDate()) > 0.0);
@@ -316,8 +309,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };
@@ -374,8 +366,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };
@@ -390,8 +381,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };
@@ -472,8 +462,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };
@@ -488,8 +477,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };
@@ -577,7 +565,7 @@ public class EclipseDetectorLightingTest {
 
             @Override
             public
-                    fr.cnes.sirius.patrius.propagation.events.EventDetector.Action
+                    fr.cnes.sirius.patrius.events.EventDetector.Action
                     eventOccurred(
                                   final SpacecraftState s, final boolean increasing, final boolean forward)
                                                                                                            throws PatriusException {
@@ -597,7 +585,7 @@ public class EclipseDetectorLightingTest {
 
             @Override
             public
-                    fr.cnes.sirius.patrius.propagation.events.EventDetector.Action
+                    fr.cnes.sirius.patrius.events.EventDetector.Action
                     eventOccurred(
                                   final SpacecraftState s, final boolean increasing, final boolean forward)
                                                                                                            throws PatriusException {
@@ -617,7 +605,7 @@ public class EclipseDetectorLightingTest {
 
             @Override
             public
-                    fr.cnes.sirius.patrius.propagation.events.EventDetector.Action
+                    fr.cnes.sirius.patrius.events.EventDetector.Action
                     eventOccurred(
                                   final SpacecraftState s, final boolean increasing, final boolean forward)
                                                                                                            throws PatriusException {
@@ -655,8 +643,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };
@@ -670,8 +657,7 @@ public class EclipseDetectorLightingTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
         };

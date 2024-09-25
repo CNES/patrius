@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2089:15/05/2019:[PATRIUS] passage a Java 8
@@ -34,9 +35,9 @@ import java.util.Map;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProviderWrapper;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.MultiEventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.multi.MultiEventDetector;
 import fr.cnes.sirius.patrius.propagation.sampling.multi.MultiPatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.multi.MultiPatriusStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;

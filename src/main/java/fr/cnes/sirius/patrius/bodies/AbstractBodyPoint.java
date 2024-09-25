@@ -14,6 +14,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
+ * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
+ * VERSION:4.12:DM:DM-7:17/08/2023:[PATRIUS] Symétriser les méthodes closestPointTo de BodyShape
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * END-HISTORY
  */
@@ -225,8 +229,8 @@ public abstract class AbstractBodyPoint implements BodyPoint {
                 final EllipsoidBodyShape ellispoidShape = (EllipsoidBodyShape) getBodyShape();
 
                 // Compute the ellipsodetic position through the ellipsoid
-                return ellispoidShape.computeEllipsodeticPosition(coordIn.getLatitude(), coordIn.getLongitude(),
-                    coordIn.getHeight());
+                return ellispoidShape.computePositionFromEllipsodeticCoordinates(coordIn.getLatitude(),
+                    coordIn.getLongitude(), coordIn.getHeight());
 
             case BODYCENTRIC_NORMAL:
 

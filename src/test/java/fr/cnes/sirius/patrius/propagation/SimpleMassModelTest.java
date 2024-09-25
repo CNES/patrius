@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -247,14 +248,9 @@ public class SimpleMassModelTest {
 
     @Before
     public void setUp() {
-        try {
-            Utils.setDataRoot("regular-data");
-            FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
+        Utils.setDataRoot("regular-data");
+        FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
-            this.massModel = new SimpleMassModel(1000., "DEFAULT");
-
-        } catch (final PatriusException oe) {
-            Assert.fail(oe.getLocalizedMessage());
-        }
+        this.massModel = new SimpleMassModel(1000., "DEFAULT");
     }
 }

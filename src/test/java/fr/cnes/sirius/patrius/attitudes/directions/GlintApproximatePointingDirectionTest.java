@@ -18,6 +18,7 @@
  * @history creation 15/10/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -44,8 +45,8 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
@@ -76,8 +77,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 public class GlintApproximatePointingDirectionTest {
 
-    private EllipsoidBodyShape earthShape;
-    private CelestialBody sun;
+    private OneAxisEllipsoid earthShape;
+    private CelestialPoint sun;
 
     /** Features description. */
     public enum features {
@@ -134,9 +135,8 @@ public class GlintApproximatePointingDirectionTest {
     public void getTargetPVCoordinatesITRFTest() throws PatriusException {
 
         // Initialization
-        final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-            Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
-            0.001, FramesFactory.getITRF(), "Earth");
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS, 0.001,
+            FramesFactory.getITRF(), "Earth");
 
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Vector3D satPos = new Vector3D(8000E3, 0, 0);
@@ -585,10 +585,9 @@ public class GlintApproximatePointingDirectionTest {
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.SUN);
-        this.sun = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+        this.sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         this.earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
-            Constants.GRIM5C1_EARTH_FLATTENING,
-            FramesFactory.getITRF(), "Earth");
+            Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getITRF(), "Earth");
     }
 }

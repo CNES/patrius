@@ -42,7 +42,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <p>
  * Handles pole motion effects and depends on {@link TIRFProvider}, its parent frame.
  * </p>
- * 
+ *
  * <p>
  * Spin derivative is never computed and is either 0 or null. No analytical formula is available for spin derivative
  * since data only provide pole correction without derivatives. Spin is also 0. Spin is also 0.
@@ -50,7 +50,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <p>
  * Frames configuration polar motion and S' is used.
  * </p>
- * 
+ *
  * @serial serializable.
  * @author Luc Maisonobe
  */
@@ -68,7 +68,7 @@ public final class ITRFProvider implements TransformProvider {
      * <p>
      * Frames configuration polar motion and S' is used.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param config
@@ -88,7 +88,7 @@ public final class ITRFProvider implements TransformProvider {
      * <p>
      * The update considers the pole motion from IERS data.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @return transform at the specified date
@@ -110,7 +110,7 @@ public final class ITRFProvider implements TransformProvider {
      * Spin derivative is never computed and is either 0 or null. No analytical formula is available for spin derivative
      * since data only provide pole correction without derivatives. Spin is also 0. Spin is also 0.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param computeSpinDerivatives
@@ -138,7 +138,7 @@ public final class ITRFProvider implements TransformProvider {
      * <p>
      * Frames configuration polar motion and S' is used.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param config
@@ -154,15 +154,15 @@ public final class ITRFProvider implements TransformProvider {
     public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
                                   final boolean computeSpinDerivatives) throws PatriusException {
         // corrected pole parameters (u,v)
-        final double[] polarCoordinates = config.getPolarMotion(date);
+        final PoleCorrection polarCoordinates = config.getPolarMotion(date);
         final PoleCorrection nCorr = nutationCorrection(date);
 
         // s prime
         final double sPrime = config.getSprime(date);
 
         // elementary rotations due to pole motion in terrestrial frame
-        final Rotation r1 = new Rotation(Vector3D.PLUS_I, -(polarCoordinates[1] + nCorr.getYp()));
-        final Rotation r2 = new Rotation(Vector3D.PLUS_J, -(polarCoordinates[0] + nCorr.getXp()));
+        final Rotation r1 = new Rotation(Vector3D.PLUS_I, -(polarCoordinates.getYp() + nCorr.getYp()));
+        final Rotation r2 = new Rotation(Vector3D.PLUS_J, -(polarCoordinates.getXp() + nCorr.getXp()));
         final Rotation r3 = new Rotation(Vector3D.PLUS_K, sPrime);
 
         // complete pole motion in terrestrial frame
@@ -179,7 +179,7 @@ public final class ITRFProvider implements TransformProvider {
 
     /**
      * Compute nutation correction due to tidal gravity.
-     * 
+     *
      * @param date
      *        current date
      * @return nutation correction

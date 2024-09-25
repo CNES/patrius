@@ -18,6 +18,8 @@
  * @history creation 15/10/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9.1:FA:FA-3193:01/06/2022:[PATRIUS] Revenir a la signature initiale de la methode getLocalRadius
  * VERSION:4.9.1:DM:DM-3168:01/06/2022:[PATRIUS] Ajout de la classe ConstantPVCoordinatesProvider
@@ -42,7 +44,8 @@
 
 package fr.cnes.sirius.patrius.attitudes.directions;
 
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
@@ -55,7 +58,6 @@ import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -97,7 +99,7 @@ public final class GlintApproximatePointingDirection implements IDirection {
     private static final int MAX_ITERATIONS = 200;
 
     /** Body shape. */
-    private final EllipsoidBodyShape bodyShape;
+    private final OneAxisEllipsoid bodyShape;
 
     /** Sun PV coordinates. */
     private final PVCoordinatesProvider sunPVCoordinates;
@@ -129,9 +131,8 @@ public final class GlintApproximatePointingDirection implements IDirection {
      * @param sunPV the Sun PV coordinates
      * @param univariateSolver the solver used to find Glint direction
      */
-    public GlintApproximatePointingDirection(final EllipsoidBodyShape shape,
-            final PVCoordinatesProvider sunPV,
-            final UnivariateSolver univariateSolver) {
+    public GlintApproximatePointingDirection(final OneAxisEllipsoid shape, final PVCoordinatesProvider sunPV,
+                                             final UnivariateSolver univariateSolver) {
         this.bodyShape = shape;
         this.sunPVCoordinates = sunPV;
         this.solver = univariateSolver;
@@ -149,8 +150,7 @@ public final class GlintApproximatePointingDirection implements IDirection {
      * @param shape the body shape
      * @param sunPV the Sun PV coordinates
      */
-    public GlintApproximatePointingDirection(final EllipsoidBodyShape shape,
-                                             final PVCoordinatesProvider sunPV) {
+    public GlintApproximatePointingDirection(final OneAxisEllipsoid shape, final PVCoordinatesProvider sunPV) {
         this(shape, sunPV, new BisectionSolver());
     }
 

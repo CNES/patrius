@@ -18,6 +18,7 @@
  * @history creation 15/02/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -53,6 +54,7 @@
 package fr.cnes.sirius.patrius.attitudes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.SortedSet;
 
@@ -91,6 +93,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.AngularDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
@@ -267,7 +270,7 @@ public class TabulatedAttitudeTest {
             attList.add(attitude2);
             new TabulatedAttitude(attList, 5);
             Assert.fail();
-        } catch (final IllegalArgumentException e) {
+        } catch (final PatriusException e) {
             // expected
         }
 
@@ -979,8 +982,7 @@ public class TabulatedAttitudeTest {
      * @return spin function of date relative
      */
     public Vector3DFunction getSpinFunction(final TabulatedAttitude tab, final PVCoordinatesProvider pvProv,
-            final Frame frame,
-            final AbsoluteDate zeroAbscissa) {
+                                            final Frame frame, final AbsoluteDate zeroAbscissa) {
         return new AbstractVector3DFunction(zeroAbscissa){
             @Override
             public Vector3D getVector3D(final AbsoluteDate date) throws PatriusException {
@@ -1204,6 +1206,95 @@ public class TabulatedAttitudeTest {
             // expected
             Assert.assertTrue(true);
         }
+    }
+
+    @Test
+    public void testExceptions() {
+
+        final Frame gcrf = FramesFactory.getGCRF();
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final AngularCoordinates orientation = new AngularCoordinates(new Rotation(false, 0.48, 0.64, 0.36, 0.48),
+            Vector3D.ZERO, Vector3D.ZERO);
+
+        final Attitude att1 = new Attitude(date.shiftedBy(-1), gcrf, orientation);
+        final Attitude att2 = new Attitude(date, gcrf, orientation);
+        final Attitude att3 = new Attitude(date, gcrf, orientation);
+        final Attitude att4 = new Attitude(date.shiftedBy(1), gcrf, orientation);
+        final Attitude att5 = new Attitude(date.shiftedBy(2), gcrf, orientation);
+        List<Attitude> atts = Arrays.asList(att1, att2, att3, att4, att5); // Atts in chronological order & same frame
+
+        // Try to use a number of points used for interpolation is < 1 & != -1 (should fail)
+        try {
+            new TabulatedAttitude(atts, 0);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // Try to use a number of points used for interpolation = -1 (shouldn't fail, special value)
+        try {
+            new TabulatedAttitude(atts, -1);
+            Assert.assertTrue(true);
+        } catch (final PatriusException e) {
+            // not expected
+            Assert.fail();
+        }
+
+        // Try to use no enough data for Hermite interpolation (should fail)
+        try {
+            new TabulatedAttitude(atts, atts.size() + 1);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // Try to use attitudes associated to different frames (should fail)
+        final Attitude att6 = new Attitude(date.shiftedBy(3), FramesFactory.getEME2000(), orientation);
+        atts = Arrays.asList(att1, att2, att3, att4, att5, att6);
+        try {
+            new TabulatedAttitude(atts, 2);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // Try to use attitudes which aren't in chronological order (should fail)
+        atts = Arrays.asList(att1, att2, att3, att5, att4);
+        try {
+            new TabulatedAttitude(atts, 2);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testOrdering() throws PatriusException {
+
+        final Frame gcrf = FramesFactory.getGCRF();
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final AngularCoordinates orientation = new AngularCoordinates(new Rotation(false, 0.48, 0.64, 0.36, 0.48),
+            Vector3D.ZERO, Vector3D.ZERO);
+
+        final Attitude att1 = new Attitude(date.shiftedBy(-1), gcrf, orientation);
+        final Attitude att2 = new Attitude(date, gcrf, orientation);
+        final Attitude att3 = new Attitude(date, gcrf, orientation);
+        final Attitude att4 = new Attitude(date.shiftedBy(1), gcrf, orientation);
+        final Attitude att5 = new Attitude(date.shiftedBy(2), gcrf, orientation);
+        final List<Attitude> atts = Arrays.asList(att2, att1, att3, att5, att4); // Atts not in chronological order
+
+        final TabulatedAttitude tabAtt = new TabulatedAttitude(atts, 2, true, "");
+        final List<Attitude> attsOut = tabAtt.getAttitudes();
+
+        Assert.assertEquals(att1, attsOut.get(0));
+        Assert.assertEquals(att2, attsOut.get(1));
+        Assert.assertEquals(att3, attsOut.get(2));
+        Assert.assertEquals(att4, attsOut.get(3));
+        Assert.assertEquals(att5, attsOut.get(4));
     }
 
     /**

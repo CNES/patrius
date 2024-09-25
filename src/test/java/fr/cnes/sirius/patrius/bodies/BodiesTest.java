@@ -19,6 +19,9 @@
  *
  * limitations under the License.
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
 * VERSION:4.11.1:DM:DM-75:30/06/2023:[PATRIUS] Degradation performance Patrius 4.11
 * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
 * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
@@ -48,10 +51,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint.BodyNature;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.frames.transformations.EME2000Provider;
+import fr.cnes.sirius.patrius.frames.transformations.EclipticJ2000Provider;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.frames.transformations.TransformProvider;
 import fr.cnes.sirius.patrius.math.complex.Quaternion;
@@ -90,42 +95,38 @@ public class BodiesTest {
         Utils.setDataRoot("regular-data");
         final AbsoluteDate date = new AbsoluteDate(1969, 06, 25, TimeScalesFactory.getTDB());
 
-        try {
-            CelestialBodyFactory.addDefaultCelestialBodyLoader(JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES);
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SUN).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SUN).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MERCURY).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MERCURY).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.VENUS).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.VENUS).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MOON).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MOON).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MARS).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MARS).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.JUPITER).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.JUPITER).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SATURN).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SATURN).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.URANUS).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.URANUS).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.PLUTO).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.PLUTO).getPrimeMeridianAngle(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH_MOON).getPole(date));
-            Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH_MOON).getPrimeMeridianAngle(date));
-        } catch (final PatriusException ex) {
-            Assert.fail("OrekitException");
-        }
+        CelestialBodyFactory.addDefaultCelestialBodyLoader(JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES);
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SUN).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SUN).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MERCURY).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MERCURY).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.VENUS).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.VENUS).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MOON).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MOON).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MARS).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.MARS).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.JUPITER).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.JUPITER).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SATURN).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.SATURN).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.URANUS).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.URANUS).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.PLUTO).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.PLUTO).getPrimeMeridianAngle(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH_MOON).getPole(date));
+        Assert.assertNotNull(IAUPoleFactory.getIAUPole(EphemerisType.EARTH_MOON).getPrimeMeridianAngle(date));
         
         // Check IAU pole exist
-        final IAUPole pole1 = CelestialBodyFactory.getSun().getIAUPole();
+        final CelestialBodyOrientation pole1 = CelestialBodyFactory.getSun().getOrientation();
         Assert.assertNotNull(pole1);
-        final IAUPole pole2 = CelestialBodyFactory.getMoon().getIAUPole();
-        CelestialBodyFactory.getSun().setIAUPole(pole2);
-        Assert.assertNotSame(pole1, CelestialBodyFactory.getSun().getIAUPole());
+        final CelestialBodyOrientation pole2 = CelestialBodyFactory.getMoon().getOrientation();
+        CelestialBodyFactory.getSun().setOrientation(pole2);
+        Assert.assertNotSame(pole1, CelestialBodyFactory.getSun().getOrientation());
     }
 
     @Test
@@ -231,6 +232,8 @@ public class BodiesTest {
         final PVCoordinates error = new PVCoordinates(reference, pvMoonFromMoon);
         Assert.assertEquals(0, error.getPosition().getNorm(), 0.);
         Assert.assertEquals(0, error.getVelocity().getNorm(), 0.);
+
+        Assert.assertEquals(BodyNature.PHYSICAL_BODY, moon.getBodyNature());
     }
 
     @Test(expected = PatriusException.class)
@@ -385,7 +388,7 @@ public class BodiesTest {
         final CelestialBody sun = CelestialBodyFactory.getSun();
         final CelestialBody mars = CelestialBodyFactory.getMars();
         final CelestialBody earth = CelestialBodyFactory.getEarth();
-        final CelestialBody earthMoonBarycenter = CelestialBodyFactory.getEarthMoonBarycenter();
+        final CelestialPoint earthMoonBarycenter = CelestialBodyFactory.getEarthMoonBarycenter();
         final List<Frame> frames = Arrays.asList(FramesFactory.getEME2000(),
             FramesFactory.getGCRF(),
                 sun.getInertialFrame(IAUPoleModelType.CONSTANT),
@@ -401,7 +404,7 @@ public class BodiesTest {
         }
     }
 
-    private static double bodyDistance(final CelestialBody body1, final CelestialBody body2, final AbsoluteDate date,
+    private static double bodyDistance(final CelestialPoint body1, final CelestialPoint body2, final AbsoluteDate date,
                                 final Frame frame)
                                                   throws PatriusException {
         final Vector3D body1Position = body1.getPVCoordinates(date, frame).getPosition();
@@ -421,14 +424,14 @@ public class BodiesTest {
         final AbsoluteDate date = new AbsoluteDate(1969, 7, 24, TimeScalesFactory.getTT());
         CelestialBodyFactory.clearCelestialBodyLoaders();
         CelestialBodyFactory.addDefaultCelestialBodyLoader("unxp0000.405");
-        final CelestialBody ssb = CelestialBodyFactory.getSolarSystemBarycenter();
+        final CelestialPoint ssb = CelestialBodyFactory.getSolarSystemBarycenter();
         final PVCoordinates pvssb = ssb.getPVCoordinates(date, FramesFactory.getEME2000());
 
         // second third body data
         final AbsoluteDate date2 = new AbsoluteDate(1969, 7, 24, TimeScalesFactory.getTT());
         CelestialBodyFactory.clearCelestialBodyLoaders();
         CelestialBodyFactory.addDefaultCelestialBodyLoader("unxp1800.406");
-        final CelestialBody ssb2 = CelestialBodyFactory.getSolarSystemBarycenter();
+        final CelestialPoint ssb2 = CelestialBodyFactory.getSolarSystemBarycenter();
         final PVCoordinates pvssb2 = ssb2.getPVCoordinates(date2, FramesFactory.getEME2000());
 
         final double EPS = 1E-12;
@@ -511,6 +514,7 @@ public class BodiesTest {
         final Transform t5 = body.getICRF().getTransformTo(body.getRotatingFrame(IAUPoleModelType.MEAN), date);
         final Transform t6 = body.getICRF().getTransformTo(body.getRotatingFrame(IAUPoleModelType.TRUE), date);
         final Transform t7 = body.getICRF().getTransformTo(body.getEME2000(), date);
+        final Transform t8 = body.getICRF().getTransformTo(body.getEclipticJ2000(), date);
         
         // Check there is no translation wrt to ICRF
         Assert.assertEquals(t1.getCartesian().getPosition().getNorm(), 0., 0.);
@@ -520,6 +524,7 @@ public class BodiesTest {
         Assert.assertEquals(t5.getCartesian().getPosition().getNorm(), 0., 0.);
         Assert.assertEquals(t6.getCartesian().getPosition().getNorm(), 0., 0.);
         Assert.assertEquals(t7.getCartesian().getPosition().getNorm(), 0., 0.);
+        Assert.assertEquals(t8.getCartesian().getPosition().getNorm(), 0., 0.);
 
         // Check that rotations are different
         Assert.assertFalse(t1.getAngular().getRotation().isEqualTo(t2.getAngular().getRotation()));
@@ -535,8 +540,9 @@ public class BodiesTest {
         Assert.assertTrue(t5.getAngular().getRotation().isEqualTo(new Rotation(false, new Quaternion(-0.1275486527673613, -0.026465862722669854, 0.20155443521248123, -0.970776343414771))));
         Assert.assertTrue(t6.getAngular().getRotation().isEqualTo(new Rotation(false, new Quaternion(-0.13024941882559138, -0.01342175034516523, 0.204822463789684, -0.9700013937311592))));
         
-        // Test EME2000 case (known reference)
+        // Test EME2000/Ecliptic J2000 case (known reference)
         Assert.assertTrue(t7.getAngular().getRotation().isEqualTo(new EME2000Provider().getTransform(AbsoluteDate.J2000_EPOCH).getRotation()));
+        Assert.assertTrue(t8.getAngular().getRotation().isEqualTo(new EclipticJ2000Provider().getTransform(AbsoluteDate.J2000_EPOCH).getRotation()));
 
     }
 }

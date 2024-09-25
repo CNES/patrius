@@ -14,6 +14,12 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-170:17/01/2024:[PATRIUS] Impossible d'utiliser le corps racine d'un bsp comme corps pivot
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
@@ -24,7 +30,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 
 import org.junit.Assert;
@@ -32,19 +37,21 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BSPCelestialBodyLoader;
+import fr.cnes.sirius.patrius.bodies.BasicCelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemerisLoader;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
 import fr.cnes.sirius.patrius.bodies.IAUPoleCoefficients;
 import fr.cnes.sirius.patrius.bodies.IAUPoleCoefficients1D;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFunction;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
 import fr.cnes.sirius.patrius.bodies.UserIAUPole;
-import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader;
+import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader.SpiceJ2000ConventionEnum;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
@@ -63,6 +70,9 @@ import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
+/**
+ * Test class for {@link BSPEphemerisLoader} class.
+ */
 public class BSPEphemerisLoaderTest {
 
     /**
@@ -188,7 +198,7 @@ public class BSPEphemerisLoaderTest {
         // link PATRIUS to Mars ICRF barycenter since this is just an internal intermediate BSP frame
         final CelestialBodyEphemeris phobosEphemeris = loader.loadCelestialBodyEphemeris("PHOBOS");
         final CelestialBody phobos = new UserCelestialBody("PHOBOS", phobosEphemeris,
-                0.7E9, null, phobosEphemeris.getNativeFrame(null, null), null);
+                0.7E9, null, phobosEphemeris.getNativeFrame(null), null);
         final GravityModel phobosGravityModel = new NewtonianGravityModel(phobos.getICRF(), 0.7E9);
         phobos.setGravityModel(phobosGravityModel);
         
@@ -292,12 +302,12 @@ public class BSPEphemerisLoaderTest {
         final CelestialBody mars = CelestialBodyFactory.getMars();
 
         // Phobos body (UserCelestialBody)
-        final IAUPole iauPole = new UserIAUPole(new IAUPoleCoefficients(new IAUPoleCoefficients1D(new ArrayList<IAUPoleFunction>()),
+        final CelestialBodyIAUOrientation iauPole = new UserIAUPole(new IAUPoleCoefficients(new IAUPoleCoefficients1D(new ArrayList<IAUPoleFunction>()),
                 new IAUPoleCoefficients1D(new ArrayList<IAUPoleFunction>()),
                 new IAUPoleCoefficients1D(new ArrayList<IAUPoleFunction>())));
         final CelestialBodyEphemeris phobosEphemeris = loader.loadCelestialBodyEphemeris("PHOBOS");
         final CelestialBody phobos = new UserCelestialBody("PHOBOS", phobosEphemeris,
-                0.7E9, iauPole, phobosEphemeris.getNativeFrame(null, null), null);
+                0.7E9, iauPole, phobosEphemeris.getNativeFrame(null), null);
         final GravityModel phobosGravityModel = new NewtonianGravityModel(phobos.getInertialFrame(IAUPoleModelType.CONSTANT), 0.7E9);
         phobos.setGravityModel(phobosGravityModel);
 
@@ -339,7 +349,7 @@ public class BSPEphemerisLoaderTest {
         System.out.println((System.currentTimeMillis() - t1) + "ms");
 
         // Other minor checks
-        Assert.assertTrue(phobos.getEphemeris().getNativeFrame(null, null).getName().equals("IAU_ICRF_MARS BARYCENTER"));
+        Assert.assertTrue(phobos.getEphemeris().getNativeFrame(null).getName().equals("MARS BARYCENTER ICRF ^.*\\.bsp$"));
 
 //        // TODO: currently StackOverflowError. Problème de construction de l'arbre des repères Terre
 //        final KeplerianOrbit orbit2 = new KeplerianOrbit(7000000, 0, 0, 0, 0, 0, PositionAngle.TRUE,
@@ -364,7 +374,7 @@ public class BSPEphemerisLoaderTest {
         Utils.setDataRoot("bsp_de");
 
         // Mars from JPL ephemeris
-        final CelestialBody mars = CelestialBodyFactory.getMars();
+        final CelestialPoint mars = CelestialBodyFactory.getMars();
 
         // Phobos from BSP ephemeris
         final BSPEphemerisLoader loader = new BSPEphemerisLoader(BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES);
@@ -372,23 +382,64 @@ public class BSPEphemerisLoaderTest {
 
         // Link frames trees (MARS ICRF from JPL and "MARS" body from BSP)
         loader.linkFramesTrees(mars.getICRF(), "MARS");
+        Assert.assertEquals(loader.getBodyLink(), "MARS");
         
         // Check transform between Mars ICRF and Mars BSP barycenter if small (distance about 20cm)
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH.shiftedBy(5.111860E8);
-        final Vector3D res = mars.getICRF().getTransformTo(phobosEphemeris.getNativeFrame(null, null), date).getCartesian().getPosition();
+        final Vector3D res = mars.getICRF().getTransformTo(phobosEphemeris.getNativeFrame(null), date).getCartesian().getPosition();
         Assert.assertEquals(0, res.distance(new Vector3D(0.10093404962664373, 0.029617246703695563, -0.04246546587980414)), 0.);
 
         // Check transform between JPL SSB and BSP SSB
-        final CelestialBody ssbJPL = CelestialBodyFactory.getSolarSystemBarycenter();
+        final CelestialPoint ssbJPL = CelestialBodyFactory.getSolarSystemBarycenter();
         final CelestialBodyEphemeris ssbBSP = loader.loadCelestialBodyEphemeris("MARS BARYCENTER");
-        final Vector3D res2 = ssbJPL.getICRF().getTransformTo(ssbBSP.getNativeFrame(null, null), date).getCartesian().getPosition();
+        final Vector3D res2 = ssbJPL.getICRF().getTransformTo(ssbBSP.getNativeFrame(null), date).getCartesian().getPosition();
         Assert.assertEquals(0, res2.distance(new Vector3D(459.2584533691406, -407.49351501464844, 1444.3439254760742)), 0.);
 
         // Check transform between JPL EMB and BSP EMB
-        final CelestialBody embJPL = CelestialBodyFactory.getEarthMoonBarycenter();
+        final CelestialPoint embJPL = CelestialBodyFactory.getEarthMoonBarycenter();
         final CelestialBodyEphemeris earthBSP = loader.loadCelestialBodyEphemeris("EARTH");
-        final Vector3D res3 = embJPL.getICRF().getTransformTo(earthBSP.getNativeFrame(null, null), date).getCartesian().getPosition();
-        Assert.assertEquals(0, res3.distance(new Vector3D(-58.24407958984375, 236.19407653808594, -446.07347869873047)), 0.);
+        final Vector3D res3 = embJPL.getICRF().getTransformTo(earthBSP.getNativeFrame(null), date).getCartesian().getPosition();
+        Assert.assertEquals(0, res3.distance(new Vector3D(401.0143737792969, -171.29943084716797, 998.2704496383667)), 0.);
+    }
+
+    /**
+     * FA-112
+     * @objective Check frame tree is correct when Earth ICRF is the pivot frame (for EARTH BSP body)
+     *
+     * @description Check that frame tree between Phobos ICRF and ICRF SSB is correct
+     *
+     * @passCriteria frame tree between Phobos ICRF and ICRF SSB is correct (functional test)
+     */
+    @Test
+    public void testSetFramesTreesEarth() throws PatriusException {
+        // Initialization
+        Utils.setDataRoot("bsp_de");
+
+        // Mars from JPL ephemeris
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
+
+        // Phobos from BSP ephemeris
+        final BSPEphemerisLoader loader = new BSPEphemerisLoader(BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES);
+        final CelestialBodyEphemeris phobosEphemeris = loader.loadCelestialBodyEphemeris("PHOBOS");
+
+        // Link frames trees (EARTH ICRF from JPL and "EARTH" body from BSP)
+        loader.linkFramesTrees(earth.getICRF(), "EARTH");
+        
+        // Check frame tree
+        Frame frame = phobosEphemeris.getNativeFrame(null);
+        final String[] expectedTree = {"MARS BARYCENTER ICRF ^.*\\.bsp$",
+                "SOLAR SYSTEM BARYCENTER ICRF ^.*\\.bsp$",
+                "EARTH BARYCENTER ICRF ^.*\\.bsp$",
+                "GCRF",
+                "Earth-Moon barycenter ICRF frame",
+                "ICRF"};
+
+        int i = 0;
+        while (frame != null) {
+            Assert.assertEquals(expectedTree[i], frame.getName());
+            frame = frame.getParent();
+            i++;
+        }
     }
 
     /**
@@ -408,7 +459,7 @@ public class BSPEphemerisLoaderTest {
         final CelestialBodyEphemeris phobosEphemeris = loader.loadCelestialBodyEphemeris("PHOBOS");
         final CelestialBodyEphemeris deimosEphemeris = loader.loadCelestialBodyEphemeris("PHOBOS");
 
-        Assert.assertEquals(phobosEphemeris.getNativeFrame(null, null), deimosEphemeris.getNativeFrame(null, null));
+        Assert.assertEquals(phobosEphemeris.getNativeFrame(null), deimosEphemeris.getNativeFrame(null));
     }
 
     /**
@@ -446,21 +497,125 @@ public class BSPEphemerisLoaderTest {
             // Wrong InputStream type
             loader.loadData(new FileInputStream("src" + File.separator + "test" + File.separator + "resources" + File.separator + "bsp" + File.separator + "mar097_20160314_20300101.bsp"), "DUMMY");
             Assert.fail();
-        } catch (PatriusException e) {
+        } catch (final PatriusException e) {
             // Expected
             Assert.assertTrue(true);
         }
         // Check toString
         Assert.assertNotNull(CelestialBodyFactory.getSun().toString());
+        
+        // Convention
+        final BSPEphemerisLoader loader2 = new BSPEphemerisLoader(BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES);
+        loader2.setSPICEJ2000Convention(SpiceJ2000ConventionEnum.EME2000);
+        Assert.assertEquals(SpiceJ2000ConventionEnum.EME2000, loader2.getConvention());
 
+    }
+
+    /**
+     * @objective Test various functional cases when reading BSP files
+     *
+     * @description Test various functional cases when reading BSP files
+     *
+     * @passCriteria exceptions are raised as expected, bodies are built as expected
+     */
+    @Test
+    public void testCelestialBodyPointLoad() throws PatriusException {
+        Utils.setDataRoot("bsp");
+        final BSPCelestialBodyLoader loader = new BSPCelestialBodyLoader(
+                BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES);
+
+        // Load Celestial body
+        
+        // Test exception in case of loading barycenter as CelestialBody
         try {
-            // Non-existent body type
-            EphemerisType.getEphemerisType("Dummy");
+            loader.loadCelestialBody("EARTH BARYCENTER");
             Assert.fail();
-        } catch (PatriusException e) {
-            // Expected
+        } catch (final PatriusException e) {
             Assert.assertTrue(true);
         }
 
+        // Test exception in case of loading non-existent ephemeris type
+        try {
+            loader.loadCelestialBody("MARS BARYCENTER");
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(true);
+        }
+
+        // Load Celestial point
+        Assert.assertTrue(loader.loadCelestialPoint("EARTH BARYCENTER") instanceof BasicCelestialPoint);
+        Assert.assertTrue(loader.loadCelestialPoint("MARS BARYCENTER") instanceof BasicCelestialPoint);
+
+        // LoadCelestialBody method 
+        
+        // Load barycenter as CelestialBody
+        loader.declareAsCelestialPoint("MARS BARYCENTER");
+        // Exception since barycenter as been declared as such
+        try {
+            loader.loadCelestialBody("MARS BARYCENTER");
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(true);
+        }
+    }
+
+    /**
+     * @objective Test SSB can be loaded from BSP ephemeris (although it is not present in BSP file)
+     *
+     * @description load SSB and performs frame transformation from SSB to Earth
+     *
+     * @passCriteria SSB is loaded without exception and transformation is as expected
+     */
+    @Test
+    public void testSSB() throws PatriusException {
+        // Initialization
+        Utils.setDataRoot("bsp");
+
+        // SSB from factory
+        final CelestialPoint ssb = CelestialBodyFactory.getSolarSystemBarycenter();
+
+        // Earth from factory
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
+        
+        // Check translation
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH.shiftedBy(5.111860E8);
+        final Vector3D translation = ssb.getICRF().getTransformTo(earth.getICRF(), date).getTranslation();
+        Assert.assertEquals(-1.47251842782079E11, translation.getX(), 0.);
+        Assert.assertEquals(1.5421833722702797E10, translation.getY(), 0.);
+        Assert.assertEquals(6.660210875203937E9, translation.getZ(), 0.);
+    }
+
+    /**
+     * @objective Test SSB can be defined as link between JPL dans BSP
+     *
+     * @description Test SSB can be defined as link between JPL dans BSP
+     *
+     * @passCriteria SSB is linked without exception, transformation between Earth JPL ans Earth BSP is properly computed
+     */
+    @Test
+    public void testFramessTreesSSB() throws PatriusException {
+        // Initialization
+        Utils.setDataRoot("bsp_de");
+
+        // Earth/SSB from JPL ephemeris
+        final CelestialPoint earthJPL = CelestialBodyFactory.getEarth();
+        final CelestialPoint ssbJPL = CelestialBodyFactory.getSolarSystemBarycenter();
+
+        // Link frames trees (SSB ICRF from JPL and "SOLAR SYSTEM BARYCENTER" body from BSP)
+        final BSPCelestialBodyLoader loader = new BSPCelestialBodyLoader(BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES);
+        ((BSPEphemerisLoader) loader.getEphemerisLoader()).linkFramesTrees(FramesFactory.getICRF(), "SOLAR SYSTEM BARYCENTER");
+
+        // Earth/SSB from BSP ephemeris
+        final CelestialPoint embBSP = loader.loadCelestialPoint("EARTH");
+        final CelestialPoint ssbBSP = loader.loadCelestialPoint("SOLAR SYSTEM BARYCENTER");
+        
+        // Check transform between EMB (JPL) and EMB (BSP) - Small distance expected
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH.shiftedBy(5.111860E8);
+        final Vector3D res = earthJPL.getICRF().getTransformTo(embBSP.getICRF(), date).getCartesian().getPosition();
+        Assert.assertEquals(0, res.distance(new Vector3D(-58.005218505859375, 236.61297988891602, -446.0066976547241)), 0.);
+
+        // Check transform between SSB (JPL) and SSB (BSP) - Should be 0
+        final Vector3D res2 = ssbJPL.getICRF().getTransformTo(ssbBSP.getICRF(), date).getCartesian().getPosition();
+        Assert.assertEquals(0, res2.getNorm(), 0.);
     }
 }

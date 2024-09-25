@@ -18,6 +18,8 @@
  * @history creation 22/10/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-139:08/12/2023:[PATRIUS] Suppression de l'argument frame
+ * dans PVCoordinatesProvider#getNativeFrame
  * VERSION:4.11:DM:DM-3303:22/05/2023:[PATRIUS] Modifications mineures dans UserCelestialBody 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:FA:FA-3201:03/11/2022:[PATRIUS] Prise en compte de l'aberration stellaire dans ITargetDirection
@@ -117,16 +119,6 @@ public class EarthCenterDirection implements ITargetDirection {
         return FramesFactory.getGCRF().getPVCoordinates(date, frame);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Vector3D getVector(final PVCoordinatesProvider origin, final SignalDirection signalDirection,
-                              final AberrationCorrection correction, final AbsoluteDate date,
-                              final FixedDate fixedDateType, final Frame frame, final double epsilon)
-        throws PatriusException {
-        return getVector(origin, getTargetPvProvider(), signalDirection, correction, date, fixedDateType, frame,
-                epsilon, FramesFactory.getGCRF());
-    }
-    
     /** {@inheritDoc} */
     @Override
     public Line getLine(final PVCoordinatesProvider origin, final SignalDirection signalDirection,

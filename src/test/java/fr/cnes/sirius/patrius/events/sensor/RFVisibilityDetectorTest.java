@@ -15,6 +15,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -40,19 +44,27 @@ import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.AssemblyBuilder;
 import fr.cnes.sirius.patrius.assembly.models.RFLinkBudgetModel;
 import fr.cnes.sirius.patrius.assembly.properties.RFAntennaProperty;
+import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
+import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.RFVisibilityDetector;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.frames.UpdatableFrame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.groundstation.RFStationAntenna;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -175,6 +187,71 @@ public class RFVisibilityDetectorTest {
 
         final RFVisibilityDetector detectorCopy = (RFVisibilityDetector) detector.copy();
         Assert.assertEquals(detector.getMaxCheckInterval(), detectorCopy.getMaxCheckInterval(), 0);
+    }
+
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final RFLinkBudgetModel rfModel = new RFLinkBudgetModel(station, antenna, "mainBody");
+        final RFVisibilityDetector eventDetector1 = new RFVisibilityDetector(rfModel, 5, 600, 1.e-6, Action.CONTINUE,
+            Action.CONTINUE);
+        final RFVisibilityDetector eventDetector2 = (RFVisibilityDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final Orbit initialOrbit = new KeplerianOrbit(15000000.0, 0.0, MathUtils.HALF_PI, 0., 0., 0.,
+            PositionAngle.TRUE, FramesFactory.getEME2000(), date, Utils.mu);
+        final AttitudeProvider attitudeProv = new ConstantAttitudeLaw(FramesFactory.getEME2000(), Rotation.IDENTITY);
+        final KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit, attitudeProv);
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(date.shiftedBy(6 * 3600.));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T15:56:19.641"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T15:56:19.641"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T17:04:10.864"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T17:04:10.864"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T15:56:19.641"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T15:56:19.692"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T17:04:10.864"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T17:04:10.893"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getEmitter(finalState));
+        Assert.assertEquals(rfModel.getReceiver(), eventDetector1.getReceiver(null));
+        Assert.assertEquals(DatationChoice.EMITTER, eventDetector1.getDatationChoice());
     }
 
     /**

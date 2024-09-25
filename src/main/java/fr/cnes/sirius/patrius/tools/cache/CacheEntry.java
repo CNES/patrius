@@ -15,10 +15,13 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.tools.cache;
+
+import java.io.Serializable;
 
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 
@@ -31,7 +34,10 @@ import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
  *        The value, usually representing the result of the computation associated to the key
  * @author veuillh
  */
-public class CacheEntry<K, V> {
+public class CacheEntry<K, V> implements Serializable {
+
+    /** Serializable UID. */
+    private static final long serialVersionUID = 6704860996993629677L;
 
     /** The key of the entry. */
     private final K key;

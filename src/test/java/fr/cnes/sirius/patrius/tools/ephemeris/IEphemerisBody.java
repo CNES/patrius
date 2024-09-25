@@ -18,13 +18,14 @@
  * @history created 29/06/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.tools.ephemeris;
 
-import fr.cnes.sirius.patrius.bodies.IAUPole;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
 
 /**
  * Interface representing a celestial body, with a name, an attraction coefficient
@@ -42,7 +43,7 @@ public interface IEphemerisBody {
     /**
      * @return the IAU pole
      */
-    IAUPole getIAUPole();
+    CelestialBodyIAUOrientation getIAUPole();
 
     /**
      * @return the attraction coefficient

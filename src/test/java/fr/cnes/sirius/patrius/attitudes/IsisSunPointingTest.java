@@ -18,6 +18,7 @@
  * @history 30/08/2016 Creation of the class
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -37,9 +38,10 @@ import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.directions.ConstantVectorDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
-import fr.cnes.sirius.patrius.attitudes.directions.ToCelestialBodyCenterDirection;
+import fr.cnes.sirius.patrius.attitudes.directions.ToCelestialPointDirection;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -68,7 +70,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 public class IsisSunPointingTest {
 
     /** Sun body. */
-    private static CelestialBody sun;
+    private static CelestialPoint sun;
 
     /** Sn gravitational constant. */
     private final double mu = Constants.EGM96_EARTH_MU;
@@ -166,7 +168,7 @@ public class IsisSunPointingTest {
      * @throws PatriusException
      * @testType UT
      * 
-     * @testedMethod {@link IsisSunPointing#IsisSunPointing(CelestialBody)}
+     * @testedMethod {@link IsisSunPointing#IsisSunPointing(CelestialPoint)}
      *               {@link IsisSunPointing#IsisSunPointing(IDirection)}
      * 
      * @description Considering a given elliptic orbit at given date, it is verified that the two constructors of
@@ -189,7 +191,7 @@ public class IsisSunPointingTest {
 
         // Sun direction : used Meeus model
         final CelestialBody sunBody = new MeeusSun();
-        final IDirection sunDirection = new ToCelestialBodyCenterDirection(sunBody);
+        final IDirection sunDirection = new ToCelestialPointDirection(sunBody);
 
         // Define an elliptic orbit
         final AbsoluteDate date = new AbsoluteDate(2016, 9, 19, 14, 20, 0, TimeScalesFactory.getTAI());

@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -29,7 +30,7 @@
 
 package fr.cnes.sirius.patrius.stela.forces.gravity;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -65,7 +66,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  */
 public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 7391985871705908766L;
 
     /**
@@ -82,10 +83,10 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
     private final boolean computeMoonContribution;
 
     /** Sun. */
-    private final CelestialBody sun;
+    private final CelestialPoint sun;
 
     /** Moon. */
-    private final CelestialBody moon;
+    private final CelestialPoint moon;
 
     /**
      * Default constructor: both sun and moon contributions have to be computed.
@@ -95,7 +96,7 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
      * @param moonBody
      *        Moon
      */
-    public SolidTidesAcc(final CelestialBody sunBody, final CelestialBody moonBody) {
+    public SolidTidesAcc(final CelestialPoint sunBody, final CelestialPoint moonBody) {
         this(true, true, sunBody, moonBody);
     }
 
@@ -112,7 +113,7 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
      *        Moon (may be null if Moon contribution is not taken into account)
      */
     public SolidTidesAcc(final boolean computeSunContributionFlag, final boolean computeMoonContributionFlag,
-        final CelestialBody sunBody, final CelestialBody moonBody) {
+                         final CelestialPoint sunBody, final CelestialPoint moonBody) {
         super();
         this.computeSunContribution = computeSunContributionFlag;
         this.computeMoonContribution = computeMoonContributionFlag;
@@ -147,7 +148,7 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
      *         Orekit exception needed for using the provider
      */
     private static double[] computePerturbation(final StelaEquinoctialOrbit orbit,
-                                         final CelestialBody body) throws PatriusException {
+                                                final CelestialPoint body) throws PatriusException {
 
         // ==== Initialization
         final Vector3D celBodyVect = body.getPVCoordinates(orbit.getDate(), orbit.getFrame()).getPosition();
@@ -218,7 +219,7 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
         final double distEarthCelestBody = celBodyVect.getNorm();
 
         final double tidesRefRadius = MathLib.divide(Constants.CNES_STELA_AE
-            * Constants.CNES_STELA_AE, distEarthCelestBody);
+                * Constants.CNES_STELA_AE, distEarthCelestBody);
         final double tidesMu = MathLib.divide(muCelesBody * Constants.CNES_STELA_AE, distEarthCelestBody);
 
         // Zonals partial derivatives
@@ -264,7 +265,7 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
      * 
      * @return Sun
      */
-    public CelestialBody getSun() {
+    public CelestialPoint getSun() {
         return this.sun;
     }
 
@@ -273,14 +274,14 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
      * 
      * @return Moon
      */
-    public CelestialBody getMoon() {
+    public CelestialPoint getMoon() {
         return this.moon;
     }
 
     /** {@inheritDoc} */
     @Override
     public double[] computeShortPeriods(final StelaEquinoctialOrbit orbit,
-            final OrbitNatureConverter converter) throws PatriusException {
+                                        final OrbitNatureConverter converter) throws PatriusException {
         // Not implemented yet
         return new double[6];
     }
@@ -297,7 +298,7 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
      */
     private static class PotentialCoefficientsProviderTides implements PotentialCoefficientsProvider {
 
-         /** Serializable UID. */
+        /** Serializable UID. */
         private static final long serialVersionUID = -9039653513823221317L;
 
         /** Central body reference radius : ae (m) */
@@ -352,6 +353,20 @@ public class SolidTidesAcc extends AbstractStelaLagrangeContribution {
         @Override
         public double getAe() {
             return this.ae;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public double[][] getSigmaC(final int n, final int m, final boolean normalized) throws PatriusException {
+            // This method is not called: return null
+            return new double[0][0];
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public double[][] getSigmaS(final int n, final int m, final boolean normalized) throws PatriusException {
+            // This method is not called: return null
+            return new double[0][0];
         }
     }
 }

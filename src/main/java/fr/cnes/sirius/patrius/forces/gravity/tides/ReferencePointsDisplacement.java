@@ -1,23 +1,25 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * 
+ *
+ *
  * @history creation 27/07/2012
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
+ * juliens dans TidesToolbox.computeFundamentalArguments()
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:FA:FA-2855:18/05/2021:Erreur calcul colatitude DM 2622 
@@ -33,6 +35,7 @@
 package fr.cnes.sirius.patrius.forces.gravity.tides;
 
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.frames.configuration.eop.PoleCorrection;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.linear.BlockRealMatrix;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -48,21 +51,21 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 /**
  * This class provides the model describing the displacements of reference points
  * due to the effect of the solid Earth tides.
- * 
+ *
  * @description <p>
  *              Computes the displacement of reference points due to the effect of the solid Earth tides.
  *              </p>
- * 
+ *
  * @concurrency conditionally thread-safe
- * 
+ *
  * @concurrency.comment is thread-safe if the celestial body is too.
- * 
+ *
  * @author ClaudeD
- * 
+ *
  * @version $Id: ReferencePointsDisplacement.java 17582 2017-05-10 12:58:16Z bignon $
- * 
+ *
  * @since 1.2
- * 
+ *
  */
 public final class ReferencePointsDisplacement {
 
@@ -136,12 +139,12 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Computes the displacement of reference points due to the effect of the solid Earth tides.
-     * 
+     *
      * <p>
      * See IERS conventions 2010, chapter 7, section 7.1.1 "Effects of the solid Earth tides"
      * ftp://tai.bipm.org/iers/conv2010/chapter7/tn36_c7.pdf
      * </p>
-     * 
+     *
      * @param date
      *        date of computation in UTC
      * @param point
@@ -261,13 +264,13 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Computes the displacement of reference points due to the effect of the pole tides.
-     * 
+     *
      * <p>
      * See IERS conventions 2010, chapter 7, section 7.1.4
      * "Rotational deformation due to polar motion: Secular polar motion and the pole tide"
      * ftp://tai.bipm.org/iers/conv2010/chapter7/tn36_c7.pdf
      * </p>
-     * 
+     *
      * @param date
      *        date of computation in UTC
      * @param point
@@ -277,17 +280,17 @@ public final class ReferencePointsDisplacement {
      */
     public static Vector3D poleTidesCorrections(final AbsoluteDate date, final Vector3D point) throws PatriusException {
         // Duration in years since J2000 epoch
-        final double t = date.durationFrom(AbsoluteDate.J2000_EPOCH) / Constants.JULIAN_YEAR;
+        final double t = date.durationFromJ2000EpochInYears();
 
         // Secular position of pole in arcsec
         final double xs = (55. + 1.677 * t) / MILLIARCSEC_TO_ARCSEC;
         final double ys = (320.5 + 3.460 * t) / MILLIARCSEC_TO_ARCSEC;
-        
+
         // Current position of pole
-        final double[] pole = FramesFactory.getConfiguration().getPolarMotion(date);
-        final double xp = pole[0] / Constants.ARC_SECONDS_TO_RADIANS;
-        final double yp = pole[1] / Constants.ARC_SECONDS_TO_RADIANS;
-        
+        final PoleCorrection pole = FramesFactory.getConfiguration().getPolarMotion(date);
+        final double xp = pole.getXp() / Constants.ARC_SECONDS_TO_RADIANS;
+        final double yp = pole.getYp() / Constants.ARC_SECONDS_TO_RADIANS;
+
         // Delta in arcsec
         final double m1 = xp - xs;
         final double m2 = -(yp - ys);
@@ -295,7 +298,7 @@ public final class ReferencePointsDisplacement {
         // Point in spherical coordinates
         final double lambda = MathLib.atan2(point.getY(), point.getX());
         final double theta = MathLib.acos(point.getZ() / point.getNorm());
-        
+
         // Displacement in spherical coordinates
         final double[] sincosLambda = MathLib.sinAndCos(lambda);
         final double sinLambda = sincosLambda[0];
@@ -307,7 +310,7 @@ public final class ReferencePointsDisplacement {
         final double sLambda = -9 * cosTheta * (m1 * sinLambda - m2 * cosLambda);
         final double sr = -66 * sinTheta * cosTheta * (m1 * cosLambda + m2 * sinLambda);
         final double[] s = { sTheta, sLambda, sr };
-        
+
         // Displacement in cartesian coordinates
         final double[][] matR = {
                 { cosTheta * cosLambda, cosTheta * sinLambda, -sinTheta },
@@ -319,7 +322,7 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Gives the corrections induced by the latitude dependence.
-     * 
+     *
      * @param point
      *        geocentric position of the point (in ITRF Frame)
      * @param sun
@@ -331,7 +334,7 @@ public final class ReferencePointsDisplacement {
      * @param fac2Moon
      *        moon factor
      * @return correction for diurnal band
-     * 
+     *
      **/
     private static Vector3D step1l1(final Vector3D point, final Vector3D sun, final Vector3D moon,
                                     final double fac2Sun, final double fac2Moon) {
@@ -392,7 +395,7 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Gives the out-of-phase corrrections induced by mantle inelasticity in the diurnal band.
-     * 
+     *
      * @param point
      *        geocentric position of the point (in ITRF Frame)
      * @param sun
@@ -449,7 +452,7 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Gives the out-of-phase corrections induced by mantle inelasticity in the semi-diurnal band.
-     * 
+     *
      * @param point
      *        geocentric position of the point (in ITRF Frame)
      * @param sun
@@ -508,7 +511,7 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Correction for diurnal band (step 2) to account for the frequency dependence of the love numbers.
-     * 
+     *
      * @param fhr
      *        hr in the day
      * @param t
@@ -584,7 +587,7 @@ public final class ReferencePointsDisplacement {
 
     /**
      * Correction for diurnal band (step 2) to account for the frequency dependence of the love numbers.
-     * 
+     *
      * @param t
      *        date of computation in TT time (in julian epoch)
      * @param point

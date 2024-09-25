@@ -18,6 +18,11 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
 * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -74,12 +79,16 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.JPLHistoricEphemerisLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
 import fr.cnes.sirius.patrius.forces.atmospheres.SimpleExponentialAtmosphere;
@@ -114,10 +123,6 @@ import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation.AttitudeType;
 import fr.cnes.sirius.patrius.propagation.sampling.AdaptedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
@@ -745,7 +750,7 @@ public class NumericalPropagatorTest {
         Assert.assertEquals(provider1, this.propagator.getAttitudeProvider());
 
         // Test getNativeFrame
-        Assert.assertEquals(this.propagator.getFrame(), this.propagator.getNativeFrame(null, null));
+        Assert.assertEquals(this.propagator.getFrame(), this.propagator.getNativeFrame(null));
     }
 
     @Test
@@ -1716,6 +1721,15 @@ public class NumericalPropagatorTest {
             @Override
             public EventDetector copy() {
                 return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final SpacecraftState state,
+                    final boolean increasing,
+                    final boolean forward) throws PatriusException {
+                // Do nothing by default, event is not filtered
+                return false;
             }
         };
 
@@ -2868,9 +2882,9 @@ public class NumericalPropagatorTest {
             Assert.assertEquals(((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedAstronomicalUnit(),
                 ((JPLHistoricEphemerisLoader) deserializedLoader.getEphemerisLoader()).getLoadedAstronomicalUnit(), 0.);
 
-            final CelestialBody mars1 = loader.loadCelestialBody(CelestialBodyFactory.MARS);
-            final CelestialBody mars2 = deserializedLoader
-                .loadCelestialBody(CelestialBodyFactory.MARS);
+            final CelestialPoint mars1 = loader.loadCelestialPoint(CelestialBodyFactory.MARS);
+            final CelestialPoint mars2 = deserializedLoader
+                .loadCelestialPoint(CelestialBodyFactory.MARS);
 
             for (int i = 0; i < 10; i++) {
                 final AbsoluteDate currentDate = date.shiftedBy(i);

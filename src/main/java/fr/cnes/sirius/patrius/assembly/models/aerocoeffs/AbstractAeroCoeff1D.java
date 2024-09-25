@@ -17,6 +17,7 @@
  * @history creation 23/05/2018
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-121:08/12/2023:[PATRIUS] Anomalie dans les classes AeroCoeffBy...
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -69,8 +70,8 @@ public abstract class AbstractAeroCoeff1D implements AerodynamicCoefficient {
     protected AbstractAeroCoeff1D(final double[] xVariables, final double[] yVariables) {
 
         // Extend arrays with constant data in order to avoid interpolation problems
-        final double[] x = extendedVector(xVariables, xVariables[0] - 1.,
-            xVariables[xVariables.length - 1] + 1.);
+        final double[] x = extendedVector(xVariables, xVariables[0],
+            xVariables[xVariables.length - 1]);
         final double[] y = extendedVector(yVariables, yVariables[0],
             yVariables[yVariables.length - 1]);
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-53:30/06/2023:[PATRIUS] Error in class FieldData
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -26,11 +27,11 @@
 package fr.cnes.sirius.patrius.bodies.mesh;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Pair;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 
 /**
@@ -78,8 +79,8 @@ public class FieldData {
         this.visibleSurface = surface;
 
         // Compute contour: check each side of each visible triangle to determine if it's free (contour)
-        // The free sides store their vertex into a Set (to guarantee uniqueness)
-        final Set<Vertex> contourVertexTmp = new HashSet<>();
+        // The free sides store their vertex into a list of pairs
+        final List<Pair<Vertex, Vertex>> contourVertexPairs = new ArrayList<>();
         for (final Triangle triangle : visibleTriangles) {
             // Extract the triangles vertices
             final Vertex[] vertices = triangle.getVertices();
@@ -96,9 +97,8 @@ public class FieldData {
             neighborsSide.remove(triangle);
             if (neighborsSide.isEmpty()) {
                 // If this side has no common neighbor other than the current triangle, the side is free
-                // Store the two vertices in the contour Set
-                contourVertexTmp.add(vertex1);
-                contourVertexTmp.add(vertex2);
+                // Store the two vertices in a pair
+                contourVertexPairs.add(new Pair<>(vertex1, vertex2));
             }
 
             // Check if its second side (vertices 2 & 3) is free
@@ -110,9 +110,8 @@ public class FieldData {
             neighborsSide.remove(triangle);
             if (neighborsSide.isEmpty()) {
                 // If this side has no common neighbor other than the current triangle, the side is free
-                // Store the two vertices in the contour Set
-                contourVertexTmp.add(vertex2);
-                contourVertexTmp.add(vertex3);
+                // Store the two vertices in a pair
+                contourVertexPairs.add(new Pair<>(vertex2, vertex3));
             }
 
             // Check if its third side (vertices 3 & 1) is free
@@ -124,66 +123,51 @@ public class FieldData {
             neighborsSide.remove(triangle);
             if (neighborsSide.isEmpty()) {
                 // If this side has no common neighbor other than the current triangle, the side is free
-                // Store the two vertices in the contour Set
-                contourVertexTmp.add(vertex3);
-                contourVertexTmp.add(vertex1);
+                // Store the two vertices in a pair
+                contourVertexPairs.add(new Pair<>(vertex3, vertex1));
             }
         }
 
-        // Order contour points (closest point to each other will be next to each other in contour list)
-        this.contour = new ArrayList<>(contourVertexTmp.size());
-        if (!contourVertexTmp.isEmpty()) {
+        if (contourVertexPairs.isEmpty()) {
+            // If no free side has been found, the contour is empty
+            this.contour = new ArrayList<>();
+        } else {
+            // Build the vertices continuous chain from the pairs as matching "dominos"
+            // Use a Set to guarantee unity
+            final Set<Vertex> contourVertex = new LinkedHashSet<>();
 
-            // Convert the Vertex contour in GeodeticPoint contour
-            final List<FacetPoint> contourTmp = new ArrayList<>(contourVertexTmp.size());
-            for (final Vertex contourVertex : contourVertexTmp) {
-                final FacetPoint point =
-                    new FacetPoint(body, contourVertex.getPosition(), "point_" + contourVertex.getID());
-                contourTmp.add(point);
-            }
+            // Extract the first pair information, keep the second element, then remove the pair from the list
+            contourVertex.add(contourVertexPairs.get(0).getFirst());
+            Vertex currentVertex = contourVertexPairs.get(0).getSecond();
+            contourVertex.add(currentVertex);
+            contourVertexPairs.remove(0);
 
-            FacetPoint current = contourTmp.get(0);
-            this.contour.add(current);
-            contourTmp.remove(current);
-
-            while (!contourTmp.isEmpty()) {
-                // Find next closest point
-                double closestDist = Double.POSITIVE_INFINITY;
-                FacetPoint closestPoint = null;
-                for (final FacetPoint point : contourTmp) {
-                    final double dist = distance(point, current);
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        closestPoint = point;
-                    }
+            // Move from one element from a pair, to one element of the matching pair, then remove the previous pair
+            int i = 0;
+            while (i < contourVertexPairs.size()) {
+                if (contourVertexPairs.get(i).getFirst().equals(currentVertex)) {
+                    // If the current vertex matches the first element of the pair, move to the second element
+                    currentVertex = contourVertexPairs.get(i).getSecond();
+                    contourVertex.add(currentVertex);
+                    contourVertexPairs.remove(i);
+                    i = -1; // Reset the counter to loop over all the remaining elements
+                } else if (contourVertexPairs.get(i).getSecond().equals(currentVertex)) {
+                    // If the current vertex matches the second element of the pair, move to the first element
+                    currentVertex = contourVertexPairs.get(i).getFirst();
+                    contourVertex.add(currentVertex);
+                    contourVertexPairs.remove(i);
+                    i = -1; // Reset the counter to loop over all the remaining elements
                 }
+                i++;
+            }
+            // The contour of vertices is completed
 
-                // Update list
-                this.contour.add(closestPoint);
-                contourTmp.remove(closestPoint);
-                current = closestPoint;
+            // Convert the vertices to facet points
+            this.contour = new ArrayList<>(contourVertex.size());
+            for (final Vertex vertex : contourVertex) {
+                this.contour.add(new FacetPoint(body, vertex.getPosition(), "point_" + vertex.getID()));
             }
         }
-    }
-
-    /**
-     * Returns distance between two points on a unit sphere (approximation).
-     * 
-     * @param p1
-     *        First body point
-     * @param p2
-     *        Second body point
-     * @return distance between the two body points on a unit sphere
-     */
-    private static double distance(final FacetPoint p1, final FacetPoint p2) {
-        final double lat1 = p1.getPosition().getDelta();
-        final double lat2 = p2.getPosition().getDelta();
-        final double dlat = lat2 - lat1;
-        final double dlon = p2.getPosition().getAlpha() - p1.getPosition().getAlpha();
-        final double sindlat2 = MathLib.sin(dlat / 2);
-        final double sindlon2 = MathLib.sin(dlon / 2);
-        final double a = sindlat2 * sindlat2 + MathLib.cos(lat1) * MathLib.cos(lat2) * sindlon2 * sindlon2;
-        return 2. * MathLib.atan2(MathLib.sqrt(a), MathLib.sqrt(1 - a));
     }
 
     /**

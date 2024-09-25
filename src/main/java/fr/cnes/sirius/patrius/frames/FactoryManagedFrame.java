@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -30,6 +32,7 @@ package fr.cnes.sirius.patrius.frames;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.transformations.TransformProvider;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -41,7 +44,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  *         entierly a FactoryManagedFrame.
  * @author Luc Maisonobe
  */
-public class FactoryManagedFrame extends CelestialBodyFrame {
+class FactoryManagedFrame extends CelestialBodyFrame {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 1566019035725009300L;
@@ -75,6 +78,22 @@ public class FactoryManagedFrame extends CelestialBodyFrame {
      */
     public Predefined getFactoryKey() {
         return this.factoryKey;
+    }
+
+    /**
+     * Returns the celestial point centered on this frame.
+     * Built on the fly (lazy initialization).
+     * 
+     * @return the celestial point centered on this frame
+     * @throws PatriusException thrown if the celestial point could not be built
+     */
+    @Override
+    public CelestialPoint getCelestialPoint() throws PatriusException {
+        if (this.celestialPoint == null) {
+            // Celestial point has not be built yet, build it
+            this.celestialPoint = this.factoryKey.getCelestialPoint();
+        }
+        return this.celestialPoint;
     }
 
     /**
@@ -128,7 +147,6 @@ public class FactoryManagedFrame extends CelestialBodyFrame {
                 throw new PatriusDeserializationException(oe.getLocalizedMessage(), oe);
             }
         }
-
     }
 
     /** Extended ObjectStreamException with some more information. */
@@ -149,7 +167,5 @@ public class FactoryManagedFrame extends CelestialBodyFrame {
         public PatriusDeserializationException(final String message, final Throwable cause) {
             super(message);
         }
-
     }
-
 }

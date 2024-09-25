@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3259:22/05/2023:[PATRIUS] Creer une interface StarConvexBodyShape
  * VERSION:4.11:DM:DM-3248:22/05/2023:[PATRIUS] Renommage de GeodeticPoint en GeodeticCoordinates
  * VERSION:4.10.1:FA:FA-3265:02/12/2022:[PATRIUS] Calcul KO des points plus proches entre une Line et un FacetBodyShape
@@ -44,7 +46,7 @@
 package fr.cnes.sirius.patrius.bodies.mesh;
 
 import fr.cnes.sirius.patrius.bodies.StarConvexBodyShape;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
@@ -76,16 +78,15 @@ public class StarConvexFacetBodyShape extends FacetBodyShape implements StarConv
      *        body name
      * @param bodyFrame
      *        frame in which celestial body coordinates are defined
-     * @param ellipsoidTypeIn
-     *        ellipsoid type to apply the transform methods on
      * @param meshLoader
      *        mesh loader
      * @throws IllegalArgumentException
      *         if loading failed or if the given mesh is not star convex
      */
-    public StarConvexFacetBodyShape(final String name, final Frame bodyFrame, final EllipsoidType ellipsoidTypeIn,
-                                    final MeshProvider meshLoader) {
-        super(name, bodyFrame, ellipsoidTypeIn, meshLoader);
+    public StarConvexFacetBodyShape(final String name,
+            final CelestialBodyFrame bodyFrame,
+            final MeshProvider meshLoader) {
+        super(name, bodyFrame, meshLoader);
         // Check that the maxSlope value is smaller than PI/2: it is the condition for the facet body shape to be
         // star-convex.
         if (this.getMaxSlope() >= MathLib.PI / 2) {
@@ -98,6 +99,6 @@ public class StarConvexFacetBodyShape extends FacetBodyShape implements StarConv
     public StarConvexFacetBodyShape resize(final MarginType marginType, final double marginValue) {
         final FacetBodyShape facetBodyShape = super.resize(marginType, marginValue);
         return new StarConvexFacetBodyShape(facetBodyShape.getName(), facetBodyShape.getBodyFrame(),
-            facetBodyShape.getEllipsoidType(), facetBodyShape.getMeshProvider());
+            facetBodyShape.getMeshProvider());
     }
 }

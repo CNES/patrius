@@ -18,6 +18,7 @@
  * @history creation 15/02/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3315:22/05/2023:[PATRIUS] TabulatedAttitude compatible liste d'extension de Attitude
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -47,7 +48,7 @@
 package fr.cnes.sirius.patrius.attitudes;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -92,13 +93,16 @@ public class TabulatedAttitude implements AttitudeLeg {
     /** Nature. */
     private final String nature;
 
-    /** Array of Attitudes */
+    /** Array of chronologically ordered attitudes. */
     private final Attitude[] attitudes;
 
-    /** Array (same size of attitudes array) containing for each attitude time elapsed since first attitude */
-    private double[] durations;
+    /** Array (same size of attitudes array) containing for each attitude time elapsed since first attitude. */
+    private final double[] durations;
 
-    /** Number of points used for interpolation */
+    /** Reference frame. */
+    private final Frame referenceFrame;
+
+    /** Number of points used for interpolation. */
     private final int interpOrder;
 
     /** Validity interval (with closed endpoints). */
@@ -107,104 +111,165 @@ public class TabulatedAttitude implements AttitudeLeg {
     /** Flag to indicate if spin derivation computation is activated. */
     private boolean spinDerivativesComputation = false;
 
-    /** Filter to use in interpolation */
+    /** Filter to use in interpolation. */
     private AngularDerivativesFilter filter = AngularDerivativesFilter.USE_RR;
 
     /**
      * Constructor with default number N of points used for interpolation.
      *
-     * @param inAttitudes
+     * @param attitudesIn
      *        the list of attitudes. WARNING : these attitudes must be ordered.
-     * @exception PatriusException
-     *            if the number of point is too small for interpolating
+     * @throws PatriusException
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if all the attitudes aren't associated to the same reference frame<br>
+     *         if the attitudes aren't in chronological order
      */
-    public TabulatedAttitude(final List<? extends Attitude> inAttitudes) throws PatriusException {
-        this(inAttitudes, DEFAULT_INTERP_ORDER, DEFAULT_NATURE);
+    public TabulatedAttitude(final List<? extends Attitude> attitudesIn) throws PatriusException {
+        this(attitudesIn, DEFAULT_INTERP_ORDER, DEFAULT_NATURE);
     }
 
     /**
-     * Constructor with number of points used for interpolation
+     * Constructor with number of points used for interpolation.
      *
-     * @param inAttitudes
+     * @param attitudesIn
      *        the list of attitudes. WARNING : these attitudes must be ordered.
      * @param nbInterpolationPoints
-     *        number of points used for interpolation
-     * @exception PatriusException
-     *            if the number of point is too small for interpolating
+     *        number of points used for interpolation<br>
+     *        Note: the special value {@code -1} is accepted to use the old
+     *        {@link Attitude#slerp(AbsoluteDate, Attitude, Attitude, Frame, boolean) Attitude.slerp} constructor
+     * @throws PatriusException
+     *         if the number of points used for interpolation is {@code < 1} and {@code != -1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if all the attitudes aren't associated to the same reference frame<br>
+     *         if the attitudes aren't in chronological order
      */
-    public TabulatedAttitude(final List<? extends Attitude> inAttitudes,
+    public TabulatedAttitude(final List<? extends Attitude> attitudesIn,
                              final int nbInterpolationPoints) throws PatriusException {
-        this(inAttitudes, nbInterpolationPoints, DEFAULT_NATURE);
+        this(attitudesIn, nbInterpolationPoints, DEFAULT_NATURE);
     }
 
     /**
      * Constructor with default number N of points used for interpolation.
      *
-     * @param inAttitudes the list of attitudes. WARNING : these attitudes must be ordered.
-     * @param natureIn leg nature
-     * @exception PatriusException if the number of point is too small for interpolating
+     * @param attitudesIn
+     *        the list of attitudes. WARNING : these attitudes must be ordered.
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if all the attitudes aren't associated to the same reference frame<br>
+     *         if the attitudes aren't in chronological order
      */
-    public TabulatedAttitude(final List<? extends Attitude> inAttitudes, final String natureIn)
+    public TabulatedAttitude(final List<? extends Attitude> attitudesIn, final String natureIn)
         throws PatriusException {
-        this(inAttitudes, DEFAULT_INTERP_ORDER, natureIn);
+        this(attitudesIn, DEFAULT_INTERP_ORDER, natureIn);
     }
 
     /**
-     * Constructor with number of points used for interpolation
+     * Constructor with number of points used for interpolation.
      *
-     * @param inAttitudes the list of attitudes. WARNING : these attitudes must be ordered.
-     * @param nbInterpolationPoints number of points used for interpolation
-     * @param natureIn leg nature
-     * @exception PatriusException if the number of point is too small for interpolating
+     * @param attitudesIn
+     *        the list of attitudes. WARNING : these attitudes must be ordered.
+     * @param nbInterpolationPoints
+     *        number of points used for interpolation<br>
+     *        Note: the special value {@code -1} is accepted to use the old
+     *        {@link Attitude#slerp(AbsoluteDate, Attitude, Attitude, Frame, boolean) Attitude.slerp} constructor
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if the number of points used for interpolation is {@code < 1} and {@code != -1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if all the attitudes aren't associated to the same reference frame<br>
+     *         if the attitudes aren't in chronological order
      */
-    public TabulatedAttitude(final List<? extends Attitude> inAttitudes, final int nbInterpolationPoints,
+    public TabulatedAttitude(final List<? extends Attitude> attitudesIn, final int nbInterpolationPoints,
                              final String natureIn) throws PatriusException {
-        this(inAttitudes, nbInterpolationPoints, false, natureIn);
+        this(attitudesIn, nbInterpolationPoints, false, natureIn);
     }
 
     /**
-     * Constructor with number of points used for interpolation
+     * Constructor with number of points used for interpolation.
      *
-     * @param inAttitudes the list of attitudes. WARNING : these attitudes must be ordered.
-     * @param nbInterpolationPoints number of points used for interpolation
-     * @param needOrdering true if ordering is required
-     * @param natureIn leg nature
-     * @exception PatriusException if the number of point is too small for interpolating
+     * @param attitudesIn
+     *        the list of attitudes
+     * @param nbInterpolationPoints
+     *        number of points used for interpolation<br>
+     *        Note: the special value {@code -1} is accepted to use the old
+     *        {@link Attitude#slerp(AbsoluteDate, Attitude, Attitude, Frame, boolean) Attitude.slerp} constructor
+     * @param needOrdering
+     *        true if ordering is required (otherwise the attitudes must be ordered)
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if the number of points used for interpolation is {@code < 1} and {@code != -1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if all the attitudes aren't associated to the same reference frame<br>
+     *         if the attitudes shouldn't be ordered ({@code needOrdering = false}) but their aren't in chronological
+     *         order
      */
-    private TabulatedAttitude(final Collection<? extends Attitude> inAttitudes,
-                              final int nbInterpolationPoints, final boolean needOrdering, final String natureIn)
-        throws PatriusException {
+    public TabulatedAttitude(final List<? extends Attitude> attitudesIn, final int nbInterpolationPoints,
+                             final boolean needOrdering, final String natureIn) throws PatriusException {
 
-        // initialize number of points used for Hermite interpolation
-        this.interpOrder = nbInterpolationPoints;
 
-        // The array's size must be at least 2 to interpolate and create a date interval
-        final int arraySize = inAttitudes.size();
-        if (arraySize < 2) {
-            throw PatriusException.createIllegalArgumentException(PatriusMessages.AT_LEAST_TWO_ATTITUDES_NEEDED);
+        // Check the number of points used for interpolation is valid
+        if (nbInterpolationPoints < 1 && nbInterpolationPoints != -1) {
+            throw new PatriusException(PatriusMessages.INVALID_NB_INTERPOLATION_POINTS);
         }
 
-        // transformation List to array of the assumed ordered attitudes (attitudes are ordered)
-        this.attitudes = inAttitudes.toArray(new Attitude[arraySize]);
+        // Check that there is enough data for Hermite interpolation
+        final int attitudesSize = attitudesIn.size();
+        if (attitudesSize < nbInterpolationPoints) {
+            throw new PatriusException(PatriusMessages.NOT_ENOUGH_DATA_FOR_INTERPOLATION);
+        }
+        // Initialize number of points used for Hermite interpolation
+        this.interpOrder = nbInterpolationPoints;
 
-        // dates interval creation
+        // List to array transformation
+        final Attitude[] tempArray = attitudesIn.toArray(new Attitude[attitudesSize]);
+
+        // Extract the frame & date of the first attitude
+        this.referenceFrame = tempArray[0].getReferenceFrame();
+        AbsoluteDate date = tempArray[0].getDate();
+
+        // Loop on each attitude (from the second one) to check their frames (and dates if require) are consistent
+        for (int i = 1; i < attitudesSize; i++) {
+
+            final Attitude currentAttitude = tempArray[i];
+            // Check that all attitudes are associated to the same frame, otherwise throw an exception
+            if (!this.referenceFrame.equals(currentAttitude.getReferenceFrame())) {
+                throw new PatriusException(PatriusMessages.FRAMES_MISMATCH, this.referenceFrame,
+                    currentAttitude.getReferenceFrame());
+            }
+
+            // If the attitudes don't need to be ordered, they should already be, otherwise throw an exception
+            if (!needOrdering) {
+                final AbsoluteDate currentDate = currentAttitude.getDate();
+                if (currentDate.durationFrom(date) < 0) {
+                    // The current attitude date is before the previous attitude date, meaning the attitudes aren't in
+                    // chronological order
+                    throw new PatriusException(PatriusMessages.NON_CHRONOLOGICAL_DATA);
+                }
+                date = currentDate;
+            }
+        }
+
+        // Sort the attitudes if needed
+        if (needOrdering) {
+            Arrays.sort(tempArray);
+        }
+        this.attitudes = tempArray;
+
+        // Dates interval creation
         final AbsoluteDate firstDate = this.attitudes[0].getDate();
-        final AbsoluteDate lastDate = this.attitudes[arraySize - 1].getDate();
+        final AbsoluteDate lastDate = this.attitudes[attitudesSize - 1].getDate();
         this.validityInterval = new AbsoluteDateInterval(IntervalEndpointType.CLOSED, firstDate, lastDate,
             IntervalEndpointType.CLOSED);
 
-        // Initialize durations
-        final int attitudeLength = this.attitudes.length;
-        if (attitudeLength >= this.interpOrder) {
-            // durations contains for each attitude the time elapsed since first attitude
-            this.durations = new double[attitudeLength];
-            for (int i = 0; i < attitudeLength; i++) {
-                this.durations[i] = this.attitudes[i].getDate().durationFrom(this.attitudes[0].getDate());
-            }
-        } else if (attitudeLength < this.interpOrder) {
-            throw new PatriusException(PatriusMessages.NOT_ENOUGH_DATA_FOR_INTERPOLATION);
+        // Durations contains for each attitude the time elapsed since first attitude
+        this.durations = new double[attitudesSize];
+        for (int i = 0; i < attitudesSize; i++) {
+            this.durations[i] = this.attitudes[i].getDate().durationFrom(firstDate);
         }
-
         this.nature = natureIn;
     }
 
@@ -217,7 +282,35 @@ public class TabulatedAttitude implements AttitudeLeg {
     /** {@inheritDoc} */
     @Override
     public Attitude getAttitude(final PVCoordinatesProvider pvProvider, final AbsoluteDate date,
-            final Frame frame) throws PatriusException {
+                                final Frame frame) throws PatriusException {
+        return getAttitude(date, frame);
+    }
+
+    /**
+     * Compute the attitude on the specified date in the reference frame.
+     * 
+     * @param date
+     *        current date
+     * @return attitude on the specified date
+     * @throws PatriusException
+     *         if attitude cannot be computed for provided date
+     */
+    public Attitude getAttitude(final AbsoluteDate date) throws PatriusException {
+        return getAttitude(date, this.referenceFrame);
+    }
+
+    /**
+     * Compute the attitude on the specified date.
+     * 
+     * @param date
+     *        current date
+     * @param frame
+     *        reference frame from which attitude is computed
+     * @return attitude on the specified date
+     * @throws PatriusException
+     *         if attitude cannot be computed for provided date
+     */
+    public Attitude getAttitude(final AbsoluteDate date, final Frame frame) throws PatriusException {
 
         // test of the date
         if (!this.validityInterval.contains(date)) {
@@ -245,7 +338,7 @@ public class TabulatedAttitude implements AttitudeLeg {
                 attitudesList.add(this.attitudes[0]);
                 attitudesList.add(this.attitudes[1]);
                 attitudeTemp = new Attitude(frame, null).interpolate(date, attitudesList,
-                        this.spinDerivativesComputation, this.filter);
+                    this.spinDerivativesComputation, this.filter);
             } else {
                 // Return attitude without interpolation
                 attitudeTemp = this.attitudes[0];
@@ -262,7 +355,7 @@ public class TabulatedAttitude implements AttitudeLeg {
                 attitudesList.add(this.attitudes[pos]);
                 attitudesList.add(this.attitudes[pos + 1]);
                 attitudeTemp = new Attitude(frame, null).interpolate(date, attitudesList,
-                        this.spinDerivativesComputation, this.filter);
+                    this.spinDerivativesComputation, this.filter);
             } else {
                 // Return attitude without interpolation
                 attitudeTemp = this.attitudes[pos + 1];
@@ -274,7 +367,7 @@ public class TabulatedAttitude implements AttitudeLeg {
             if (this.interpOrder == -1) {
                 // old constructor is used : use Attitude.slerp
                 attitude = Attitude.slerp(date, this.attitudes[pos], this.attitudes[pos + 1],
-                        frame, this.spinDerivativesComputation);
+                    frame, this.spinDerivativesComputation);
             } else {
                 // Hermite interpolation
                 attitude = this.computeAttitude(date, frame, pos);
@@ -299,7 +392,7 @@ public class TabulatedAttitude implements AttitudeLeg {
      *         if a problem occurs during frames transformations
      */
     private Attitude computeAttitude(final AbsoluteDate dateInterpolate, final Frame frame,
-            final int pos) throws PatriusException {
+                                     final int pos) throws PatriusException {
 
         // Local array of Hermite attitudes
         final List<Attitude> attitudesToHermite = new ArrayList<>();
@@ -376,7 +469,7 @@ public class TabulatedAttitude implements AttitudeLeg {
     }
 
     /**
-     * Get the non-interpolated and rightly ordered attitudes.
+     * Getter for the non-interpolated and rightly ordered attitudes.
      *
      * @return the list of attitudes
      */
@@ -390,7 +483,16 @@ public class TabulatedAttitude implements AttitudeLeg {
     }
 
     /**
-     * Getter for durations.
+     * Getter for the reference frame.
+     *
+     * @return referenceFrame reference frame from which attitude is defined.
+     */
+    public Frame getReferenceFrame() {
+        return this.referenceFrame;
+    }
+
+    /**
+     * Getter for the durations.
      *
      * @return the durations
      */
@@ -436,7 +538,8 @@ public class TabulatedAttitude implements AttitudeLeg {
     }
 
     /**
-     * Returns the angular derivative filter.
+     * Getter for the angular derivative filter.
+     * 
      * @return the angular derivative filter
      */
     protected AngularDerivativesFilter getAngularDerivativeFilter() {
@@ -444,7 +547,8 @@ public class TabulatedAttitude implements AttitudeLeg {
     }
 
     /**
-     * Return the interpolation order.
+     * Getter for the interpolation order.
+     * 
      * @return the interpolation order
      */
     protected int getInterpolationOrder() {

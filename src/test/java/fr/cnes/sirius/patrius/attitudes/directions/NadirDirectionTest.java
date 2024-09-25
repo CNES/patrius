@@ -18,6 +18,9 @@
  * @history creation 20/06/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -41,6 +44,7 @@ import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
@@ -119,8 +123,8 @@ public class NadirDirectionTest {
 
         try {
             // gcrf
-            final Frame gcrf = FramesFactory.getGCRF();
-            final Frame itrf = FramesFactory.getITRF();
+            final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+            final CelestialBodyFrame itrf = FramesFactory.getITRF();
             // orbit creation
             final AbsoluteDate date = new AbsoluteDate(2012, 6, 20, TimeScalesFactory.getTAI());
             final double mu = Constants.GRIM5C1_EARTH_MU;
@@ -187,8 +191,8 @@ public class NadirDirectionTest {
 
         try {
             // gcrf
-            final Frame gcrf = FramesFactory.getGCRF();
-            final Frame itrf = FramesFactory.getITRF();
+            final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+            final CelestialBodyFrame itrf = FramesFactory.getITRF();
             // orbit creation
             final AbsoluteDate date = new AbsoluteDate(2012, 6, 20, TimeScalesFactory.getTAI());
             final double mu = Constants.GRIM5C1_EARTH_MU;
@@ -226,13 +230,9 @@ public class NadirDirectionTest {
         }
     }
 
-    /**
-     * Set up
-     * 
-     * @throws PatriusException
-     */
+    /** Set up */
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

@@ -18,6 +18,7 @@
  * @history created 20/03/13
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -34,11 +35,11 @@
  */
 package fr.cnes.sirius.patrius.stela;
 
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.ApsisOrbit;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -51,8 +52,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * </p>
  * <p>
  * The default implementation behavior is to
- * {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#CONTINUE continue} propagation when ascending
- * and to {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP stop} propagation when descending.
+ * {@link fr.cnes.sirius.patrius.events.EventDetector.Action#CONTINUE continue} propagation when ascending
+ * and to {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP stop} propagation when descending.
  * This can be changed by overriding the {@link #eventOccurred(SpacecraftState, boolean, boolean) eventOccurred} method
  * in a derived class.
  * </p>
@@ -61,7 +62,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * @concurrency.comment the OrbitNatureConverter attribute needs to be thread-safe
  * 
  * @see fr.cnes.sirius.patrius.propagation.Propagator#addEventDetector(EventDetector)
- * @see fr.cnes.sirius.patrius.propagation.events.AltitudeDetector
+ * @see fr.cnes.sirius.patrius.events.detectors.AltitudeDetector
  * 
  * @author Luc Maisonobe, Cedric Dental
  * 
@@ -137,8 +138,8 @@ public class PerigeeAltitudeDetector extends AbstractDetector {
      * </p>
      * <p>
      * The default implementation behavior is to
-     * {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#CONTINUE continue} propagation when
-     * ascending and to {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP stop} propagation
+     * {@link fr.cnes.sirius.patrius.events.EventDetector.Action#CONTINUE continue} propagation when
+     * ascending and to {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP stop} propagation
      * when descending.
      * </p>
      * 
@@ -207,8 +208,8 @@ public class PerigeeAltitudeDetector extends AbstractDetector {
      * </p>
      * <p>
      * The default implementation behavior is to
-     * {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#CONTINUE continue} propagation when
-     * ascending and to {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP stop} propagation
+     * {@link fr.cnes.sirius.patrius.events.EventDetector.Action#CONTINUE continue} propagation when
+     * ascending and to {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP stop} propagation
      * when descending.
      * </p>
      * 
@@ -306,8 +307,8 @@ public class PerigeeAltitudeDetector extends AbstractDetector {
      * @param increasing if true, the value of the switching function increases when times increases
      *        around event
      * @param forward if true, the integration variable (time) increases during integration.
-     * @return {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP stop} or
-     *         {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#CONTINUE
+     * @return {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP stop} or
+     *         {@link fr.cnes.sirius.patrius.events.EventDetector.Action#CONTINUE
      *         continue}
      * @exception PatriusException if some specific error occurs
      */

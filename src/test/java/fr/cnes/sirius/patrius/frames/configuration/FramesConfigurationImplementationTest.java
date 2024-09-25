@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3126:10/05/2022:[PATRIUS] Imports obsoletes suite a suppression de reflexion Java dans Patrius 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -38,6 +40,7 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPInterpolators;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModel;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
@@ -81,9 +84,9 @@ public class FramesConfigurationImplementationTest {
         final EOPInterpolators ref = conf.getEOPHistory().getEOPInterpolationMethod();
 
         // Gratuitous call, for code coverage only
-        final PrecessionNutationModel model = conf.getPrecessionNutationModel().getPrecessionNutationModel();
+        final PrecessionNutationModel model = conf.getCIRFPrecessionNutationModel().getPrecessionNutationModel();
         Assert.assertEquals(model, new PrecessionNutation(true,
-            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT).getPrecessionNutationModel());
+            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED).getPrecessionNutationModel());
 
         Assert.assertEquals(res, ref);
 
@@ -106,8 +109,9 @@ public class FramesConfigurationImplementationTest {
         final FramesConfiguration conf = FramesConfigurationFactory.getSimpleConfiguration(true);
         FramesFactory.setConfiguration(conf);
         // Check configuration
-        Assert.assertEquals(PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT, conf.getPrecessionNutationModel().getPrecessionNutationModel());
-        Assert.assertEquals(false, conf.getPrecessionNutationModel().useEopData());
+        Assert.assertEquals(PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED,
+            conf.getCIRFPrecessionNutationModel().getPrecessionNutationModel());
+        Assert.assertEquals(false, conf.getCIRFPrecessionNutationModel().useEopData());
         Assert.assertEquals(LibrationCorrectionModelFactory.NO_LIBRATION, conf.getDiurnalRotationModel().getLibrationCorrectionModel());
         Assert.assertEquals(TidalCorrectionModelFactory.NO_TIDE, conf.getDiurnalRotationModel().getTidalCorrectionModel());
         Assert.assertEquals(SPrimeModelFactory.NO_SP, conf.getPolarMotionModel().getSPrimeModel());
@@ -118,7 +122,7 @@ public class FramesConfigurationImplementationTest {
         final FramesConfiguration conf2 = FramesConfigurationFactory.getSimpleConfiguration(false);
         FramesFactory.setConfiguration(conf2);
         // Check configuration
-        Assert.assertEquals(PrecessionNutationModelFactory.NO_PN, conf2.getPrecessionNutationModel().getPrecessionNutationModel());
+        Assert.assertEquals(PrecessionNutationModelFactory.NO_PN, conf2.getCIRFPrecessionNutationModel().getPrecessionNutationModel());
         // GCRF = CIRF
         Assert.assertTrue(FramesFactory.getGCRF().getTransformTo(FramesFactory.getCIRF(), AbsoluteDate.J2000_EPOCH).getRotation().isIdentity());
         // TIRF = ITRF

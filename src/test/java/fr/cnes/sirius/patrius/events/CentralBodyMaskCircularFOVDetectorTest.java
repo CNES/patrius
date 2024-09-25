@@ -16,6 +16,14 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
@@ -57,6 +65,12 @@ import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.CentralBodyMaskCircularFOVDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -69,10 +83,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -150,6 +160,78 @@ public class CentralBodyMaskCircularFOVDetectorTest {
         final double mu = earth.getGM();
         orbit = new KeplerianOrbit(12500000, 0.01, 0., 0, 0, FastMath.PI / 2, PositionAngle.TRUE,
             FramesFactory.getGCRF(), date, mu);
+    }
+
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // The target is a fixed point in the ITRF frame in the earth's equatorial plane, far away.
+        final Vector3D targPos = new Vector3D(1e8, 0., 0.);
+        final Vector3D targVel = Vector3D.ZERO;
+        final double targRadius = 1000000.;
+        final PVCoordinates targPV = new PVCoordinates(targPos, targVel);
+        final PVCoordinatesProvider target = new BasicPVCoordinatesProvider(targPV, itrf);
+        final double halfAp = FastMath.PI / 100.;
+        final EllipsoidBodyShape spheroEarth = new OneAxisEllipsoid(Constants.EGM96_EARTH_EQUATORIAL_RADIUS,
+            Constants.GRIM5C1_EARTH_FLATTENING, earth.getRotatingFrame(IAUPoleModelType.TRUE), SPHERO_EARTH);
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final CentralBodyMaskCircularFOVDetector eventDetector1 = new CentralBodyMaskCircularFOVDetector(
+            target, targRadius, spheroEarth, false, targPos, halfAp, 600, 0.001, Action.CONTINUE);
+        final CentralBodyMaskCircularFOVDetector eventDetector2 = (CentralBodyMaskCircularFOVDetector) eventDetector1
+            .copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final KeplerianPropagator propagator = new KeplerianPropagator(orbit, new BodyCenterPointing(itrf));
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(date.shiftedBy(Constants.JULIAN_DAY));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2002-04-02T04:19:04.243"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2002-04-02T04:19:04.243"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2002-04-02T04:21:54.099"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2002-04-02T04:21:54.099"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2002-04-02T04:19:03.911"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2002-04-02T04:19:04.243"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2002-04-02T04:21:53.769"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2002-04-02T04:21:54.099"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        final EclipseDetector eclipseDetector = eventDetector1.getEclipseDetector();
+        Assert.assertEquals(eclipseDetector.getEmitter(finalState), eventDetector1.getEmitter(finalState));
+        Assert.assertEquals(eclipseDetector.getReceiver(finalState), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(eclipseDetector.getDatationChoice(), eventDetector1.getDatationChoice());
     }
 
     /**
@@ -699,6 +781,12 @@ public class CentralBodyMaskCircularFOVDetectorTest {
             return null;
         }
 
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final SpacecraftState state, final boolean increasing, final boolean forward) {
+            // Do nothing by default, event is not filtered
+            return false;
+        }
     }
 
     /**
@@ -741,9 +829,8 @@ public class CentralBodyMaskCircularFOVDetectorTest {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date,
-                final Frame frame) throws PatriusException {
-            return frame;
+        public Frame getNativeFrame(final AbsoluteDate date) {
+            return this.frame;
         }
     }
 }

@@ -18,6 +18,7 @@
  * @history created 13/03/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -37,11 +38,6 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import fr.cnes.sirius.patrius.events.CodedEvent;
-import fr.cnes.sirius.patrius.events.CodedEventsList;
-import fr.cnes.sirius.patrius.events.CodedEventsLogger;
-import fr.cnes.sirius.patrius.events.PhenomenaList;
-import fr.cnes.sirius.patrius.events.Phenomenon;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;

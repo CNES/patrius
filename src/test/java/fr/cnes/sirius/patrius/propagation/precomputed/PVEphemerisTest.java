@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
@@ -42,7 +44,7 @@ import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -129,7 +131,7 @@ public class PVEphemerisTest {
         Assert.assertTrue(Arrays.equals(pvts.toArray(), pvEphemeris.getTimeStampedPVCoordinates(false)));
         Assert.assertTrue(pvEphemeris.isAcceptOutOfOptimalRange());
          Assert.assertEquals(gcrf, pvEphemeris.getFrame());
-         Assert.assertEquals(gcrf, pvEphemeris.getNativeFrame(null, FramesFactory.getEME2000()));
+         Assert.assertEquals(gcrf, pvEphemeris.getNativeFrame(null));
         Assert.assertEquals(SearchMethod.PROPORTIONAL, pvEphemeris.getSearchMethod()); // PROPORTIONAL should be by default
         pvEphemeris.setSearchMethod(SearchMethod.DICHOTOMY);
         Assert.assertEquals(SearchMethod.DICHOTOMY, pvEphemeris.getSearchMethod());

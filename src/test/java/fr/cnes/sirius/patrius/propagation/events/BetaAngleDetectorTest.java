@@ -19,6 +19,12 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
  * VERSION:4.9:DM:DM-3169:10/05/2022:[PATRIUS] Precision de l'hypothese de propagation instantanee de la lumiere
@@ -36,14 +42,20 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.BetaAngleDetector;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -53,7 +65,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -232,7 +243,7 @@ public class BetaAngleDetectorTest {
             new BetaAngleDetector(MathUtils.HALF_PI, 10, 0.1, Action.STOP);
         final BetaAngleDetector detector2 = (BetaAngleDetector) detector.copy();
         // Test getter
-        Assert.assertEquals(MathUtils.HALF_PI, detector2.getAngle());
+        Assert.assertEquals(MathUtils.HALF_PI, detector2.getAngle(), 0.);
     }
 
     /**
@@ -476,5 +487,58 @@ public class BetaAngleDetectorTest {
         // Checks
         Assert.assertFalse(detector1.g(tISSSpState) == detector2.g(tISSSpState));
         Assert.assertTrue(detector2.g(tISSSpState) == detector3.g(tISSSpState));
+    }
+
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final CelestialPoint sun = new MeeusSun();
+        final BetaAngleDetector eventDetector1 = new BetaAngleDetector(-1.13, 10, 0.1, Action.CONTINUE,
+            false, sun);
+        final BetaAngleDetector eventDetector2 = (BetaAngleDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final KeplerianPropagator propagator = new KeplerianPropagator(tISSOrbit);
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(iniDate.shiftedBy(5000));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(1, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T13:03:26.583"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T13:03:26.583"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(1, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T13:03:26.583"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T13:11:40.882"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(sun, eventDetector1.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
     }
 }

@@ -46,7 +46,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeInterpolable;
 import fr.cnes.sirius.patrius.time.TimeShiftable;
@@ -145,7 +145,7 @@ public class Transform implements TimeStamped, TimeShiftable<Transform>, TimeInt
      *        the position of the "destination" frame expressed in the "origin" one
      */
     public Transform(final AbsoluteDate dateIn, final Vector3D translation) {
-        this(dateIn, new PVCoordinates(translation, Vector3D.ZERO), AngularCoordinates.IDENTITY);
+        this(dateIn, new PVCoordinates(translation, Vector3D.ZERO, Vector3D.ZERO), AngularCoordinates.IDENTITY);
     }
 
     /**
@@ -171,7 +171,7 @@ public class Transform implements TimeStamped, TimeShiftable<Transform>, TimeInt
      *        the velocity of the "destination" frame expressed in the "origin" one
      */
     public Transform(final AbsoluteDate dateIn, final Vector3D translation, final Vector3D velocity) {
-        this(dateIn, new PVCoordinates(translation, velocity), AngularCoordinates.IDENTITY);
+        this(dateIn, new PVCoordinates(translation, velocity, Vector3D.ZERO), AngularCoordinates.IDENTITY);
     }
 
     /**

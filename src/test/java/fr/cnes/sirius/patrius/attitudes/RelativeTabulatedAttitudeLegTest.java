@@ -18,6 +18,7 @@
  * @history creation 18/11/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3154:10/05/2022:[PATRIUS] Amelioration des methodes permettant l'extraction d'une sous-sequence 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -124,7 +125,7 @@ public class RelativeTabulatedAttitudeLegTest {
         try {
             new RelativeTabulatedAttitudeLeg(this.refDate, this.listArOneAtt, 5, this.frame);
             Assert.fail();
-        } catch (final IllegalArgumentException e) {
+        } catch (final PatriusException e) {
             // expected
         }
 
@@ -724,6 +725,43 @@ public class RelativeTabulatedAttitudeLegTest {
             relativeTab3.copy(newIntervalOfValidityNotIncluded);
             Assert.fail();
         } catch (final IllegalArgumentException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testExceptions() {
+
+        final AbsoluteDate referenceDate = AbsoluteDate.J2000_EPOCH;
+        final Frame gcrf = FramesFactory.getGCRF();
+
+        // Try to use a number of points used for interpolation is < 1 (should fail)
+        try {
+            new RelativeTabulatedAttitudeLeg(referenceDate, this.listRot, gcrf, 0);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // Try to use no enough data for Hermite interpolation (should fail)
+        try {
+            new RelativeTabulatedAttitudeLeg(referenceDate, this.listRot, gcrf, this.listRot.size() + 1);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // Try to use angular coordinates which aren't in chronological order (should fail)
+        final List<Pair<Double, Rotation>> listRotBis = new ArrayList<>();
+        listRotBis.add(this.listRot.get(2));
+        listRotBis.addAll(this.listRot);
+        try {
+            new RelativeTabulatedAttitudeLeg(referenceDate, listRotBis, gcrf, 2);
+            Assert.fail();
+        } catch (final PatriusException e) {
             // expected
             Assert.assertTrue(true);
         }

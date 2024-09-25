@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,7 @@
  * END-HISTORY
  */
 /*
- * 
+ *
  */
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
@@ -55,7 +55,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * <p>
  * Instances of this class are guaranteed to be immutable.
  * </p>
- * 
+ *
  * @author Fabien Maussion
  * @author Luc Maisonobe
  */
@@ -64,7 +64,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /** Fixed position/velocity/acceleration at origin (both p, v and a are zero vectors). */
     public static final PVCoordinates ZERO = new PVCoordinates(Vector3D.ZERO, Vector3D.ZERO, Vector3D.ZERO);
-    
+
     /** Root int for hash code. */
     private static final int ROOTINT = 356;
 
@@ -110,7 +110,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /**
      * Builds a PVCoordinates triplet with zero acceleration.
-     * 
+     *
      * @param positionIn
      *        the position vector (m)
      * @param velocityIn
@@ -124,7 +124,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /**
      * Builds a PVCoordinates triplet.
-     * 
+     *
      * @param positionIn
      *        the position vector (m)
      * @param velocityIn
@@ -146,7 +146,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The PVCoordinates built will be a * pv
      * </p>
-     * 
+     *
      * @param a
      *        scale factor
      * @param pv
@@ -166,7 +166,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The PVCoordinates built will be end - start.
      * </p>
-     * 
+     *
      * @param start
      *        Starting PVCoordinates
      * @param end
@@ -187,7 +187,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The PVCoordinates built will be a1 * u1 + a2 * u2
      * </p>
-     * 
+     *
      * @param a1
      *        first scale factor
      * @param pv1
@@ -213,7 +213,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The PVCoordinates built will be a1 * u1 + a2 * u2 + a3 * u3
      * </p>
-     * 
+     *
      * @param a1
      *        first scale factor
      * @param pv1
@@ -244,7 +244,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The PVCoordinates built will be a1 * u1 + a2 * u2 + a3 * u3 + a4 * u4
      * </p>
-     * 
+     *
      * @param a1
      *        first scale factor
      * @param pv1
@@ -280,7 +280,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The vector components must have time as their only derivation parameter and have consistent derivation orders.
      * </p>
-     * 
+     *
      * @param p
      *        vector with time-derivatives embedded within the coordinates
      */
@@ -308,7 +308,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The {@link DerivativeStructure} coordinates correspond to time-derivatives up to the user-specified order.
      * </p>
-     * 
+     *
      * @param order
      *        derivation order for the vector components
      * @return vector with time-derivatives embedded within the coordinates
@@ -352,7 +352,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * Estimation is based on a simple fixed velocity translation during the time interval between the two positions.
      * </p>
-     * 
+     *
      * @param start
      *        start position
      * @param end
@@ -373,7 +373,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <em>not</em> intended as a replacement for proper orbit propagation (it is not even Keplerian!) but should be
      * sufficient for either small time shifts or coarse accuracy.
      * </p>
-     * 
+     *
      * @param dt
      *        time shift in seconds
      * @return a new state, shifted with respect to the instance (which is immutable)
@@ -384,15 +384,19 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      */
     @Override
     public PVCoordinates shiftedBy(final double dt) {
+        // Quick escape if no shift
+        if (dt == 0.) {
+            return this;
+        }
+
         final Vector3D acc = this.acceleration == null ? Vector3D.ZERO : this.acceleration;
         return new PVCoordinates(new Vector3D(1, this.position, dt, this.velocity, dt * dt / 2., acc),
-            new Vector3D(1, this.velocity, dt, acc),
-            this.acceleration);
+            new Vector3D(1, this.velocity, dt, acc), this.acceleration);
     }
 
     /**
      * Gets the position.
-     * 
+     *
      * @return the position vector (m).
      */
     public Vector3D getPosition() {
@@ -401,7 +405,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /**
      * Gets the velocity.
-     * 
+     *
      * @return the velocity vector (m/s).
      */
     public Vector3D getVelocity() {
@@ -410,7 +414,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /**
      * Gets the acceleration.
-     * 
+     *
      * @return the acceleration vector (m/s²).
      */
     public Vector3D getAcceleration() {
@@ -426,7 +430,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p>
      * The returned vector is recomputed each time this method is called, it is not cached.
      * </p>
-     * 
+     *
      * @return a new instance of the momentum vector (m<sup>2</sup>/s).
      */
     public Vector3D getMomentum() {
@@ -438,7 +442,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * <p/>
      * The angular velocity vector is parallel to the {@link #getMomentum() angular
      * momentum} and is computed by ω = p &times; v / ||p||²
-     * 
+     *
      * @return the angular velocity vector
      * @see <a href="http://en.wikipedia.org/wiki/Angular_velocity">Angular Velocity on Wikipedia</a>
      */
@@ -448,7 +452,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /**
      * Get the opposite of the instance.
-     * 
+     *
      * @return a new position-velocity which is opposite to the instance
      */
     public PVCoordinates negate() {
@@ -460,7 +464,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * Compute the cross-product of two instances.
      * Computing the cross-products of two PVCoordinates means computing the first and second derivatives of the cross
      * product of their positions. Therefore, this does not return a position, velocity, acceleration.
-     * 
+     *
      * @param pv1
      *        first instances
      * @param pv2
@@ -489,7 +493,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
      * component (acceleration) will be the derivative of the second component (hence it will generally not be
      * normalized).
      * </p>
-     * 
+     *
      * @return a new instance, with first component normalized and
      *         remaining component computed to have consistent derivatives
      */
@@ -543,7 +547,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
 
     /**
      * Return a string representation of this position/velocity/acceleration triplet.
-     * 
+     *
      * @return string representation of this position/velocity/acceleration triplet
      */
     @Override
@@ -573,9 +577,9 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
         // parameters : x, y, z, xDot, yDot, zDot
         //              acceleration
         boolean isEqual = true;
-        
-        if (object == this) { 
-            isEqual = true; 
+
+        if (object == this) {
+            isEqual = true;
         } else if (object instanceof PVCoordinates) {
             final PVCoordinates other = (PVCoordinates) object;
 
@@ -587,18 +591,18 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
             } else {
                 isEqual &= other.getAcceleration() == null;
             }
-            
+
         } else {
             isEqual = false;
         }
-        
+
         return isEqual;
     }
-        
+
     /** {@inheritDoc} */
-    @Override 
-    public int hashCode() { 
-        
+    @Override
+    public int hashCode() {
+
         // A not zero random "root int"
         int result = ROOTINT;
         // An efficient multiplier (JVM optimizes 31 * i as (i << 5) - 1 )
@@ -611,7 +615,7 @@ public class PVCoordinates implements TimeShiftable<PVCoordinates>, Serializable
         if (this.acceleration != null) {
             result = effMult * result + getAcceleration().hashCode();
         }
- 
-        return result; 
+
+        return result;
     }
 }

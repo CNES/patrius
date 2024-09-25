@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-6:08/12/2023:[PATRIUS] Suppression de l'attribut "nature" dans OrientationAngleLegsSequence
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3152:10/05/2022:[PATRIUS] Suppression de l'attribut "nature" dans OrientationAngleLegsSequence  
  * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
@@ -49,14 +50,14 @@ import fr.cnes.sirius.patrius.utils.legs.StrictLegsSequence;
  * @since 4.2
  */
 public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
-        StrictLegsSequence<L> implements OrientationAngleProvider {
+    StrictLegsSequence<L> implements OrientationAngleProvider {
 
     /** Default nature. */
     public static final String DEFAULT_ORIENTATION_SEQUENCE_NATURE = "ORIENTATION_ANGLE_LEGS_SEQUENCE";
 
     /** Serial ID. */
     private static final long serialVersionUID = -2385389105822101864L;
-    
+
     /** Unchecked string. */
     private static final String UNCHECKED = "unchecked";
 
@@ -80,7 +81,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
         super();
         this.nature = nature;
     }
-
+    
     /**
      * Get the legs sequence nature.
      *
@@ -89,7 +90,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
     public String getNature() {
         return this.nature;
     }
-
+    
     /**
      * Compute the orientation angle corresponding to an orbital state.
      * 
@@ -101,7 +102,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
      */
     @Override
     public Double getOrientationAngle(final PVCoordinatesProvider pvProv, final AbsoluteDate date)
-            throws PatriusException {
+        throws PatriusException {
         final OrientationAngleLeg leg = current(date);
         if (leg == null) {
             return null;
@@ -113,11 +114,10 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
     @Override
     @SuppressWarnings("PMD.UselessOverridingMethod")
     // Reason: false positive, call to super is necessary otherwise ambiguous
-            public
-            String toPrettyString() {
+    public String toPrettyString() {
         return super.toPrettyString();
     }
-    
+
     /**
      * {@inheritDoc}
      * 
@@ -135,11 +135,11 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
     @SuppressWarnings(UNCHECKED)
     @Override
     public OrientationAngleLegsSequence<L> sub(final AbsoluteDate fromT, final AbsoluteDate toT,
-            final boolean strict) {
+                                               final boolean strict) {
         if ((fromT == null) || (toT == null)) {
             // Null case: exception
             throw PatriusException
-                    .createIllegalArgumentException(PatriusMessages.LEG_CANNOT_BE_NULL);
+                .createIllegalArgumentException(PatriusMessages.LEG_CANNOT_BE_NULL);
         }
         if (isEmpty()) {
             // Empty case
@@ -161,7 +161,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
     /** {@inheritDoc} */
     @Override
     public OrientationAngleLegsSequence<L> sub(final AbsoluteDateInterval interval,
-            final boolean strict) {
+                                               final boolean strict) {
         return sub(interval.getLowerData(), interval.getUpperData(), strict);
     }
 
@@ -178,7 +178,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
         if (toT == null) {
             // Null case: exception
             throw PatriusException
-                    .createIllegalArgumentException(PatriusMessages.LEG_CANNOT_BE_NULL);
+                .createIllegalArgumentException(PatriusMessages.LEG_CANNOT_BE_NULL);
         }
         if (isEmpty()) {
             // Empty case
@@ -204,7 +204,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
         if (fromT == null) {
             // Null case: exception
             throw PatriusException
-                    .createIllegalArgumentException(PatriusMessages.LEG_CANNOT_BE_NULL);
+                .createIllegalArgumentException(PatriusMessages.LEG_CANNOT_BE_NULL);
         }
         if (isEmpty()) {
             // Empty case
@@ -227,12 +227,12 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
     @SuppressWarnings(UNCHECKED)
     @Override
     public OrientationAngleLegsSequence<L> copy(final AbsoluteDateInterval newInterval,
-            final boolean strict) {
+                                                final boolean strict) {
 
         // Check that the new interval is included in the old interval
         if (!getTimeInterval().includes(newInterval)) {
             throw PatriusException
-                    .createIllegalArgumentException(PatriusMessages.INTERVAL_MUST_BE_INCLUDED);
+                .createIllegalArgumentException(PatriusMessages.INTERVAL_MUST_BE_INCLUDED);
         }
 
         // Specific behavior: we don't want each leg to be necessarily included in global validity
@@ -241,7 +241,7 @@ public class OrientationAngleLegsSequence<L extends OrientationAngleLeg> extends
         final OrientationAngleLegsSequence<L> res = new OrientationAngleLegsSequence<>(this.nature);
         for (final OrientationAngleLeg currentL : this) {
             final AbsoluteDateInterval intersection = currentL.getTimeInterval()
-                    .getIntersectionWith(newInterval);
+                .getIntersectionWith(newInterval);
             if (intersection != null) {
                 // Leg contained in truncation interval
                 res.add((L) currentL.copy(intersection));

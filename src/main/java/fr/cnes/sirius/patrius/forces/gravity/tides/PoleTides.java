@@ -5,9 +5,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
+ * juliens dans TidesToolbox.computeFundamentalArguments()
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:DM:DM-2622:27/01/2021:Modelisation de la maree polaire dans Patrius 
@@ -26,6 +28,7 @@ package fr.cnes.sirius.patrius.forces.gravity.tides;
 
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.frames.configuration.eop.PoleCorrection;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -40,9 +43,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <li>Earth ocean pole tides</li>
  * </ul>
  * It is possible to activate/deactivate each of these contributors through flags at construction.
- * 
+ *
  * @author Emmanuel Bignon
- * 
+ *
  * @since 4.6
  */
 public class PoleTides extends AbstractTides {
@@ -52,7 +55,7 @@ public class PoleTides extends AbstractTides {
 
     /** Milli arcsec to arcsec coefficient. */
     private static final double MILLIARCSEC_TO_ARCSEC = 1000.;
-    
+
     /** Solid Earth pole tides contribution. */
     private final boolean solidContributionFlag;
 
@@ -64,7 +67,7 @@ public class PoleTides extends AbstractTides {
 
     /**
      * Constructor.
-     * 
+     *
      * @param centralBodyFrame
      *        rotating body frame
      * @param equatorialRadius
@@ -86,7 +89,7 @@ public class PoleTides extends AbstractTides {
 
     /**
      * Constructor.
-     * 
+     *
      * @param centralBodyFrame
      *        rotating body frame
      * @param equatorialRadius
@@ -114,7 +117,7 @@ public class PoleTides extends AbstractTides {
 
     /**
      * Constructor.
-     * 
+     *
      * @param centralBodyFrame
      *        rotating body frame
      * @param equatorialRadius
@@ -136,7 +139,7 @@ public class PoleTides extends AbstractTides {
 
     /**
      * Constructor.
-     * 
+     *
      * @param centralBodyFrame
      *        rotating body frame
      * @param equatorialRadius
@@ -168,24 +171,24 @@ public class PoleTides extends AbstractTides {
 
         if (this.solidContributionFlag || this.oceanicContributionFlag) {
             // Duration in years since J2000 epoch
-            final double t = date.durationFrom(AbsoluteDate.J2000_EPOCH) / Constants.JULIAN_YEAR;
+            final double t = date.durationFromJ2000EpochInYears();
 
             // Secular position of pole in arcsec
             final double xs = (55. + 1.677 * t) / MILLIARCSEC_TO_ARCSEC;
             final double ys = (320.5 + 3.460 * t) / MILLIARCSEC_TO_ARCSEC;
-            
+
             // Current position of pole
-            final double[] pole = FramesFactory.getConfiguration().getPolarMotion(date);
-            final double xp = pole[0] / Constants.ARC_SECONDS_TO_RADIANS;
-            final double yp = pole[1] / Constants.ARC_SECONDS_TO_RADIANS;
-            
+            final PoleCorrection pole = FramesFactory.getConfiguration().getPolarMotion(date);
+            final double xp = pole.getXp() / Constants.ARC_SECONDS_TO_RADIANS;
+            final double yp = pole.getYp() / Constants.ARC_SECONDS_TO_RADIANS;
+
             // Delta in arcsec
             final double m1 = xp - xs;
             final double m2 = -(yp - ys);
 
             this.coefficientsC[2][1] = 0.;
             this.coefficientsS[2][1] = 0.;
-            
+
             // Solid tides
             if (this.solidContributionFlag) {
                 // Delta on coefficients C21 and S21

@@ -18,6 +18,7 @@
  * @history Created 05/08/2016
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -40,6 +41,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
@@ -173,7 +175,7 @@ public class MSIS00AdapterTest {
         final MSISE2000InputParameters msis2000Data = new ClassicalMSISE2000SolarData(provider);
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.46, 1 / 0.29825765000000E+03,
             FramesFactory.getITRF());
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final MSIS00Adapter atmosModel = new MSIS00Adapter(msis2000Data, 6378136.46, 1 / 0.29825765000000E+03, sun);
         final AbsoluteDate date = new AbsoluteDate("2008-01-01T16:25:00", TimeScalesFactory.getUTC());
         final Vector3D pos = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(), 0, 0, 600000, "").getPosition();

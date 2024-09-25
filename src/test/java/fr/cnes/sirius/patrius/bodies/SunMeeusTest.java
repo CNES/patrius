@@ -18,6 +18,13 @@
  * @history creation 01/08/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -54,9 +61,11 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
@@ -64,7 +73,6 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -177,7 +185,7 @@ public class SunMeeusTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SUN, loader);
 
-        final CelestialBody sunDE = CelestialBodyFactory.getSun();
+        final CelestialPoint sunDE = CelestialBodyFactory.getSun();
 
         final Vector3D pos1 = this.sun.getPVCoordinates(date, gcrf).getPosition();
 
@@ -192,7 +200,7 @@ public class SunMeeusTest {
         Assert.assertTrue(Vector3D.angle(pos1, pos2) < 34.6 * Constants.ARC_SECONDS_TO_RADIANS);
 
         // Test GetNativeFrame
-        Assert.assertEquals(sunDE.getICRF(), sunDE.getNativeFrame(null, null));
+        Assert.assertEquals(sunDE.getICRF(), sunDE.getNativeFrame(null));
     }
 
     /**
@@ -249,8 +257,8 @@ public class SunMeeusTest {
         // arbitrary date
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
 
-        final Frame bodyRotatingFrame = this.sun.getRotatingFrame(IAUPoleModelType.TRUE);
-        final Frame bodyInertialFrame = this.sun.getInertialFrame(IAUPoleModelType.CONSTANT);
+        final CelestialBodyFrame bodyRotatingFrame = this.sun.getRotatingFrame(IAUPoleModelType.TRUE);
+        final CelestialBodyFrame bodyInertialFrame = this.sun.getInertialFrame(IAUPoleModelType.CONSTANT);
 
         final BodyShape actualShape = this.sun.getShape();
         final BodyShape expectedShape = new OneAxisEllipsoid(this.radius, 0, bodyRotatingFrame, "Sun");
@@ -293,7 +301,7 @@ public class SunMeeusTest {
      *
      * @testedFeature {@link features#MEEUS_SUN_COVERAGE}
      *
-     * @description check that the setter method of {@link CelestialBody} is correct.
+     * @description check that the setter method of {@link CelestialPoint} is correct.
      *
      * @input {@link BodyShape}
      *
@@ -306,8 +314,8 @@ public class SunMeeusTest {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
 
         // inertial and rotating frame
-        final Frame bodyRotatingFrame = this.sun.getRotatingFrame(IAUPoleModelType.TRUE);
-        final Frame bodyInertialFrame = this.sun.getInertialFrame(IAUPoleModelType.CONSTANT);
+        final CelestialBodyFrame bodyRotatingFrame = this.sun.getRotatingFrame(IAUPoleModelType.TRUE);
+        final CelestialBodyFrame bodyInertialFrame = this.sun.getInertialFrame(IAUPoleModelType.CONSTANT);
 
         // the default shape
         final CelestialBody moon = this.sun;

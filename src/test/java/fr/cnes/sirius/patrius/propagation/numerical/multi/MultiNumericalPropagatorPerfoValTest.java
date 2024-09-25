@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
  * VERSION:4.11:DM:DM-17:22/05/2023:[PATRIUS] Detecteur de distance a la surface d'un corps celeste
@@ -56,8 +57,15 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.events.CodedEventsLogger;
-import fr.cnes.sirius.patrius.events.GenericCodingEventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AnomalyDetector;
+import fr.cnes.sirius.patrius.events.detectors.DistanceDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaDistanceDetector;
+import fr.cnes.sirius.patrius.events.detectors.LatitudeDetector;
+import fr.cnes.sirius.patrius.events.detectors.NadirSolarIncidenceDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.atmospheres.SimpleExponentialAtmosphere;
 import fr.cnes.sirius.patrius.forces.drag.DragForce;
@@ -83,13 +91,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AnomalyDetector;
-import fr.cnes.sirius.patrius.propagation.events.DistanceDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.ExtremaDistanceDetector;
-import fr.cnes.sirius.patrius.propagation.events.LatitudeDetector;
-import fr.cnes.sirius.patrius.propagation.events.NadirSolarIncidenceDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;

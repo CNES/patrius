@@ -18,6 +18,8 @@
 /*
  * 
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3126:10/05/2022:[PATRIUS] Imports obsoletes suite a suppression de reflexion Java dans Patrius 
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -45,9 +47,9 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.DiurnalRotation;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
-import fr.cnes.sirius.patrius.frames.configuration.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
@@ -144,7 +146,7 @@ public class CIRF2000ProviderTest {
     public void testNoPN() throws PatriusException {
         // Build config without precession/nutation model
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
-        builder.setPrecessionNutation(new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN));
+        builder.setCIRFPrecessionNutation(new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN));
         // Compute transform
         final Transform transform = new CIRFProvider().getTransform(AbsoluteDate.J2000_EPOCH,
             builder.getConfiguration());
@@ -160,7 +162,7 @@ public class CIRF2000ProviderTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("compressed-data");
         final FramesConfigurationBuilder b = new FramesConfigurationBuilder(Utils.getIERS2003ConfigurationWOEOP(true));
 

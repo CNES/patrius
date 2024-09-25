@@ -17,7 +17,14 @@
  * @history creation 15/06/2012
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-125:05/09/2023:[PATRIUS] Reliquat OPENFD-62 sur le code des body shapes
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.12:DM:DM-7:17/08/2023:[PATRIUS] Symétriser les méthodes closestPointTo de BodyShape
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-52:30/06/2023:[PATRIUS] Précision dans la méthode FacetBodyShape.getFieldData
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
@@ -40,12 +47,13 @@
 package fr.cnes.sirius.patrius.bodies;
 
 import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
@@ -68,7 +76,7 @@ public interface BodyShape extends PVCoordinatesProvider {
      * {@link #getIntersectionPoint(Line, Vector3D, Frame, AbsoluteDate, double)}. This distance epsilon is also used to
      * assess if a body point is on the shape surface or not (method {@link BodyPoint#isOnShapeSurface()}.
      */
-    public static final double DEFAULT_DISTANCE_EPSILON = 1E-8;
+    public static final double DEFAULT_DISTANCE_EPSILON = 1e-8;
 
     /**
      * Factor to be multiplied to the direction in order to improve the accuracy of the line creation by increasing the
@@ -97,7 +105,7 @@ public interface BodyShape extends PVCoordinatesProvider {
      *
      * @return the body frame related to body shape
      */
-    public Frame getBodyFrame();
+    public CelestialBodyFrame getBodyFrame();
 
     /**
      * Getter for the intersection point of a line with the surface of the body.
@@ -238,36 +246,6 @@ public interface BodyShape extends PVCoordinatesProvider {
      *         if the margin value is invalid
      */
     public BodyShape resize(MarginType marginType, double marginValue) throws PatriusException;
-
-    /**
-     * Transform a cartesian point to a surface-relative point.
-     *
-     * @param point
-     *        cartesian point
-     * @param frame
-     *        frame in which cartesian point is expressed
-     * @param date
-     *        date of the computation (used for frames conversions)
-     * @return point at the same location but as a surface-relative point
-     * @throws PatriusException
-     *         if point cannot be converted to body frame
-     * @deprecated as of 4.12 {@link EllipsoidPoint} is restrained with use of {@link OneAxisEllipsoid} and associated
-     *             method {@link OneAxisEllipsoid#buildPoint(Vector3D, Frame, AbsoluteDate)}.
-     */
-    @Deprecated
-    public EllipsoidPoint transform(Vector3D point, Frame frame, AbsoluteDate date) throws PatriusException;
-
-    /**
-     * Transform a surface-relative point to a cartesian point.
-     *
-     * @param point
-     *        surface-relative point
-     * @return point at the same location but as a cartesian point
-     * @deprecated as of 4.12 {@link EllipsoidPoint} is restrained with use of {@link EllipsoidBodyShape} and
-     *             associated method {@link EllipsoidPoint#getPosition()}.
-     */
-    @Deprecated
-    public Vector3D transform(EllipsoidPoint point);
 
     /**
      * This method computes the two points, on the line and on the body, that are the closest to each other. The
@@ -483,4 +461,25 @@ public interface BodyShape extends PVCoordinatesProvider {
      * @return the encompassing radius
      */
     public double getEncompassingSphereRadius();
+
+    /**
+     * Getter for the epsilon for signal propagation used in
+     * {@link #getApparentRadius(PVCoordinatesProvider, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
+     * method. This epsilon (in s) directly reflect the accuracy of signal propagation (1s of accuracy = 3E8m of
+     * accuracy on distance between emitter and receiver).
+     *
+     * @return the epsilon for signal propagation
+     */
+    public double getEpsilonSignalPropagation();
+
+    /**
+     * Setter for the epsilon for signal propagation used in
+     * {@link #getApparentRadius(PVCoordinatesProvider, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
+     * method. This epsilon (in s) directly reflect the accuracy of signal propagation (1s of accuracy = 3E8m of
+     * accuracy on distance between emitter and receiver).
+     *
+     * @param epsilon
+     *        epsilon for signal propagation
+     */
+    public void setEpsilonSignalPropagation(final double epsilon);
 }

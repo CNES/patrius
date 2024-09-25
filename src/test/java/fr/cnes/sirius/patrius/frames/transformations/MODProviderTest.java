@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -132,20 +133,6 @@ public class MODProviderTest {
             new PVCoordinates(new Vector3D(-40576822.6385, -11502231.5013, 9738.2304),
                 new Vector3D(837.708020, -2957.480118, -0.814275));
         checkPV(pvMODiau76, tf.transformPVCoordinates(pvJ2000iau76), 3.3e-5, 6.9e-7);
-    }
-
-    @Test
-    public void testGetEulerAngles() {
-        final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(86400. * 36525 + 35);
-        final double[] euler = new MODProvider().getEulerAngles(date);
-        // Expected Euler angles
-        // Reference : STELA
-        final double[] expectedAngles = new double[] { 0.005590807466558654, 0.004858044468503607,
-            0.005591768491589964, 3.543485519560285E-12, 3.078482802373367E-12, 3.544703720066214E-12 };
-        Assert.assertEquals(6, euler.length);
-        for (int i = 0; i < euler.length; i++) {
-            Assert.assertEquals(expectedAngles[i], euler[i], 1e-14);
-        }
     }
 
     @Before

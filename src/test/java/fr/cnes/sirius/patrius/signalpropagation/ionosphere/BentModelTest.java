@@ -18,6 +18,10 @@
  * @history creation 27/09/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -47,11 +51,11 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape;
-import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
 import fr.cnes.sirius.patrius.bodies.mesh.FacetPoint;
 import fr.cnes.sirius.patrius.bodies.mesh.ObjMeshLoader;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataProvider;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -181,7 +185,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -255,7 +259,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -314,7 +318,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -327,7 +331,8 @@ public class BentModelTest {
 
         final double result1 = CDELTAT / (Constants.SPEED_OF_LIGHT * frequency * frequency) * tec;
         Assert.assertEquals(result1, ionoBent.computeSignalDelay(frequency, refDate, refSatPos, satelliteFrame), 0.);
-        Report.printToReport("Signal delay", result1, ionoBent.computeSignalDelay(frequency, refDate, refSatPos, satelliteFrame));
+        Report.printToReport("Signal delay", result1,
+            ionoBent.computeSignalDelay(frequency, refDate, refSatPos, satelliteFrame));
     }
 
     /**
@@ -381,7 +386,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -442,7 +447,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -508,7 +513,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -568,7 +573,7 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
@@ -577,7 +582,7 @@ public class BentModelTest {
         // test the sample
         testOneDataSample(refDate, refSatPos, satelliteFrame, refTOTNA, ionoBent, false);
     }
-    
+
     /**
      * @throws PatriusException
      *         if an error occurs
@@ -616,15 +621,15 @@ public class BentModelTest {
         final USKProvider uskProv = new USKLoader(USK_FILENAME);
 
         // earth shape
-        final Frame earthFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame earthFrame = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(6378137, 1. / 298.257, earthFrame);
 
         // model creation
         final BentModel model = new BentModel(r12Prov, cstSolarActivity,
             uskProv, earth, refStaPos, stationFrame);
         final BentModel deserializedModel = TestUtils.serializeAndRecover(model);
-        
-        Assert.assertEquals(model.computeSignalDelay(frequency, refDate, refSatPos, stationFrame), 
+
+        Assert.assertEquals(model.computeSignalDelay(frequency, refDate, refSatPos, stationFrame),
             deserializedModel.computeSignalDelay(frequency, refDate, refSatPos, stationFrame), 0.);
     }
 
@@ -645,14 +650,13 @@ public class BentModelTest {
         try {
             final String modelFile1 = "mnt" + File.separator + "Phobos_Ernst_HD.obj";
             final String fullName1 = FacetBodyShape.class.getClassLoader().getResource(modelFile1).toURI().getPath();
-            final FacetBodyShape body = new FacetBodyShape("", FramesFactory.getGCRF(), EllipsoidType.INNER_SPHERE,
-                    new ObjMeshLoader(fullName1));
+            final FacetBodyShape body = new FacetBodyShape("", FramesFactory.getGCRF(),
+                new ObjMeshLoader(fullName1));
             new BentModel(null, null, null, new TopocentricFrame(new FacetPoint(body, Vector3D.PLUS_I, ""), ""));
             Assert.fail();
-        }catch (final PatriusRuntimeException e) {
+        } catch (final PatriusRuntimeException e) {
             Assert.assertTrue(true);
         }
-        FramesFactory.getGCRF().setCelestialBody(null);
     }
 
     /**

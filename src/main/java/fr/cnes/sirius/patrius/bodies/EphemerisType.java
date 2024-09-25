@@ -14,14 +14,16 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.bodies;
 
-import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+
 
 /**
  * List of supported ephemerides types (for use in JPL loaders classes).
@@ -71,11 +73,12 @@ public enum EphemerisType {
     /** Constant for Pluto. */
     PLUTO(CelestialBodyFactory.PLUTO);
 
-    /** JPL name. */
+    /** JPL/PATRIUS name. */
     private final String name;
 
     /**
      * Constructor.
+     * 
      * @param name JL name
      */
     private EphemerisType(final String name) {
@@ -83,29 +86,28 @@ public enum EphemerisType {
     }
 
     /**
-     * Returns the JPL name.
-     * @return the JPL name
+     * Returns the JPL/PATRIUS name.
+     * 
+     * @return the JPL/PATRIUS name
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Get ephemeris type from name.
+     * Get ephemeris type from JPL/PATRIUS name.
+     * 
      * @param name a name
-     * @return ephemeris type from name
-     * @throws PatriusException thrown if body name is unknown
+     * @return ephemeris type from JPL/PATRIUS name, null if unknown
      */
-    public static EphemerisType getEphemerisType(final String name) throws PatriusException {
+    public static EphemerisType getEphemerisType(final String name) {
         for (final EphemerisType type : EphemerisType.values()) {
             if (type.getName().equals(name)) {
                 return type;
             }
         }
-        // Current workaround for EMB name which is different in JPL and BSP ephemeris files
-        if (name.equals(CelestialBodyFactory.EARTH_MOON_BSP)) {
-            return EphemerisType.EARTH_MOON;
-        }
-        throw new PatriusException(PatriusMessages.UNKNOWN_BODY, name);
+        
+        // Non-existent type
+        return null;
     }
 }

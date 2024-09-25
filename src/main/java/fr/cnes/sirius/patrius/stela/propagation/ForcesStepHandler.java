@@ -28,12 +28,9 @@
  */
 package fr.cnes.sirius.patrius.stela.propagation;
 
-import fr.cnes.sirius.patrius.bodies.MeeusSun;
-import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepInterpolator;
-import fr.cnes.sirius.patrius.stela.bodies.MeeusMoonStela;
 import fr.cnes.sirius.patrius.stela.forces.noninertial.NonInertialContribution;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
@@ -116,10 +113,6 @@ public class ForcesStepHandler implements PatriusStepHandler {
 
         // Initialization
         final StelaEquinoctialOrbit orbit = (StelaEquinoctialOrbit) state.getOrbit();
-
-        // Sun/Moon transform update
-        MeeusMoonStela.updateTransform(orbit.getDate(), FramesFactory.getCIRF());
-        MeeusSun.updateTransform(orbit.getDate(), FramesFactory.getCIRF());
 
         // Non-inertial contribution
         if (this.nonInertialContribution != null) {

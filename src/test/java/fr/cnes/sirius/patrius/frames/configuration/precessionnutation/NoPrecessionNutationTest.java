@@ -18,6 +18,8 @@
  * @history creation 19/10/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -26,52 +28,27 @@
  */
 package fr.cnes.sirius.patrius.frames.configuration.precessionnutation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.frames.configuration.FrameConvention;
-import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
-import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 
 public class NoPrecessionNutationTest {
 
-    private final double eps = Precision.EPSILON;
-
     @Test
-    public void testGetCIPMotion() {
-
-        final AbsoluteDate date = new AbsoluteDate(2000, 11, 20, TimeScalesFactory.getTAI());
-        assertEquals(0, PrecessionNutationModelFactory.NO_PN.getCIPMotion(date)[0], this.eps);
-        assertEquals(0, PrecessionNutationModelFactory.NO_PN.getCIPMotion(date)[1], this.eps);
-        assertEquals(0, PrecessionNutationModelFactory.NO_PN.getCIPMotion(date)[2], this.eps);
-    }
-
-    @Test
-    public void testGetCIPMotionTimeDerivatives() {
-
-        final AbsoluteDate date = new AbsoluteDate(2000, 11, 20, TimeScalesFactory.getTAI());
-        assertEquals(0, PrecessionNutationModelFactory.NO_PN.getCIPMotionTimeDerivative(date)[0], this.eps);
-        assertEquals(0, PrecessionNutationModelFactory.NO_PN.getCIPMotionTimeDerivative(date)[1], this.eps);
-        assertEquals(0, PrecessionNutationModelFactory.NO_PN.getCIPMotionTimeDerivative(date)[2], this.eps);
+    public void testGetCIPCoordinates() {
+        Assert.assertEquals(CIPCoordinates.ZERO,
+            PrecessionNutationModelFactory.NO_PN.getCIPCoordinates(AbsoluteDate.J2000_EPOCH));
     }
 
     @Test
     public void testIsDirect() {
-        assertTrue(PrecessionNutationModelFactory.NO_PN.isDirect());
+        Assert.assertTrue(PrecessionNutationModelFactory.NO_PN.isDirect());
     }
 
-    /**
-     * Test methods getOrigin() and isConstant().
-     */
     @Test
-    public void testGetters() {
-        final PrecessionNutationModel pnModel = PrecessionNutationModelFactory.NO_PN;
-        Assert.assertEquals(FrameConvention.NONE, pnModel.getOrigin());
-        Assert.assertEquals(true, pnModel.isConstant());
+    public void testOrigin() {
+        Assert.assertEquals(FrameConvention.NONE, PrecessionNutationModelFactory.NO_PN.getOrigin());
     }
-
 }

@@ -18,6 +18,18 @@
  * @history creation version 1.0
  *
  * HISTORY
+ * VERSION:4.13.4:FA:FA-346:10/06/2024:[PATRIUS] Problème dans l’utilisation du
+ * SatToSatMutualVisibilityDetector en mode de propagation MULTI
+ * VERSION:4.13.1:FA:FA-114:17/01/2024:[PATRIUS] Message d'erreur incomplet
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
+ * à  l'interface DatePolynomialFunctionInterface
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
@@ -618,7 +630,7 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     OUT_OF_RANGE_DATE_FOR_ATTITUDE_LAW("the date is outside the interval of validity of the attitude law"),
     /** Message. */
-    AT_LEAST_TWO_ATTITUDES_NEEDED("at least two attitudes are needed to interpolate"),
+    INVALID_NB_INTERPOLATION_POINTS("the number of points used for interpolation is invalid"),
     /** Message. */
     INTERVAL_MUST_BE_INCLUDED("the time interval must be included in the one of this law"),
     /** Message. */
@@ -738,7 +750,8 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     DATE_OUTSIDE_ATTITUDE_SEQUENCE("The requested date : {0} is not in the attitude sequence"),
     /** Message. */
-    NOT_ENOUGH_INTERPOLATION_POINTS("There is {0} points while there should be at least {1} entries"),
+    NOT_ENOUGH_INTERPOLATION_POINTS(
+            "There are only {0} points available but the interpolation needs at least {1} points"),
     /** Message. */
     ODD_INTERPOLATION_ORDER("The interpolation order should be even"),
     /** Message. */
@@ -769,6 +782,8 @@ public enum PatriusMessages implements Localizable {
     UNEXPECTED_ATMOSPHERE_MODEL("Harris Priester atmosphere model does not support speed of sound computation"),
     /** Message. */
     MONO_MULTI_DETECTOR("The detector used does not correspond with the propagation type (mono or multi)"),
+    /** Message. */
+    NO_PROP_TYPE("No corresponding propagation type has been found for the detector."),
     /** Message. */
     ATTITUDE_FORCES_NULL(
             "The attitude for forces computation is null, an attitude for events computation could not be added"),
@@ -834,6 +849,8 @@ public enum PatriusMessages implements Localizable {
     BINOMIAL_INVALID_PARAMETERS_ORDER("must have n >= k for binomial coefficient (n, k), got k = {0}, n = {1}"),
     /** Message. */
     BINOMIAL_NEGATIVE_PARAMETER("must have n >= 0 for binomial coefficient (n, k), got n = {0}"),
+    /** Message. */
+    BINOMIAL_COMBINATIONS_INVALID_GROUPS_SIZE("The group size cannot exceed the elements size"),
     /** Message. */
     CANNOT_CLEAR_STATISTIC_CONSTRUCTED_FROM_EXTERNAL_MOMENTS(
             "statistics constructed from external moments cannot be cleared"),
@@ -1722,42 +1739,12 @@ public enum PatriusMessages implements Localizable {
     DIMENSION_MISMATCH_REGRESSION("Abscissa and ordinates do not have the same dimensions for a linear regression"),
     /** Wrong quadratic equation */
     WRONG_QUADRATIC_EQUATION("Wrong quadratic equation: quadratic and linear coefficients are both equal to zero"),
-    /** Message */
-    SPICE_ERROR_EXCEPTION("Spice SpiceErrorException: {0}"),
-    /** Message */
-    FAILURE_TO_LOAD_LIBRAIRY("Failed to load dynamic library {0}: {1}"),
-    /** Message */
-    IO_EXCEPTION("IOException: {0}"),
-    /** Message */
-    UNKNOWN_FRAME_ID("The frame NAIF ID is unknown: {0}"),
-    /** Message. */
-    UNKNOWN_BODY_ID("The body NAIF ID is unknown: {0}"),
-    /** Message. */
-    UNKNOWN_MAPPING_BODY_CODE_NAME("The given body code {0} does not "
-            + "correspond to a body name (String), please load it using method addSpiceBodyMapping"),
-    /** Message. */
-    UNKNOWN_MAPPING_SPICE_ID_PAIR_PATRIUS_FRAME("Unknown NAIF IDs pair [{0}, {1}] in file "
-            + "spiceIDsToPatriusFramesMapping.properties. It should be defined in the user mapping"),
-    /** Message. */
-    UNKNOWN_MAPPING_PATRIUS_FRAME_SPICE_ID("No NAIF ID is defined for Frame {0} "
-            + "in file patriusFrameToSpiceID.properties. It should be defined in the user mapping"),
-    /** Message. */
-    UNKNOWN_SPK_DATA_TYPE("Unknown SPK data type: type {0}"),
-    /** Message. */
-    OUT_OF_RANGE_DATE_FOR_EPHEMERIS_DATA_MODEL(
-            "The date {0} is outside the interval of validity of the ephemeris data model"),
-    /** Message. */
-    NO_BSP_EPHEMERIDES_BINARY_FILES_FOUND("No BSP ephemeris binary files found"),
     /** Body not available in the bsp file*/
-    BODY_NOT_AVAILABLE_IN_BSP_FILE("Body {0} is not available in BSP ephemeris file"),
+    BODY_NOT_AVAILABLE_IN_BSP_FILE("Body {0} is not available in BSP ephemeris file {1}."),
     /** Message. */
     WRONG_FILE_FORMAT("There is a problem with the file format: {0}"),
     /** Filter type not found in the FilterType enum */
     MISSING_FILTER_TYPE("Filter type {0} does not exist."),
-    /** Message. */
-    SPICE_INITIALIZE_ERROR("Error when loading Spice shared library."),
-    /** Message. */
-    SPICE_INITIALIZE_MAPPING_ERROR("Error when initializing the Spice mapping."),
     /** Wrong IAUPoleModelType indicated */
     INVALID_IAUPOLEMODELTYPE("The IAUPoleModelType given as input is not accepted."),
     /** The input mesh is not star convex */
@@ -1770,9 +1757,43 @@ public enum PatriusMessages implements Localizable {
     ELLIPSODETIC_ONLY_ON_ELLIPSOIDS("Ellipsodetic coordinates only available on ellipsoids."),
     /** The two points aren't associated to the same body shape. */
     NOT_ASSOCIATED_SAME_BODYSHAPE("The two points aren't associated to the same body shape."),
+    /** The point aren't associated to an OneAxisEllipsoid. */
+    NOT_ASSOCIATED_ONEAXISELLIPSOID("The point aren't associated to an OneAxisEllipsoid."),
     /** Message. */
-    UNKNOWN_BODY("Body name is unknown: {0}");
-
+    DATE_POLYNOMIAL_COPY_INVALID_DATE("When the time factor is enabled, the new origin date is expected "
+            + "to be strictly anterior to the origin date of this shifted by the timeFactor."),
+    /** Non chronological data. */
+    NON_CHRONOLOGICAL_DATA("Non chronological data."),
+    /** Message. */
+    EME2000_CONVENTION_NOT_SUPPORTED("EME2000 convention is not supported for the main bsp file."),
+    /** Message. */
+    NOT_A_CELESTIAL_BODY("The required body {0] cannot be built as a CelestialBody."),
+    /** Message. */
+    NULL_FRAME("The provided frame is null."),
+    /** Message. */
+    HIGH_DEGREE("MOD obliquity/precession required degree ({0}) is too high. Max {1} is allowed."),
+    /** Message. */
+    WRONG_MOD_TYPE("MOD model should be of type IAUMODPrecession."),
+    /** Message. */
+    NULL_OBJECT_AT_INTERVAL("The object at interval {0} cannot be null."),
+    /** Message. */
+    DATE_OUTSIDE_INTERVALS("The provided date ({0}) is outside the supported intervals."),
+    /** Message. */
+    DATE_IN_NO_INTERVALS("The provided date ({0}) does not belong to any of the intervals."),
+    /** Message. */
+    LIGHT_SPEED_FORBIDDEN("LIGHT_SPEED signal propagation is not allowed in case of occulted body defined by a "
+            + "IDirection."),
+    /** Message. */
+    SAME_HASHCODE_BUT_NOT_EQUALS("Same hashCode but objects aren't equals."),
+    /** Message. */
+    NON_SUPPORTED_BODY_ORIENTATION_TYPE("Non supported celestial body orientation type."),
+    /** Message. */
+    AZIMUTHAL_DEGREE_GREATER_RADIAL_DEGREE(
+            "The azimuthal degree ({0}) cannot be greater (in absolute value) to the radial degree ({1})."),
+    /** Message. */
+    DIFFERENCE_AZIMUTHAL_AND_RADIAL_DEGREES_ODD(
+            "The difference between the azimuthal degree ({0}) and the radial degree ({1}) must be an even number.");
+    
     /**
      * Bogus string constant.
      */

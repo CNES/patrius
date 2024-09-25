@@ -18,13 +18,15 @@
 /*
  *
  * HISTORY
-* VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
-* VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:DM:DM-2962:15/11/2021:[PATRIUS] Precision numerique lors du ShiftedBy avec TimeScale 
-* VERSION:4.8:FA:FA-2941:15/11/2021:[PATRIUS] Correction anomalies suite a DM 2767 
-* VERSION:4.8:DM:DM-2967:15/11/2021:[PATRIUS] corriger les utilisations de java.util.Date 
+* VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours 
+ *          juliens dans TidesToolbox.computeFundamentalArguments() 
+ * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
+ * VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:DM:DM-2962:15/11/2021:[PATRIUS] Precision numerique lors du ShiftedBy avec TimeScale 
+ * VERSION:4.8:FA:FA-2941:15/11/2021:[PATRIUS] Correction anomalies suite a DM 2767 
+ * VERSION:4.8:DM:DM-2967:15/11/2021:[PATRIUS] corriger les utilisations de java.util.Date 
  * VERSION:4.7:FA:FA-2887:18/05/2021:Probleme de micro-pas dans la propagation
  * VERSION:4.7:DM:DM-2683:18/05/2021:Methode shiftedBy (AbsoluteDate) avec echelles de temps
  * VERSION:4.7:DM:DM-2647:18/05/2021:constructeur de AbsoluteDate avec TAI par defaut
@@ -190,7 +192,7 @@ public class AbsoluteDate
      * Java Reference epoch: 2006-01-01 00:00:33 TAI.
      */
     public static final AbsoluteDate BEIDOU_EPOCH = new AbsoluteDate(DateComponents.BEIDOU_EPOCH, new TimeComponents(0,
-            0, 33.), TimeScalesFactory.getTAI());
+        0, 33.), TimeScalesFactory.getTAI());
 
     /** J2000.0 Reference epoch: 2000-01-01T12:00:00 Terrestrial Time (<em>not</em> UTC). */
     public static final AbsoluteDate J2000_EPOCH =
@@ -314,7 +316,7 @@ public class AbsoluteDate
      *        time scale
      */
     public AbsoluteDate(final DateComponents date, final TimeComponents time,
-        final TimeScale timeScale) {
+                        final TimeScale timeScale) {
 
         final double seconds = time.getSecond();
         final double tsOffset = timeScale.offsetToTAI(date, time);
@@ -367,8 +369,8 @@ public class AbsoluteDate
      *            are given (parameters out of range)
      */
     public AbsoluteDate(final int year, final int month, final int day,
-        final int hour, final int minute, final double second,
-        final TimeScale timeScale) {
+                        final int hour, final int minute, final double second,
+                        final TimeScale timeScale) {
         this(new DateComponents(year, month, day), new TimeComponents(hour, minute, second), timeScale);
     }
 
@@ -392,7 +394,7 @@ public class AbsoluteDate
      *            are given (parameters out of range)
      */
     public AbsoluteDate(final int year, final int month, final int day,
-        final int hour, final int minute, final double second) {
+                        final int hour, final int minute, final double second) {
         this(year, month, day, hour, minute, second, TimeScalesFactory.getTAI());
     }
 
@@ -418,8 +420,8 @@ public class AbsoluteDate
      *            are given (parameters out of range)
      */
     public AbsoluteDate(final int year, final Month month, final int day,
-        final int hour, final int minute, final double second,
-        final TimeScale timeScale) {
+                        final int hour, final int minute, final double second,
+                        final TimeScale timeScale) {
         this(new DateComponents(year, month, day), new TimeComponents(hour, minute, second), timeScale);
     }
 
@@ -460,7 +462,7 @@ public class AbsoluteDate
      *            are given (parameters out of range)
      */
     public AbsoluteDate(final int year, final int month, final int day,
-        final TimeScale timeScale) {
+                        final TimeScale timeScale) {
         this(new DateComponents(year, month, day), TimeComponents.H00, timeScale);
     }
 
@@ -483,7 +485,7 @@ public class AbsoluteDate
      *            are given (parameters out of range)
      */
     public AbsoluteDate(final int year, final Month month, final int day,
-        final TimeScale timeScale) {
+                        final TimeScale timeScale) {
         this(new DateComponents(year, month, day), TimeComponents.H00, timeScale);
     }
 
@@ -495,14 +497,14 @@ public class AbsoluteDate
      * @param timeScale
      *        time scale
      * @deprecated As of PATRIUS 4.8, method using {@link Date} are deprecated. Use
-     * {@link #AbsoluteDate(LocalDateTime, TimeScale)} instead.
+     *             {@link #AbsoluteDate(LocalDateTime, TimeScale)} instead.
      */
     @Deprecated
     public AbsoluteDate(final Date location, final TimeScale timeScale) {
         this(new DateComponents(DateComponents.JAVA_EPOCH,
             (int) (location.getTime() / 86400000L)),
-            new TimeComponents(0.001 * (location.getTime() % 86400000L)),
-            timeScale);
+                new TimeComponents(0.001 * (location.getTime() % 86400000L)),
+                timeScale);
     }
 
     /**
@@ -516,8 +518,8 @@ public class AbsoluteDate
     public AbsoluteDate(final LocalDateTime location, final TimeScale timeScale) {
         this(new DateComponents(DateComponents.JAVA_EPOCH,
             (int) (location.toInstant(ZoneOffset.UTC).toEpochMilli() / 86400000L)),
-            new TimeComponents(0.001 * (location.toInstant(ZoneOffset.UTC).toEpochMilli() % 86400000L)),
-            timeScale);
+                new TimeComponents(0.001 * (location.toInstant(ZoneOffset.UTC).toEpochMilli() % 86400000L)),
+                timeScale);
     }
 
     /**
@@ -593,7 +595,7 @@ public class AbsoluteDate
      * @see #offsetFrom(AbsoluteDate, TimeScale)
      */
     public AbsoluteDate(final AbsoluteDate reference, final double apparentOffset,
-        final TimeScale timeScale) {
+                        final TimeScale timeScale) {
         final AbsoluteDate date = preciseShiftedBy(reference, apparentOffset, timeScale);
         this.epoch = date.epoch;
         this.offset = date.offset;
@@ -601,6 +603,7 @@ public class AbsoluteDate
 
     /**
      * Build an instance from a cjd in a {@link TimeScale time scale}.
+     * 
      * @param cjd
      *        CNES julian date (number of days since epoch 1950)
      * @param timeScale
@@ -613,14 +616,15 @@ public class AbsoluteDate
 
     /**
      * Precise shiftedBy method.
+     * 
      * @param since initial date
      * @param elapsedDuration elapsed duration
      * @param timeScale time scale
      * @return date shifted by duration
      */
     private static AbsoluteDate preciseShiftedBy(final AbsoluteDate since,
-            final double elapsedDuration,
-            final TimeScale timeScale) {
+                                                 final double elapsedDuration,
+                                                 final TimeScale timeScale) {
         final AbsoluteDate date1 = new AbsoluteDate(since, elapsedDuration);
         final double offset0 = timeScale.offsetFromTAI(since);
         final double offset1 = timeScale.offsetFromTAI(date1);
@@ -659,10 +663,10 @@ public class AbsoluteDate
      *         or if it is inconsistent with time field, or if agency epoch is needed but not provided
      */
     public static AbsoluteDate
-            parseCCSDSUnsegmentedTimeCode(final byte preambleField1,
-                                          final byte preambleField2,
-                                          final byte[] timeField,
-                                          final AbsoluteDate agencyDefinedEpoch) throws PatriusException {
+        parseCCSDSUnsegmentedTimeCode(final byte preambleField1,
+                                      final byte preambleField2,
+                                      final byte[] timeField,
+                                      final AbsoluteDate agencyDefinedEpoch) throws PatriusException {
 
         // time code identification and reference epoch
         final AbsoluteDate epoch;
@@ -736,8 +740,8 @@ public class AbsoluteDate
      *         or it UTC time scale cannot be retrieved
      */
     public static AbsoluteDate
-            parseCCSDSDaySegmentedTimeCode(final byte preambleField, final byte[] timeField,
-                                           final DateComponents agencyDefinedEpoch) throws PatriusException {
+        parseCCSDSDaySegmentedTimeCode(final byte preambleField, final byte[] timeField,
+                                       final DateComponents agencyDefinedEpoch) throws PatriusException {
 
         // time code identification
         if ((preambleField & 0xF0) != 0x40) {
@@ -945,11 +949,12 @@ public class AbsoluteDate
     /**
      * Shift a date taking into account a limit date which shall not be overpassed by this + dt.
      * "forward" boolean indicating in which direction the limit shall not be overpassed.
+     * 
      * @param dt time shift in seconds
      * @param limit limit not to be overpassed by result taking into account direction (through "forward" boolean)
      * @param forward true if limit
      * @return shifted date, limit date if shifted date > limit and forward = true or shifted date < limit
-     * and forward = false
+     *         and forward = false
      */
     public AbsoluteDate shiftedBy(final double dt, final AbsoluteDate limit, final boolean forward) {
         AbsoluteDate date = new AbsoluteDate(this, dt);
@@ -1077,7 +1082,7 @@ public class AbsoluteDate
     public double offsetFrom(final AbsoluteDate instant, final TimeScale timeScale) {
         final long elapsedDurationA = this.epoch - instant.epoch;
         final double elapsedDurationB = (this.offset + timeScale.offsetFromTAI(this)) -
-            (instant.offset + timeScale.offsetFromTAI(instant));
+                (instant.offset + timeScale.offsetFromTAI(instant));
         return elapsedDurationA + elapsedDurationB;
     }
 
@@ -1111,8 +1116,8 @@ public class AbsoluteDate
      *        time scale to use
      * @return a {@link java.util.Date Date} instance representing the location
      *         of the instant in the time scale
-     * @deprecated As of PATRIUS 4.8, method using {@link Date} are deprecated. Use
-     * {@link #toLocalDateTime(TimeScale)} instead.
+     * @deprecated As of PATRIUS 4.8, method using {@link Date} are deprecated. Use {@link #toLocalDateTime(TimeScale)}
+     *             instead.
      */
     @Deprecated
     public Date toDate(final TimeScale timeScale) {
@@ -1123,9 +1128,8 @@ public class AbsoluteDate
     /**
      * Convert the instance to a Java {@link LocalDateTime}.
      * <p>
-     * Conversion to the Instant class induces a loss of precision because the LocalDateTime
-     * class does not provide sub-nanosecond
-     * information. Java LocalDateTime are considered to be locations in some times scales.
+     * Conversion to the Instant class induces a loss of precision because the LocalDateTime class does not provide
+     * sub-nanosecond information. Java LocalDateTime are considered to be locations in some times scales.
      * </p>
      *
      * @param timeScale
@@ -1137,11 +1141,12 @@ public class AbsoluteDate
         final double time = this.epoch + (this.offset + timeScale.offsetFromTAI(this));
         final double res = time + 10957.5 * 86400.0;
         return LocalDateTime.ofEpochSecond((long) MathLib.floor(res),
-                (int) MathLib.round((res - MathLib.floor(res)) * 1E9), ZoneOffset.UTC);
+            (int) MathLib.round((res - MathLib.floor(res)) * 1E9), ZoneOffset.UTC);
     }
 
     /**
      * Convert the date to CNES Julian date.
+     * 
      * @param timeScale
      *        time scale to use
      * @return the corresponding CNES Julian date (number of days since epoch 1950)
@@ -1149,7 +1154,6 @@ public class AbsoluteDate
     public double toCNESJulianDate(final TimeScale timeScale) {
         return this.offsetFrom(FIFTIES_EPOCH_TAI, timeScale) / Constants.JULIAN_DAY;
     }
-
 
     /**
      * Split the instance into date/time components.
@@ -1172,8 +1176,17 @@ public class AbsoluteDate
         final int date = (int) ((offset2000A - time) / 86400L);
 
         // extract calendar elements
-        final DateComponents dateComponents = new DateComponents(DateComponents.J2000_EPOCH, date);
-        TimeComponents timeComponents = new TimeComponents((int) time, offset2000B);
+        final DateComponents dateComponents;
+        TimeComponents timeComponents;
+        if ((int) time + offset2000B == Constants.JULIAN_DAY) {
+            // if same day
+            dateComponents = new DateComponents(DateComponents.J2000_EPOCH, date + 1);
+            timeComponents = new TimeComponents(0.);
+        } else {
+            // otherwise
+            dateComponents = new DateComponents(DateComponents.J2000_EPOCH, date);
+            timeComponents = new TimeComponents((int) time, offset2000B);
+        }
 
         if (timeScale instanceof UTCScale) {
             final UTCScale utc = (UTCScale) timeScale;
@@ -1410,6 +1423,62 @@ public class AbsoluteDate
         final DateTimeComponents components = this.getComponents(timeScale);
         final TimeComponents time = components.getTime();
         return time.getSecondsInDay();
+    }
+
+    /**
+     * Compute the physically elapsed duration between this instant and the {@link #J2000_EPOCH} in seconds.
+     * 
+     * The returned duration is the number of seconds physically elapsed between this instant and the
+     * {@link #J2000_EPOCH}, measured in a regular time scale with respect to surface of the Earth (i.e either the TAI
+     * scale, the TT scale or the GPS scale). It is the only method that gives a duration with a physical meaning.
+     * 
+     * @return offset in seconds between this instant and the {@link #J2000_EPOCH} (positive if this instance is
+     *         posterior to {@link #J2000_EPOCH})
+     */
+    public double durationFromJ2000EpochInSeconds() {
+        return durationFrom(AbsoluteDate.J2000_EPOCH);
+    }
+
+    /**
+     * Compute the physically elapsed duration between this instant and the {@link #J2000_EPOCH} in days.
+     * 
+     * The returned duration is the number of days physically elapsed between this instant and the {@link #J2000_EPOCH},
+     * measured in a regular time scale with respect to surface of the Earth (i.e either the TAI scale, the TT scale or
+     * the GPS scale). It is the only method that gives a duration with a physical meaning.
+     * 
+     * @return offset in days between this instant and the {@link #J2000_EPOCH} (positive if this instance is posterior
+     *         to {@link #J2000_EPOCH})
+     */
+    public double durationFromJ2000EpochInDays() {
+        return durationFromJ2000EpochInSeconds() / Constants.JULIAN_DAY;
+    }
+
+    /**
+     * Compute the physically elapsed duration between this instant and the {@link #J2000_EPOCH} in years.
+     * 
+     * The returned duration is the number of years physically elapsed between this instant and the {@link #J2000_EPOCH}
+     * measured in a regular time scale with respect to surface of the Earth (i.e either the TAI scale, the TT scale or
+     * the GPS scale). It is the only method that gives a duration with a physical meaning.
+     * 
+     * @return offset in years between this instant and the {@link #J2000_EPOCH} (positive if this instance is posterior
+     *         to {@link #J2000_EPOCH})
+     */
+    public double durationFromJ2000EpochInYears() {
+        return durationFromJ2000EpochInSeconds() / Constants.JULIAN_YEAR;
+    }
+
+    /**
+     * Compute the physically elapsed duration between this instant and the {@link #J2000_EPOCH} in centuries.
+     * 
+     * The returned duration is the number of centuries physically elapsed between this instant and the
+     * {@link #J2000_EPOCH}, measured in a regular time scale with respect to surface of the Earth (i.e either the TAI
+     * scale, the TT scale or the GPS scale). It is the only method that gives a duration with a physical meaning.
+     * 
+     * @return offset in centuries between this instant and the {@link #J2000_EPOCH} (positive if this instance is
+     *         posterior to {@link #J2000_EPOCH})
+     */
+    public double durationFromJ2000EpochInCenturies() {
+        return durationFromJ2000EpochInSeconds() / Constants.JULIAN_CENTURY;
     }
 
     // CHECKSTYLE: resume MagicNumber check

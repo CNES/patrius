@@ -18,6 +18,7 @@
  * @history created 12/09/2014
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -33,7 +34,7 @@ import java.util.List;
 import org.junit.Test;
 import org.testng.Assert;
 
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.events.analytical.Detector1.Dependance;
 
 /**

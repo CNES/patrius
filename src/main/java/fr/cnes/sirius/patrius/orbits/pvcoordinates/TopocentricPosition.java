@@ -18,6 +18,7 @@
  * @history creation 18/10/2011
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -25,6 +26,8 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
+
+import java.util.Objects;
 
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 
@@ -105,6 +108,33 @@ public final class TopocentricPosition implements Position {
     @Override
     public Vector3D getPosition() {
         return new Vector3D(this.e, this.a, this.r);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == this.getClass())) {
+            // Same object type: check all attributes
+            final TopocentricPosition other = (TopocentricPosition) object;
+
+            // Evaluate the attitudes components
+            isEqual = Double.doubleToLongBits(this.e) == Double.doubleToLongBits(other.e)
+                    && Double.doubleToLongBits(this.a) == Double.doubleToLongBits(other.a)
+                    && Double.doubleToLongBits(this.r) == Double.doubleToLongBits(other.r);
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.e, this.a, this.r);
     }
 
     /**

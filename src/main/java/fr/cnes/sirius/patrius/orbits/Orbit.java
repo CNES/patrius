@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -1184,8 +1186,7 @@ public abstract class Orbit
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate dateIn,
-            final Frame frameIn) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate dateIn) throws PatriusException {
         return this.frame;
     }
 

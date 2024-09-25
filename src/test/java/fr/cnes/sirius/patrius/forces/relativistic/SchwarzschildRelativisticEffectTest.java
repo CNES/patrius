@@ -18,6 +18,7 @@
  * @history Created 17/02/2016
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -37,7 +38,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -273,7 +274,7 @@ public class SchwarzschildRelativisticEffectTest {
     /**
      * @testType UT
      * 
-     * @testedMethod {@link SchwarzschildRelativisticEffect#SchwarzschildEffect(CelestialBody, boolean, boolean)}
+     * @testedMethod {@link SchwarzschildRelativisticEffect#SchwarzschildEffect(CelestialPoint, boolean, boolean)}
      * 
      * @description compute acceleration partial derivatives wrt position
      * 

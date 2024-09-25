@@ -18,6 +18,10 @@
  * @history Created 17/02/2016
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -47,8 +51,10 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
@@ -82,7 +88,7 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
 public class CoriolisRelativisticEffectTest {
 
     /** Sun. */
-    private CelestialBody sun;
+    private CelestialPoint sun;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -124,15 +130,15 @@ public class CoriolisRelativisticEffectTest {
 
         final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(23967 * 86400. + 55320.);
         final PVCoordinates pv = new PVCoordinates(new Vector3D(-0.439584017658778E+06, -0.296038007930370E+05,
-                -0.709617640153498E+07), new Vector3D(0.573899359984705E+04, 0.477793965015048E+04,
-                -0.371114951980137E+03));
+            -0.709617640153498E+07), new Vector3D(0.573899359984705E+04, 0.477793965015048E+04,
+            -0.371114951980137E+03));
         final Orbit orbit = new CartesianOrbit(pv, FramesFactory.getGCRF(), date, 0.39860044150000E+15);
         final SpacecraftState state = new SpacecraftState(orbit);
 
         // Computation
         final double[] actual = force.computeAcceleration(state).toArray();
         final double[] actual2 = new double[3];
-        final TimeDerivativesEquations adder = new TimeDerivativesEquations() {
+        final TimeDerivativesEquations adder = new TimeDerivativesEquations(){
             /** Serializable UID. */
             private static final long serialVersionUID = -3071190323039120569L;
 
@@ -194,8 +200,8 @@ public class CoriolisRelativisticEffectTest {
 
         final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(23967 * 86400. + 55320.);
         final PVCoordinates pv = new PVCoordinates(new Vector3D(-0.439584017658778E+06, -0.296038007930370E+05,
-                -0.709617640153498E+07), new Vector3D(0.573899359984705E+04, 0.477793965015048E+04,
-                -0.371114951980137E+03));
+            -0.709617640153498E+07), new Vector3D(0.573899359984705E+04, 0.477793965015048E+04,
+            -0.371114951980137E+03));
         final Orbit orbit = new CartesianOrbit(pv, FramesFactory.getITRF(), date, 0.39860044150000E+15);
         final SpacecraftState state = new SpacecraftState(orbit);
 
@@ -236,15 +242,15 @@ public class CoriolisRelativisticEffectTest {
 
         final double eps = 4E-15;
         Report.printMethodHeader("testPartialDerivatives", "Partial derivatives computation", "ZOOM", eps,
-                ComparisonType.RELATIVE);
+            ComparisonType.RELATIVE);
 
         // Initialization
         final CoriolisRelativisticEffect force = new CoriolisRelativisticEffect(this.sun.getGM(), this.sun);
 
         final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(23967 * 86400. + 55320.);
         final PVCoordinates pv = new PVCoordinates(new Vector3D(-0.439584017658778E+06, -0.296038007930370E+05,
-                -0.709617640153498E+07), new Vector3D(0.573899359984705E+04, 0.477793965015048E+04,
-                -0.371114951980137E+03));
+            -0.709617640153498E+07), new Vector3D(0.573899359984705E+04, 0.477793965015048E+04,
+            -0.371114951980137E+03));
         final Orbit orbit = new CartesianOrbit(pv, FramesFactory.getGCRF(), date, 0.39860044150000E+15);
         final SpacecraftState state = new SpacecraftState(orbit);
 
@@ -256,8 +262,8 @@ public class CoriolisRelativisticEffectTest {
         // Check
         final double[][] expectedPos = new double[3][3];
         final double[][] expectedVel = { { 0.000000000000000E+00, -0.523935698313806E-14, -0.227153925478780E-14 },
-                { 0.523935698313806E-14, 0.0000000000000000E+00, 0.0000000000000000E+00 },
-                { 0.227153925478780E-14, 0.0000000000000000E+00, 0.0000000000000000E+00 }, };
+            { 0.523935698313806E-14, 0.0000000000000000E+00, 0.0000000000000000E+00 },
+            { 0.227153925478780E-14, 0.0000000000000000E+00, 0.0000000000000000E+00 }, };
 
         for (int i = 0; i < expectedPos.length; i++) {
             for (int j = 0; j < expectedPos[0].length; j++) {
@@ -285,8 +291,8 @@ public class CoriolisRelativisticEffectTest {
     /**
      * @testType UT
      * 
-     * @testedMethod {@link CoriolisRelativisticEffect#CoriolisEffect(org.orekit.utils.PVCoordinatesProvider, CelestialBody, boolean)}
-     * @testedMethod {@link CoriolisRelativisticEffect#CoriolisEffect(org.orekit.utils.PVCoordinatesProvider, CelestialBody, fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D, boolean)}
+     * @testedMethod {@link CoriolisRelativisticEffect#CoriolisEffect(org.orekit.utils.PVCoordinatesProvider, CelestialPoint, boolean)}
+     * @testedMethod {@link CoriolisRelativisticEffect#CoriolisEffect(org.orekit.utils.PVCoordinatesProvider, CelestialPoint, fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D, boolean)}
      * 
      * @description compute acceleration partial derivatives wrt position
      * 
@@ -312,7 +318,7 @@ public class CoriolisRelativisticEffectTest {
 
         // SpacecraftState
         final KeplerianOrbit orbit = new KeplerianOrbit(7E7, 0.001, 0.93, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, 0.39860044150000E+15);
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, 0.39860044150000E+15);
         final SpacecraftState state = new SpacecraftState(orbit);
 
         // Instances
@@ -350,10 +356,10 @@ public class CoriolisRelativisticEffectTest {
         Utils.setDataRoot("regular-dataCNES-2003");
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405", EphemerisType.SUN);
-        final CelestialBody sunJPL = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody sunJPL = (CelestialBody) loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         // Specific Sun
-        this.sun = new CelestialBody() {
+        this.sun = new CelestialBody(){
 
             /** Serializable UID. */
             private static final long serialVersionUID = -812434433805055185L;
@@ -370,7 +376,7 @@ public class CoriolisRelativisticEffectTest {
             }
 
             @Override
-            public void setEphemeris(CelestialBodyEphemeris ephemerisIn) {
+            public void setEphemeris(final CelestialBodyEphemeris ephemerisIn) {
             }
 
             @Override
@@ -428,7 +434,7 @@ public class CoriolisRelativisticEffectTest {
             public double getGM() {
                 return 0.132712437742476E+21;
             }
-            
+
             /**
              * {@inheritDoc}
              */
@@ -496,21 +502,27 @@ public class CoriolisRelativisticEffectTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
 
             @Override
-            public IAUPole getIAUPole() {
+            public CelestialBodyIAUOrientation getOrientation() {
                 return null;
             }
 
             @Override
-            public void setIAUPole(final IAUPole iauPoleIn) {
+            public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
             }
 
             @Override
             public void setGM(final double gmIn) {
+            }
+
+            @Override
+            public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+                // nothing to do
+                return null;
             }
         };
     }

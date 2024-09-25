@@ -14,22 +14,26 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-169:17/01/2024:[PATRIUS] Gestion du celestialPoint dans CelestialBodyFrame non rigoureuse
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.frames;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.transformations.FixedTransformProvider;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.frames.transformations.TransformProvider;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
- * Frame centered on a {@link CelestialBody}.
- * This frames contains a {@link CelestialBody}. For {@link FactoryManagedFrame} such as GCRF frame,
- * Earth celestial body is not attached, so users need to attach it using {@link #setCelestialBody(CelestialBody)}.
- * <b>Warning: this class does not check if provided celestial body is indeed
- * centered on this frame.</b>
+ * Frame centered on a {@link CelestialPoint}.
+ * <p>
+ * <b>Warning: this class does not check if provided celestial body is indeed centered on this frame.</b>
+ * </p>
  * 
  * @author Emmanuel Bignon
  * 
@@ -40,8 +44,8 @@ public class CelestialBodyFrame extends Frame {
      /** Serializable UID. */
     private static final long serialVersionUID = 5182000151766548579L;
 
-    /** Celestial body centered on this frame. */
-    private CelestialBody celestialBody;
+    /** Celestial point centered on this frame. */
+    protected CelestialPoint celestialPoint;
 
     /**
      * Protected constructor used only for the root frame.
@@ -51,16 +55,15 @@ public class CelestialBodyFrame extends Frame {
      * @param pseudoInertial
      *        true if frame is considered pseudo-inertial (i.e. suitable for propagating orbit)
      */
-    protected CelestialBodyFrame(final String name,
-            final boolean pseudoInertial) {
+    protected CelestialBodyFrame(final String name, final boolean pseudoInertial) {
         super(name, pseudoInertial);
     }
 
     /**
      * Constructor.
-     * 
-     * <b>Warning: this class does not check if provided celestial body is indeed
-     * centered on this frame.</b>
+     * <p>
+     * <b>Warning: this class does not check if provided celestial body is indeed centered on this frame.</b>
+     * </p>
      * 
      * @param parent
      *        parent frame (must be non-null)
@@ -68,23 +71,21 @@ public class CelestialBodyFrame extends Frame {
      *        transform from parent frame to instance
      * @param name
      *        name of the frame
-     * @param celestialBody
-     *        celestial body centered on this frame
-     * @exception IllegalArgumentException
-     *            if the parent frame is null
+     * @param celestialPoint
+     *        celestial point centered on this frame
+     * @throws IllegalArgumentException
+     *         if the parent frame is null
      */
-    public CelestialBodyFrame(final Frame parent,
-            final Transform transform,
-            final String name,
-            final CelestialBody celestialBody) {
-        this(parent, transform, name, false, celestialBody);
+    public CelestialBodyFrame(final Frame parent, final Transform transform, final String name,
+                              final CelestialPoint celestialPoint) {
+        this(parent, transform, name, false, celestialPoint);
     }
 
     /**
      * Constructor.
-     * 
-     * <b>Warning: this class does not check if provided celestial body is indeed
-     * centered on this frame.</b>
+     * <p>
+     * <b>Warning: this class does not check if provided celestial body is indeed centered on this frame.</b>
+     * </p>
      * 
      * @param parent
      *        parent frame (must be non-null)
@@ -92,23 +93,21 @@ public class CelestialBodyFrame extends Frame {
      *        provider for transform from parent frame to instance
      * @param name
      *        name of the frame
-     * @param celestialBody
-     *        celestial body centered on this frame
-     * @exception IllegalArgumentException
-     *            if the parent frame is null
+     * @param celestialPoint
+     *        celestial point centered on this frame
+     * @throws IllegalArgumentException
+     *         if the parent frame is null
      */
-    public CelestialBodyFrame(final Frame parent,
-            final TransformProvider transformProvider,
-            final String name,
-            final CelestialBody celestialBody) {
-        this(parent, transformProvider, name, false, celestialBody);
+    public CelestialBodyFrame(final Frame parent, final TransformProvider transformProvider, final String name,
+                              final CelestialPoint celestialPoint) {
+        this(parent, transformProvider, name, false, celestialPoint);
     }
 
     /**
      * Constructor.
-     * 
-     * <b>Warning: this class does not check if provided celestial body is indeed
-     * centered on this frame.</b>
+     * <p>
+     * <b>Warning: this class does not check if provided celestial body is indeed centered on this frame.</b>
+     * </p>
      * 
      * @param parent
      *        parent frame (must be non-null)
@@ -118,24 +117,21 @@ public class CelestialBodyFrame extends Frame {
      *        name of the frame
      * @param pseudoInertial
      *        true if frame is considered pseudo-inertial (i.e. suitable for propagating orbit)
-     * @param celestialBody
-     *        celestial body centered on this frame
-     * @exception IllegalArgumentException
-     *            if the parent frame is null
+     * @param celestialPoint
+     *        celestial point centered on this frame
+     * @throws IllegalArgumentException
+     *         if the parent frame is null
      */
-    public CelestialBodyFrame(final Frame parent,
-            final Transform transform,
-            final String name,
-            final boolean pseudoInertial,
-            final CelestialBody celestialBody) {
-        this(parent, new FixedTransformProvider(transform), name, pseudoInertial, celestialBody);
+    public CelestialBodyFrame(final Frame parent, final Transform transform, final String name,
+                              final boolean pseudoInertial, final CelestialPoint celestialPoint) {
+        this(parent, new FixedTransformProvider(transform), name, pseudoInertial, celestialPoint);
     }
 
     /**
      * Generic constructor.
-     * 
-     * <b>Warning: this class does not check if provided celestial body is indeed
-     * centered on this frame.</b>
+     * <p>
+     * <b>Warning: this class does not check if provided celestial body is indeed centered on this frame.</b>
+     * </p>
      * 
      * @param parent
      *        parent frame (must be non-null)
@@ -145,33 +141,25 @@ public class CelestialBodyFrame extends Frame {
      *        name of the frame
      * @param pseudoInertial
      *        true if frame is considered pseudo-inertial (i.e. suitable for propagating orbit)
-     * @param celestialBody
-     *        celestial body centered on this frame
-     * @exception IllegalArgumentException
-     *            if the parent frame is null
+     * @param celestialPoint
+     *        celestial point centered on this frame
+     * @throws IllegalArgumentException
+     *         if the parent frame is null
      */
-    public CelestialBodyFrame(final Frame parent,
-            final TransformProvider transformProvider,
-            final String name,
-            final boolean pseudoInertial,
-            final CelestialBody celestialBody) {
+    public CelestialBodyFrame(final Frame parent, final TransformProvider transformProvider, final String name,
+                              final boolean pseudoInertial, final CelestialPoint celestialPoint) {
         super(parent, transformProvider, name, pseudoInertial);
-        this.celestialBody = celestialBody;
+        this.celestialPoint = celestialPoint;
     }
 
     /**
-     * Returns the celestial body centered on this frame.
-     * @return the celestial body centered on this frame
+     * Getter for the celestial point centered on this frame.
+     * 
+     * @return the celestial point centered on this frame
+     * @throws PatriusException
+     *         if point could not be built
      */
-    public CelestialBody getCelestialBody() {
-        return celestialBody;
-    }
-
-    /**
-     * Set the celestial body.
-     * @param celestialBody the celestial body to set
-     */
-    public void setCelestialBody(final CelestialBody celestialBody) {
-        this.celestialBody = celestialBody;
+    public CelestialPoint getCelestialPoint() throws PatriusException {
+        return this.celestialPoint;
     }
 }

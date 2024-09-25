@@ -18,6 +18,12 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:FA:FA-3199:03/11/2022:[PATRIUS] Mise en œuvre PM 2973, gestion coordonnees et referentiel
@@ -47,6 +53,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.frames.transformations.EME2000Provider;
@@ -166,6 +173,29 @@ public class FrameTest {
             1E-12);
     }
 
+    /**
+     * Check that CelestialBody associated to Predefined frames are the one expected and have same memory address (important,
+     * since it means it is the same body).
+     */
+    @Test
+    public void testCelestialBody() throws PatriusException {
+        Utils.setDataRoot("regular-dataPBASE");
+        Assert.assertEquals(FramesFactory.getGCRF().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getICRF().getCelestialPoint(), CelestialBodyFactory.getSolarSystemBarycenter());
+        Assert.assertEquals(FramesFactory.getEMB().getCelestialPoint(), CelestialBodyFactory.getEarthMoonBarycenter());
+        Assert.assertEquals(FramesFactory.getEME2000().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getITRF().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getITRFEquinox().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getTIRF().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getCIRF().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getVeis1950().getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getGTOD(true).getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getTOD(true).getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getMOD(true).getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getEclipticMOD(true).getCelestialPoint(), CelestialBodyFactory.getEarth());
+        Assert.assertEquals(FramesFactory.getEclipticJ2000().getCelestialPoint(), CelestialBodyFactory.getEarth());
+    }
+
     @Test
     public void testGetPVCoordinates() throws PatriusException {
         // root frame
@@ -207,7 +237,7 @@ public class FrameTest {
         Assert.assertEquals(new Vector3D(-100, 100, 0), actual.getVelocity());
 
         // the native frame computation is not time dependant
-        Assert.assertEquals(frame, frame.getNativeFrame(AbsoluteDate.J2000_EPOCH, null));
+        Assert.assertEquals(frame, frame.getNativeFrame(AbsoluteDate.J2000_EPOCH));
     }
 
     @Test
@@ -344,7 +374,7 @@ public class FrameTest {
     @Test
     public void testH0m9() throws PatriusException {
         final AbsoluteDate h0 = new AbsoluteDate("2010-07-01T10:42:09", TimeScalesFactory.getUTC());
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, itrf);
         final Frame rotatingPadFrame = new TopocentricFrame(new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),
@@ -558,7 +588,7 @@ public class FrameTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("compressed-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

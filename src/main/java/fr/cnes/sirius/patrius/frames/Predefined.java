@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -24,6 +26,10 @@
  * 
  */
 package fr.cnes.sirius.patrius.frames;
+
+import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * Predefined frames provided by {@link FramesFactory}.
@@ -59,6 +65,9 @@ public enum Predefined {
     /** Veis 1950 with tidal effects. */
     VEIS_1950("VEIS1950"),
 
+    /** G50 (= Gamma 50). */
+    G50("G50"),
+
     /** GTOD without EOP corrections. */
     GTOD_WITHOUT_EOP_CORRECTIONS("GTOD without EOP"),
 
@@ -80,23 +89,26 @@ public enum Predefined {
     /** TEME frame. */
     TEME("TEME"),
 
-    /** EOD without EOP corrections. */
-    EOD_WITHOUT_EOP_CORRECTIONS("EOD without EOP"),
+    /** ECLIPTIC_MOD without EOP corrections. */
+    ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS("ECLIPTIC_MOD without EOP"),
 
-    /** EOD with EOP corrections. */
-    EOD_WITH_EOP_CORRECTIONS("EOD with EOP");
+    /** ECLIPTIC_MOD with EOP corrections. */
+    ECLIPTIC_MOD_WITH_EOP_CORRECTIONS("ECLIPTIC_MOD with EOP"),
+
+    /** ECLIPTIC J2000 */
+    ECLIPTIC_J2000("Ecliptic J2000");
 
     /** Name fo the frame. */
     private final String name;
 
     /**
-     * Simple constructor.
+     * Constructor.
      * 
-     * @param nameIn
+     * @param name
      *        name of the frame
      */
-    private Predefined(final String nameIn) {
-        this.name = nameIn;
+    private Predefined(final String name) {
+        this.name = name;
     }
 
     /**
@@ -107,5 +119,25 @@ public enum Predefined {
     public String getName() {
         return this.name;
     }
-
+    
+    /**
+     * Returns the celestial point associated to Predefined frame key.
+     * 
+     * @return the celestial point associated to Predefined frame key
+     * @throws PatriusException thrown if celestial point could not be built
+     */
+    public CelestialPoint getCelestialPoint() throws PatriusException {
+        // Celestial point cannot be an attribute of Predefined, since it needs to be built on the fly
+        switch (this) {
+            case ICRF:
+                // ICRF
+                return CelestialBodyFactory.getSolarSystemBarycenter();
+            case EMB:
+                // EMB
+                return CelestialBodyFactory.getEarthMoonBarycenter();
+            default:
+                // Earth case for all other frames
+                return CelestialBodyFactory.getEarth();
+        }
+    }
 }

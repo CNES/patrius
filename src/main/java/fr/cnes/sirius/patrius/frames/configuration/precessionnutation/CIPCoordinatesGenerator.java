@@ -17,6 +17,7 @@
  * @history creation 11/10/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -41,8 +42,8 @@ import fr.cnes.sirius.patrius.time.TimeStampedGenerator;
 /**
  * The class generates {@link CIPCoordinates} to be used independently or within a
  * {@link fr.cnes.sirius.patrius.time.TimeStampedCache}. The method applied is that of the IAU-2000.
- * 
- * @see PrecessionNutationCache
+ *
+ * @see PrecessionNutationModel
  * @author Rami Houdroge
  * @version $Id: CIPCoordinatesGenerator.java 18073 2017-10-02 16:48:07Z bignon $
  * @since 1.3
@@ -66,7 +67,7 @@ public class CIPCoordinatesGenerator implements TimeStampedGenerator<CIPCoordina
 
     /**
      * Constructor.
-     * 
+     *
      * @param pnModel
      *        Precession Nutation model to use
      * @param interpolationPointsIn
@@ -101,9 +102,7 @@ public class CIPCoordinatesGenerator implements TimeStampedGenerator<CIPCoordina
             final AbsoluteDate newDate = new AbsoluteDate(date.getComponents(tai).getDate(),
                 new TimeComponents(0, 0, 0), tai).shiftedBy(this.span * (t - HALF * this.interpolationPoints));
 
-            final double[] cip = this.model.getCIPMotion(newDate);
-            final double[] cipDV = this.model.getCIPMotionTimeDerivative(newDate);
-            existing = new CIPCoordinates(newDate, cip, cipDV);
+            existing = this.model.getCIPCoordinates(newDate);
             data.add(existing);
         } else {
             existing = existingData;
@@ -127,12 +126,8 @@ public class CIPCoordinatesGenerator implements TimeStampedGenerator<CIPCoordina
             }
 
             // add to list
-            double[] cip;
-            double[] cipDV;
             for (final AbsoluteDate currentDate : dates) {
-                cip = this.model.getCIPMotion(currentDate);
-                cipDV = this.model.getCIPMotionTimeDerivative(currentDate);
-                data.add(new CIPCoordinates(currentDate, cip, cipDV));
+                data.add(this.model.getCIPCoordinates(currentDate));
             }
 
         } else if (existing.getDate().compareTo(date) <= 0) {
@@ -141,13 +136,9 @@ public class CIPCoordinatesGenerator implements TimeStampedGenerator<CIPCoordina
             AbsoluteDate current = existing.getDate();
 
             // generate forward
-            double[] cip;
-            double[] cipDV;
             while (current.durationFrom(date) <= this.span * this.interpolationPoints / 2) {
                 current = current.shiftedBy(this.span);
-                cip = this.model.getCIPMotion(current);
-                cipDV = this.model.getCIPMotionTimeDerivative(current);
-                data.add(new CIPCoordinates(current, cip, cipDV));
+                data.add(this.model.getCIPCoordinates(current));
             }
         }
 

@@ -18,6 +18,7 @@
  * @history creation 05/10/2011
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -44,7 +45,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
@@ -161,8 +162,8 @@ public class JPLEphemerisValTest {
      * 
      * @testedFeature {@link features#DE405_MOON_EPHEMERIS}
      * 
-     * @testedMethod {@link CelestialBody#getPVCoordinates(AbsoluteDate, Frame)}
-     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialBody(String)}
+     * @testedMethod {@link CelestialPoint#getPVCoordinates(AbsoluteDate, Frame)}
+     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialPoint(String)}
      * 
      * @description we compare the ephemeris of the Moon given by Orekit with those given by the JPL. The comparison
      *              is done on 19 years starting from J2000 epoch, for each day, we perform 2 comparisons. We compare
@@ -225,7 +226,7 @@ public class JPLEphemerisValTest {
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.MOON);
 
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialPoint moon = loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         // Sets of coordinates which will be compared
         PVCoordinates pvJPL;
@@ -324,8 +325,8 @@ public class JPLEphemerisValTest {
      * 
      * @testedFeature {@link features#DE405_SUN_EPHEMERIS}
      * 
-     * @testedMethod {@link CelestialBody#getPVCoordinates(AbsoluteDate, Frame)}
-     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialBody(String)}
+     * @testedMethod {@link CelestialPoint#getPVCoordinates(AbsoluteDate, Frame)}
+     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialPoint(String)}
      * 
      * @description We compare the ephemeris of the Sun given by Orekit with those given by the JPL. The comparison
      *              is done on 19 years starting from J2000 epoch, for each day, we perform 2 comparisons. We compare
@@ -410,7 +411,7 @@ public class JPLEphemerisValTest {
 
         // Sun body
         de405("unxp2000.405");
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sun = loader.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         // Reader for Moon ephemeris (other reader because the first one have been used in other test)
         final URL url = JPLEphemerisValTest.class.getClassLoader().getResource(ephemMoon);
@@ -627,8 +628,8 @@ public class JPLEphemerisValTest {
      * 
      * @testedFeature {@link features#DE406_MOON_EPHEMERIS}
      * 
-     * @testedMethod {@link CelestialBody#getPVCoordinates(AbsoluteDate, Frame)}
-     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialBody(String)}
+     * @testedMethod {@link CelestialPoint#getPVCoordinates(AbsoluteDate, Frame)}
+     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialPoint(String)}
      * 
      * @description We compare the ephemeris of the Moon given by Orekit based on DE406 file with those given Orekit
      *              based on DE405 file. The comparison is done on 19 years starting from J2000 epoch, for each day. We
@@ -678,7 +679,7 @@ public class JPLEphemerisValTest {
         final JPLCelestialBodyLoader loaderDE405 = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.MOON);
 
-        final CelestialBody moonDE405 = loaderDE405.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialPoint moonDE405 = loaderDE405.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         /*
          * Initialisation of the OREKIT ephemeris
@@ -686,7 +687,7 @@ public class JPLEphemerisValTest {
         final JPLCelestialBodyLoader loaderDE406 = new JPLCelestialBodyLoader("unxp1800.406",
             EphemerisType.MOON);
         CelestialBodyFactory.clearCelestialBodyLoaders();
-        final CelestialBody moonDE406 = loaderDE406.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialPoint moonDE406 = loaderDE406.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         // Sets of coordinates which will be compared
         PVCoordinates pvOREKITDE406;
@@ -743,8 +744,8 @@ public class JPLEphemerisValTest {
      * 
      * @testedFeature {@link features#DE406_SUN_EPHEMERIS}
      * 
-     * @testedMethod {@link CelestialBody#getPVCoordinates(AbsoluteDate, Frame)}
-     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialBody(String)}
+     * @testedMethod {@link CelestialPoint#getPVCoordinates(AbsoluteDate, Frame)}
+     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialPoint(String)}
      * 
      * @description We compare the ephemeris of the Sun given by Orekit based on DE406 file with those given Orekit
      *              based on DE405 file. The comparison is done on 19 years starting from J2000 epoch, for each day. We
@@ -794,7 +795,7 @@ public class JPLEphemerisValTest {
         final JPLCelestialBodyLoader loaderDE405 = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.SUN);
         de405("unxp2000.405");
-        final CelestialBody sunDE405 = loaderDE405.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sunDE405 = loaderDE405.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         /*
          * Initialisation of the OREKIT ephemeris
@@ -802,7 +803,7 @@ public class JPLEphemerisValTest {
         final JPLCelestialBodyLoader loaderDE406 = new JPLCelestialBodyLoader("unxp1800.406",
             EphemerisType.SUN);
         de406("unxp1800.406");
-        final CelestialBody sunDE406 = loaderDE406.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sunDE406 = loaderDE406.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         // Sets of coordinates which will be compared
         PVCoordinates pvOREKITDE406;
@@ -859,8 +860,8 @@ public class JPLEphemerisValTest {
      * 
      * @testedFeature {@link features#BODIES_EPHEMERIS}
      * 
-     * @testedMethod {@link CelestialBody#getPVCoordinates(AbsoluteDate, Frame)}
-     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialBody(String)}
+     * @testedMethod {@link CelestialPoint#getPVCoordinates(AbsoluteDate, Frame)}
+     * @testedMethod {@link JPLCelestialBodyLoader#loadCelestialPoint(String)}
      * 
      * @description given a date, we compare one point of the ephemerides given by Orekit with the DE405 file with the
      *              corresponding point given by COMPAS
@@ -891,7 +892,7 @@ public class JPLEphemerisValTest {
         JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.SUN);
         de405("unxp2000.405");
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sun = loader.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         PVCoordinates pvOREKIT = sun.getPVCoordinates(date, gcrf);
 
@@ -926,7 +927,7 @@ public class JPLEphemerisValTest {
         loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.MOON);
 
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialPoint moon = loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         pvOREKIT = moon.getPVCoordinates(date, gcrf);
 
@@ -962,7 +963,7 @@ public class JPLEphemerisValTest {
         loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.VENUS);
         de405("unxp2000.405");
-        final CelestialBody venus = loader.loadCelestialBody(CelestialBodyFactory.VENUS);
+        final CelestialPoint venus = loader.loadCelestialPoint(CelestialBodyFactory.VENUS);
 
         pvOREKIT = venus.getPVCoordinates(date, gcrf);
 
@@ -997,7 +998,7 @@ public class JPLEphemerisValTest {
         loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.MARS);
         de405("unxp2000.405");
-        final CelestialBody mars = loader.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialPoint mars = loader.loadCelestialPoint(CelestialBodyFactory.MARS);
 
         pvOREKIT = mars.getPVCoordinates(date, gcrf);
 
@@ -1032,7 +1033,7 @@ public class JPLEphemerisValTest {
         loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.JUPITER);
         de405("unxp2000.405");
-        final CelestialBody jupiter = loader.loadCelestialBody(CelestialBodyFactory.JUPITER);
+        final CelestialPoint jupiter = loader.loadCelestialPoint(CelestialBodyFactory.JUPITER);
 
         pvOREKIT = jupiter.getPVCoordinates(date, gcrf);
 
@@ -1070,7 +1071,7 @@ public class JPLEphemerisValTest {
      * 
      * @testedFeature {@link features#GM}
      * 
-     * @testedMethod {@link CelestialBody#getGM()}
+     * @testedMethod {@link CelestialPoint#getGM()}
      * 
      * @description compare the GM given by Orekit with those given by JPL
      * 
@@ -1097,7 +1098,7 @@ public class JPLEphemerisValTest {
         JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.SUN);
         de405("unxp2000.405");
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sun = loader.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         validate.assertEqualsWithRelativeTolerance(sun.getGM(), 1.3271244001798696E20, this.epsilon,
             132712440018. * 1E9,
@@ -1106,7 +1107,7 @@ public class JPLEphemerisValTest {
         loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.EARTH);
 
-        final CelestialBody earth = loader.loadCelestialBody(CelestialBodyFactory.EARTH);
+        final CelestialPoint earth = loader.loadCelestialPoint(CelestialBodyFactory.EARTH);
 
         validate.assertEqualsWithRelativeTolerance(earth.getGM(), 3.986004328969392E14, this.epsilon,
             398600.4418 * 1E9,
@@ -1115,7 +1116,7 @@ public class JPLEphemerisValTest {
         loader = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.MOON);
 
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialPoint moon = loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         validate.assertEqualsWithRelativeTolerance(moon.getGM(), 4.902800582147764E12, this.epsilon, 4902.7779 * 1E9,
             1E-5,

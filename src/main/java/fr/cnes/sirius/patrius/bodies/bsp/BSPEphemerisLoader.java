@@ -14,6 +14,11 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-170:17/01/2024:[PATRIUS] Impossible d'utiliser le corps racine d'un bsp comme corps pivot
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
@@ -31,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import fr.cnes.sirius.patrius.bodies.BSPCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemerisLoader;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
@@ -137,7 +143,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
     /** PATRIUS frame tree link (ICRF by default). */
     private Frame rootPatriusFrame = FramesFactory.getICRF();
 
-    /** BSP body name linked to PATRIUS frame link. */
+    /** BSP body name linked to PATRIUS frame tree. */
     private String bspBodyLink = null;
 
     /**
@@ -300,25 +306,25 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
     /**
      * Load celestial body ephemeris.
      *
-     * @param name
-     *        body name, case does not matter (lower of upper case)
+     * @param patriusName body name known by Patrius
      * @return loaded celestial body
      * @throws PatriusException
      *         if the body, given its name, is not in the file
      */
     @Override
-    public CelestialBodyEphemeris loadCelestialBodyEphemeris(final String name) throws PatriusException {
-        if (this.ephemeris.get(name.toUpperCase(Locale.US)) == null) {
+    public CelestialBodyEphemeris loadCelestialBodyEphemeris(final String patriusName) throws PatriusException {
+        final String bspName = BSPCelestialBodyLoader.toSpiceName(patriusName);
+        if (this.ephemeris.get(bspName) == null) {
             // No loaded ephemeris at the moment, try loading new ephemeris
             if (!DataProvidersManager.getInstance().feed(this.supportedNames, this)) {
                 throw new PatriusException(PatriusMessages.NO_JPL_EPHEMERIDES_BINARY_FILES_FOUND);
             }
         }
         // Get body ephemeris
-        final CelestialBodyEphemeris res = this.ephemeris.get(name.toUpperCase(Locale.US));
+        final CelestialBodyEphemeris res = this.ephemeris.get(bspName);
         if (res == null) {
             // Body not in file
-            throw new PatriusException(PatriusMessages.BODY_NOT_AVAILABLE_IN_BSP_FILE, name);
+            throw new PatriusException(PatriusMessages.BODY_NOT_AVAILABLE_IN_BSP_FILE, bspName, this.supportedNames);
         }
         return res;
     }
@@ -346,6 +352,31 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         // Read segments and add to ephemeris map
         // WARNING: already known objects may be overridden
         this.ephemeris.putAll(readSegments(bspFile));
+
+        // Add root object which is not defined as a segment in BSP file
+        final int rootID = getRootID();
+        final DAFSegment rootSegment = new DAFSegment(rootID, rootID, 0);
+        final BSPCelestialBodyEphemeris rootEphem = new BSPCelestialBodyEphemeris(rootSegment);
+        this.ephemeris.put(SpiceBody.bodyCode2Name(rootID), rootEphem);
+    }
+    
+    /**
+     * Returns the root ID.
+     * 
+     * @return the root ID
+     */
+    private int getRootID() {
+        int res = 0;
+        if (!this.ephemeris.isEmpty()) {
+            // Get first segment
+            DAFSegment segment = this.ephemeris.entrySet().iterator().next().getValue().segment;
+            // Find root observer (should be unique)
+            while (this.ephemeris.get(segment.observerName) != null) {
+                segment = this.ephemeris.get(segment.observerName).segment;
+            }
+            res = segment.observerID;
+        }
+        return res;
     }
 
     /**
@@ -462,6 +493,14 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
     }
 
     /**
+     * Returns the BSP body name linked to PATRIUS frame tree.
+     * @return the BSP body name linked to PATRIUS frame tree
+     */
+    public String getBodyLink() {
+        return this.bspBodyLink;
+    }
+
+    /**
      * Link a BSP IAU frame (given its name) to a PATRIUS frame.
      * <p>
      * For example, providing Mars ICRF frame and BSP name "MARS" will set BSP MARS body IAU frame as Mars ICRF frame.
@@ -524,7 +563,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
             return this.segment.getObserverFrame();
         }
     }
@@ -644,11 +683,20 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
          * @return full observer frame name
          */
         private String buildFullObserverFrameName() {
-            return "IAU_" + BSPEphemerisLoader.this.convention + "_" + this.observerName;
+            final String space = " ";
+            return this.observerName + space + BSPEphemerisLoader.this.convention + space
+                    + BSPEphemerisLoader.this.supportedNames;
         }
 
         /**
          * Recursively build segment center frame on the fly.
+         * If BSP body link is defined, there are 3 main cases:
+         * <ul>
+         * <li>Current observer is between BSP body link and SSB</li>
+         * <li>Current observer is below BSP body link</li>
+         * <li>Current observer is on a different branch from BSP body link - SSB</li>
+         * </ul>
+         * <p>SSB has to be treated separately since it is not defined in BSP file (it only has observer ID = 0).</p>
          * 
          * @throws PatriusException
          *         if failed to retrieve body name from ID
@@ -657,21 +705,56 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
             final String currentFrameName = buildFullObserverFrameName();
             if (BSPEphemerisLoader.this.bspBodyLink == null) {
                 // Root frame is ICRF
-                // Frame if build from current to SSB, regular transform (no inversion)
+                // Frame if built recursively from current to SSB, regular transform
                 buildFrameUpward();
 
             } else {
                 // Root frame is a body defined in BSP file
 
+                // Simplest case : observer body is the link body
+                if (BSPEphemerisLoader.this.bspBodyLink.equals(this.observerName)) {
+                    setObserverFrame(BSPEphemerisLoader.this.rootPatriusFrame);
+                    return;
+                }
+
                 // Segment associated to BSP body link
                 final DAFSegment bspBodyLinkSegment = BSPEphemerisLoader.this.ephemeris
                     .get(BSPEphemerisLoader.this.bspBodyLink).segment;
-                if (bspBodyLinkSegment.observerName == this.observerName) {
-                    // Reach user root frame, inverted transform
-                    setObserverFrame(new CelestialBodyFrame(BSPEphemerisLoader.this.rootPatriusFrame,
-                        getTransformProvider(bspBodyLinkSegment, true), currentFrameName, null));
+                
+                // Check if current observer name is on the ancestors path of BSP body link segment observers
+                // (until ICRF if required)
+                DAFSegment currentS = bspBodyLinkSegment;
+                boolean isOnPathBSPLinkToICRF = false;
+                final List<DAFSegment> segments = new ArrayList<>();
+                while (currentS != null && !isOnPathBSPLinkToICRF) {
+                    segments.add(currentS);
+                    isOnPathBSPLinkToICRF = currentS.observerName == this.observerName;
+                    currentS = currentS.parent;
+                }
+                
+                if (isOnPathBSPLinkToICRF) {
+                    // Build frames tree iteratively (not recursively) from BSP body link frame to current frame
+                    // - Inverted transforms
+
+                    // Link with BSP body link
+                    Frame intermediateFrame = new CelestialBodyFrame(BSPEphemerisLoader.this.rootPatriusFrame,
+                            getTransformProvider(bspBodyLinkSegment, true),
+                            bspBodyLinkSegment.buildFullObserverFrameName(), null);
+                    setObserverFrame(intermediateFrame);
+                    // Other frames until current frame
+                    for(int i = 1; i < segments.size(); i++) {
+                        intermediateFrame =  new CelestialBodyFrame(intermediateFrame, getTransformProvider(
+                                segments.get(i), true), segments.get(i).buildFullObserverFrameName(), null);
+                        setObserverFrame(intermediateFrame);
+                    }
                 } else {
-                    // Standard case
+                    // Other case - BSP body link is either:
+                    // - Above current observer (i.e. is an ancestor of current observer) - Transforms are inverted
+                    // - Not on the path from current observer to SSB - Regular transforms to SSB
+
+                    // Build frames tree recursively
+
+                    // Check if BSP body link is an ancestor of current observer
                     // Find children on path from current observer to link body starting from link body
                     String currentTargetName = BSPEphemerisLoader.this.bspBodyLink;
                     int index = childOf(currentTargetName);
@@ -691,7 +774,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                         // Frame if build from current to SSB, regular transform (no inversion)
                         buildFrameUpward();
                     } else {
-                        // Build observer frame, inverted transform
+                        // BSP body link is an ancestor
+                        // Build observer frame recursively, inverted transform
                         setObserverFrame(new CelestialBodyFrame(this.children.get(index).getObserverFrame(),
                             getTransformProvider(this, true), currentFrameName, null));
                     }
@@ -708,8 +792,13 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
          */
         private void buildFrameUpward() throws PatriusException {
             if (this.observerID == 0) {
-                // Root frame default case (ICRF)
-                setObserverFrame(FramesFactory.getICRF());
+                // Root frame default case (ICRF or EME2000)
+                if (BSPEphemerisLoader.this.convention.equals(SpiceJ2000ConventionEnum.ICRF)) {
+                    setObserverFrame(FramesFactory.getICRF());
+                } else if (BSPEphemerisLoader.this.convention.equals(SpiceJ2000ConventionEnum.EME2000)) {
+                    // EME2000 convention is not handled in this case
+                    throw new PatriusException(PatriusMessages.EME2000_CONVENTION_NOT_SUPPORTED);
+                }
             } else {
                 final DAFSegment parentSegment = BSPEphemerisLoader.this.ephemeris.get(this.observerName).segment;
                 // Regular transform, no inversion

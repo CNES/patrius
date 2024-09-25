@@ -42,7 +42,7 @@ package fr.cnes.sirius.patrius.attitudes;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;

@@ -18,6 +18,11 @@
  * @history created 31/07/12
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
+ * juliens dans TidesToolbox.computeFundamentalArguments()
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche calcul position relative de 2 corps celestes 
@@ -72,7 +77,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  * @concurrency immutable
  * 
- * @see CelestialBody
+ * @see CelestialPoint
  * 
  * @author Julie Anton
  * 
@@ -85,12 +90,6 @@ public class MeeusSun extends AbstractCelestialBody {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 3593147893747468086L;
-
-    /**
-     * Cached transform from {@link #getInertialFrame(IAUPoleModelType.CONSTANT)} to integration
-     * frame (CIRF).
-     */
-    private static Transform cachedTransform = null;
 
     // Standard model constants set.
 
@@ -283,7 +282,7 @@ public class MeeusSun extends AbstractCelestialBody {
                 STANDARD_ECCENTRICITY_0, STANDARD_ECCENTRICITY_1, STANDARD_ECCENTRICITY_2, 0., 0., 0., 0.,
                 STANDARD_SUN_CENTER_10, STANDARD_SUN_CENTER_11, STANDARD_SUN_CENTER_12, STANDARD_SUN_CENTER_20,
                 STANDARD_SUN_CENTER_21, STANDARD_SUN_CENTER_30,
-                DISTANCE_SUN_EARH * Constants.JPL_SSD_ASTRONOMICAL_UNIT, FramesFactory.getEODFrame(true), 0.),
+                DISTANCE_SUN_EARH * Constants.JPL_SSD_ASTRONOMICAL_UNIT, FramesFactory.getEclipticMOD(true), 0.),
 
         /** STELA model. */
         STELA(STELA_MEAN_LONGITUDE_0, STELA_MEAN_LONGITUDE_1, STELA_MEAN_LONGITUDE_2, STELA_MEAN_ANOMALY_0,
@@ -504,7 +503,7 @@ public class MeeusSun extends AbstractCelestialBody {
     public MeeusSun(final MODEL model) throws PatriusException {
         // Temporary workaround in order to deal with PATRIUS non-unicity of frames tree
         super("Meeus Sun", Constants.JPL_SSD_SUN_GM, IAUPoleFactory.getIAUPole(EphemerisType.SUN),
-                model == MODEL.STANDARD ? FramesFactory.getEODFrame(true) : (model == MODEL.STELA ? FramesFactory
+                model == MODEL.STANDARD ? FramesFactory.getEclipticMOD(true) : (model == MODEL.STELA ? FramesFactory
                         .getMOD(false) : FramesFactory.getEME2000()));
         // model.inertialSunFrame);
         this.meeusModel = model;
@@ -519,36 +518,6 @@ public class MeeusSun extends AbstractCelestialBody {
         final StringBuilder builder = new StringBuilder(result);
         builder.append("- Ephemeris origin: Meeus Sun model (" + this.meeusModel + " model)");
         return builder.toString();
-    }
-
-    /**
-     * Update cached transform from {@link FramesFactory#getMOD(boolean)} to provided frame.
-     * Once called, this transform will always be used when calling
-     * {@link #getPVCoordinates(AbsoluteDate, Frame)} unless a call to {@link #resetTransform()} has
-     * been made.
-     * <p>
-     * Warning : this method must only be called if the chosen model is the Meeus STELA model.
-     * </p>
-     * 
-     * @param date
-     *        a date
-     * @param frame
-     *        a frame
-     * @throws PatriusException
-     *         thrown if transformation failed
-     */
-    public static void updateTransform(final AbsoluteDate date, final Frame frame) throws PatriusException {
-        cachedTransform = FramesFactory.getMOD(false).getTransformTo(frame, date);
-    }
-
-    /**
-     * Reset cached transform.
-     * <p>
-     * Warning : this method must only be called if the chosen model is the Meeus STELA model.
-     * </p>
-     */
-    public static void resetTransform() {
-        cachedTransform = null;
     }
 
     /**
@@ -608,7 +577,7 @@ public class MeeusSun extends AbstractCelestialBody {
         public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
 
             // time measured in Julian centuries of 36525 ephemeris days from the epoch J2000
-            final double t = date.durationFrom(AbsoluteDate.J2000_EPOCH) / Constants.JULIAN_CENTURY;
+            final double t = date.durationFromJ2000EpochInCenturies();
             final double t2 = t * t;
             final double t3 = t2 * t;
 
@@ -670,7 +639,7 @@ public class MeeusSun extends AbstractCelestialBody {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
             return icrf.getParent();
         }
     }

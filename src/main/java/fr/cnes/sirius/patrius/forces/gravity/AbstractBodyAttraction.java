@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le
@@ -28,11 +31,13 @@
  */
 package fr.cnes.sirius.patrius.forces.gravity;
 
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.GradientModel;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
@@ -41,9 +46,9 @@ import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.math.parameter.ParameterUtils;
 import fr.cnes.sirius.patrius.math.parameter.StandardFieldDescriptors;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -148,7 +153,7 @@ public abstract class AbstractBodyAttraction extends JacobiansParameterizable im
 
     /**
      * Abstract method to compute the acceleration of the implementation
-     * 
+     *
      * @param positionInBodyFrame position in body frame
      * @param date date
      * @param scFrameToBodyFrame transform from spacecraft frame to body frame
@@ -168,7 +173,7 @@ public abstract class AbstractBodyAttraction extends JacobiansParameterizable im
 
     /**
      * Compute acceleration derivatives with respect to the position of the spacecraft.
-     * 
+     *
      * @param pos position of the spacecraft
      * @param frame frame in which the acceleration derivatives are computed
      * @param date date
@@ -206,36 +211,112 @@ public abstract class AbstractBodyAttraction extends JacobiansParameterizable im
 
     /**
      * Convert a 3x3 matrix from a frame A to a frame B.
-     * 
+     *
      * @param matrixInFrameA the matrix expressed in the frame A
      * @param transformFromFrameBToFrameA the transform needed to pass from the frame B to the frame A
      * @return the matrix expressed in the frame B
      */
     private static double[][] convertMatrixFromAToB(final double[][] matrixInFrameA,
                                                     final Transform transformFromFrameBToFrameA) {
-        
-        if (transformFromFrameBToFrameA.equals(Transform.IDENTITY)) {
-            //Immediate return is fransform is identity
-            return matrixInFrameA;
-        }
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS: {
+                if (transformFromFrameBToFrameA.equals(Transform.IDENTITY)) {
+                    // Immediate return if transform is identity
+                    return matrixInFrameA;
+                }
 
-        // Jacobian matrix from B to A
-        final double[][] jac = new double[6][6];
-        transformFromFrameBToFrameA.getJacobian(jac);
-        // Keep the useful part (3x3 for position)
-        final double[][] jac33Transposed = new double[3][3];
-        for (int i = 0; i < jac33Transposed.length; i++) {
-            for (int j = 0; j < jac33Transposed[i].length; j++) {
-                jac33Transposed[i][j] = jac[j][i];
+                // Jacobian matrix from B to A
+                final double[][] jac = new double[6][6];
+                transformFromFrameBToFrameA.getJacobian(jac);
+                // Keep the useful part (3x3 for position)
+                final double[][] jac33Transposed = new double[3][3];
+                for (int i = 0; i < jac33Transposed.length; i++) {
+                    for (int j = 0; j < jac33Transposed[i].length; j++) {
+                        jac33Transposed[i][j] = jac[j][i];
+                    }
+                }
+                // Build real matrix for multiplication
+                final Array2DRowRealMatrix matrixInARealMatrix = new Array2DRowRealMatrix(matrixInFrameA, false);
+                final Array2DRowRealMatrix jacFromAToBMatrix = new Array2DRowRealMatrix(jac33Transposed, false);
+                // Transformation
+                final RealMatrix matrixInB =
+                    jacFromAToBMatrix.multiply(matrixInARealMatrix).multiply(jacFromAToBMatrix, true);
+
+                return matrixInB.getData(true);
             }
-        }
-        // Build real matrix for multiplication
-        final Array2DRowRealMatrix matrixInARealMatrix = new Array2DRowRealMatrix(matrixInFrameA, false);
-        final Array2DRowRealMatrix jacFromAToBMatrix = new Array2DRowRealMatrix(jac33Transposed, false);
-        // Transformation
-        final RealMatrix matrixInB = jacFromAToBMatrix.multiply(matrixInARealMatrix).multiply(jacFromAToBMatrix, true);
+            case NEW_MODELS:
+            case MIXED_MODELS:
+                if (transformFromFrameBToFrameA.equals(Transform.IDENTITY)) {
+                    // Immediate return if transform is identity
+                    return matrixInFrameA;
+                }
 
-        return matrixInB.getData(true);
+                final double[][] matrixInB = new double[3][3];
+                final Rotation rotFromAToB = transformFromFrameBToFrameA.getRotation();
+
+                // First rotation (rotate lines)
+                final double[][] intermediateMatrix = new double[3][3];
+                rotFromAToB.applyTo(matrixInFrameA[0], intermediateMatrix[0]);
+                rotFromAToB.applyTo(matrixInFrameA[1], intermediateMatrix[1]);
+                rotFromAToB.applyTo(matrixInFrameA[2], intermediateMatrix[2]);
+
+                // Second rotation (rotate columns)
+                final double[] intermediateVectorIn = new double[3];
+                final double[] intermediateVectorOut = new double[3];
+
+                // Rotation for index 0
+                extractColumnInMatrix(intermediateMatrix, intermediateVectorIn, 0);
+                rotFromAToB.applyTo(intermediateVectorIn, intermediateVectorOut);
+                copyVectorInMatrixColumn(matrixInB, intermediateVectorOut, 0);
+
+                // Rotation for index 1
+                extractColumnInMatrix(intermediateMatrix, intermediateVectorIn, 1);
+                rotFromAToB.applyTo(intermediateVectorIn, intermediateVectorOut);
+                copyVectorInMatrixColumn(matrixInB, intermediateVectorOut, 1);
+
+                // Rotation for index 2
+                extractColumnInMatrix(intermediateMatrix, intermediateVectorIn, 2);
+                rotFromAToB.applyTo(intermediateVectorIn, intermediateVectorOut);
+                copyVectorInMatrixColumn(matrixInB, intermediateVectorOut, 2);
+
+                return matrixInB;
+                
+            default:
+                throw new IllegalArgumentException(
+                    "Unsupported compatibility mode : " + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
+    }
+
+    /**
+     * Utility function to extract the column of a 3x3 matrix.
+     *
+     * @param matrix
+     *        The 3x3 matrix
+     * @param vector
+     *        The vector to extract
+     * @param index
+     *        The index of the column
+     */
+    private static void extractColumnInMatrix(final double[][] matrix, final double[] vector, final int index) {
+        vector[0] = matrix[0][index];
+        vector[1] = matrix[1][index];
+        vector[2] = matrix[2][index];
+    }
+
+    /**
+     * Utility function to copy a vector into a matrix.
+     *
+     * @param matrix
+     *        The matrix where the vector is copied
+     * @param vector
+     *        The vector to copy
+     * @param index
+     *        The index of the column
+     */
+    private static void copyVectorInMatrixColumn(final double[][] matrix, final double[] vector, final int index) {
+        matrix[0][index] = vector[0];
+        matrix[1][index] = vector[1];
+        matrix[2][index] = vector[2];
     }
 
     /** {@inheritDoc} */
@@ -248,7 +329,7 @@ public abstract class AbstractBodyAttraction extends JacobiansParameterizable im
 
     /**
      * Compute acceleration derivatives with respect to additional parameters.
-     * 
+     *
      * @param pos position of the spacecraft
      * @param frame frame in which the acceleration derivatives are computed
      * @param date date

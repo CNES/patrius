@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2398:27/05/2020:incoherence de seuils de norme entre AngularCoordinates et Rotation 
@@ -145,6 +146,12 @@ public class RotationTest {
     @Test
     @SuppressWarnings("unused")
     public void testConstructors() {
+        
+        final Rotation r = new Rotation(false, 0, 1, 0, 0);
+        System.out.println(r.getAngles(RotationOrder.YZY));
+        System.out.println(r.getAngle());
+        System.out.println(r.getAxis());
+        
         final double d1 = MathLib.cos(FastMath.PI / 3.);
         final double d2 = MathLib.sin(FastMath.PI / 3.);
         final Quaternion q = new Quaternion(d1, d2, 0., 0.);

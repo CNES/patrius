@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:DM:DM-3244:03/11/2022:[PATRIUS] Ajout propagation du signal dans ExtremaElevationDetector
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -226,7 +227,7 @@ public class SolarRadiationWrench extends Parameterizable implements WrenchModel
         final double r2 = satSunVector.getNormSq();
         final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earthModel, null);
         return MathLib.divide(this.sunPressure.getValue() * this.sunDistance.getValue() * this.sunDistance.getValue()
-                * srp.getLightningRatio(satSunVector, this.earthModel, s.getOrbit(), frame, date), r2);
+                * srp.getLightingRatio(satSunVector, this.earthModel, s.getOrbit(), frame, date), r2);
     }
 
     /** {@inheritDoc} */

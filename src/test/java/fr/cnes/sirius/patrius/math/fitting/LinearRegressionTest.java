@@ -13,6 +13,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.math.fitting;
 
 import org.junit.Assert;

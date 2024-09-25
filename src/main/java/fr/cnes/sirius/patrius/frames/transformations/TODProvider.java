@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours 
+ *          juliens dans TidesToolbox.computeFundamentalArguments() 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.7:DM:DM-2590:18/05/2021:Configuration des TransformProvider 
@@ -401,8 +403,8 @@ public final class TODProvider implements TransformProvider {
     public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
                                   final boolean computeSpinDerivatives) throws PatriusException {
 
-        // offset from J2000.0 epoch
-        final double t = date.durationFrom(AbsoluteDate.J2000_EPOCH);
+        // Duration in seconds since J2000 epoch
+        final double t = date.durationFromJ2000EpochInSeconds();
 
         // evaluate the nutation elements
         final double[] nutation = computeNutationElements(t);
@@ -488,8 +490,8 @@ public final class TODProvider implements TransformProvider {
      */
     public static double getEquationOfEquinoxes(final AbsoluteDate date) throws PatriusException {
 
-        // offset from J2000 epoch in seconds
-        final double t = date.durationFrom(AbsoluteDate.J2000_EPOCH);
+        // Duration in seconds since J2000 epoch
+        final double t = date.durationFromJ2000EpochInSeconds();
 
         // nutation in longitude
         final double dPsi = computeNutationElements(t)[0];

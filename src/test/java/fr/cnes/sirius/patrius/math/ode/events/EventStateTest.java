@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:FA:FA-2113:15/05/2019:Usage des exceptions pour gerer un if/else "nominal" dans Ellipsoid.getPointLocation()
@@ -43,6 +44,7 @@ import fr.cnes.sirius.patrius.math.ode.FirstOrderIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.ClassicalRungeKuttaIntegrator;
 import fr.cnes.sirius.patrius.math.ode.sampling.AbstractStepInterpolator;
 import fr.cnes.sirius.patrius.math.ode.sampling.DummyStepInterpolator;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 public class EventStateTest {
 
@@ -133,6 +135,15 @@ public class EventStateTest {
                 Assert.assertEquals(11., t, 0.001);
                 return Action.CONTINUE;
             }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
+            }
         };
 
         final EventHandler eventHandler2 = new EventHandler(){
@@ -166,6 +177,15 @@ public class EventStateTest {
             public Action eventOccurred(final double t, final double[] y, final boolean increasing,
                                         final boolean forward) {
                 return Action.RESET_STATE;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
             }
         };
 
@@ -213,6 +233,15 @@ public class EventStateTest {
             @Override
             public int getSlopeSelection() {
                 return 2;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
             }
         };
 
@@ -282,6 +311,15 @@ public class EventStateTest {
             @Override
             public int getSlopeSelection() {
                 return 0;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
             }
         };
 

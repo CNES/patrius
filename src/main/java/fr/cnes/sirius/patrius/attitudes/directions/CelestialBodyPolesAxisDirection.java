@@ -74,8 +74,7 @@ public final class CelestialBodyPolesAxisDirection implements IDirection {
      *        the celestial body associated to the orbit
      * */
     public CelestialBodyPolesAxisDirection(final CelestialBody inBody) {
-
-        // Initialisation
+        // Initialization
         this.body = inBody;
     }
 

@@ -18,6 +18,7 @@
 /*
  * 
  * HISTORY
+* VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
 * VERSION:4.11:FA:FA-3321:22/05/2023:[PATRIUS] Thread safety issue a la creation des FactoryManagedFrame
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
@@ -81,7 +82,7 @@ public class FramesFactoryTest {
 
     @Test
     public void testTree() throws PatriusException {
-        Assert.assertEquals(18, Predefined.values().length);
+        Assert.assertEquals(20, Predefined.values().length);
         final Predefined[][] reference = new Predefined[][] {
             { Predefined.EME2000, Predefined.GCRF },
             { Predefined.ITRF, Predefined.TIRF },
@@ -90,15 +91,17 @@ public class FramesFactoryTest {
             { Predefined.CIRF, Predefined.GCRF },
             { Predefined.GCRF, Predefined.EMB },
             { Predefined.VEIS_1950, Predefined.GTOD_WITHOUT_EOP_CORRECTIONS },
+            { Predefined.G50, Predefined.GTOD_WITHOUT_EOP_CORRECTIONS },
             { Predefined.GTOD_WITHOUT_EOP_CORRECTIONS, Predefined.TOD_WITHOUT_EOP_CORRECTIONS },
             { Predefined.GTOD_WITH_EOP_CORRECTIONS, Predefined.TOD_WITH_EOP_CORRECTIONS },
             { Predefined.TOD_WITHOUT_EOP_CORRECTIONS, Predefined.MOD_WITHOUT_EOP_CORRECTIONS },
             { Predefined.TOD_WITH_EOP_CORRECTIONS, Predefined.MOD_WITH_EOP_CORRECTIONS },
             { Predefined.MOD_WITHOUT_EOP_CORRECTIONS, Predefined.EME2000 },
             { Predefined.MOD_WITH_EOP_CORRECTIONS, Predefined.GCRF },
+            { Predefined.ECLIPTIC_J2000, Predefined.ICRF },
             { Predefined.TEME, Predefined.TOD_WITHOUT_EOP_CORRECTIONS },
-            { Predefined.EOD_WITH_EOP_CORRECTIONS, Predefined.MOD_WITH_EOP_CORRECTIONS },
-            { Predefined.EOD_WITHOUT_EOP_CORRECTIONS, Predefined.MOD_WITHOUT_EOP_CORRECTIONS }
+            { Predefined.ECLIPTIC_MOD_WITH_EOP_CORRECTIONS, Predefined.MOD_WITH_EOP_CORRECTIONS },
+            { Predefined.ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS, Predefined.MOD_WITHOUT_EOP_CORRECTIONS }
         };
         for (final Predefined[] pair : reference) {
             final Frame child = FramesFactory.getFrame(pair[0]);

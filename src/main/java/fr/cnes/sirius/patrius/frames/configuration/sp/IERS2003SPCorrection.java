@@ -17,6 +17,8 @@
  * @history creation 24/09/2016
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
+ * juliens dans TidesToolbox.computeFundamentalArguments()
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -58,9 +60,8 @@ public class IERS2003SPCorrection implements SPrimeModel {
     /** {@inheritDoc} */
     @Override
     public double getSP(final AbsoluteDate date) {
-        // offset from J2000 epoch in julian centuries
-        final double tts = date.durationFrom(AbsoluteDate.J2000_EPOCH);
-        final double ttc = tts / Constants.JULIAN_CENTURY;
+        // Duration in centuries since J2000 epoch
+        final double ttc = date.durationFromJ2000EpochInCenturies();
         // s'
         return S_PRIME_RATE * ttc;
     }

@@ -35,6 +35,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.utils.legs;
 
 import java.util.Collection;

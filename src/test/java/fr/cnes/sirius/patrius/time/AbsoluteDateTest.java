@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours 
+ *          juliens dans TidesToolbox.computeFundamentalArguments() 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -60,10 +62,19 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 public class AbsoluteDateTest {
-    
+
+    @Test
+    public void testSmallOffsetGetComponents() {
+        final AbsoluteDate date = new AbsoluteDate(744724800, -4.7580986769649594E-17);
+        final AbsoluteDate date2 = new AbsoluteDate(744724800, 4.7580986769649594E-17);
+        Assert.assertEquals(date.getComponents(TimeScalesFactory.getTAI()).toString(),
+            date2.getComponents(TimeScalesFactory.getTAI()).toString());
+    }
+
     @Test
     public void testAccuracyBasic() {
         final TimeScale tai = TimeScalesFactory.getTAI();
@@ -331,7 +342,20 @@ public class AbsoluteDateTest {
         noLeapGap = ((9712 * 24 + 16) * 60 + 31) * 60 + 17;
         realGap = (long) date2.durationFrom(dateRef);
         Assert.assertEquals(14l, realGap - noLeapGap);
+    }
 
+    @Test
+    public void testDurationFromJ2000Epoch() {
+        final String d = "2023-01-01T00:00:00.000";
+        final AbsoluteDate date = new AbsoluteDate(d, TimeScalesFactory.getTAI());
+        final double durationRefSecs = date.durationFrom(AbsoluteDate.J2000_EPOCH);
+        final double durationRefDays = durationRefSecs / Constants.JULIAN_DAY;
+        final double durationRefYears = durationRefSecs / Constants.JULIAN_YEAR;
+        final double durationRefCenturies = durationRefSecs / Constants.JULIAN_CENTURY;
+        Assert.assertEquals(durationRefSecs, date.durationFromJ2000EpochInSeconds(), 0.);
+        Assert.assertEquals(durationRefDays, date.durationFromJ2000EpochInDays(), 0.);
+        Assert.assertEquals(durationRefYears, date.durationFromJ2000EpochInYears(), 0.);
+        Assert.assertEquals(durationRefCenturies, date.durationFromJ2000EpochInCenturies(), 0.);
     }
 
     @Test
@@ -848,7 +872,7 @@ public class AbsoluteDateTest {
     public void testAccuracyTAI2TDB() {
         final AbsoluteDate date = new AbsoluteDate("2026-01-14T23:59:27.8156760381079");
         Assert.assertEquals("Date TAI : 2026-01-14T23:59:27.815676038108", "Date TAI : " + date.toString(12));
-        Assert.assertEquals("Date TDB : 2026-01-14T23:59:59.999999999999",
+        Assert.assertEquals("Date TDB : 2026-01-15T00:00:00.000000000000",
             "Date TDB : " + date.toString(12, TimeScalesFactory.getTDB()));
     }
 

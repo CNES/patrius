@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-40:22/05/2023:[PATRIUS] Gestion derivees par rapport au coefficient k dans les GravityModel
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -47,6 +48,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GRGSFormatReader;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
@@ -68,7 +70,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.PartialDerivativesEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;

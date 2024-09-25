@@ -19,6 +19,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3172:10/05/2022:[PATRIUS] Ajout d'un throws PatriusException a la methode init de l'interface EDet
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -35,6 +37,8 @@
 
 package fr.cnes.sirius.patrius.math.ode.events;
 
+import fr.cnes.sirius.patrius.events.detectors.LocalTimeAngleDetector;
+import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
@@ -223,6 +227,30 @@ public interface EventHandler {
      * @return true if the current detector should be removed
      */
     boolean shouldBeRemoved();
+
+    /**
+     * Filter last event: returns true if the last event is a false detection, false otherwise.
+     * <p>
+     * This method is called right before {@link #eventOccurred(SpacecraftState, boolean, boolean)} method.
+     * </p>
+     * <p>
+     * This may be useful in order to filter some events in particular when angles are at stake (see for example
+     * {@link LocalTimeAngleDetector}).
+     * </p>
+     * 
+     * @param t
+     *        event date
+     * @param y
+     *        array containing the current value of the state vector
+     * @param increasing
+     *        if true, the value of the switching function increases when times increases around event (note that
+     *        increase is measured with respect to physical time, not with respect to propagation which may go backward
+     *        in time)
+     * @param forward
+     *        if true, the integration variable (time) increases during integration
+     * @return true if the last event is a false detection, false otherwise
+     */
+    boolean filterEvent(final double t, final double[] y, final boolean increasing, final boolean forward);
 
     /**
      * Reset the state prior to continue the integration.

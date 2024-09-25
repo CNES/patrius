@@ -20,6 +20,7 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -31,16 +32,16 @@ package fr.cnes.sirius.patrius.math.parameter;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.function.Function;
 
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableFunction;
 
 /**
  * Field descriptor.
  * <p>
- * A field descriptor associates a name with a given class, and provides the means to generate
- * custom string representations of any instance of this class.
+ * A field descriptor associates a name with a given class, and provides the means to generate custom string
+ * representations of any instance of this class.
  * </p>
  *
  * @param <T>
@@ -52,7 +53,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  */
 public class FieldDescriptor<T> implements Serializable {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 2464360492514865635L;
 
     /** Name of the descriptor. */
@@ -62,7 +63,7 @@ public class FieldDescriptor<T> implements Serializable {
     private final Class<T> fieldClass;
 
     /** Function to use when converting field values to strings. */
-    private transient Function<T, String> printFunction;
+    private SerializableFunction<T, String> printFunction;
 
     /**
      * Creates a new field descriptor.
@@ -92,7 +93,7 @@ public class FieldDescriptor<T> implements Serializable {
      *         if {@code nameIn} or {@code fieldClassIn} is {@code null}
      */
     public FieldDescriptor(final String nameIn, final Class<T> fieldClassIn,
-            final Function<T, String> printFunctionIn) {
+                           final SerializableFunction<T, String> printFunctionIn) {
         checkNotNull(nameIn, "name");
         checkNotNull(fieldClassIn, "field class");
 
@@ -124,7 +125,7 @@ public class FieldDescriptor<T> implements Serializable {
      *
      * @return the function to use when converting field values to strings
      */
-    public Function<T, String> getPrintFunction() {
+    public SerializableFunction<T, String> getPrintFunction() {
         return this.printFunction;
     }
 
@@ -134,7 +135,7 @@ public class FieldDescriptor<T> implements Serializable {
      * @param newPrintFunction
      *        the new function to use when converting field values to strings
      */
-    public void setPrintFunction(final Function<T, String> newPrintFunction) {
+    public void setPrintFunction(final SerializableFunction<T, String> newPrintFunction) {
         this.printFunction = newPrintFunction;
     }
 
@@ -142,10 +143,9 @@ public class FieldDescriptor<T> implements Serializable {
      * Gets a string representation of a given field value.
      *
      * <p>
-     * The string representation of the field value is generated using the printer function
-     * specified at construction. The standard {@code toString} method is used instead if no
-     * function was specified, or if the class of the provided object does not match the class
-     * associated with this field descriptor.
+     * The string representation of the field value is generated using the printer function specified at construction.
+     * The standard {@code toString} method is used instead if no function was specified, or if the class of the
+     * provided object does not match the class associated with this field descriptor.
      * </p>
      *
      * @param value
@@ -185,16 +185,15 @@ public class FieldDescriptor<T> implements Serializable {
      * Indicates whether some other object is "equal to" this one.
      *
      * <p>
-     * This method only compares the name of the descriptor and the class of the described fields
-     * when checking if two {@linkplain FieldDescriptor} instances are equal or not. The function
-     * used to convert field values to strings is not taken into account.
+     * This method only compares the name of the descriptor and the class of the described fields when checking if two
+     * {@linkplain FieldDescriptor} instances are equal or not. The function used to convert field values to strings is
+     * not taken into account.
      * </p>
      *
      * @param object
      *        the reference object with which to compare
      *
-     * @return {@code true} if this object is the same as the provided object, {@code false}
-     *         otherwise
+     * @return {@code true} if this object is the same as the provided object, {@code false} otherwise
      */
     @Override
     public boolean equals(final Object object) {
@@ -232,7 +231,7 @@ public class FieldDescriptor<T> implements Serializable {
     private static void checkNotNull(final Object object, final String description) {
         if (object == null) {
             throw new NullArgumentException(PatriusMessages.NULL_NOT_ALLOWED_DESCRIPTION,
-                    description);
+                description);
         }
     }
 }

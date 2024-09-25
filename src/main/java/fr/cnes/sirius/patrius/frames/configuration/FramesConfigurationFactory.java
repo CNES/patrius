@@ -17,6 +17,10 @@
  * @history creation 28/11/2012
  *
  * HISTORY
+ * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2367:27/05/2020:Configuration de changement de repère simplifiee 
@@ -33,11 +37,13 @@ import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistoryFactory;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPInterpolators;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModel;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
 
@@ -51,6 +57,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
  * @version $Id: FramesConfigurationFactory.java 18073 2017-10-02 16:48:07Z bignon $
  */
 public final class FramesConfigurationFactory {
+
+    /** Exception message if the compatibility mode is unsupported. */
+    private static final String UNSUPPORTED_MODE_EXCEPTION = "Unsupported compatibility mode : ";
 
     /**
      * Private constructor.
@@ -78,13 +87,32 @@ public final class FramesConfigurationFactory {
         // Diurnal rotation
         final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
 
-        // Precession Nutation
-        final PrecessionNutation precNut = new PrecessionNutation(true,
-            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT);
+        // Declare the precession/nutation
+        final PrecessionNutation precNut;
+
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS:
+                // Precession Nutation
+                precNut = new PrecessionNutation(true,
+                    PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT_OLD);
+                builder.setCIRFPrecessionNutation(precNut);
+                break;
+
+            case NEW_MODELS:
+                // Precession Nutation
+                precNut =
+                new PrecessionNutation(true, PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED);
+                builder.setCIRFPrecessionNutation(precNut);
+                break;
+
+            default:
+                throw new IllegalArgumentException(
+                    UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
 
         builder.setDiurnalRotation(defaultDiurnalRotation);
         builder.setPolarMotion(defaultPolarMotion);
-        builder.setPrecessionNutation(precNut);
         try {
             builder.setEOPHistory(EOPHistoryFactory.getEOP2000History(EOPInterpolators.LAGRANGE4));
         } catch (final PatriusException e) {
@@ -107,8 +135,9 @@ public final class FramesConfigurationFactory {
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
 
         // Tides and libration
-        final TidalCorrectionModel tides = ignoreTides ? TidalCorrectionModelFactory.NO_TIDE :
-            TidalCorrectionModelFactory.TIDE_IERS2003_INTERPOLATED;
+        final TidalCorrectionModel tides =
+            ignoreTides ? TidalCorrectionModelFactory.NO_TIDE
+                : TidalCorrectionModelFactory.TIDE_IERS2003_INTERPOLATED;
         final LibrationCorrectionModel lib = LibrationCorrectionModelFactory.NO_LIBRATION;
 
         // Polar Motion
@@ -117,13 +146,32 @@ public final class FramesConfigurationFactory {
         // Diurnal rotation
         final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
 
-        // Precession Nutation
-        final PrecessionNutation precNut = new PrecessionNutation(false,
-            PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED_CONSTANT);
+        // Declare the precession/nutation
+        final PrecessionNutation precNut;
+
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS:
+                // Precession Nutation
+                precNut = new PrecessionNutation(false,
+                    PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED_CONSTANT_OLD);
+                builder.setCIRFPrecessionNutation(precNut);
+                break;
+
+            case NEW_MODELS:
+                // Precession Nutation
+                precNut = new PrecessionNutation(false,
+                    PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED);
+                builder.setCIRFPrecessionNutation(precNut);
+                break;
+
+            default:
+                throw new IllegalArgumentException(
+                    UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
 
         builder.setDiurnalRotation(defaultDiurnalRotation);
         builder.setPolarMotion(defaultPolarMotion);
-        builder.setPrecessionNutation(precNut);
         try {
             builder.setEOPHistory(EOPHistoryFactory.getEOP2000History(EOPInterpolators.LAGRANGE4));
         } catch (final PatriusException e) {
@@ -144,7 +192,7 @@ public final class FramesConfigurationFactory {
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
 
         // Precession/nutation
-        builder.setPrecessionNutation(new PrecessionNutation(true, PrecessionNutationModelFactory.PN_STELA));
+        builder.setCIRFPrecessionNutation(new PrecessionNutation(true, PrecessionNutationModelFactory.PN_STELA));
 
         return builder.getConfiguration();
     }
@@ -167,15 +215,36 @@ public final class FramesConfigurationFactory {
         // Configurations builder
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
 
-        // Precession Nutation
-        final PrecessionNutationModel pnModel;
-        if (usePrecessionNutationModel) {
-            pnModel = PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT;
-        } else {
-            pnModel = PrecessionNutationModelFactory.NO_PN;
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS: {
+                // Precession Nutation
+                final PrecessionNutationModel pnModel;
+                if (usePrecessionNutationModel) {
+                    pnModel = PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT_OLD;
+                } else {
+                    pnModel = PrecessionNutationModelFactory.NO_PN;
+                }
+                builder.setCIRFPrecessionNutation(new PrecessionNutation(false, pnModel));
+                break;
+            }
+            case NEW_MODELS:
+                // Precession Nutation
+                final PrecessionNutationModel pnModel;
+                if (usePrecessionNutationModel) {
+                    pnModel = PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED;
+                } else {
+                    pnModel = PrecessionNutationModelFactory.NO_PN;
+                }
+                builder.setCIRFPrecessionNutation(new PrecessionNutation(false, pnModel));
+                break;
+
+            default:
+                throw new IllegalArgumentException(
+                    UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
         }
-        builder.setPrecessionNutation(new PrecessionNutation(false, pnModel));
 
         return builder.getConfiguration();
     }
+
 }

@@ -17,6 +17,8 @@
  * @history creation 11/10/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2364:27/05/2020:Problèmes rencontres dans le modèle MSIS00
@@ -33,6 +35,7 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeStampedCache;
+import fr.cnes.sirius.patrius.time.interpolation.TimeStampedInterpolableEphemeris;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
@@ -40,7 +43,8 @@ import fr.cnes.sirius.patrius.utils.exception.TimeStampedCacheException;
 
 /**
  * Cache for precession nutation correction computation.
- * 
+ * This class is to be used for GCRF to CIRF transformation.
+ *
  * <p>
  * This implementation includes a caching/interpolation feature to tremendously improve efficiency. The IAU-2000 model
  * involves lots of terms (1600 components for x, 1275 components for y and 66 components for s). Recomputing all these
@@ -50,17 +54,16 @@ import fr.cnes.sirius.patrius.utils.exception.TimeStampedCacheException;
  * points. This implementation uses 12 points separated by 1/2 day (43200 seconds) each, the resulting maximal
  * interpolation error on the frame is about 1.3&times;10<sup>-10</sup> arcseconds. <i>-- Orekit </i>
  * </p>
- * 
- * <p>
- * This class has been adapted from the CIRF2000Frame Orekit class.
- * </p>
- * 
+ *
  * @author Rami Houdroge
- * 
- * @version $Id: PrecessionNutationCache.java 18073 2017-10-02 16:48:07Z bignon $
- * 
+ *
  * @since 1.2
+ * 
+ * @deprecated since 4.13 as the precession nutation corrections cache management is deported in the
+ *             {@link PrecessionNutationInterpolation} class which uses a more efficient
+ *             {@link TimeStampedInterpolableEphemeris} cache system.
  */
+@Deprecated
 public class PrecessionNutationCache implements PrecessionNutationModel {
 
      /** Serializable UID. */
@@ -94,8 +97,11 @@ public class PrecessionNutationCache implements PrecessionNutationModel {
      *        time spane between interpolation points
      * @param interpolationPoints
      *        number of interpolation points to use
-     * 
+     * @deprecated since 4.13 as the precession nutation corrections cache management is deported in the
+     *             {@link PrecessionNutationInterpolation} class which uses a more efficient
+     *             {@link TimeStampedInterpolableEphemeris} cache system.
      */
+    @Deprecated
     public PrecessionNutationCache(final PrecessionNutationModel pnModel, final double span,
         final int interpolationPoints) {
 
@@ -110,13 +116,35 @@ public class PrecessionNutationCache implements PrecessionNutationModel {
     /**
      * @param pnModel
      *        IERS model to use
+     * @deprecated since 4.13 as the precession nutation corrections cache management is deported in the
+     *             {@link PrecessionNutationInterpolation} class which uses a more efficient
+     *             {@link TimeStampedInterpolableEphemeris} cache system.
      */
+    @Deprecated
     public PrecessionNutationCache(final PrecessionNutationModel pnModel) {
         this(pnModel, DEFAULT_SPAN, DEFAULT_INTERP_POINTS);
     }
 
     /** {@inheritDoc} */
     @Override
+    public CIPCoordinates getCIPCoordinates(final AbsoluteDate date) {
+        // synchronized access to already computed set
+        synchronized (this.token) {
+            // if dates equate, return the current set, otherwise recompute
+            if (MathLib.abs(this.currentSet.getDate().durationFrom(date)) >= Precision.EPSILON) {
+                this.currentSet = this.getPoleCoordinates(date);
+            }
+        }
+        return this.currentSet;
+    }
+
+    /**
+     * Compute the Celestial Intermediate pole motion in the GCRS.
+     * 
+     * @param date
+     *        Date for the CIP motion
+     * @return CIP motion as an array of doubles
+     */
     public double[] getCIPMotion(final AbsoluteDate date) {
 
         // container
@@ -136,8 +164,13 @@ public class PrecessionNutationCache implements PrecessionNutationModel {
         return result;
     }
 
-    /** {@inheritDoc} */
-    @Override
+    /**
+     * Compute the Celestial Intermediate pole motion in the GCRS.
+     * 
+     * @param date
+     *        Date for the CIP motion time derivatives
+     * @return CIP motion time derivatives as an array of doubles
+     */
     public double[] getCIPMotionTimeDerivative(final AbsoluteDate date) {
 
         // synchronized access to already computed set
@@ -153,7 +186,7 @@ public class PrecessionNutationCache implements PrecessionNutationModel {
 
     /**
      * Get Pole Coordinates.
-     * 
+     *
      * @param date
      *        for pole coordinates
      * @return pole coordinates
@@ -221,11 +254,4 @@ public class PrecessionNutationCache implements PrecessionNutationModel {
     public FrameConvention getOrigin() {
         return this.model.getOrigin();
     }
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean isConstant() {
-        return this.model.isConstant();
-    }
-
 }

@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -476,7 +477,14 @@ public final class MathUtilsTest {
         a = 27;
 
         Assert.assertEquals(refNb - b, MathUtils.findSmallestOffset(refNb, a, b), Precision.DOUBLE_COMPARISON_EPSILON);
-
     }
 
+    @Test
+    public void testContainsNaN() {
+        Assert.assertTrue(MathUtils.containsNaN(1.1, 2.2, Double.NaN));
+        Assert.assertTrue(MathUtils.containsNaN(Double.NaN, 1.1, 2.2));
+        Assert.assertTrue(MathUtils.containsNaN(Double.NaN));
+        Assert.assertFalse(MathUtils.containsNaN(1.1, 2.2));
+        Assert.assertFalse(MathUtils.containsNaN());
+    }
 }

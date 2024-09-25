@@ -1,13 +1,13 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,7 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 
 /**
  * This class allows to perform a benchmark of a runnable function.
- * 
+ *
  * @author veuillh
  */
 public class TimeIt {
@@ -84,11 +84,11 @@ public class TimeIt {
 
     /**
      * Simple constructor that defines automatically the number of loops that should be performed.
-     * 
+     *
      * <p>
      * It chooses the number of loops so that each of the 7 runs will take around 1 second.
      * </p>
-     * 
+     *
      * @param benchmarkFunction
      *        The function to benchmark
      */
@@ -99,13 +99,13 @@ public class TimeIt {
 
     /**
      * Main constructor.
-     * 
+     *
      * <p>
      * The function to benchmark will be evaluated {@code nbLoops * nbRuns} times.<br>
      * If the function needs to warmup, it is previously run {@code nbLoops / 10} times which are not taken in account
      * for the statistics.
      * </p>
-     * 
+     *
      * @param benchmarkFunction
      *        The function to benchmark
      * @param nbLoops
@@ -116,18 +116,18 @@ public class TimeIt {
      *        {@code true} if the function needs to warmup, {@code false} otherwise
      */
     public TimeIt(final Runnable benchmarkFunction, final long nbLoops, final int nbRuns, final boolean warmup) {
-        this(benchmarkFunction, nbLoops, nbRuns, warmup ? nbLoops / DEFAULT_WARMUP_FACTOR : 0L);
+        this(benchmarkFunction, nbLoops, nbRuns, warmup ? MathLib.max(nbLoops / DEFAULT_WARMUP_FACTOR, 1) : 0L);
     }
 
     /**
      * Main constructor.
-     * 
+     *
      * <p>
      * The function to benchmark will be evaluated {@code nbLoops * nbRuns} times.<br>
      * If the function needs to warmup, it is previously run {@code nbWarmupLoops} times which are not taken in account
      * for the statistics.
      * </p>
-     * 
+     *
      * @param benchmarkFunction
      *        The function to benchmark
      * @param nbLoops
@@ -179,7 +179,7 @@ public class TimeIt {
     /**
      * Returns the arithmetic mean of the computation time it takes to perform the function to benchmark (evaluated on a
      * batch of {@link #nbLoops N loops}).
-     * 
+     *
      * @return the mean
      */
     public double getMeanTime() {
@@ -189,7 +189,7 @@ public class TimeIt {
     /**
      * Returns the standard deviation of the computation time it takes to perform the function to benchmark (evaluated
      * on a batch of {@link #nbLoops N loops}).
-     * 
+     *
      * @return the standard deviation
      */
     public double getStandardDeviationTime() {
@@ -199,7 +199,7 @@ public class TimeIt {
     /**
      * Returns the minimum computation time it takes to perform the function to benchmark (evaluated on a batch of
      * {@link #nbLoops N loops}).
-     * 
+     *
      * @return the minimum computation time
      */
     public double getMinTime() {
@@ -209,7 +209,7 @@ public class TimeIt {
     /**
      * Returns the maximum time it takes to perform the function to benchmark (evaluated on a batch of {@link #nbLoops N
      * loops}).
-     * 
+     *
      * @return the maximum computation time
      */
     public double getMaxTime() {
@@ -218,7 +218,7 @@ public class TimeIt {
 
     /**
      * Returns the computation times it takes to perform the function to benchmark on each batch of "nbLoops" runs.
-     * 
+     *
      * @return the computation times
      */
     public double[] getTimes() {
@@ -261,11 +261,11 @@ public class TimeIt {
 
     /**
      * Estimates very approximately the number of loops per seconds that can be done by the provided function.
-     * 
+     *
      * <p>
      * The estimation takes around 0.2 seconds (unless 1 run takes more than 0.2).
      * </p>
-     * 
+     *
      * @param benchmarkFunction
      *        The function to benchmark
      * @return the number of loops per second that can be done. Returns 1 if a loop takes more than 1 second.
@@ -296,11 +296,11 @@ public class TimeIt {
 
     /**
      * Internal function to estimate how many loops (expressed as a power of 10) should be perform in 1 second.
-     * 
+     *
      * <p>
      * Maximum 1e9 loops not to overflow integers.
      * </p>
-     * 
+     *
      * @param benchmarkFunction
      *        The function to benchmark
      * @return the power of ten loops to perform in approximately 1 second
@@ -308,12 +308,13 @@ public class TimeIt {
     private static long loopsEstimator(final Runnable benchmarkFunction) {
         final double loopsPerSecond = loopsPerSecondEstimator(benchmarkFunction);
         final long exponent = powerOfTen(loopsPerSecond);
-        return (long) MathLib.pow(TEN, exponent);
+        final long loopsEstimation = (long) MathLib.pow(TEN, exponent);
+        return loopsEstimation > 0 ? loopsEstimation : 1;
     }
 
     /**
      * Return the power of ten of the given value.
-     * 
+     *
      * @param d
      *        Value
      * @return the power of ten of the given value

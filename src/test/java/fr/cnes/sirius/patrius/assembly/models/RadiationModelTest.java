@@ -18,6 +18,7 @@
  * @history creation 12/03/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:DM:DM-3244:03/11/2022:[PATRIUS] Ajout propagation du signal dans ExtremaElevationDetector
@@ -64,7 +65,7 @@ import fr.cnes.sirius.patrius.assembly.properties.RadiativeSphereProperty;
 import fr.cnes.sirius.patrius.assembly.properties.features.Facet;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.forces.radiation.SolarRadiationPressure;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -127,7 +128,7 @@ public class RadiationModelTest {
     /**
      * sun model
      */
-    private static CelestialBody sun;
+    private static CelestialPoint sun;
     /**
      * spacecraft state
      */
@@ -493,7 +494,7 @@ public class RadiationModelTest {
      *
      * @testedFeature {@link features#RADIATIVE_MODEL}
      *
-     * @testedMethod {@link DirectRadiativeModel#DirectRadiativeModel(CelestialBody, Assembly)}
+     * @testedMethod {@link DirectRadiativeModel#DirectRadiativeModel(CelestialPoint, Assembly)}
      *
      * @description Creation of an illegal assembly
      *
@@ -527,7 +528,7 @@ public class RadiationModelTest {
      *
      * @testedFeature {@link features#RADIATIVE_MODEL}
      *
-     * @testedMethod {@link DirectRadiativeModel#DirectRadiativeModel(CelestialBody, Assembly)}
+     * @testedMethod {@link DirectRadiativeModel#DirectRadiativeModel(CelestialPoint, Assembly)}
      *
      * @description Creation of an assembly and testing the radiative properties.
      *

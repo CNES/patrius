@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3242:22/05/2023:[PATRIUS] Possibilite de definir les parametres circulaires adaptes pour des orbites hyperboliques
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
@@ -72,6 +74,11 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.ElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.forces.gravity.CunninghamGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
@@ -96,11 +103,6 @@ import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.ParametersType;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.ElevationDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -1370,7 +1372,7 @@ public class EcksteinHechlerPropagatorTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data");
         Utils.setDataRoot("regular-data:potential/shm-format");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));

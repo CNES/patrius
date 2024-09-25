@@ -18,6 +18,9 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -84,10 +87,17 @@ import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.attitudes.TabulatedAttitude;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AnomalyDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
 import fr.cnes.sirius.patrius.forces.atmospheres.DTM2000;
 import fr.cnes.sirius.patrius.forces.atmospheres.MSISE2000;
@@ -133,12 +143,6 @@ import fr.cnes.sirius.patrius.orbits.orbitalparameters.ApsisRadiusParameters;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.AnomalyDetector;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.PartialDerivativesEquations;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
@@ -683,6 +687,14 @@ public class NumericalPropagatorTest {
                     final boolean forward) {
                 return Action.CONTINUE;
             }
+
+            @Override
+            public boolean filterEvent(double t,
+                    double[] y,
+                    boolean increasing,
+                    boolean forward) {
+                return false;
+            }
         };
         dop.addEventHandler(handler, 1.0, 1e-6, 200);
 
@@ -1219,7 +1231,7 @@ public class NumericalPropagatorTest {
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
                 EphemerisType.SUN);
-        final CelestialBody sun = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         final RadiationSensitive radiativeModel = new DirectRadiativeModel(assembly);
         p.addForceModel(new SolarRadiationPressure(sun,
             Constants.WGS84_EARTH_EQUATORIAL_RADIUS, radiativeModel, true));
@@ -1352,8 +1364,8 @@ public class NumericalPropagatorTest {
 
             // Forces
             final JPLCelestialBodyLoader loader = this.initJPLLoader();
-            final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
-            final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+            final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
+            final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
             this.addForceModel(new ThirdBodyAttraction(sun.getGravityModel()));
             this.addForceModel(new ThirdBodyAttraction(moon.getGravityModel()));
             final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.46, 1.0 / 298.25765,

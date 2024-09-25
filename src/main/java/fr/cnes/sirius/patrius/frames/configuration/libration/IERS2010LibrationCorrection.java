@@ -47,13 +47,13 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * This class computes the diurnal lunisolar effect. <b>It is a java translation of the fortran subroutine PM_GRAVI
  * (provided by CNES and from IERS conventions, see chapter 5, tables 5.1a and 5.2a).</b>
  * </p>
- * 
+ *
  * @concurrency unconditionally thread-safe
- * 
+ *
  * @author G.Mercadier
- * 
+ *
  * @version $Id: IERS2010LibrationCorrection.java 18073 2017-10-02 16:48:07Z bignon $
- * 
+ *
  * @since 1.2
  */
 public class IERS2010LibrationCorrection implements LibrationCorrectionModel {
@@ -290,9 +290,9 @@ public class IERS2010LibrationCorrection implements LibrationCorrectionModel {
     /**
      * This method provides the diurnal lunisolar effect on polar motion in time domain. The computed corrections should
      * be added to EOP values.
-     * 
+     *
      * <b>The fundamental lunisolar arguments are those of Simon and al.</b>
-     * 
+     *
      * @param date
      *        date at which the correction is desired
      * @return pole correction
@@ -318,7 +318,7 @@ public class IERS2010LibrationCorrection implements LibrationCorrectionModel {
         // date time components of the given date
         // Julian century
         final double t = date.offsetFrom(AbsoluteDate.J2000_EPOCH, TimeScalesFactory.getTDB()) / Constants.JULIAN_DAY
-            / Constants.JULIAN_DAY_CENTURY;
+                / Constants.JULIAN_DAY_CENTURY;
 
         // Intermediate variables
         final double t2 = t * t;
@@ -353,16 +353,16 @@ public class IERS2010LibrationCorrection implements LibrationCorrectionModel {
         for (int j = 0; j < NLINES; j++) {
             ag = 0.;
             for (int i = 0; i < 6; i++) {
-                ag = ag + (NARG[j][i]) * arguments[i];
+                ag += NARG[j][i] * arguments[i];
             }
-            ag = ag % (4. * HALF_PI);
+            ag %= 4. * HALF_PI;
 
             final double[] sincos = MathLib.sinAndCos(ag);
             final double sin = sincos[0];
             final double cos = sincos[1];
 
-            dx = dx + XCOS[j] * cos + XSIN[j] * sin;
-            dy = dy + YCOS[j] * cos + YSIN[j] * sin;
+            dx += XCOS[j] * cos + XSIN[j] * sin;
+            dy += YCOS[j] * cos + YSIN[j] * sin;
         }
 
         // radian
@@ -379,7 +379,7 @@ public class IERS2010LibrationCorrection implements LibrationCorrectionModel {
 
     /**
      * Get the dUT1 value. The correction is due to diurnal lunisolar effect.
-     * 
+     *
      * @param date
      *        date at which the value is desired
      * @return dUT1 in seconds

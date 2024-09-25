@@ -14,8 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
- *          lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC) 
+ * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -38,6 +39,7 @@ import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
@@ -190,7 +192,7 @@ public final class ProjectionEllipsoidUtils {
      * @see <a href="https://pubs.er.usgs.gov/publication/pp1395"> https://pubs.er.usgs.gov/publication/pp1395</a>
      * @since 3.2
      */
-    private static void computeSeries(final EllipsoidBodyShape shape) {
+    private static void computeSeries(final OneAxisEllipsoid shape) {
 
         // SNYDER : direct method Snyder, equation 3-21 limited to sin(6 * lat)
         // eccentricity
@@ -231,6 +233,7 @@ public final class ProjectionEllipsoidUtils {
      *         CLOCKWISE sense
      * @throws PatriusException
      *         if points aren't associated to the same body shape<br>
+     *         if the body shape isn't a {@link OneAxisEllipsoid}<br>
      *         if points are too close from each other
      */
     public static final double computeBearing(final EllipsoidPoint p1, final EllipsoidPoint p2)
@@ -240,6 +243,9 @@ public final class ProjectionEllipsoidUtils {
         // Check if the points are associated to the same shape by only evaluating its name
         if (!shape.getName().equals(p2.getBodyShape().getName())) {
             throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_SAME_BODYSHAPE);
+        }
+        if (!(shape instanceof OneAxisEllipsoid)) {
+            throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_ONEAXISELLIPSOID);
         }
 
         // Local variables
@@ -268,10 +274,12 @@ public final class ProjectionEllipsoidUtils {
 
         final Double dY = MathLib.abs(p2Lat - p1Lat);
 
+        final OneAxisEllipsoid shapeCast = (OneAxisEllipsoid) shape;
+
         if (dY > Precision.EPSILON) {
             // Compute mercator Y for each latitude
-            final double mercatorLat2 = computeMercatorLatitude(p2Lat, shape);
-            final double mercatorLat1 = computeMercatorLatitude(p1Lat, shape);
+            final double mercatorLat2 = computeMercatorLatitude(p2Lat, shapeCast);
+            final double mercatorLat1 = computeMercatorLatitude(p1Lat, shapeCast);
             final double deltaLat = mercatorLat2 - mercatorLat1;
             // compute bearing (from North)
             bearing = MathLib.atan2(deltaLon, deltaLat);
@@ -342,7 +350,7 @@ public final class ProjectionEllipsoidUtils {
      *        Body shape
      * @return crescent latitude (Le) also called Mercator latitude
      */
-    public static double computeMercatorLatitude(final double geodeticLat, final EllipsoidBodyShape shape) {
+    public static double computeMercatorLatitude(final double geodeticLat, final OneAxisEllipsoid shape) {
 
         double lat = geodeticLat;
         if (MathLib.abs(geodeticLat) > Mercator.MAX_LATITUDE) {
@@ -365,12 +373,11 @@ public final class ProjectionEllipsoidUtils {
      *        Body shape
      * @return radius of curvatureEast/West (also called M or Re)
      */
-    public static double computeRadiusEastWest(final double geodeticLat, final EllipsoidBodyShape shape) {
+    public static double computeRadiusEastWest(final double geodeticLat, final OneAxisEllipsoid shape) {
 
         final double sinLat = MathLib.sin(geodeticLat);
         final double ecc = getEccentricity(shape);
-        return MathLib.divide(shape.getEquatorialRadius(),
-            MathLib.sqrt(MathLib.max(0.0, 1. - ecc * ecc * sinLat * sinLat)));
+        return MathLib.divide(shape.getARadius(), MathLib.sqrt(MathLib.max(0.0, 1. - ecc * ecc * sinLat * sinLat)));
     }
 
     /**
@@ -384,6 +391,7 @@ public final class ProjectionEllipsoidUtils {
      * @return distance in meters along loxodromic
      * @throws PatriusException
      *         if points aren't associated to the same body shape<br>
+     *         if the body shape isn't a {@link OneAxisEllipsoid}<br>
      *         if latitude of one point is not between -/+ 89.999 deg
      */
     public static double computeLoxodromicDistance(final EllipsoidPoint p1, final EllipsoidPoint p2)
@@ -394,6 +402,11 @@ public final class ProjectionEllipsoidUtils {
         if (!shape.getName().equals(p2.getBodyShape().getName())) {
             throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_SAME_BODYSHAPE);
         }
+        // Check the shape in an OneAxisEllipsoid
+        if (!(shape instanceof OneAxisEllipsoid)) {
+            throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_ONEAXISELLIPSOID);
+        }
+        final OneAxisEllipsoid shapeCast = (OneAxisEllipsoid) shape;
 
         final double long2 = MathUtils.normalizeAngle(p2.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC)
             .getLongitude(), 0.);
@@ -405,7 +418,7 @@ public final class ProjectionEllipsoidUtils {
 
         // along a meridian (simplified problem)
         if (MathLib.abs(deltaLon) < Precision.EPSILON) {
-            return MathLib.abs(computeMeridionalDistance(lat2, shape) - computeMeridionalDistance(lat1, shape));
+            return MathLib.abs(computeMeridionalDistance(lat2, shapeCast) - computeMeridionalDistance(lat1, shapeCast));
         }
 
         if (MathLib.abs(lat1) > Mercator.MAX_LATITUDE || MathLib.abs(lat2) > Mercator.MAX_LATITUDE) {
@@ -418,19 +431,19 @@ public final class ProjectionEllipsoidUtils {
         double loxDist = 0.;
         if (dY > LOXODROMIC_PRECISION) {
             // Compute mercator Y for each latitude
-            final double y1 = computeMercatorLatitude(lat1, shape);
-            final double y2 = computeMercatorLatitude(lat2, shape);
+            final double y1 = computeMercatorLatitude(lat1, shapeCast);
+            final double y2 = computeMercatorLatitude(lat2, shapeCast);
 
             final double k = MathLib.atan2(deltaLon, y2 - y1);
-            final double dL = computeMeridionalDistance(lat2, shape) - computeMeridionalDistance(lat1, shape);
+            final double dL = computeMeridionalDistance(lat2, shapeCast) - computeMeridionalDistance(lat1, shapeCast);
             loxDist = MathLib.abs(MathLib.divide(dL, MathLib.cos(k)));
         } else {
             // along a parallel (general method has 0/0 indetermination)
             final double[] sincos = MathLib.sinAndCos(lat1);
             final double sinLat = sincos[0];
             final double cosLat = sincos[1];
-            final double eSL = getEccentricity(shape) * sinLat;
-            loxDist = MathLib.divide(shape.getEquatorialRadius() * x * cosLat,
+            final double eSL = getEccentricity(shapeCast) * sinLat;
+            loxDist = MathLib.divide(shapeCast.getARadius() * x * cosLat,
                 MathLib.sqrt(MathLib.max(0.0, 1. - eSL * eSL)));
         }
         // return distance in meters along loxodromic
@@ -446,7 +459,7 @@ public final class ProjectionEllipsoidUtils {
      *        Body shape
      * @return meridionalDistance (in meters)
      */
-    public static final double computeMeridionalDistance(final double geodeticLat, final EllipsoidBodyShape shape) {
+    public static final double computeMeridionalDistance(final double geodeticLat, final OneAxisEllipsoid shape) {
 
         final double[] seriesComp = getSeries(shape);
         final double coefAP = seriesComp[0];
@@ -454,8 +467,7 @@ public final class ProjectionEllipsoidUtils {
         final double coefCP = seriesComp[2];
         final double coefDP = seriesComp[3];
         final double coefEP = seriesComp[4];
-        return shape.getEquatorialRadius()
-                * (coefAP * geodeticLat + evalSinEven(geodeticLat, coefBP, coefCP, coefDP, coefEP));
+        return shape.getARadius() * (coefAP * geodeticLat + evalSinEven(geodeticLat, coefBP, coefCP, coefDP, coefEP));
     }
 
     /**
@@ -467,11 +479,11 @@ public final class ProjectionEllipsoidUtils {
      *        Body shape
      * @return geodetic latitude
      */
-    public static final double computeInverseMeridionalDistance(final double distance, final EllipsoidBodyShape shape) {
+    public static final double computeInverseMeridionalDistance(final double distance, final OneAxisEllipsoid shape) {
 
         final double[] seriesComp = getSeries(shape);
         final double coefAP = seriesComp[0];
-        return computeInverseRectifyingLatitude(MathLib.divide(distance, shape.getEquatorialRadius() * coefAP), shape);
+        return computeInverseRectifyingLatitude(MathLib.divide(distance, shape.getARadius() * coefAP), shape);
     }
 
     /**
@@ -494,12 +506,17 @@ public final class ProjectionEllipsoidUtils {
      *        Convention used : azimuth is angle from the north direction to the current direction in CLOCKWISE sense
      * @return the resulting point
      * @throws PatriusException
+     *         if the body shape isn't a {@link OneAxisEllipsoid}<br>
      *         if computed latitudes are out of range
      */
     public static final EllipsoidPoint computePointAlongLoxodrome(final EllipsoidPoint p1, final double distance,
                                                                   final double azimuth) throws PatriusException {
 
         final EllipsoidBodyShape shape = p1.getBodyShape();
+        if (!(shape instanceof OneAxisEllipsoid)) {
+            throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_ONEAXISELLIPSOID);
+        }
+        final OneAxisEllipsoid shapeCast = (OneAxisEllipsoid) shape;
 
         // the minus sign of "-FastMath.sin(azimuth)" is due to the convention used for azimuth angle (CLOCKWISE sense)
         final double sinAz = MathLib.sin(azimuth);
@@ -512,10 +529,11 @@ public final class ProjectionEllipsoidUtils {
 
         if (MathLib.abs(sinAz) < AZIMUTH_PRECISION) {
             // along a meridian
-            lat2 = computeInverseMeridionalDistance(computeMeridionalDistance(lat1, shape) + cosAz * distance, shape);
+            lat2 = computeInverseMeridionalDistance(computeMeridionalDistance(lat1, shapeCast) + cosAz * distance,
+                shapeCast);
         } else if (MathLib.abs(cosAz) > AZIMUTH_PRECISION) {
             // general case, cos(bearing) != 0
-            final double dLat = MathLib.divide(cosAz * distance, shape.getEquatorialRadius());
+            final double dLat = MathLib.divide(cosAz * distance, shapeCast.getEquatorialRadius());
             // errors if computed latitudes are out of range
             if (MathLib.abs(lat1) > Mercator.MAX_LATITUDE) {
                 throw new PatriusException(PatriusMessages.PDB_LATITUDE_OUT_OF_RANGE, MathUtils.RAD_TO_DEG * lat1,
@@ -525,16 +543,16 @@ public final class ProjectionEllipsoidUtils {
                         * (lat1 + dLat), MathUtils.RAD_TO_DEG * Mercator.MAX_LATITUDE);
             }
 
-            final double y1 = computeMercatorLatitude(lat1, shape);
+            final double y1 = computeMercatorLatitude(lat1, shapeCast);
             // M = M(geodeticLat) + dist * cos(Az) and then use M to solve for final geodeticLat
             // A) Simplified solution : Spherical earth
             // geodeticLat += dLat;
             // B) Ellipsoid solution by power series
             lat2 = computeInverseMeridionalDistance(
-                dLat * shape.getEquatorialRadius() + computeMeridionalDistance(lat1, shape), shape);
+                dLat * shapeCast.getEquatorialRadius() + computeMeridionalDistance(lat1, shapeCast), shapeCast);
             // C) Ellipsoid solution by elliptic integral evaluation
             // geodeticLat = inverseMeridionalDistance(dLat * _A + meridionalDistance(geodeticLat));
-            final double y2 = computeMercatorLatitude(lat2, shape);
+            final double y2 = computeMercatorLatitude(lat2, shapeCast);
             double dLon = MathLib.abs(MathLib.divide((y2 - y1) * sinAz, cosAz));
             if (sinAz < 0) {
                 dLon = -dLon;
@@ -545,9 +563,9 @@ public final class ProjectionEllipsoidUtils {
             lat2 = lat1;
             final double sinLat = MathLib.sin(lat1);
             final double cosLat = MathLib.cos(lat1);
-            final double eSL = getEccentricity(shape) * sinLat;
+            final double eSL = getEccentricity(shapeCast) * sinLat;
             double dLon = MathLib.divide(distance * MathLib.sqrt(MathLib.max(0.0, 1. - eSL * eSL)),
-                shape.getEquatorialRadius() * cosLat);
+                shapeCast.getEquatorialRadius() * cosLat);
             // if((sinLat > 0 && sinAz < 0) || (sinLat < 0 && sinAz > 0) ){
             if (sinAz < 0) {
                 dLon = -dLon;
@@ -567,7 +585,7 @@ public final class ProjectionEllipsoidUtils {
      *        Body shape
      * @return geodetic latitude (rad)
      */
-    public static double computeInverseRectifyingLatitude(final double rectifyingLat, final EllipsoidBodyShape shape) {
+    public static double computeInverseRectifyingLatitude(final double rectifyingLat, final OneAxisEllipsoid shape) {
 
         final double[] seriesComp = getSeries(shape);
         final double coefbp = seriesComp[5];
@@ -589,6 +607,7 @@ public final class ProjectionEllipsoidUtils {
      * @return orthodromic distance on ellipsoid.
      * @throws PatriusException
      *         if points aren't associated to the same body shape
+     *         if the body shape isn't a {@link OneAxisEllipsoid}
      */
     public static final double computeOrthodromicDistance(final EllipsoidPoint p1, final EllipsoidPoint p2)
         throws PatriusException {
@@ -598,6 +617,10 @@ public final class ProjectionEllipsoidUtils {
         if (!shape.getName().equals(p2.getBodyShape().getName())) {
             throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_SAME_BODYSHAPE);
         }
+        if (!(shape instanceof OneAxisEllipsoid)) {
+            throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_ONEAXISELLIPSOID);
+        }
+        final OneAxisEllipsoid shapeCast = (OneAxisEllipsoid) shape;
 
         double orthodromicDistance = 0;
 
@@ -609,7 +632,7 @@ public final class ProjectionEllipsoidUtils {
 
         // Test that points are different (latitude and longitude only)
         if (MathLib.abs(p1Lat - p2Lat) > Precision.EPSILON || MathLib.abs(p1Long - p2Long) > Precision.EPSILON) {
-            orthodromicDistance = computeOrthodromicDistance(p1Lat, p1Long, p2Lat, p2Long, shape);
+            orthodromicDistance = computeOrthodromicDistance(p1Lat, p1Long, p2Lat, p2Long, shapeCast);
         }
         return orthodromicDistance;
     }
@@ -631,7 +654,7 @@ public final class ProjectionEllipsoidUtils {
      * @return the orthodromic distance on ellipsoid
      */
     public static final double computeOrthodromicDistance(final double lat1, final double lon1, final double lat2,
-                                                          final double lon2, final EllipsoidBodyShape shape) {
+                                                          final double lon2, final OneAxisEllipsoid shape) {
 
         // Initialization
         double s = 0;
@@ -807,15 +830,22 @@ public final class ProjectionEllipsoidUtils {
      *        Azimuth direction, convention used : azimuth is angle from the north direction to the current direction in
      *        CLOCKWISE sense
      * @return the point
+     * @throws PatriusException
+     *         if the body shape isn't a {@link OneAxisEllipsoid}
      */
     public static final EllipsoidPoint computePointAlongOrthodrome(final EllipsoidPoint p1, final double distance,
-                                                                   final double azimuthDirection) {
+                                                                   final double azimuthDirection)
+        throws PatriusException {
 
         final EllipsoidBodyShape shape = p1.getBodyShape();
+        if (!(shape instanceof OneAxisEllipsoid)) {
+            throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_ONEAXISELLIPSOID);
+        }
+        final OneAxisEllipsoid shapeCast = (OneAxisEllipsoid) shape;
 
         // Ellipsoid variables
-        final double a = shape.getEquatorialRadius();
-        final double f = shape.getFlattening();
+        final double a = shapeCast.getEquatorialRadius();
+        final double f = shapeCast.getFlattening();
         final double b = a * (1. - f);
 
         final double aSquared = a * a;
@@ -1089,8 +1119,7 @@ public final class ProjectionEllipsoidUtils {
      *        Body shape
      * @return the eccentricity
      */
-    public static double getEccentricity(final EllipsoidBodyShape shape) {
-
+    public static double getEccentricity(final OneAxisEllipsoid shape) {
         final double f = shape.getFlattening();
         return MathLib.sqrt(MathLib.max(0.0, f * (2.0 - f)));
     }
@@ -1103,8 +1132,7 @@ public final class ProjectionEllipsoidUtils {
      * @return the series
      */
     @SuppressWarnings("PMD.MethodReturnsInternalArray")
-    public static double[] getSeries(final EllipsoidBodyShape shape) {
-
+    public static double[] getSeries(final OneAxisEllipsoid shape) {
         if (!shape.equals(ellipsoidCache)) {
             computeSeries(shape);
             ellipsoidCache = shape;
@@ -1131,10 +1159,10 @@ public final class ProjectionEllipsoidUtils {
             throw new PatriusException(PatriusMessages.NOT_ASSOCIATED_SAME_BODYSHAPE);
         }
 
-        if (p1.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude()
-                    == p2.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude()
-                && p1.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLongitude()
-                    == p2.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLongitude()) {
+        if (p1.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude() == p2.getLLHCoordinates(
+            LLHCoordinatesSystem.ELLIPSODETIC).getLatitude()
+                && p1.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLongitude() == p2.getLLHCoordinates(
+                    LLHCoordinatesSystem.ELLIPSODETIC).getLongitude()) {
             // Quick escape - Only the latitude & longitude values are used in each EllipsoidPoint
             return p1;
         }

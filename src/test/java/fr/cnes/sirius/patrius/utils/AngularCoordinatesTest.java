@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.11:DM:DM-3254:22/05/2023:[PATRIUS] AngularCoordinates - Distinction entre acceleration rotationelle nulle et ZERO
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -337,6 +338,7 @@ public class AngularCoordinatesTest {
         integrator.addStepHandler(new StepNormalizer(dt / n, new FixedStepHandler(){
             @Override
             public void init(final double t0, final double[] y0, final double t) {
+                // Nothing to do
             }
 
             @Override
@@ -560,6 +562,69 @@ public class AngularCoordinatesTest {
         final PVCoordinates v2 = randomPVCoordinates(generator, 1000, 1.0, 0.001);
 
         new AngularCoordinates(u1, u2, v1, v2, 1.0E-14, true);
+    }
+
+    @Test
+    public void testEqualsAndHashCode() {
+
+        final Rotation rotation = new Rotation(Vector3D.PLUS_I, 0.1);
+        final Vector3D rotationRate = Vector3D.PLUS_J;
+        final Vector3D rotationAcceleration = Vector3D.PLUS_K;
+        final boolean projectVelocityAndAcceleration = true;
+
+        // New instance
+        final AngularCoordinates instance = new AngularCoordinates(rotation, rotationRate, rotationAcceleration,
+            projectVelocityAndAcceleration);
+
+        // Check the hashCode consistency between calls
+        final int hashCode = instance.hashCode();
+        Assert.assertEquals(hashCode, instance.hashCode());
+
+        // Compared object is null
+        Assert.assertFalse(instance.equals(null));
+
+        // Compared object is a different class
+        Assert.assertFalse(instance.equals(new Object()));
+
+        // Same instance
+        Assert.assertEquals(instance, instance);
+
+        // Same data, but different instances
+        AngularCoordinates other = new AngularCoordinates(rotation, rotationRate, rotationAcceleration,
+            projectVelocityAndAcceleration);
+
+        Assert.assertEquals(other, instance);
+        Assert.assertEquals(instance, other);
+        Assert.assertEquals(other.hashCode(), instance.hashCode());
+
+        // Different rotation
+        other = new AngularCoordinates(new Rotation(Vector3D.PLUS_I, 0.2), rotationRate, rotationAcceleration,
+            projectVelocityAndAcceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different rotation rate
+        other = new AngularCoordinates(rotation, Vector3D.ZERO, rotationAcceleration, projectVelocityAndAcceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different rotation acceleration
+        other = new AngularCoordinates(rotation, rotationRate, Vector3D.ZERO, projectVelocityAndAcceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different boolean
+        other = new AngularCoordinates(rotation, rotationRate, rotationAcceleration, false);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
     }
 
     @Test

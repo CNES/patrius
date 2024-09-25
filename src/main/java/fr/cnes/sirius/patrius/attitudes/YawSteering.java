@@ -18,10 +18,11 @@
 /*
  *
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
-* VERSION:4.3:DM:DM-2104:15/05/2019:[Patrius] Rendre generiques les classes GroundPointing et NadirPointing
+ * VERSION:4.3:DM:DM-2104:15/05/2019:[Patrius] Rendre generiques les classes GroundPointing et NadirPointing
  * VERSION::DM:319:27/04/2015:Rotation convention change in AngularCoordinates
  * VERSION::DM:489:15/10/2015:Refactoring of rotation acceleration by the AttitudeProvider
  * VERSION::FA:565:03/03/2016:corrections on attitude requirements
@@ -45,7 +46,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  * <p>
  * Yaw steering is mainly used for low Earth orbiting satellites with no missions-related constraints on yaw angle. It
- * sets the yaw angle in such a way the solar arrays have maximal lightning without changing the roll and pitch.
+ * sets the yaw angle in such a way the solar arrays have maximal lighting without changing the roll and pitch.
  * </p>
  * <p>
  * The motion in yaw is smooth when the Sun is far from the orbital plane, but gets more and more <i>square like</i> as

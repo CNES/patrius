@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
@@ -24,8 +26,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.transformations.FixedTransformProvider;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -43,14 +45,14 @@ public class CelestialBodyFrameTest {
     @Test
     public void testConstructors() throws PatriusException {
         // Build Celestial body Frame
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         // Constructor 1
         final CelestialBodyFrame frame1 = new CelestialBodyFrame(FramesFactory.getGCRF(), Transform.IDENTITY, "Frame1", earth);
         Assert.assertEquals(FramesFactory.getGCRF(), frame1.getParent());
         Assert.assertTrue(frame1.getTransformProvider().getTransform(AbsoluteDate.J2000_EPOCH).getAngular().getRotation().isEqualTo(Rotation.IDENTITY));
         Assert.assertEquals("Frame1", frame1.getName());
         Assert.assertEquals(false, frame1.isPseudoInertial());
-        Assert.assertEquals(earth, frame1.getCelestialBody());
+        Assert.assertEquals(earth, frame1.getCelestialPoint());
 
         // Constructor 2
         final CelestialBodyFrame frame2 = new CelestialBodyFrame(FramesFactory.getGCRF(), Transform.IDENTITY, "Frame2", true, earth);
@@ -58,7 +60,7 @@ public class CelestialBodyFrameTest {
         Assert.assertTrue(frame2.getTransformProvider().getTransform(AbsoluteDate.J2000_EPOCH).getAngular().getRotation().isEqualTo(Rotation.IDENTITY));
         Assert.assertEquals("Frame2", frame2.getName());
         Assert.assertEquals(true, frame2.isPseudoInertial());
-        Assert.assertEquals(earth, frame2.getCelestialBody());
+        Assert.assertEquals(earth, frame2.getCelestialPoint());
 
         // Constructor 3
         final CelestialBodyFrame frame3 = new CelestialBodyFrame(FramesFactory.getGCRF(), new FixedTransformProvider(Transform.IDENTITY), "Frame3", earth);
@@ -66,7 +68,7 @@ public class CelestialBodyFrameTest {
         Assert.assertTrue(frame3.getTransformProvider().getTransform(AbsoluteDate.J2000_EPOCH).getAngular().getRotation().isEqualTo(Rotation.IDENTITY));
         Assert.assertEquals("Frame3", frame3.getName());
         Assert.assertEquals(false, frame3.isPseudoInertial());
-        Assert.assertEquals(earth, frame3.getCelestialBody());
+        Assert.assertEquals(earth, frame3.getCelestialPoint());
 
         // Constructor 4
         final CelestialBodyFrame frame4 = new CelestialBodyFrame(FramesFactory.getGCRF(), new FixedTransformProvider(Transform.IDENTITY), "Frame4", true, earth);
@@ -74,23 +76,19 @@ public class CelestialBodyFrameTest {
         Assert.assertTrue(frame4.getTransformProvider().getTransform(AbsoluteDate.J2000_EPOCH).getAngular().getRotation().isEqualTo(Rotation.IDENTITY));
         Assert.assertEquals("Frame4", frame4.getName());
         Assert.assertEquals(true, frame4.isPseudoInertial());
-        Assert.assertEquals(earth, frame4.getCelestialBody());
+        Assert.assertEquals(earth, frame4.getCelestialPoint());
     }
 
     /**
-     * Test getter/setter.
+     * Test getter.
      */
     @Test
-    public void testGetterSetter() throws PatriusException {
+    public void testGetter() throws PatriusException {
         // Build Celestial body Frame
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final CelestialBodyFrame frame = new CelestialBodyFrame(FramesFactory.getGCRF(), Transform.IDENTITY, "Frame", earth);
         // Checks get
-        Assert.assertEquals(frame.getCelestialBody(), earth);
-        // Checks set
-        final CelestialBody moon = CelestialBodyFactory.getMoon();
-        frame.setCelestialBody(moon);
-        Assert.assertEquals(frame.getCelestialBody(), moon);
+        Assert.assertEquals(frame.getCelestialPoint(), earth);
     }
 
     @Before

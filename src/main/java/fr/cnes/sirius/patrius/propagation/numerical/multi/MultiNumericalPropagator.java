@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le
  * propagateur
@@ -70,6 +71,12 @@ import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProviderWrapper;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.MultiEventDetector;
+import fr.cnes.sirius.patrius.events.detectors.NullMassDetector;
+import fr.cnes.sirius.patrius.events.utils.AdaptedMonoEventDetector;
+import fr.cnes.sirius.patrius.events.utils.AdaptedMultiEventDetector;
+import fr.cnes.sirius.patrius.events.utils.OneSatEventDetectorWrapper;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -90,12 +97,6 @@ import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.MultiPropagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.NullMassDetector;
-import fr.cnes.sirius.patrius.propagation.events.multi.AdaptedMonoEventDetector;
-import fr.cnes.sirius.patrius.propagation.events.multi.AdaptedMultiEventDetector;
-import fr.cnes.sirius.patrius.propagation.events.multi.MultiEventDetector;
-import fr.cnes.sirius.patrius.propagation.events.multi.OneSatEventDetectorWrapper;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquationsAndTolerances;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalStateInfo;

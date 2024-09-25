@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -712,6 +713,44 @@ public class ArithmeticUtilsTest {
             final boolean actual = ArithmeticUtils.isPowerOfTwo(i);
             Assert.assertTrue(Integer.toString(i), actual == expected[i]);
         }
+    }
+
+    @Test
+    public void testBinomialCombinations() {
+
+        final List<Double> elements = Arrays.asList(1., 2., 3.);
+
+        // Group size = 1
+        List<List<Double>> combinations = ArithmeticUtils.binomialCombinations(elements, 1);
+
+        Assert.assertEquals(3, combinations.size());
+        Assert.assertEquals("[1.0]", combinations.get(0).toString());
+        Assert.assertEquals("[2.0]", combinations.get(1).toString());
+        Assert.assertEquals("[3.0]", combinations.get(2).toString());
+
+        // Group size = 2
+        combinations = ArithmeticUtils.binomialCombinations(elements, 2);
+
+        Assert.assertEquals(3, combinations.size());
+        Assert.assertEquals("[1.0, 2.0]", combinations.get(0).toString());
+        Assert.assertEquals("[1.0, 3.0]", combinations.get(1).toString());
+        Assert.assertEquals("[2.0, 3.0]", combinations.get(2).toString());
+
+        // Group size = 3
+        combinations = ArithmeticUtils.binomialCombinations(elements, 3);
+
+        Assert.assertEquals(1, combinations.size());
+        Assert.assertEquals("[1.0, 2.0, 3.0]", combinations.get(0).toString());
+
+        // Group size = 4 - Try to specify a groupsSize > elements.size() (should fail)
+        try {
+            ArithmeticUtils.binomialCombinations(elements, 4);
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            // expected behavior
+        }
+
+        System.out.println("ok");
     }
 
     @Test

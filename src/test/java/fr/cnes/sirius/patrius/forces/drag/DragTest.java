@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
@@ -47,7 +49,7 @@ import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
 import fr.cnes.sirius.patrius.forces.atmospheres.SimpleExponentialAtmosphere;
 import fr.cnes.sirius.patrius.forces.gravity.tides.OceanTides;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -417,7 +419,7 @@ public class DragTest {
     public void setUp() throws PatriusException {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
 
         this.atm = new SimpleExponentialAtmosphere(new OneAxisEllipsoid(Utils.ae, 1.0 / 298.257222101, itrf),
             0.0004, 42000.0, 7500.0);

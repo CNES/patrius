@@ -18,6 +18,11 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3259:22/05/2023:[PATRIUS] Creer une interface StarConvexBodyShape
@@ -55,18 +60,23 @@ import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
 import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape;
-import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
 import fr.cnes.sirius.patrius.bodies.mesh.ObjMeshLoader;
+import fr.cnes.sirius.patrius.cnesmerge.frames.TopocentricFrameTest.features;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.CardanMountPV;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.CardanMountPosition;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.TopocentricPV;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.TopocentricPosition;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -83,7 +93,7 @@ public class TopocentricFrameTest {
     private AbsoluteDate date;
 
     // Reference frame = ITRF 2005
-    private Frame frameITRF2005;
+    private CelestialBodyFrame frameITRF2005;
 
     // Earth spheric ellipsoidal shape
     private OneAxisEllipsoid earthSpheric;
@@ -96,6 +106,12 @@ public class TopocentricFrameTest {
 
     // Body mu
     private double mu;
+
+    /** Epsilon for distance comparison. */
+    private final double distanceEpsilon = Utils.epsilonTest;
+
+    /** Epsilon for angle comparison. */
+    private final double angleEpsilon = Utils.epsilonAngle;
 
     @Test
     public void testZero() {
@@ -485,6 +501,8 @@ public class TopocentricFrameTest {
             this.earthSpheric.getLLHCoordinatesSystem(), MathLib.toRadians(45.), MathLib.toRadians(30.), 0., "");
         TopocentricFrame topoFrame = new TopocentricFrame(ellipsoidPoint, "topoFrame");
 
+        Assert.assertEquals(-MathUtils.HALF_PI, topoFrame.getOrientation(), 0.);
+
         Assert.assertNotNull(topoFrame.getTransformProvider().getTransform(AbsoluteDate.J2000_EPOCH).getAngular()
             .getRotationAcceleration()); // Quick test to cover FA-124
 
@@ -499,6 +517,8 @@ public class TopocentricFrameTest {
         // #: Test the axis by specifying a zenith
         Vector3D zenith = new Vector3D(0., -1., 0.);
         topoFrame = new TopocentricFrame(ellipsoidPoint, zenith, "topoFrame");
+
+        Assert.assertEquals(-MathUtils.HALF_PI, topoFrame.getOrientation(), 0.);
 
         // Assertions by non regression
         Assert.assertEquals(new Vector3D(1., 0., 0.), topoFrame.getEast());
@@ -516,6 +536,468 @@ public class TopocentricFrameTest {
             topoFrame.getNorth());
         Assert.assertEquals(zenith, topoFrame.getZenith());
         Assert.assertEquals(zenith.negate(), topoFrame.getNadir());
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#TRANSFORMATION}
+     * 
+     * @testedMethod {@link TopocentricFrame#transformFromPositionToTopocentric(Vector3D, Frame, AbsoluteDate)}
+     * @testedMethod {@link TopocentricFrame#transformFromTopocentricToPosition(TopocentricPosition)}
+     * @testedMethod {@link TopocentricFrame#transformFromPositionToCardan(Vector3D, Frame, AbsoluteDate)}
+     * @testedMethod {@link TopocentricFrame#transformFromCardanToPosition(CardanMountPosition)}
+     * 
+     * @description we test the transformations analytically
+     * 
+     * @input The inputs are the following :
+     *        <p>
+     *        CardanMounting cardanCoord = (PI/4, acos(sqrt(2/3)), sqrt(3))
+     *        </p>
+     *        <p>
+     *        TopocentricCoordinates topoCoord = (acos(sqrt(2/3)), PI/4, sqrt(3))
+     *        </p>
+     * 
+     * @output set of pv coordinates, Cardan mount, set of pv coordinates, Topocentric coordinates
+     * 
+     * @testPassCriteria In both cases, the obtained set of pv coordinates should be :
+     *                   <p>
+     *                   Vector3D position = (1,1,1)
+     *                   </p>
+     *                   <p>
+     *                   and the inputs when the opposite transformation is permformed.
+     *                   </p>
+     *                   <p>
+     *                   with 1e-7 as epsilon on angles and 1e-12 as epsilon on distances.
+     *                   </p>
+     * 
+     * @referenceVersion 1.0
+     * 
+     * @nonRegressionVersion 1.0
+     * 
+     * @throws PatriusException
+     *         if frames transformations cannot be computed
+     */
+    @Test
+    public void testTransform() throws PatriusException {
+        // North topocentric frame
+        final EllipsoidPoint point = new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
+            MathLib.toRadians(43.604482), MathLib.toRadians(1.443962), 0., "");
+        final TopocentricFrame topoNorth = new TopocentricFrame(point, 0., "north topocentric frame");
+
+        Vector3D position;
+        PVCoordinates pv;
+
+        /*
+         * Cardan mounting
+         */
+
+        // POSITION
+
+        // from Cardan mounting set to cartesian coordinates set (position only)
+        final double cardanX = MathLib.toRadians(45.);
+        final double cardanY = MathLib.acos(MathLib.sqrt(2. / 3.));
+        final double cardanR = MathLib.sqrt(3.);
+        final CardanMountPosition cardanCoordPosition = new CardanMountPosition(cardanX, cardanY, cardanR);
+        position = topoNorth.transformFromCardanToPosition(cardanCoordPosition);
+
+        Assert.assertEquals(1., position.getX(), this.distanceEpsilon);
+        Assert.assertEquals(-1., position.getY(), this.distanceEpsilon);
+        Assert.assertEquals(1., position.getZ(), this.distanceEpsilon);
+
+        // transformation done component to component
+        Assert.assertEquals(cardanX, topoNorth.getXangleCardan(position, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(cardanY, topoNorth.getYangleCardan(position, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(cardanR, topoNorth.getRange(position, topoNorth, this.date), this.distanceEpsilon);
+
+        // from position coordinates set (position only) to Cardan mounting set
+        final CardanMountPosition cardanCoordResult =
+            topoNorth.transformFromPositionToCardan(position, topoNorth, this.date);
+
+        Assert.assertEquals(cardanX, cardanCoordResult.getXangle(), this.angleEpsilon);
+        Assert.assertEquals(cardanY, cardanCoordResult.getYangle(), this.angleEpsilon);
+        Assert.assertEquals(cardanR, cardanCoordResult.getRange(), this.distanceEpsilon);
+
+        // Try to transform a Cartesian position coordinates into Cardan mounting with a low satellite passage
+        // (= X axis) (should fail)
+        try {
+            topoNorth.transformFromPositionToCardan(Vector3D.PLUS_I, topoNorth, this.date);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // Expected
+            Assert.assertTrue(true);
+        }
+
+        // PV
+
+        // from Cardan mounting set to cartesian coordinates set (PV)
+        final double cardanXRate = MathLib.toRadians(5.);
+        final double cardanYRate = MathLib.acos(MathLib.sqrt(1. / 3.));
+        final double cardanRRate = MathLib.sqrt(1.5);
+        final CardanMountPV cardanCoordPV =
+            new CardanMountPV(cardanX, cardanY, cardanR, cardanXRate, cardanYRate, cardanRRate);
+        pv = topoNorth.transformFromCardanToPV(cardanCoordPV);
+
+        // transformation done component to component
+        Assert.assertEquals(cardanX, topoNorth.getXangleCardan(pv.getPosition(), topoNorth, this.date),
+            this.angleEpsilon);
+        Assert.assertEquals(cardanY, topoNorth.getYangleCardan(pv.getPosition(), topoNorth, this.date),
+            this.angleEpsilon);
+        Assert.assertEquals(cardanR, topoNorth.getRange(pv.getPosition(), topoNorth, this.date), this.distanceEpsilon);
+        Assert.assertEquals(cardanXRate, topoNorth.getXangleCardanRate(pv, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(cardanYRate, topoNorth.getYangleCardanRate(pv, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(cardanRRate, topoNorth.getRangeRate(pv, topoNorth, this.date), this.distanceEpsilon);
+
+        // from position coordinates set (position only) to Cardan mounting set
+        final CardanMountPV cardanCoordPVResult = topoNorth.transformFromPVToCardan(pv, topoNorth, this.date);
+
+        Assert.assertEquals(cardanX, cardanCoordPVResult.getXangle(), this.angleEpsilon);
+        Assert.assertEquals(cardanY, cardanCoordPVResult.getYangle(), this.angleEpsilon);
+        Assert.assertEquals(cardanR, cardanCoordPVResult.getRange(), this.distanceEpsilon);
+        Assert.assertEquals(cardanXRate, cardanCoordPVResult.getXangleRate(), this.angleEpsilon);
+        Assert.assertEquals(cardanYRate, cardanCoordPVResult.getYangleRate(), this.angleEpsilon);
+        Assert.assertEquals(cardanRRate, cardanCoordPVResult.getRangeRate(), this.distanceEpsilon);
+
+        // Try to transform a Cartesian position coordinates into Cardan mounting with a low satellite passage
+        // (= X axis) (should fail)
+        try {
+            topoNorth.transformFromPVToCardan(new PVCoordinates(Vector3D.PLUS_I, Vector3D.ZERO), topoNorth, this.date);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // Expected
+            Assert.assertTrue(true);
+        }
+
+        /*
+         * Topocentric coordinates
+         */
+
+        // POSITION
+
+        // from topocentric coordinates to cartesian coordinates (position only)
+        final double elevation = MathLib.acos(MathLib.sqrt(2. / 3.));
+        final double azimuth = MathLib.toRadians(315.);
+        final double range = MathLib.sqrt(3.);
+        final TopocentricPosition topoCoordPosition = new TopocentricPosition(elevation, azimuth, range);
+        position = topoNorth.transformFromTopocentricToPosition(topoCoordPosition);
+
+        Assert.assertEquals(1., position.getX(), this.distanceEpsilon);
+        Assert.assertEquals(1., position.getY(), this.distanceEpsilon);
+        Assert.assertEquals(1., position.getZ(), this.distanceEpsilon);
+
+        // transformation done component to component
+        Assert.assertEquals(elevation, topoNorth.getElevation(position, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(azimuth, topoNorth.getAzimuth(position, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(range, topoNorth.getRange(position, topoNorth, this.date), this.distanceEpsilon);
+
+        // from Cartesian position coordinates (position only) to topocentric coordinates
+        final TopocentricPosition topoCoordResult =
+            topoNorth.transformFromPositionToTopocentric(position, topoNorth, this.date);
+
+        Assert.assertEquals(elevation, topoCoordResult.getElevation(), this.angleEpsilon);
+        Assert.assertEquals(azimuth, topoCoordResult.getAzimuth(), this.angleEpsilon);
+        Assert.assertEquals(range, topoCoordResult.getRange(), this.distanceEpsilon);
+
+        // Try to transform a Cartesian position coordinates into topocentric coordinates with a satellite passage near
+        // to the zenith (= Z axis) (should fail)
+        try {
+            topoNorth.transformFromPositionToTopocentric(Vector3D.PLUS_K, topoNorth, this.date);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // Expected
+            Assert.assertTrue(true);
+        }
+
+        // PV
+
+        // from topocentric coordinates to cartesian coordinates (PV)
+        final double elevationRate = MathLib.toRadians(4.);
+        final double azimuthRate = MathLib.acos(MathLib.sqrt(1. / 4.));
+        final double rangeRate = MathLib.sqrt(1.4);
+        final TopocentricPV topoCoordPV = new TopocentricPV(elevation, azimuth, range, elevationRate, azimuthRate,
+            rangeRate);
+        pv = topoNorth.transformFromTopocentricToPV(topoCoordPV);
+
+        // transformation done component to component
+        Assert.assertEquals(elevation, topoNorth.getElevation(pv.getPosition(), topoNorth, this.date),
+            this.angleEpsilon);
+        Assert.assertEquals(azimuth, topoNorth.getAzimuth(pv.getPosition(), topoNorth, this.date),
+            this.angleEpsilon);
+        Assert.assertEquals(range, topoNorth.getRange(pv.getPosition(), topoNorth, this.date), this.distanceEpsilon);
+        Assert.assertEquals(elevationRate, topoNorth.getElevationRate(pv, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(azimuthRate, topoNorth.getAzimuthRate(pv, topoNorth, this.date), this.angleEpsilon);
+        Assert.assertEquals(rangeRate, topoNorth.getRangeRate(pv, topoNorth, this.date), this.distanceEpsilon);
+
+        // from Cartesian position coordinates (PV) to topocentric coordinates
+        final TopocentricPV topoCoordPVResult = topoNorth.transformFromPVToTopocentric(pv, topoNorth, this.date);
+
+        Assert.assertEquals(elevation, topoCoordPVResult.getElevation(), this.angleEpsilon);
+        Assert.assertEquals(azimuth, topoCoordPVResult.getAzimuth(), this.angleEpsilon);
+        Assert.assertEquals(range, topoCoordPVResult.getRange(), this.distanceEpsilon);
+        Assert.assertEquals(elevationRate, topoCoordPVResult.getElevationRate(), this.angleEpsilon);
+        Assert.assertEquals(azimuthRate, topoCoordPVResult.getAzimuthRate(), this.angleEpsilon);
+        Assert.assertEquals(rangeRate, topoCoordPVResult.getRangeRate(), this.distanceEpsilon);
+
+        // Try to transform a Cartesian position coordinates into topocentric coordinates with a satellite passage near
+        // to the zenith (= Z axis) (should fail)
+        try {
+            topoNorth.transformFromPVToTopocentric(new PVCoordinates(Vector3D.PLUS_K, Vector3D.ZERO), topoNorth,
+                this.date);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // Expected
+            Assert.assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testCardanDerivatives() throws PatriusException {
+
+        // North topocentric frame
+        final EllipsoidPoint point = new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
+            MathLib.toRadians(43.604482), MathLib.toRadians(1.443962), 0., "");
+        final TopocentricFrame topoNorth = new TopocentricFrame(point, 0., "north topocentric frame");
+
+        /*
+         * Cardan mounting
+         */
+
+        // from Cardan mounting set to cartesian coordinates set (position only)
+        final double cardanX = MathLib.toRadians(45.);
+        final double cardanY = MathLib.acos(MathLib.sqrt(2. / 3.));
+        final double cardanR = MathLib.sqrt(3.);
+        final CardanMountPosition cardanCoordPosition = new CardanMountPosition(cardanX, cardanY, cardanR);
+        final Vector3D position = topoNorth.transformFromCardanToPosition(cardanCoordPosition);
+
+        final Frame gcrf = FramesFactory.getGCRF();
+        final Transform t = topoNorth.getTransformTo(gcrf, this.date);
+        final Vector3D positionGCRF = t.transformPosition(position);
+
+        final double dH = 0.1;
+        final double dH2 = dH * 2.;
+
+        // IN TOPO FRAME
+        Vector3D dXangle = topoNorth.getDXangleCardan(position, topoNorth, this.date);
+
+        double xAngleMinusdX = topoNorth.getXangleCardan(
+            new Vector3D(position.getX() - dH, position.getY(), position.getZ()), topoNorth, this.date);
+        double xAnglePlusdX = topoNorth.getXangleCardan(
+            new Vector3D(position.getX() + dH, position.getY(), position.getZ()), topoNorth, this.date);
+        double numValX = (xAnglePlusdX - xAngleMinusdX) / dH2;
+
+        double xAngleMinusdY = topoNorth.getXangleCardan(
+            new Vector3D(position.getX(), position.getY() - dH, position.getZ()), topoNorth, this.date);
+        double xAnglePlusdY = topoNorth.getXangleCardan(
+            new Vector3D(position.getX(), position.getY() + dH, position.getZ()), topoNorth, this.date);
+        double numValY = (xAnglePlusdY - xAngleMinusdY) / dH2;
+
+        double xAngleMinusdZ = topoNorth.getXangleCardan(new Vector3D(position.getX(), position.getY(),
+            position.getZ() - dH), topoNorth, this.date);
+        double xAnglePlusdZ = topoNorth.getXangleCardan(new Vector3D(position.getX(), position.getY(),
+            position.getZ() + dH), topoNorth, this.date);
+        double numValZ = (xAnglePlusdZ - xAngleMinusdZ) / dH2;
+
+        Assert.assertEquals(dXangle.getX(), numValX, 0.); // Special case : expect 0 (do not compute rel diff)
+        Assert.assertEquals(0., MathLib.abs(dXangle.getY() - numValY) / numValY, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dXangle.getZ() - numValZ) / numValZ, 2e-3);
+
+        Vector3D dYangle = topoNorth.getDYangleCardan(position, topoNorth, this.date);
+
+        double yAngleMinusdX = topoNorth.getYangleCardan(
+            new Vector3D(position.getX() - dH, position.getY(), position.getZ()), topoNorth, this.date);
+        double yAnglePlusdX = topoNorth.getYangleCardan(
+            new Vector3D(position.getX() + dH, position.getY(), position.getZ()), topoNorth, this.date);
+        numValX = (yAnglePlusdX - yAngleMinusdX) / dH2;
+
+        double yAngleMinusdY = topoNorth.getYangleCardan(
+            new Vector3D(position.getX(), position.getY() - dH, position.getZ()), topoNorth, this.date);
+        double yAnglePlusdY = topoNorth.getYangleCardan(
+            new Vector3D(position.getX(), position.getY() + dH, position.getZ()), topoNorth, this.date);
+        numValY = (yAnglePlusdY - yAngleMinusdY) / dH2;
+
+        double yAngleMinusdZ = topoNorth.getYangleCardan(new Vector3D(position.getX(), position.getY(),
+            position.getZ() - dH), topoNorth, this.date);
+        double yAnglePlusdZ = topoNorth.getYangleCardan(new Vector3D(position.getX(), position.getY(),
+            position.getZ() + dH), topoNorth, this.date);
+        numValZ = (yAnglePlusdZ - yAngleMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dYangle.getX() - numValX) / numValX, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dYangle.getY() - numValY) / numValY, 2.1e-3);
+        Assert.assertEquals(0., MathLib.abs(dYangle.getZ() - numValZ) / numValZ, 2.1e-3);
+
+        // IN OTHER FRAME (GCRF)
+        dXangle = topoNorth.getDXangleCardan(positionGCRF, gcrf, this.date);
+
+        xAngleMinusdX = topoNorth.getXangleCardan(new Vector3D(positionGCRF.getX() - dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        xAnglePlusdX = topoNorth.getXangleCardan(new Vector3D(positionGCRF.getX() + dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        numValX = (xAnglePlusdX - xAngleMinusdX) / dH2;
+
+        xAngleMinusdY = topoNorth.getXangleCardan(new Vector3D(positionGCRF.getX(), positionGCRF.getY() - dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        xAnglePlusdY = topoNorth.getXangleCardan(new Vector3D(positionGCRF.getX(), positionGCRF.getY() + dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        numValY = (xAnglePlusdY - xAngleMinusdY) / dH2;
+
+        xAngleMinusdZ = topoNorth.getXangleCardan(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() - dH), gcrf, this.date);
+        xAnglePlusdZ = topoNorth.getXangleCardan(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() + dH), gcrf, this.date);
+        numValZ = (xAnglePlusdZ - xAngleMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dXangle.getX() - numValX) / numValX, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dXangle.getY() - numValY) / numValY, 3e-3);
+        Assert.assertEquals(0., MathLib.abs(dXangle.getZ() - numValZ) / numValZ, 2e-3);
+
+        dYangle = topoNorth.getDYangleCardan(positionGCRF, gcrf, this.date);
+
+        yAngleMinusdX = topoNorth.getYangleCardan(new Vector3D(positionGCRF.getX() - dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        yAnglePlusdX = topoNorth.getYangleCardan(new Vector3D(positionGCRF.getX() + dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        numValX = (yAnglePlusdX - yAngleMinusdX) / dH2;
+
+        yAngleMinusdY = topoNorth.getYangleCardan(new Vector3D(positionGCRF.getX(), positionGCRF.getY() - dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        yAnglePlusdY = topoNorth.getYangleCardan(new Vector3D(positionGCRF.getX(), positionGCRF.getY() + dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        numValY = (yAnglePlusdY - yAngleMinusdY) / dH2;
+
+        yAngleMinusdZ = topoNorth.getYangleCardan(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() - dH), gcrf, this.date);
+        yAnglePlusdZ = topoNorth.getYangleCardan(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() + dH), gcrf, this.date);
+        numValZ = (yAnglePlusdZ - yAngleMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dYangle.getX() - numValX) / numValX, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dYangle.getY() - numValY) / numValY, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dYangle.getZ() - numValZ) / numValZ, 3e-3);
+    }
+
+    @Test
+    public void testElevAzimDerivatives() throws PatriusException {
+
+        // North topocentric frame
+        final EllipsoidPoint point = new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
+            MathLib.toRadians(43.604482), MathLib.toRadians(1.443962), 0., "");
+        final TopocentricFrame topoNorth = new TopocentricFrame(point, 0., "north topocentric frame");
+
+        /*
+         * Topocentric coordinates
+         */
+
+        // from topocentric coordinates to cartesian coordinates (position only)
+        final double elevation = MathLib.acos(MathLib.sqrt(2. / 3.));
+        final double azimuth = MathLib.toRadians(315.);
+        final double range = MathLib.sqrt(3.);
+        final TopocentricPosition topoCoordPosition = new TopocentricPosition(elevation, azimuth, range);
+        final Vector3D position = topoNorth.transformFromTopocentricToPosition(topoCoordPosition);
+
+        final Frame gcrf = FramesFactory.getGCRF();
+        final Transform t = topoNorth.getTransformTo(gcrf, this.date);
+        final Vector3D positionGCRF = t.transformPosition(position);
+
+        final double dH = 0.1;
+        final double dH2 = dH * 2.;
+
+        // IN TOPO FRAME
+        Vector3D dElevation = topoNorth.getDElevation(position, topoNorth, this.date);
+
+        double elevMinusdX = topoNorth.getElevation(
+            new Vector3D(position.getX() - dH, position.getY(), position.getZ()), topoNorth, this.date);
+        double elevPlusdX = topoNorth.getElevation(
+            new Vector3D(position.getX() + dH, position.getY(), position.getZ()), topoNorth, this.date);
+        double numValX = (elevPlusdX - elevMinusdX) / dH2;
+
+        double elevMinusdY = topoNorth.getElevation(
+            new Vector3D(position.getX(), position.getY() - dH, position.getZ()), topoNorth, this.date);
+        double elevPlusdY = topoNorth.getElevation(
+            new Vector3D(position.getX(), position.getY() + dH, position.getZ()), topoNorth, this.date);
+        double numValY = (elevPlusdY - elevMinusdY) / dH2;
+
+        double elevMinusdZ = topoNorth.getElevation(new Vector3D(position.getX(), position.getY(),
+            position.getZ() - dH), topoNorth, this.date);
+        double elevPlusdZ = topoNorth.getElevation(new Vector3D(position.getX(), position.getY(),
+            position.getZ() + dH), topoNorth, this.date);
+        double numValZ = (elevPlusdZ - elevMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dElevation.getX() - numValX) / numValX, 2.1e-3);
+        Assert.assertEquals(0., MathLib.abs(dElevation.getY() - numValY) / numValY, 2.1e-3);
+        Assert.assertEquals(0., MathLib.abs(dElevation.getZ() - numValZ) / numValZ, 2e-3);
+
+        Vector3D dAzimuth = topoNorth.getDAzimuth(position, topoNorth, this.date);
+
+        double azimMinusdX = topoNorth.getAzimuth(
+            new Vector3D(position.getX() - dH, position.getY(), position.getZ()), topoNorth, this.date);
+        double azimPlusdX = topoNorth.getAzimuth(
+            new Vector3D(position.getX() + dH, position.getY(), position.getZ()), topoNorth, this.date);
+        numValX = (azimPlusdX - azimMinusdX) / dH2;
+
+        double azimMinusdY = topoNorth.getAzimuth(
+            new Vector3D(position.getX(), position.getY() - dH, position.getZ()), topoNorth, this.date);
+        double azimPlusdY = topoNorth.getAzimuth(
+            new Vector3D(position.getX(), position.getY() + dH, position.getZ()), topoNorth, this.date);
+        numValY = (azimPlusdY - azimMinusdY) / dH2;
+
+        double azimMinusdZ = topoNorth.getAzimuth(new Vector3D(position.getX(), position.getY(),
+            position.getZ() - dH), topoNorth, this.date);
+        double azimPlusdZ = topoNorth.getAzimuth(new Vector3D(position.getX(), position.getY(),
+            position.getZ() + dH), topoNorth, this.date);
+        numValZ = (azimPlusdZ - azimMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dAzimuth.getX() - numValX) / numValX, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dAzimuth.getY() - numValY) / numValY, 2e-3);
+        Assert.assertEquals(dAzimuth.getZ(), numValZ, 0.); // Special case : expect 0 (do not compute rel diff)
+
+        // IN OTHER FRAME (GCRF)
+        dElevation = topoNorth.getDElevation(positionGCRF, gcrf, this.date);
+
+        elevMinusdX = topoNorth.getElevation(new Vector3D(positionGCRF.getX() - dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        elevPlusdX = topoNorth.getElevation(new Vector3D(positionGCRF.getX() + dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        numValX = (elevPlusdX - elevMinusdX) / dH2;
+
+        elevMinusdY = topoNorth.getElevation(new Vector3D(positionGCRF.getX(), positionGCRF.getY() - dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        elevPlusdY = topoNorth.getElevation(new Vector3D(positionGCRF.getX(), positionGCRF.getY() + dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        numValY = (elevPlusdY - elevMinusdY) / dH2;
+
+        elevMinusdZ = topoNorth.getElevation(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() - dH), gcrf, this.date);
+        elevPlusdZ = topoNorth.getElevation(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() + dH), gcrf, this.date);
+        numValZ = (elevPlusdZ - elevMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dElevation.getX() - numValX) / numValX, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dElevation.getY() - numValY) / numValY, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dElevation.getZ() - numValZ) / numValZ, 3.4e-3);
+
+        dAzimuth = topoNorth.getDAzimuth(positionGCRF, gcrf, this.date);
+
+        azimMinusdX = topoNorth.getAzimuth(new Vector3D(positionGCRF.getX() - dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        azimPlusdX = topoNorth.getAzimuth(new Vector3D(positionGCRF.getX() + dH, positionGCRF.getY(),
+            positionGCRF.getZ()), gcrf, this.date);
+        numValX = (azimPlusdX - azimMinusdX) / dH2;
+
+        azimMinusdY = topoNorth.getAzimuth(new Vector3D(positionGCRF.getX(), positionGCRF.getY() - dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        azimPlusdY = topoNorth.getAzimuth(new Vector3D(positionGCRF.getX(), positionGCRF.getY() + dH,
+            positionGCRF.getZ()), gcrf, this.date);
+        numValY = (azimPlusdY - azimMinusdY) / dH2;
+
+        azimMinusdZ = topoNorth.getAzimuth(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() - dH), gcrf, this.date);
+        azimPlusdZ = topoNorth.getAzimuth(
+            new Vector3D(positionGCRF.getX(), positionGCRF.getY(), positionGCRF.getZ() + dH), gcrf, this.date);
+        numValZ = (azimPlusdZ - azimMinusdZ) / dH2;
+
+        Assert.assertEquals(0., MathLib.abs(dAzimuth.getX() - numValX) / numValX, 2e-3);
+        Assert.assertEquals(0., MathLib.abs(dAzimuth.getY() - numValY) / numValY, 3e-3);
+        Assert.assertEquals(0., MathLib.abs(dAzimuth.getZ() - numValZ) / numValZ, 2e-3);
     }
 
     @Before
@@ -558,7 +1040,7 @@ public class TopocentricFrameTest {
 
                 /** {@inheritDoc} */
                 @Override
-                public Frame getNativeFrame(final AbsoluteDate date, final Frame frame)
+                public Frame getNativeFrame(final AbsoluteDate date)
                     throws PatriusException {
                     throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
                 }
@@ -567,7 +1049,7 @@ public class TopocentricFrameTest {
             final CelestialBody celestialBody = new UserCelestialBody("My body", pvCoordinates, 0,
                 IAUPoleFactory.getIAUPole(null), FramesFactory.getGCRF(), null);
             this.earthFacetShape = new FacetBodyShape("My body", celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-                EllipsoidType.INNER_SPHERE, new ObjMeshLoader(modelFile));
+                new ObjMeshLoader(modelFile));
 
         } catch (final PatriusException oe) {
             Assert.fail(oe.getMessage());

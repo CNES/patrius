@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-105:08/12/2023:[PATRIUS] Renommage de getDateList
+ * VERSION:4.13:FA:FA-93:08/12/2023:[PATRIUS] Generation erronee de liste de dates à  partir d'un interval
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -136,6 +139,7 @@ public class AbsoluteDateIntervalTest {
      * @testedFeature {@link features#DATE_INTERVAL}
      * 
      * @testedMethod {@link AbsoluteDateInterval#AbsoluteDateInterval(IntervalEndpointType, AbsoluteDate, AbsoluteDate, IntervalEndpointType)}
+     * @testedMethod {@link ComparableInterval#contains(Comparable)}
      * 
      * @description unit test for the constructor and getters
      * 
@@ -155,7 +159,12 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate upEnd = new AbsoluteDate(lowEnd, 4578.14);
 
         final AbsoluteDateInterval dateInterval = new AbsoluteDateInterval(this.closed, lowEnd,
-                upEnd, this.open);
+            upEnd, this.open);
+
+        Assert.assertTrue(dateInterval.contains(lowEnd));
+        Assert.assertTrue(dateInterval.contains(lowEnd.shiftedBy(10.)));
+        Assert.assertFalse(dateInterval.contains(upEnd));
+
         assertNotNull(dateInterval);
         // Tests for the getters
         final AbsoluteDate gLowEnd = dateInterval.getLowerData();
@@ -177,8 +186,8 @@ public class AbsoluteDateIntervalTest {
      * 
      * @description unit test for the constructor using infinite dates
      * 
-     * @input data for the constructor, including infinite dates (
-     *        {@link AbsoluteDate#PAST_INFINITY}, {@link AbsoluteDate#FUTURE_INFINITY} )
+     * @input data for the constructor, including infinite dates ( {@link AbsoluteDate#PAST_INFINITY},
+     *        {@link AbsoluteDate#FUTURE_INFINITY} )
      * 
      * @output <code>AbsoluteDateInterval</code> instances
      * 
@@ -297,7 +306,7 @@ public class AbsoluteDateIntervalTest {
         // non-empty interval
         // [t1;t1]
         final AbsoluteDateInterval adne1 = new AbsoluteDateInterval(this.closed, t1, t1,
-                this.closed);
+            this.closed);
         assertNotNull(adne1);
         // empty intervals:
         // [t1;t1[
@@ -356,7 +365,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate future = AbsoluteDate.FUTURE_INFINITY;
         final String expectedString = "] " + past.toString() + " ; " + future.toString() + " [";
         final AbsoluteDateInterval adi = new AbsoluteDateInterval(this.open, past, future,
-                this.open);
+            this.open);
         assertEquals(expectedString, adi.toString());
 
         // With time scale
@@ -364,7 +373,7 @@ public class AbsoluteDateIntervalTest {
                 + AbsoluteDate.JAVA_EPOCH.toString(TimeScalesFactory.getTT()) + " ; "
                 + AbsoluteDate.J2000_EPOCH.toString(TimeScalesFactory.getTT()) + " [";
         final AbsoluteDateInterval adi2 = new AbsoluteDateInterval(this.open,
-                AbsoluteDate.JAVA_EPOCH, AbsoluteDate.J2000_EPOCH, this.open);
+            AbsoluteDate.JAVA_EPOCH, AbsoluteDate.J2000_EPOCH, this.open);
         assertEquals(expectedString2, adi2.toString(TimeScalesFactory.getTT()));
 
         // 2nd method
@@ -401,13 +410,13 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate past = AbsoluteDate.PAST_INFINITY;
         final AbsoluteDate future = AbsoluteDate.FUTURE_INFINITY;
         final AbsoluteDateInterval adi1 = new AbsoluteDateInterval(this.closed, lowerDate,
-                upperDate, this.closed);
+            upperDate, this.closed);
         final AbsoluteDateInterval adi2 = new AbsoluteDateInterval(this.open, lowerDate, upperDate,
-                this.closed);
+            this.closed);
         final AbsoluteDateInterval adi3 = new AbsoluteDateInterval(this.closed, lowerDate,
-                upperDate, this.open);
+            upperDate, this.open);
         final AbsoluteDateInterval adi4 = new AbsoluteDateInterval(this.open, lowerDate, upperDate,
-                this.open);
+            this.open);
         // First test : we expect the interval to be a day long.
         final double expectedDuration = Constants.JULIAN_DAY;
         assertEquals(expectedDuration, adi1.getDuration(), this.zeroEpsilon);
@@ -417,17 +426,17 @@ public class AbsoluteDateIntervalTest {
         assertEquals(adi1.getDuration(), adi4.getDuration(), this.zeroEpsilon);
         // Third test : several infinite intervals : they should all be infinitely long
         final AbsoluteDateInterval infiniteInterval1 = new AbsoluteDateInterval(this.open, past,
-                future, this.open);
+            future, this.open);
         assertEquals(Double.POSITIVE_INFINITY, infiniteInterval1.getDuration(), this.zeroEpsilon);
         final AbsoluteDateInterval infiniteInterval2 = new AbsoluteDateInterval(this.open, past,
-                upperDate, this.closed);
+            upperDate, this.closed);
         assertEquals(Double.POSITIVE_INFINITY, infiniteInterval2.getDuration(), this.zeroEpsilon);
         final AbsoluteDateInterval infiniteInterval3 = new AbsoluteDateInterval(this.closed,
-                lowerDate, future, this.open);
+            lowerDate, future, this.open);
         assertEquals(Double.POSITIVE_INFINITY, infiniteInterval3.getDuration(), this.zeroEpsilon);
         // Fourth test : interval with equal endpoints : should be of length 0.
         final AbsoluteDateInterval adie1 = new AbsoluteDateInterval(this.closed, lowerDate,
-                lowerDate, this.closed);
+            lowerDate, this.closed);
         assertEquals(0., adie1.getDuration(), this.zeroEpsilon);
     }
 
@@ -456,13 +465,13 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate lowerDate = new AbsoluteDate("1969-11-23", tt);
         final AbsoluteDate upperDate = new AbsoluteDate("1969-11-24", tt);
         final AbsoluteDateInterval adi1 = new AbsoluteDateInterval(this.closed, lowerDate,
-                upperDate, this.closed);
+            upperDate, this.closed);
         final AbsoluteDateInterval adi2 = new AbsoluteDateInterval(this.open, lowerDate, upperDate,
-                this.closed);
+            this.closed);
         final AbsoluteDateInterval adi3 = new AbsoluteDateInterval(this.closed, lowerDate,
-                upperDate, this.open);
+            upperDate, this.open);
         final AbsoluteDateInterval adi4 = new AbsoluteDateInterval(this.open, lowerDate, upperDate,
-                this.open);
+            this.open);
         // First test : we expect the middle date to be 1969-11-23T12:00:00.000[TT].
         final AbsoluteDate expectedMiddleDate = new AbsoluteDate("1969-11-23T12:00:00.000", tt);
         assertTrue(adi1.getMiddleDate().equals(expectedMiddleDate));
@@ -472,20 +481,20 @@ public class AbsoluteDateIntervalTest {
         assertTrue(adi4.getMiddleDate().equals(expectedMiddleDate));
         // Third test : interval with equal endpoints : middle date should be the endpoint date.
         final AbsoluteDateInterval adie1 = new AbsoluteDateInterval(this.closed, lowerDate,
-                lowerDate, this.closed);
+            lowerDate, this.closed);
         assertTrue(adie1.getMiddleDate().equals(lowerDate));
         // Fourth test : several infinite intervals: should return PAST_INFINITY when the lower
         // bound is PAST_INFINITY, FUTURE_INFINITY otherwise
         final AbsoluteDate past = AbsoluteDate.PAST_INFINITY;
         final AbsoluteDate future = AbsoluteDate.FUTURE_INFINITY;
         final AbsoluteDateInterval infiniteInterval1 = new AbsoluteDateInterval(this.open, past,
-                future, this.open);
+            future, this.open);
         assertTrue(infiniteInterval1.getMiddleDate().equals(past));
         final AbsoluteDateInterval infiniteInterval2 = new AbsoluteDateInterval(this.open, past,
-                upperDate, this.closed);
+            upperDate, this.closed);
         assertTrue(infiniteInterval2.getMiddleDate().equals(past));
         final AbsoluteDateInterval infiniteInterval3 = new AbsoluteDateInterval(this.closed,
-                lowerDate, future, this.open);
+            lowerDate, future, this.open);
         assertTrue(infiniteInterval3.getMiddleDate().equals(future));
     }
 
@@ -670,7 +679,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i21 = new AbsoluteDateInterval(this.closed, d1, d3, this.closed);
         final AbsoluteDateInterval i22 = new AbsoluteDateInterval(this.open, d2, d4, this.open);
         final AbsoluteDateInterval expected2 = new AbsoluteDateInterval(this.closed, d1, d4,
-                this.open);
+            this.open);
         assertEquals(expected2, i21.mergeTo(i22));
         assertEquals(expected2, i22.mergeTo(i21));
         // Test : two connected intervals
@@ -679,7 +688,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i31 = new AbsoluteDateInterval(this.closed, d1, d2, this.closed);
         final AbsoluteDateInterval i32 = new AbsoluteDateInterval(this.open, d2, d3, this.open);
         final AbsoluteDateInterval expected3 = new AbsoluteDateInterval(this.closed, d1, d3,
-                this.open);
+            this.open);
         assertEquals(expected3, i31.mergeTo(i32));
         assertEquals(expected3, i32.mergeTo(i31));
         // Test : two non-connected intervals
@@ -695,7 +704,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i51 = new AbsoluteDateInterval(this.closed, d1, d4, this.closed);
         final AbsoluteDateInterval i52 = new AbsoluteDateInterval(this.open, d2, d3, this.open);
         final AbsoluteDateInterval expected5 = new AbsoluteDateInterval(this.closed, d1, d4,
-                this.closed);
+            this.closed);
         assertEquals(expected5, i51.mergeTo(i52));
         assertEquals(expected5, i52.mergeTo(i51));
         // Test : two intervals, one included in the other one and with same upper end point
@@ -704,7 +713,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i61 = new AbsoluteDateInterval(this.closed, d1, d3, this.closed);
         final AbsoluteDateInterval i62 = new AbsoluteDateInterval(this.open, d2, d3, this.open);
         final AbsoluteDateInterval expected6 = new AbsoluteDateInterval(this.closed, d1, d3,
-                this.closed);
+            this.closed);
         assertEquals(expected6, i61.mergeTo(i62));
         assertEquals(expected6, i62.mergeTo(i61));
     }
@@ -748,7 +757,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i21 = new AbsoluteDateInterval(this.closed, d1, d3, this.closed);
         final AbsoluteDateInterval i22 = new AbsoluteDateInterval(this.open, d2, d4, this.open);
         final AbsoluteDateInterval expected2 = new AbsoluteDateInterval(this.open, d2, d3,
-                this.closed);
+            this.closed);
         assertEquals(expected2, i21.getIntersectionWith(i22));
         assertEquals(expected2, i22.getIntersectionWith(i21));
         // Test : two connected intervals
@@ -778,7 +787,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i61 = new AbsoluteDateInterval(this.closed, d1, d3, this.closed);
         final AbsoluteDateInterval i62 = new AbsoluteDateInterval(this.open, d2, d3, this.open);
         final AbsoluteDateInterval expected6 = new AbsoluteDateInterval(this.open, d2, d3,
-                this.open);
+            this.open);
         assertEquals(expected6, i61.getIntersectionWith(i62));
         assertEquals(expected6, i62.getIntersectionWith(i61));
         // Test : two intervals, with same upper and lower end point
@@ -787,7 +796,7 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDateInterval i71 = new AbsoluteDateInterval(this.closed, d1, d3, this.closed);
         final AbsoluteDateInterval i72 = new AbsoluteDateInterval(this.open, d1, d3, this.open);
         final AbsoluteDateInterval expected7 = new AbsoluteDateInterval(this.open, d1, d3,
-                this.open);
+            this.open);
         assertEquals(expected7, i71.getIntersectionWith(i72));
         assertEquals(expected7, i72.getIntersectionWith(i71));
     }
@@ -822,12 +831,12 @@ public class AbsoluteDateIntervalTest {
 
         final AbsoluteDateInterval actual1 = i1.shift(10.);
         final AbsoluteDateInterval expected1 = new AbsoluteDateInterval(this.closed, d2, d3,
-                this.open);
+            this.open);
         Assert.assertEquals(expected1, actual1);
 
         final AbsoluteDateInterval actual2 = i1.shift(10., 20.);
         final AbsoluteDateInterval expected2 = new AbsoluteDateInterval(this.closed, d2, d4,
-                this.open);
+            this.open);
         Assert.assertEquals(expected2, actual2);
     }
 
@@ -856,13 +865,13 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate d2 = AbsoluteDate.J2000_EPOCH.shiftedBy(10.);
         final AbsoluteDate d4 = AbsoluteDate.J2000_EPOCH.shiftedBy(30.);
         final ComparableInterval<Double> doubleInterval = new ComparableInterval<>(
-                this.closed, 10., 20., this.open);
+            this.closed, 10., 20., this.open);
         final AbsoluteDateInterval interval = new AbsoluteDateInterval(doubleInterval, d1);
 
         // Only one simple test, method is already validated in parent class
         final AbsoluteDateInterval actual = interval.extendTo(d4);
         final AbsoluteDateInterval expected = new AbsoluteDateInterval(this.closed, d2, d4,
-                this.open);
+            this.open);
         Assert.assertEquals(expected, actual);
     }
 
@@ -893,18 +902,18 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate d3 = AbsoluteDate.J2000_EPOCH.shiftedBy(15.);
         final AbsoluteDate ref = AbsoluteDate.J2000_EPOCH.shiftedBy(20.);
         final AbsoluteDateInterval interval = new AbsoluteDateInterval(this.closed, d1, d2,
-                this.open);
+            this.open);
 
         // General case
         final AbsoluteDateInterval actual1 = interval.scale(0.5, ref);
         final AbsoluteDateInterval expected1 = new AbsoluteDateInterval(this.closed, d2, d3,
-                this.open);
+            this.open);
         Assert.assertEquals(expected1, actual1);
 
         // Mid-point case
         final AbsoluteDateInterval actual2 = interval.scale(2.);
         final AbsoluteDateInterval expected2 = new AbsoluteDateInterval(this.closed, d0, d3,
-                this.open);
+            this.open);
         Assert.assertEquals(expected2, actual2);
 
         // Exception case (negative scale factor)
@@ -921,14 +930,14 @@ public class AbsoluteDateIntervalTest {
      * 
      * @testedFeature {@link features#DATE_INTERVAL_DATALIST}
      * 
-     * @testedMethod {@link AbsoluteDateInterval#getDateList(double)} and
-     *               {@link AbsoluteDateInterval#getDateList(int)}
+     * @testedMethod {@link AbsoluteDateInterval#getDateListFromStep(double)} and
+     *               {@link AbsoluteDateInterval#getDateListFromSize(int)}
      * 
-     * @description unit test for getDateList(double) and getDateList(int) (various cases)
+     * @description unit test for the getDateList methods (various cases)
      * 
      * @input constructor data, step and n
      * 
-     * @output AbsolutDate list from getDateList
+     * @output AbsolutDate list from the getDateList methods
      * 
      * @testPassCriteria AbsolutDate values match the expected values
      * 
@@ -941,12 +950,12 @@ public class AbsoluteDateIntervalTest {
         final int n = 3;
         // Case1: [x1,x2]
         AbsoluteDateInterval dateInterval = new AbsoluteDateInterval(this.closed, lowEnd, upEnd,
-                this.closed);
+            this.closed);
         assertNotNull(dateInterval);
         final AbsoluteDate[] ref1 = { lowEnd, lowEnd.shiftedBy(0.5), upEnd };
 
-        List<AbsoluteDate> list1 = dateInterval.getDateList(step);
-        List<AbsoluteDate> list2 = dateInterval.getDateList(n);
+        List<AbsoluteDate> list1 = dateInterval.getDateListFromStep(step);
+        List<AbsoluteDate> list2 = dateInterval.getDateListFromSize(n);
         assertEquals(3, list2.size());
         for (int i = 0; i < list1.size(); i++) {
             assertEquals(0, ref1[i].durationFrom(list1.get(i)), 1e-4);
@@ -959,10 +968,10 @@ public class AbsoluteDateIntervalTest {
         assertNotNull(dateInterval);
         final AbsoluteDate[] ref1a = { lowEnd.shiftedBy(0.5) };
         final AbsoluteDate[] ref1b = { lowEnd.shiftedBy(0.9 / 3), lowEnd.shiftedBy(0.9 * 2. / 3),
-                upEnd2 };
+            upEnd2 };
 
-        list1 = dateInterval.getDateList(step);
-        list2 = dateInterval.getDateList(n);
+        list1 = dateInterval.getDateListFromStep(step);
+        list2 = dateInterval.getDateListFromSize(n);
         assertEquals(3, list2.size());
         for (int i = 0; i < list1.size(); i++) {
             assertEquals(0, ref1a[i].durationFrom(list1.get(i)), 1e-4);
@@ -977,8 +986,8 @@ public class AbsoluteDateIntervalTest {
         final AbsoluteDate[] ref3a = { lowEnd, lowEnd.shiftedBy(0.5) };
         final AbsoluteDate[] ref3b = { lowEnd, lowEnd.shiftedBy(1. / 3), lowEnd.shiftedBy(2. / 3) };
 
-        list1 = dateInterval.getDateList(step);
-        list2 = dateInterval.getDateList(n);
+        list1 = dateInterval.getDateListFromStep(step);
+        list2 = dateInterval.getDateListFromSize(n);
         assertEquals(3, list2.size());
         for (int i = 0; i < list1.size(); i++) {
             assertEquals(0, ref3a[i].durationFrom(list1.get(i)), 1e-4);
@@ -992,9 +1001,9 @@ public class AbsoluteDateIntervalTest {
         assertNotNull(dateInterval);
         final AbsoluteDate[] ref4a = { lowEnd.shiftedBy(0.5) };
         final AbsoluteDate[] ref4b = { lowEnd.shiftedBy(1. / 4), lowEnd.shiftedBy(2. / 4),
-                lowEnd.shiftedBy(3. / 4) };
-        list1 = dateInterval.getDateList(step);
-        list2 = dateInterval.getDateList(n);
+            lowEnd.shiftedBy(3. / 4) };
+        list1 = dateInterval.getDateListFromStep(step);
+        list2 = dateInterval.getDateListFromSize(n);
         assertEquals(3, list2.size());
         for (int i = 0; i < list1.size(); i++) {
             assertEquals(0, ref4a[i].durationFrom(list1.get(i)), 1e-4);
@@ -1009,10 +1018,10 @@ public class AbsoluteDateIntervalTest {
      * 
      * @testedFeature {@link features#DATE_INTERVAL_DATALIST}
      * 
-     * @testedMethod {@link AbsoluteDateInterval#getDateList(double)} and
-     *               {@link AbsoluteDateInterval#getDateList(int)}
+     * @testedMethod {@link AbsoluteDateInterval#getDateListFromStep(double)} and
+     *               {@link AbsoluteDateInterval#getDateListFromSize(int)}
      * 
-     * @description unit test for getDateList exceptions (inf dates, negative step, n<2)
+     * @description unit test for the getDateList methods exceptions (inf dates, negative step, n<2)
      * 
      * @input constructor data, step and n
      * 
@@ -1033,7 +1042,7 @@ public class AbsoluteDateIntervalTest {
         boolean asExpected = false;
         final double step = -0.5;
         try {
-            dateInterval.getDateList(step);
+            dateInterval.getDateListFromStep(step);
         } catch (final MathIllegalArgumentException e) {
             asExpected = true;
         }
@@ -1043,7 +1052,7 @@ public class AbsoluteDateIntervalTest {
         asExpected = false;
         final int n = 0;
         try {
-            dateInterval.getDateList(n);
+            dateInterval.getDateListFromSize(n);
         } catch (final MathIllegalArgumentException e) {
             asExpected = true;
         }
@@ -1053,11 +1062,144 @@ public class AbsoluteDateIntervalTest {
         dateInterval = new AbsoluteDateInterval(past, future);
         asExpected = false;
         try {
-            dateInterval.getDateList(0.5);
+            dateInterval.getDateListFromStep(0.5);
         } catch (final MathIllegalArgumentException e) {
             asExpected = true;
         }
         assertTrue(asExpected);
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#DATE_INTERVAL_DATALIST}
+     * 
+     * @testedMethod {@link AbsoluteDateInterval#getDateListFromStep(double)} and
+     *               {@link AbsoluteDateInterval#getDateListFromSize(int)}
+     * 
+     * @description unit test to highlight the need for compareTo in relation to "==".
+     * 
+     * @input constructor data, step and n
+     * 
+     * @output DateInterval test point
+     * 
+     * @testPassCriteria a date interval corresponding
+     * 
+     */
+    @Test
+    public void testDecideIntervalTestPoint() {
+        final AbsoluteDate dateDeb = new AbsoluteDate("2023-06-23T21:00:00");
+        final AbsoluteDate dateFin = dateDeb.shiftedBy(Double.POSITIVE_INFINITY);
+        final AbsoluteDateInterval intervalle = new AbsoluteDateInterval(dateDeb, dateFin);
+        final String expectedInterval = "[ 2023-06-23T21:00:00.000 ; Future infinity [";
+        final String actualInterval = intervalle.toString();
+        Assert.assertEquals(expectedInterval, actualInterval);
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#DATE_INTERVAL_DATALIST}
+     * 
+     * @testedMethod {@link AbsoluteDateInterval#getDateListFromStep(double)} and
+     *               {@link AbsoluteDateInterval#getDateListFromSize(int)}
+     * 
+     * @description unit test to highlight the incorrect generation of a list of dates from an interval
+     * 
+     * @input constructor data, step and n
+     * 
+     * @output MathIllegalArgumentException
+     * 
+     * @testPassCriteria an exception is thrown
+     * 
+     */
+    @Test
+    public void testGetDateListOverInfinityInterval() {
+        final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate endDate = initialDate.shiftedBy(Double.POSITIVE_INFINITY);
+        boolean asExpected = false;
+        try {
+            final AbsoluteDateInterval interval = new AbsoluteDateInterval(initialDate, endDate);
+            final List<AbsoluteDate> dateListe = interval.getDateListFromSize(60);
+        } catch (final MathIllegalArgumentException e) {
+            asExpected = true;
+        }
+
+        asExpected = false;
+        final AbsoluteDate endDate1 = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate initialDate1 = endDate1.shiftedBy(Double.NEGATIVE_INFINITY);
+        try {
+            final AbsoluteDateInterval interval1 = new AbsoluteDateInterval(initialDate1, endDate1);
+            final List<AbsoluteDate> dateListe1 = interval1.getDateListFromSize(60);
+        } catch (final MathIllegalArgumentException e) {
+            asExpected = true;
+        }
+        assertTrue(asExpected);
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#DATE_INTERVAL_DATALIST}
+     * 
+     * @testedMethod {@link AbsoluteDateInterval#getDateListFromSize(int)}
+     * 
+     * @description This test evaluates specifically the last date returned by the interval split method to check if it
+     *              properly corresponds to the last interval date (before the fix, it wasn't the case).
+     * 
+     * @input constructor data and n
+     * 
+     * @output last interval date
+     * 
+     * @testPassCriteria the last interval date is returned
+     * 
+     */
+    @Test
+    public void testLastDateSplitInterval() {
+        // FA-93
+        final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate endDate = initialDate.shiftedBy(1000);
+        final AbsoluteDateInterval interval = new AbsoluteDateInterval(initialDate, endDate);
+
+        List<AbsoluteDate> dateListe = interval.getDateListFromSize(60);
+        AbsoluteDate lastGeneratedDate = dateListe.get(dateListe.size() - 1);
+        Assert.assertEquals(endDate, lastGeneratedDate);
+
+        dateListe = interval.getDateListFromSize(4);
+        lastGeneratedDate = dateListe.get(dateListe.size() - 1);
+        Assert.assertEquals(endDate, lastGeneratedDate);
+
+        dateListe = interval.getDateListFromSize(100);
+        lastGeneratedDate = dateListe.get(dateListe.size() - 1);
+        Assert.assertEquals(endDate, lastGeneratedDate);
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#DATE_INTERVAL_DATALIST}
+     * 
+     * @testedMethod {@link AbsoluteDateInterval#getDateListFromStep(double)} and
+     *               {@link AbsoluteDateInterval#getDateListFromSize(int)}
+     * 
+     * @description unit test to highlight the incorrect generation of a list of dates from an interval
+     * 
+     * @input constructor data, step and n
+     * 
+     * @output MathIllegalArgumentException
+     * 
+     * @testPassCriteria an exception is thrown
+     * 
+     */
+    @Test
+    public void testGetDateListOverInterval() {
+        final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate endDate = initialDate.shiftedBy(1000);
+        final AbsoluteDateInterval interval = new AbsoluteDateInterval(initialDate, endDate);
+        final List<AbsoluteDate> dateListe = interval.getDateListFromSize(60);
+        final AbsoluteDate lastGeneratedDate = dateListe.get(dateListe.size() - 1);
+        System.out.println(lastGeneratedDate.compareTo(endDate));
+        Assert.assertEquals(lastGeneratedDate.compareTo(endDate), 0);
     }
 
     /**

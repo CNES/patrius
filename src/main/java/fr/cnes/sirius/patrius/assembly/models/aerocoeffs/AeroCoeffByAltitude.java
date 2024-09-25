@@ -26,7 +26,7 @@
  */
 package fr.cnes.sirius.patrius.assembly.models.aerocoeffs;
 
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 
 /**
@@ -46,17 +46,20 @@ public class AeroCoeffByAltitude extends AbstractAeroCoeff1D {
     private static final long serialVersionUID = -8711405951225638618L;
 
     /** Earth shape. */
-    private final EllipsoidBodyShape earthShape;
+    private final OneAxisEllipsoid earthShape;
 
     /**
      * Constructor.
      * 
-     * @param xVariables array of x variables (altitude (m))
-     * @param yVariables array of y variables (aerodynamic coefficient)
-     * @param earthShapeIn Earth shape
+     * @param xVariables
+     *        array of x variables (altitude (m))
+     * @param yVariables
+     *        array of y variables (aerodynamic coefficient)
+     * @param earthShapeIn
+     *        Earth shape
      */
     public AeroCoeffByAltitude(final double[] xVariables, final double[] yVariables,
-        final EllipsoidBodyShape earthShapeIn) {
+                               final OneAxisEllipsoid earthShapeIn) {
         super(xVariables, yVariables);
         this.earthShape = earthShapeIn;
     }
@@ -66,8 +69,7 @@ public class AeroCoeffByAltitude extends AbstractAeroCoeff1D {
     protected double computeXVariable(final SpacecraftState state) {
         // Get altitude
         return state.getOrbit().getParameters()
-            .getReentryParameters(this.earthShape.getEquatorialRadius(), this.earthShape.getFlattening())
-            .getAltitude();
+            .getReentryParameters(this.earthShape.getEquatorialRadius(), this.earthShape.getFlattening()).getAltitude();
     }
 
     /** {@inheritDoc} */

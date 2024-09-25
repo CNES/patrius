@@ -476,8 +476,8 @@ public class DiagonalMatrixTest {
      * Tests the method that returns the minimum value in the matrix.
      *
      * <p>
-     * Tested method:<br>
-     * {@linkplain DiagonalMatrix#getMin()}
+     * Tested methods:<br>
+     * {@linkplain DiagonalMatrix#getMin()} {@linkplain DiagonalMatrix#getMin(boolean)}
      * </p>
      */
     @Test
@@ -490,33 +490,36 @@ public class DiagonalMatrixTest {
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMinimum(matrix, 0., 0.);
         Assert.assertEquals(-8.95496, matrix.getMin(), 0.);
+        Assert.assertEquals(0., matrix.getMin(true), 0.); // Absolute value case
 
         // 1x1 matrix and the only element is positive
         diagonalElements = new double[] { 2.53576 };
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMinimum(matrix, 0., 0.);
         Assert.assertEquals(2.53576, matrix.getMin(), 0.);
+        Assert.assertEquals(0., matrix.getMin(true), 0.); // Absolute value case
 
         // Matrix containing negative elements
         diagonalElements = new double[] { -9.27826, -7.13773, 0.74244, 8.46577 };
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMinimum(matrix, 0., 0.);
         Assert.assertEquals(-9.27826, matrix.getMin(), 0.);
+        Assert.assertEquals(0., matrix.getMin(true), 0.); // Absolute value case
 
         // Matrix containing only positive elements
         // (to make sure the minimum found is zero)
         diagonalElements = new double[] { 7.84384, 1.2285, 5.06068, 3.37446 };
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMinimum(matrix, 0., 0.);
-        Assert.assertEquals(0., matrix.getMin(), 0.);
+        Assert.assertEquals(0., matrix.getMin(true), 0.); // Absolute value case
     }
 
     /**
      * Tests the method that returns the maximum value in the matrix.
      *
      * <p>
-     * Tested method:<br>
-     * {@linkplain DiagonalMatrix#getMax()}
+     * Tested methods:<br>
+     * {@linkplain DiagonalMatrix#getMax()} {@linkplain DiagonalMatrix#getMax(boolean)}
      * </p>
      */
     @Test
@@ -529,25 +532,63 @@ public class DiagonalMatrixTest {
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMaximum(matrix, 0., 0.);
         Assert.assertEquals(-6.91989, matrix.getMax(), 0.);
+        Assert.assertEquals(6.91989, matrix.getMax(true), 0.); // Absolute value case
 
         // 1x1 matrix and the only element is positive
         diagonalElements = new double[] { 5.32576 };
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMaximum(matrix, 0., 0.);
         Assert.assertEquals(5.32576, matrix.getMax(), 0.);
+        Assert.assertEquals(5.32576, matrix.getMax(true), 0.); // Absolute value case
 
         // Matrix containing positive elements
         diagonalElements = new double[] { -1.14788, 8.75234, -3.05683, 8.04744 };
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMaximum(matrix, 0., 0.);
         Assert.assertEquals(8.75234, matrix.getMax(), 0.);
+        Assert.assertEquals(8.75234, matrix.getMax(true), 0.); // Absolute value case
 
         // Matrix containing only negative elements
-        // (to make sure the minimum found is zero)
+        // (to make sure the maximum found is zero)
         diagonalElements = new double[] { -2.61399, -4.02865, -7.95165, -5.36487 };
         matrix = new DiagonalMatrix(diagonalElements);
         CheckUtils.checkMaximum(matrix, 0., 0.);
         Assert.assertEquals(0., matrix.getMax(), 0.);
+        Assert.assertEquals(7.95165, matrix.getMax(true), 0.); // Absolute value case
+    }
+
+    /**
+     * Tests the method that returns the corresponding absolute values matrix.
+     *
+     * <p>
+     * Tested method:<br>
+     * {@linkplain DiagonalMatrix#getAbs()}
+     * </p>
+     */
+    @Test
+    public void testGetAbs() {
+        double[] diagonalElements;
+        DiagonalMatrix matrix;
+
+        // 1x1 matrix and the only element is negative
+        diagonalElements = new double[] { -6.91989 };
+        matrix = new DiagonalMatrix(diagonalElements);
+        CheckUtils.checkAbsMatrix(matrix, 0., 0.);
+
+        // 1x1 matrix and the only element is positive
+        diagonalElements = new double[] { 5.32576 };
+        matrix = new DiagonalMatrix(diagonalElements);
+        CheckUtils.checkAbsMatrix(matrix, 0., 0.);
+
+        // Matrix containing positive elements
+        diagonalElements = new double[] { -1.14788, 8.75234, -3.05683, 8.04744 };
+        matrix = new DiagonalMatrix(diagonalElements);
+        CheckUtils.checkAbsMatrix(matrix, 0., 0.);
+
+        // Matrix containing only negative elements
+        diagonalElements = new double[] { -2.61399, -4.02865, -7.95165, -5.36487 };
+        matrix = new DiagonalMatrix(diagonalElements);
+        CheckUtils.checkAbsMatrix(matrix, 0., 0.);
     }
 
     /**

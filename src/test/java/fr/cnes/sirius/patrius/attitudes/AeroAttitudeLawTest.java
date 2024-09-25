@@ -18,6 +18,7 @@
  * @history created 23/01/17
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11:DM:DM-3217:22/05/2023:[PATRIUS] Modeles broadcast et almanach GNSS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -42,17 +43,16 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.DiurnalRotation;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
 import fr.cnes.sirius.patrius.frames.configuration.PolarMotion;
-import fr.cnes.sirius.patrius.frames.configuration.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.eop.NoEOP2000History;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModel;
@@ -138,8 +138,7 @@ public class AeroAttitudeLawTest {
         Report.printMethodHeader("testRotation", "Rotation computation", "Math", 1E-14, ComparisonType.ABSOLUTE);
 
         // Initialization
-        final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "earth");
         final AbsoluteDate date = new AbsoluteDate(2003, 01, 01, TimeScalesFactory.getTAI());
         final Orbit orbit = new KeplerianOrbit(7000000, 0.1, 0.2, 0.3, 0.4, 0.5, PositionAngle.TRUE,
@@ -183,9 +182,8 @@ public class AeroAttitudeLawTest {
         Assert.assertEquals(sideSlip, actualSideSlip, 1E-14);
 
         // Velocity roll (on simplified case to align topocentric frame with GCRF reference frame)
-        final EllipsoidBodyShape earthGCRF = new OneAxisEllipsoid(
-            Constants.WGS84_EARTH_EQUATORIAL_RADIUS, Constants.WGS84_EARTH_FLATTENING, FramesFactory.getGCRF(),
-            "earth");
+        final OneAxisEllipsoid earthGCRF = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+            Constants.WGS84_EARTH_FLATTENING, FramesFactory.getGCRF(), "earth");
         final AeroAttitudeLaw attitudeLaw2 = new AeroAttitudeLaw(0., 0., velocityRoll, earthGCRF);
         final Orbit orbit2 = new KeplerianOrbit(7000000, 0.0, FastMath.PI / 2., 0.0, 0.0, 0.0, PositionAngle.TRUE,
             FramesFactory.getGCRF(), date, Constants.EGM96_EARTH_MU);
@@ -223,8 +221,7 @@ public class AeroAttitudeLawTest {
     public void testRotationVariable() throws PatriusException {
 
         // Initialization
-        final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "earth");
         final AbsoluteDate date = new AbsoluteDate(2003, 01, 01, TimeScalesFactory.getTAI());
         final Orbit orbit = new KeplerianOrbit(7000000, 0.1, 0.2, 0.3, 0.4, 0.5, PositionAngle.TRUE,
@@ -281,9 +278,8 @@ public class AeroAttitudeLawTest {
             Assert.assertEquals(sideSlip.value(state), actualSideSlip, 1E-11);
 
             // Velocity roll (on simplified case to align topocentric frame with GCRF reference frame)
-            final EllipsoidBodyShape earthGCRF = new OneAxisEllipsoid(
-                Constants.WGS84_EARTH_EQUATORIAL_RADIUS, Constants.WGS84_EARTH_FLATTENING, FramesFactory.getGCRF(),
-                "earth");
+            final OneAxisEllipsoid earthGCRF = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+                Constants.WGS84_EARTH_FLATTENING, FramesFactory.getGCRF(), "earth");
             final AeroAttitudeLaw attitudeLaw2 = new AeroAttitudeLaw(new ConstantFunction(0.),
                 new ConstantFunction(0.), velocityRoll, earthGCRF);
             final Orbit orbit2 = new KeplerianOrbit(7000000, 0.0, FastMath.PI / 2., 0.0, 0.0, 0.0, PositionAngle.TRUE,
@@ -324,8 +320,7 @@ public class AeroAttitudeLawTest {
         Report.printMethodHeader("testSpin", "Spin computation", "Finite differences", 0., ComparisonType.ABSOLUTE);
 
         // Initialization
-        final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "earth");
         final AbsoluteDate date = new AbsoluteDate(2003, 01, 01, TimeScalesFactory.getTAI());
         final Orbit orbit = new KeplerianOrbit(7000000, 0.1, 0.2, 0.3, 0.4, 0.5, PositionAngle.TRUE,
@@ -371,8 +366,7 @@ public class AeroAttitudeLawTest {
             ComparisonType.ABSOLUTE);
 
         // Initialization
-        final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "earth");
         final AbsoluteDate date = new AbsoluteDate(2003, 01, 01, TimeScalesFactory.getTAI());
         final Orbit orbit = new KeplerianOrbit(7000000, 0.1, 0.2, 0.3, 0.4, 0.5, PositionAngle.TRUE,
@@ -451,8 +445,8 @@ public class AeroAttitudeLawTest {
                     Constants.WGS84_EARTH_EQUATORIAL_RADIUS, this.flat, Constants.WGS84_EARTH_MU);
             final Orbit iniOrbit = new CartesianOrbit(ren, FramesFactory.getEME2000(), date);
 
-            final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-                Constants.WGS84_EARTH_EQUATORIAL_RADIUS, this.flat, FramesFactory.getITRF(), "EARTH");
+            final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS, this.flat,
+                FramesFactory.getITRF(), "EARTH");
             final Attitude attitude = new AeroAttitudeLaw(this.alfa, this.beta, this.gite, earth).getAttitude(iniOrbit);
 
             // Check results (angle in J2000)
@@ -468,7 +462,6 @@ public class AeroAttitudeLawTest {
             Assert.assertEquals(this.psi2000Ref, psi2000, 6E-7);
             Assert.assertEquals(this.teta2000Ref, teta2000, 3E-6);
             Assert.assertEquals(this.phi2000Ref, phi2000, 4E-3);
-            
         }
     }
 
@@ -498,12 +491,12 @@ public class AeroAttitudeLawTest {
                 Constants.WGS84_EARTH_EQUATORIAL_RADIUS, this.flat, Constants.WGS84_EARTH_MU);
         final Orbit iniOrbit = new CartesianOrbit(ren, FramesFactory.getEME2000(), date);
 
-        final EllipsoidBodyShape earth = new OneAxisEllipsoid(
-            Constants.WGS84_EARTH_EQUATORIAL_RADIUS, this.flat, FramesFactory.getITRF(), "EARTH");
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS, this.flat,
+            FramesFactory.getITRF(), "EARTH");
 
         final Attitude attitude2 = new AeroAttitudeLaw(0.1, 0.2, 0.3, earth).getAttitude(iniOrbit);
         final double[] aircraftToAero = AeroAttitudeLaw.aircraftToAero(9.197869847650462E-17, 4.71238898038469,
-                -1.732767197109596, 0.1544047903570774, 0.29748501158478957);
+            -1.732767197109596, 0.1544047903570774, 0.29748501158478957);
         Assert.assertEquals(aircraftToAero[0], 0.1, 1E-14);
         Assert.assertEquals(aircraftToAero[1], 0.2, 1E-14);
         Assert.assertEquals(aircraftToAero[2], 0.3, 1E-14);
@@ -521,17 +514,13 @@ public class AeroAttitudeLawTest {
         builder.setDiurnalRotation(new DiurnalRotation(TidalCorrectionModelFactory.NO_TIDE,
             LibrationCorrectionModelFactory.NO_LIBRATION));
         builder.setPolarMotion(new PolarMotion(false, tides, lib, SPrimeModelFactory.NO_SP));
-        builder.setPrecessionNutation(new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN));
+        builder.setCIRFPrecessionNutation(new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN));
         builder.setEOPHistory(new NoEOP2000History());
         return builder.getConfiguration();
     }
 
-    /**
-     * Private method to initialize data.
-     * 
-     * @throws PatriusException
-     */
-    private void inidata(final int numCase) throws PatriusException {
+    /** Private method to initialize data. */
+    private void inidata(final int numCase) {
 
         // By default values ...
         this.alt = 120.e+03;

@@ -63,28 +63,28 @@ public class FixedDelayModelTest {
 
         // check with (artificial) test values from tropospheric-delay.txt
         final FixedDelayModel model = FixedDelayModel.getDefaultModel(0d);
-        Assert.assertEquals(2.5d, model.computePathDelay(defaultDate, 90d), epsilon);
-        Assert.assertEquals(20.8d, model.computePathDelay(defaultDate, 0d), epsilon);
+        Assert.assertEquals(2.5d, model.computePathDelay(90d), epsilon);
+        Assert.assertEquals(20.8d, model.computePathDelay(0d), epsilon);
 
-        Report.printToReport("Path delay (elevation: 90°)", 2.5d, model.computePathDelay(defaultDate, 90d));
-        Report.printToReport("Path delay (elevation: 0°)", 20.8d, model.computePathDelay(defaultDate, 0d));
+        Report.printToReport("Path delay (elevation: 90°)", 2.5d, model.computePathDelay(90d));
+        Report.printToReport("Path delay (elevation: 0°)", 20.8d, model.computePathDelay(0d));
     }
 
     @Test
     public void testModel2() throws PatriusException {
         // check with (artificial) test values from tropospheric-delay.txt
         final FixedDelayModel model = new FixedDelayModel("^tropospheric-delay\\.txt$", 5000d);
-        Assert.assertEquals(12.1d, model.computePathDelay(defaultDate, 0d), epsilon);
-        Assert.assertEquals(2.5d, model.computePathDelay(defaultDate, 90d), epsilon);
+        Assert.assertEquals(12.1d, model.computePathDelay(0d), epsilon);
+        Assert.assertEquals(2.5d, model.computePathDelay(90d), epsilon);
         // sanity checks
-        Assert.assertEquals(12.1d, model.computePathDelay(defaultDate, -20d), epsilon);
+        Assert.assertEquals(12.1d, model.computePathDelay(-20d), epsilon);
     }
 
     @Test
     public void testModel3() throws PatriusException {
         // interpolation between two elevation angles in the table
         final FixedDelayModel model = new FixedDelayModel("^tropospheric-delay\\.txt$", 1200d);
-        final double delay = model.computePathDelay(defaultDate, 35d);
+        final double delay = model.computePathDelay(35d);
         Assert.assertTrue(Precision.compareTo(delay, 6.4d, epsilon) < 0);
         Assert.assertTrue(Precision.compareTo(delay, 3.2d, epsilon) > 0);
     }
@@ -94,7 +94,7 @@ public class FixedDelayModelTest {
         // interpolation between two elevation angles in the table
         final FixedDelayModel model = new FixedDelayModel("^tropospheric-delay\\.txt$", 100000d);
         // sanity checks
-        Assert.assertEquals(2.5d, model.computePathDelay(defaultDate, 90d), epsilon);
+        Assert.assertEquals(2.5d, model.computePathDelay(90d), epsilon);
     }
 
     // test for coverage of the class FixedDelayModel
@@ -116,7 +116,7 @@ public class FixedDelayModelTest {
         Assert.assertTrue(rez);
         // Test the computePathDelay method:
         final FixedDelayModel model = new FixedDelayModel("^tropospheric-delay\\.txt$", 100000d);
-        Assert.assertEquals(model.computePathDelay(defaultDate, 90d) / Constants.SPEED_OF_LIGHT,
+        Assert.assertEquals(model.computePathDelay(90d) / Constants.SPEED_OF_LIGHT,
             model.computeSignalDelay(this.defaultDate, 90d), epsilon);
 
     }
@@ -125,8 +125,8 @@ public class FixedDelayModelTest {
     public void testSymmetry() throws PatriusException {
         for (int elevation = 0; elevation < 90; elevation += 10) {
             final FixedDelayModel model = new FixedDelayModel("^tropospheric-delay\\.txt$", 100d);
-            final double delay1 = model.computePathDelay(defaultDate, elevation);
-            final double delay2 = model.computePathDelay(defaultDate, 180 - elevation);
+            final double delay1 = model.computePathDelay(elevation);
+            final double delay2 = model.computePathDelay(180 - elevation);
 
             Assert.assertEquals(delay1, delay2, epsilon);
         }

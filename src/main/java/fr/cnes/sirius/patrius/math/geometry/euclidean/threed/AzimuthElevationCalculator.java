@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * VERSION:4.7:FA:FA-2883:18/05/2021:Reliquats sur la DM 2871 sur le changement du sens des Azimuts 
@@ -185,5 +186,78 @@ public final class AzimuthElevationCalculator {
         final double y = position.getY();
         return -Vector3D.crossProduct(position, extPVTopo.getVelocity()).getZ()
                 / ((x * x) + (y * y));
+    }
+
+    /**
+     * Compute the cartesian unit vector corresponding to the provided azimuth/elevation angles.
+     *
+     * @param azimuth
+     *        The azimuth
+     * @param elevation
+     *        The elevation
+     * @param frameOrientation
+     *        Oriented (trigowise) angle between the "Reference Azimuth" and the Frame's x axis
+     * @return the cartesian unit vector
+     */
+    public static Vector3D computeCartesianUnitPosition(final double azimuth, final double elevation,
+                                                        final double frameOrientation) {
+        // Compute sin/cos of the elevation angle
+        final double[] sincosEl = MathLib.sinAndCos(elevation);
+        final double sinEl = sincosEl[0];
+        final double cosEl = sincosEl[1];
+
+        // Compute sin/cos of the alpha angle
+        final double alpha = azimuth + frameOrientation;
+        final double[] sincosAlpha = MathLib.sinAndCos(alpha);
+        final double sinAlpha = sincosAlpha[0];
+        final double cosAlpha = sincosAlpha[1];
+
+        // Cartesian coordinates
+        final double x = cosEl * cosAlpha;
+        final double y = -cosEl * sinAlpha;
+        final double z = sinEl;
+        // Return result
+        return new Vector3D(x, y, z);
+    }
+
+    /**
+     * Compute the cartesian unit vector corresponding to the provided azimuth/elevation angles and their derivatives.
+     *
+     * @param azimuth
+     *        The azimuth
+     * @param azimuthDot
+     *        The azimuth derivative
+     * @param elevation
+     *        The elevation
+     * @param elevationDot
+     *        The elevation derivative
+     * @param frameOrientation
+     *        Oriented (trigowise) angle between the "Reference Azimuth" and the Frame's x axis
+     * @return the cartesian unit vector
+     */
+    public static PVCoordinates computeCartesianUnitPV(final double azimuth, final double azimuthDot,
+                                                       final double elevation,
+                                                       final double elevationDot, final double frameOrientation) {
+        // Compute sin/cos of the elevation angle
+        final double[] sincosEl = MathLib.sinAndCos(elevation);
+        final double sinEl = sincosEl[0];
+        final double cosEl = sincosEl[1];
+
+        // Compute sin/cos of the alpha angle
+        final double alpha = azimuth + frameOrientation;
+        final double[] sincosAlpha = MathLib.sinAndCos(alpha);
+        final double sinAlpha = sincosAlpha[0];
+        final double cosAlpha = sincosAlpha[1];
+
+        // Cartesian coordinates
+        final double x = cosEl * cosAlpha;
+        final double y = -cosEl * sinAlpha;
+        final double z = sinEl;
+
+        final double xDot = -elevationDot * sinEl * cosAlpha - azimuthDot * sinAlpha * cosEl;
+        final double yDot = elevationDot * sinEl * sinAlpha - azimuthDot * cosEl * cosAlpha;
+        final double zDot = elevationDot * cosEl;
+        // Return result
+        return new PVCoordinates(x, y, z, xDot, yDot, zDot);
     }
 }

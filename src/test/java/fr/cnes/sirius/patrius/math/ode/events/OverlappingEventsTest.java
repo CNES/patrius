@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -44,6 +45,7 @@ import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderDifferentialEquations;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * Tests for overlapping state events. Also tests an event function that does
@@ -206,6 +208,15 @@ public class OverlappingEventsTest implements FirstOrderDifferentialEquations {
         @Override
         public int getSlopeSelection() {
             return 2;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final double t,
+                final double[] y,
+                final boolean increasing,
+                final boolean forward) {
+            return false;
         }
     }
 }

@@ -18,6 +18,9 @@
  * @history created 12/11/2015
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-114:08/12/2023:[PATRIUS] Message d'erreur incomplet
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
  * VERSION:4.9:DM:DM-3165:10/05/2022:[PATRIUS] Amelioration de la propagation du signal 
@@ -27,7 +30,6 @@
  * VERSION::FA:685:16/03/2017:Add the order for Hermite interpolation
  * END-HISTORY
  */
-
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -39,13 +41,10 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
- * 
- * <p>
  * This abstract class shall be extended to provides a PVCoordinates provider based on manipulation of PVCoordinates
  * ephemeris. The method of the implemented interface
  * {@link fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider} is not implemented here and have to be
  * implemented in extending classes to provide a position velocity for a given date.
- * </p>
  * 
  * @concurrency not thread-safe
  * @concurrency.comment internal mutable attributes
@@ -61,21 +60,29 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
 
     /** Serializable UID. */
     private static final long serialVersionUID = -8320247409028718135L;
+
     /** "Greater than" sign. */
     private static final String GREATER_THAN = ">= ";
-    /** Position velocity coordinates table */
+
+    /** Position velocity coordinates table. */
     protected final PVCoordinates[] tPVCoord;
-    /** Lagrange/Hermite polynomial order */
+
+    /** Lagrange/Hermite polynomial order. */
     protected final int polyOrder;
-    /** Dates table */
+
+    /** Dates table. */
     protected final AbsoluteDate[] tDate;
-    /** Class to find for a given date the nearest date index in dates table */
+
+    /** Class to find for a given date the nearest date index in dates table. */
     private final ISearchIndex searchIndex;
-    /** Frame of position velocity coordinates expression */
+
+    /** Frame of position velocity coordinates expression. */
     private final Frame pvFrame;
-    /** Reference date */
+
+    /** Reference date. */
     private final AbsoluteDate dateRef;
-    /** Previous date index used to update interpolator to compute pv coordinate */
+
+    /** Previous date index used to update interpolator to compute pv coordinate. */
     private int previousIndex;
 
     /**
@@ -95,15 +102,13 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
      *        class to find the nearest date index from a given date in the date table
      *        (If null, algo will be, by default, a BinarySearchIndexOpenClosed
      *        based on a table of duration since the first date of the dates table)
-     * @exception IllegalArgumentException
-     *            if :
-     *            - tabPV and tabDate have not the same size
-     *            - parameters are not consistent : order is higher than the length of PV coordinates table
-     *            - order is not even
-     * @since 3.1
+     * @throws IllegalArgumentException
+     *         if tabPV and tabDate have not the same size or<br>
+     *         if parameters are not consistent : order is higher than the length of PV coordinates table or<br>
+     *         if order is not even
      */
     public AbstractBoundedPVProvider(final PVCoordinates[] tabPV, final int order, final Frame frame,
-        final AbsoluteDate[] tabDate, final ISearchIndex algo) {
+                                     final AbsoluteDate[] tabDate, final ISearchIndex algo) {
 
         checkConsistency(tabPV, tabDate);
 
@@ -136,7 +141,7 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
     }
 
     /**
-     * Creates an instance of AbstractBoundedPVProvider from a SpacecraftState table
+     * Creates an instance of AbstractBoundedPVProvider from a SpacecraftState table.
      * 
      * @param tabState
      *        SpacecraftState table
@@ -146,133 +151,132 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
      *        class to find the nearest date index from a given date
      *        (If null, algo will be BinarySearchIndexOpenClosed by default
      *        based on a table of duration since the first date of the dates table)
-     * @exception IllegalArgumentException
-     *            if :
-     *            - spacecraftState table should contains elements, and if tabacc not
-     *            null should be of the same size.
-     *            - tabPV and tabDate have not the same size
-     *            - parameters are not consistent : order is higher than the length of PV coordinates table
-     *            - order is not even
-     *            Exception thrown also if order is not even.
-     * @since 3.1
+     * @throws IllegalArgumentException
+     *         if spacecraftState table should contains elements, and if tabacc not null should be of the same size<br>
+     *         if tabPV and tabDate have not the same size or<br>
+     *         if parameters are not consistent : order is higher than the length of PV coordinates table or<br>
+     *         if order is not even or<br>
+     *         if order is not even.
      */
-    public AbstractBoundedPVProvider(final SpacecraftState[] tabState,
-        final int order, final ISearchIndex algo) {
+    public AbstractBoundedPVProvider(final SpacecraftState[] tabState, final int order, final ISearchIndex algo) {
         final int length = tabState.length;
-        if (length > 0) {
-            this.tPVCoord = new PVCoordinates[length];
-            this.tDate = new AbsoluteDate[length];
-            this.pvFrame = tabState[0].getFrame();
-            this.dateRef = tabState[0].getDate();
-            this.previousIndex = Integer.MIN_VALUE;
-            for (int i = 0; i < length; i++) {
-                this.tPVCoord[i] = tabState[i].getPVCoordinates();
-                this.tDate[i] = tabState[i].getDate();
-            }
-            checkConsistency(this.tPVCoord, this.tDate);
+        if (length <= 0) {
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.INVALID_ARRAY_LENGTH, ">0", length);
+        }
 
-            // Check if enough points are available regarding the order
-            final int lengthPV = this.tPVCoord.length;
-            if (lengthPV < order) {
-                throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.INVALID_ARRAY_LENGTH, GREATER_THAN + order, lengthPV);
-                // Interpolation order has to be even
-            } else if (order % 2 != 0) {
-                throw PatriusException.createIllegalArgumentException(PatriusMessages.ODD_INTERPOLATION_ORDER);
-            }
+        this.tPVCoord = new PVCoordinates[length];
+        this.tDate = new AbsoluteDate[length];
+        this.pvFrame = tabState[0].getFrame();
+        this.dateRef = tabState[0].getDate();
+        this.previousIndex = Integer.MIN_VALUE;
+        for (int i = 0; i < length; i++) {
+            this.tPVCoord[i] = tabState[i].getPVCoordinates();
+            this.tDate[i] = tabState[i].getDate();
+        }
+        checkConsistency(this.tPVCoord, this.tDate);
 
-            this.polyOrder = order;
-            if (algo == null) {
-                final double[] tabIndex = new double[this.tDate.length];
-                for (int i = 0; i < this.tDate.length; i++) {
-                    tabIndex[i] = this.tDate[i].durationFrom(this.tDate[0]);
-                }
-                this.searchIndex = new BinarySearchIndexClosedOpen(tabIndex);
-            } else {
-                this.searchIndex = algo;
-            }
-        } else {
+        // Check if enough points are available regarding the order
+        final int lengthPV = this.tPVCoord.length;
+        if (lengthPV < order) {
             throw PatriusException.createIllegalArgumentException(
-                PatriusMessages.INVALID_ARRAY_LENGTH, ">0", length);
+                PatriusMessages.INVALID_ARRAY_LENGTH, GREATER_THAN + order, lengthPV);
+        } else if (order % 2 != 0) {
+            // Interpolation order has to be even
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.ODD_INTERPOLATION_ORDER);
+        }
+
+        this.polyOrder = order;
+        if (algo == null) {
+            final double[] tabIndex = new double[this.tDate.length];
+            for (int i = 0; i < this.tDate.length; i++) {
+                tabIndex[i] = this.tDate[i].durationFrom(this.tDate[0]);
+            }
+            this.searchIndex = new BinarySearchIndexClosedOpen(tabIndex);
+        } else {
+            this.searchIndex = algo;
         }
     }
 
     /**
-     * Get the reference date
+     * Getter for the reference date.
      * 
      * @return dateRef
-     * @since 3.1
      */
     public AbsoluteDate getDateRef() {
         return this.dateRef;
     }
 
     /**
-     * Get the reference frame
+     * Getter for the reference frame.
      * 
      * @return pvFrame
-     * @since 3.1
      */
     public Frame getFrame() {
         return this.pvFrame;
     }
 
     /**
-     * Get the optimize indice search algorithm
+     * Getter for the optimize index search algorithm.
      * 
      * @return searchIndex
-     * @since 3.1
      */
     public ISearchIndex getSearchIndex() {
         return this.searchIndex;
     }
 
     /**
-     * Get the previous search index
+     * Getter for the previous search index.
      * 
      * @return previousIndex
-     * @since 3.1
      */
     public int getPreviousIndex() {
         return this.previousIndex;
     }
 
     /**
-     * Set the previous search index
+     * Setter for the previous search index
      * 
      * @param index
      *        previous search index
-     * @since 3.1
      */
     protected void setPreviousIndex(final int index) {
         this.previousIndex = index;
     }
 
     /**
-     * Checks if interpolation is valid : meaning if 0<= index +1 -interpOrder/2 or index + interpOrder/2 <=
-     * maximalIndex
+     * Checks if interpolation is valid : meaning if {@code 0<= index +1 -interpOrder/2} or
+     * {@code index + interpOrder/2 <= maximalIndex}.
      * 
      * @param index
-     *        : the closest index from a given date.
-     * @return i0
-     *         : i0 = index + 1 - order / 2. is the first interpolation point.
+     *        the closest index from a given date
+     * @return the first interpolation point {@code i0}, such as {@code i0 = index + 1 - order / 2}
      * @throws PatriusException
-     *         if the index does not allow enough point to do the interpolation.
+     *         if the index does not allow enough points to do the interpolation
      */
     public int indexValidity(final int index) throws PatriusException {
 
+        // factor reused several times
+        final int k = this.polyOrder / 2;
+
+        // Check if there is enough points on the lower bound
+        final int i0 = index + 1 - k;
+        if (i0 < 0) {
+            throw new PatriusException(PatriusMessages.NOT_ENOUGH_INTERPOLATION_POINTS,
+                index + 1 + k, this.polyOrder);
+        }
+        // Check if there is enough points on the upper bound
         final int maximalIndex = this.tDate.length - 1;
-        final int i0 = index + 1 - this.polyOrder / 2;
-        final int in = index + this.polyOrder / 2;
-        if (i0 < 0 || in > maximalIndex) {
-            throw new PatriusException(PatriusMessages.NOT_ENOUGH_INTERPOLATION_POINTS);
+        final int in = index + k;
+        if (in > maximalIndex) {
+            throw new PatriusException(PatriusMessages.NOT_ENOUGH_INTERPOLATION_POINTS,
+                maximalIndex - index + k, this.polyOrder);
         }
 
         return i0;
     }
 
     /**
-     * Return the lower date authorized to call getPVCoordinates.
+     * Return the lower date authorized to call {@link #getPVCoordinates(AbsoluteDate, Frame) getPVCoordinates}.
      * 
      * @return minimum ephemeris date
      */
@@ -281,7 +285,7 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
     }
 
     /**
-     * Return the higher date authorized to call getPVCoordinates.
+     * Return the higher date authorized to call {@link #getPVCoordinates(AbsoluteDate, Frame) getPVCoordinates}.
      * 
      * @return maximum ephemeris date
      */
@@ -290,14 +294,12 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
     }
 
     /**
-     * Check consistency of constructor parameters :
-     * tabPV and tabDate size shall be equals
+     * Check consistency of constructor parameters : {@code tabPV} and {@code tabDate} size shall be equals.
      * 
      * @param tabPV
      *        position velocity table
      * @param tabDate
      *        dates table
-     * @since 3.1
      */
     private static void checkConsistency(final PVCoordinates[] tabPV, final AbsoluteDate[] tabDate) {
 
@@ -315,7 +317,7 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
      * 
      * @param date
      *        duration
-     * @return PV Coordinates on bounds if duration is on bounds, null otherwise.
+     * @return PV Coordinates on bounds if duration is on bounds, null otherwise
      */
     protected PVCoordinates checkBounds(final AbsoluteDate date) {
 
@@ -340,8 +342,7 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date,
-            final Frame frame) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return this.pvFrame;
     }
 }

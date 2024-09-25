@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:FA:FA-131:08/12/2023:[PATRIUS] TranslatedFrame pas obligatoirement inertiel si son parent l'est
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
@@ -51,10 +53,11 @@ public class TranslatedFrameTest {
     @Test
     public void testTransformFromPseudoInertialFrame() throws PatriusException {
         // Build translated frame compared to EME2000 frame
+        // Frame considered as not pseudo-inertial
         final Frame frame = FramesFactory.getEME2000();
         final PVCoordinatesProvider translationProvider = new MeeusSun();
         final TranslatedFrame translatedFrame = new TranslatedFrame(frame, translationProvider,
-            translatedFrameName);
+            translatedFrameName, false);
 
         // Transform
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -66,6 +69,7 @@ public class TranslatedFrameTest {
         Assert.assertTrue(transform.getTranslation().equals(
             new MeeusSun().getPVCoordinates(date, frame).getPosition()));
         Assert.assertEquals(translatedFrame.getCenter(), translationProvider);
+        Assert.assertEquals(false, translatedFrame.isPseudoInertial());
     }
 
     /**
@@ -78,7 +82,7 @@ public class TranslatedFrameTest {
         final Frame frame = FramesFactory.getITRF();
         final PVCoordinatesProvider translationProvider = new MeeusSun();
         final TranslatedFrame translatedFrame = new TranslatedFrame(frame, translationProvider,
-            translatedFrameName);
+            translatedFrameName, false);
 
         // Transform
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -90,6 +94,7 @@ public class TranslatedFrameTest {
         Assert
             .assertTrue(transform.getTranslation().equals(new MeeusSun().getPVCoordinates(date, frame).getPosition()));
         Assert.assertEquals(translatedFrame.getCenter(), translationProvider);
+        Assert.assertEquals(false, translatedFrame.isPseudoInertial());
     }
 
     /**
@@ -106,7 +111,7 @@ public class TranslatedFrameTest {
         final TopocentricFrame frame = new TopocentricFrame(point1, "lat 45");
         final PVCoordinatesProvider translationProvider = new MeeusSun();
         final TranslatedFrame translatedFrame = new TranslatedFrame(frame, translationProvider,
-            translatedFrameName);
+            translatedFrameName, false);
 
         // Transform
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -118,10 +123,11 @@ public class TranslatedFrameTest {
         Assert.assertTrue(transform.getTranslation().equals(
             new MeeusSun().getPVCoordinates(date, frame).getPosition()));
         Assert.assertEquals(translatedFrame.getCenter(), translationProvider);
+        Assert.assertEquals(false, translatedFrame.isPseudoInertial());
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
         FramesFactory.clear();

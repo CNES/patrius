@@ -20,9 +20,11 @@
  *
  * @history creation 01/09/2014
  */
-/* 
+/*
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+* VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * VERSION:4.8:FA:FA-2941:15/11/2021:[PATRIUS] Correction anomalies suite a DM 2767 
@@ -34,7 +36,6 @@
  */
 package fr.cnes.sirius.patrius.math.parameter;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -43,13 +44,14 @@ import java.util.function.Function;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableFunction;
 
 /**
  * This class is used to define parameterizable linear function: <i>f = a0 + a1 * (t - t0)</i>.
  * <p>
  * This function is serializable.
  * </p>
- * 
+ *
  * @concurrency not thread-safe
  * @concurrency uses internal mutable attributes
  *
@@ -79,15 +81,14 @@ public class LinearFunction extends LinearCombinationFunction {
      */
     public LinearFunction(final AbsoluteDate t0, final double a0, final double a1) {
         this(t0, new Parameter(PARAMETER_PREFIX_NAME + "0", a0), new Parameter(
-                PARAMETER_PREFIX_NAME + "1", a1));
+            PARAMETER_PREFIX_NAME + "1", a1));
     }
 
     /**
      * Constructor of a linear function: <i>f = a0 + a1 * (t - t0)</i> using the input a1 (slope)
      * and a0 (zeroValue) parameters and initial date.
      * <p>
-     * Note: the parameters are stored in the following order: [a0, a1] (also called [zeroValue,
-     * slope]).
+     * Note: the parameters are stored in the following order: [a0, a1] (also called [zeroValue, slope]).
      * </p>
      *
      * @param t0
@@ -117,21 +118,20 @@ public class LinearFunction extends LinearCombinationFunction {
      * @return the linear (first order polynomial) function
      * @throws NullArgumentException if {@code t0}, {@code a0} or {@code a1} is {@code null}
      */
-    @SuppressWarnings({ "PMD.UseConcurrentHashMap", "unchecked" })
     // Reason: preserve insertion order
-            private static final
-            Map<Parameter, Function<SpacecraftState, Double>> constructSuperClassMap(
-                    final AbsoluteDate t0, final Parameter a0, final Parameter a1) {
+    @SuppressWarnings("PMD.UseConcurrentHashMap")
+    private static final Map<Parameter, Function<SpacecraftState, Double>>
+        constructSuperClassMap(final AbsoluteDate t0, final Parameter a0, final Parameter a1) {
         // Check for null attribute
         if ((t0 == null) || (a0 == null) || (a1 == null)) {
             throw new NullArgumentException();
         }
 
         // Build the function map (LinkedHashMap to guarantee order)
-        final Map<Parameter, Function<SpacecraftState, Double>> map = new LinkedHashMap<>(2);
-        map.put(a0, (Serializable & Function<SpacecraftState, Double>) state -> 1.0);
-        map.put(a1, (Serializable & Function<SpacecraftState, Double>) state -> state.getDate()
-                .durationFrom(t0));
+        final Map<Parameter, Function<SpacecraftState, Double>> map = new LinkedHashMap<>(3);
+        map.put(a0, (SerializableFunction<SpacecraftState, Double>) state -> 1.0);
+        map.put(a1, (SerializableFunction<SpacecraftState, Double>) state -> state.getDate()
+            .durationFrom(t0));
         return map;
     }
 
@@ -146,7 +146,24 @@ public class LinearFunction extends LinearCombinationFunction {
     @Override
     @SuppressWarnings("PMD.LooseCoupling")
     public ArrayList<Parameter> getParameters() {
-        // Implementation note: override in order to have a specific javadoc
-        return new ArrayList<>(this.functions.keySet());
+        // Implementation note: override in order to have a specific javadoc for this function
+        return super.getParameters();
+    }
+
+    /**
+     * Getter for a String representation of this function.
+     * 
+     * @return a String representation of this function
+     */
+    @Override
+    public String toString() {
+        final StringBuilder myStringBuilder = new StringBuilder();
+        final ArrayList<Parameter> parameters = getParameters();
+        myStringBuilder.append("Value     : f = " + parameters.get(0).getValue()
+                + " + " + parameters.get(1).getValue() + " * (t - t0)\n");
+        myStringBuilder.append("Parameters: [" + parameters.get(0).getName() + "; " + parameters.get(1).getName()
+                + "]\n");
+
+        return myStringBuilder.toString();
     }
 }

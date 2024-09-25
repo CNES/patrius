@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3268:22/05/2023:[PATRIUS] Creation d'une classe GeodeticTargetDirection
  * END-HISTORY
@@ -27,7 +29,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -61,7 +63,7 @@ public class BodyPointTargetDirectionTest {
     public void testBodyPointTargetDirectionCreation() throws PatriusException {
         // Initialization of the date and frame
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
 
         // Creation of the body shape
         final OneAxisEllipsoid model = new OneAxisEllipsoid(100.0, 0.9, frame, "spheroid");

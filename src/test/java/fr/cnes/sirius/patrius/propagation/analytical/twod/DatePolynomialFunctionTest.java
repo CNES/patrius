@@ -17,6 +17,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
+ * à  l'interface DatePolynomialFunctionInterface
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] Rendre la classe QuaternionPolynomialSegment plus generique et ajouter de la coherence dans le package polynomials
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -35,6 +37,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.DatePolynomialFunction;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialType;
+import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 
@@ -243,6 +246,123 @@ public class DatePolynomialFunctionTest {
         final double[] actualPrimCoefs = prim.getCoefficients();
         final double[] expectedPrimCoefs = { 2., 3., 4., 5. };
         Assert.assertArrayEquals(expectedPrimCoefs, actualPrimCoefs, Precision.DOUBLE_COMPARISON_EPSILON);
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#POLYNOMIAL_FUNCTION}
+     * 
+     * @testedMethod {@link DatePolynomialFunction#copy(AbsoluteDate)}
+     * 
+     * @description test copy function
+     * 
+     * @input DatePolynomialFunction
+     * 
+     * @output copied function
+     * 
+     * @testPassCriteria copied function is exactly as expected
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testCopy() {
+        // Initialization
+        final AbsoluteDate date0 = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate date1 = date0.shiftedBy(-10.);
+        final AbsoluteDate date2 = date0.shiftedBy(10.);
+        final double[] coefs = { 2., 3., 4., 5. };
+        final PolynomialFunction poly = new PolynomialFunction(coefs);
+
+        // #1 With time factor equal to 1 (null)
+        DatePolynomialFunction fct = new DatePolynomialFunction(date0, poly);
+
+        // Evaluate same origin date
+        DatePolynomialFunction fctCopied = fct.copy(date0);
+        Assert.assertEquals(date0, fctCopied.getT0());
+        Assert.assertNull(fctCopied.getTimeFactor());
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Evaluate backward origin date
+        fctCopied = fct.copy(date1);
+        Assert.assertEquals(date1, fctCopied.getT0());
+        Assert.assertNull(fctCopied.getTimeFactor());
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Evaluate forward origin date
+        fctCopied = fct.copy(date2);
+        Assert.assertEquals(date2, fctCopied.getT0());
+        Assert.assertNull(fctCopied.getTimeFactor());
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // #2 With time factor equal to 2
+        final double timeFactor = 2.;
+        final AbsoluteDate date3 = date0.shiftedBy(timeFactor - 1e-7);
+        fct = new DatePolynomialFunction(date0, timeFactor, poly);
+
+        // Evaluate same origin date
+        fctCopied = fct.copy(date0);
+        Assert.assertEquals(date0, fctCopied.getT0());
+        Assert.assertEquals(timeFactor, fctCopied.getTimeFactor(), 0.);
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Evaluate backward origin date
+        fctCopied = fct.copy(date1);
+        Assert.assertEquals(date1, fctCopied.getT0());
+        Assert.assertEquals(timeFactor - date1.durationFrom(date0), fctCopied.getTimeFactor(), 0.);
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Evaluate forward origin date (newOriginDate < originDate + timeFactor) (shouldn't fail)
+        fctCopied = fct.copy(date3);
+        Assert.assertEquals(date3, fctCopied.getT0());
+        Assert.assertEquals(timeFactor - date3.durationFrom(date0), fctCopied.getTimeFactor(), 0.);
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Try to evaluate forward origin date (newOriginDate >= originDate + timeFactor) (should fail)
+        final AbsoluteDate date4 = date0.shiftedBy(timeFactor);
+        try {
+            fct.copy(date2);
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            // Expected
+            Assert.assertTrue(true);
+        }
+        try {
+            fct.copy(date4);
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            // Expected
+            Assert.assertTrue(true);
+        }
+    }
+
+    /**
+     * Evaluate two {@link DatePolynomialFunction} on several dates.
+     * 
+     * @param fct1
+     *        First function (reference, on the interval [T0-20 ; T0+timeFactor])
+     * @param fct2
+     *        Second function
+     * @return {@code true} if the two functions generate the same values
+     */
+    private static boolean evaluateFunction(final DatePolynomialFunction fct1, final DatePolynomialFunction fct2) {
+        boolean isEqual = true;
+        final AbsoluteDate startDate = fct1.getT0().shiftedBy(-20.);
+        final AbsoluteDate endDate = fct1.getTimeFactor() == null ? fct1.getT0() : fct1.getT0().shiftedBy(
+            fct1.getTimeFactor());
+        final int duration = (int) endDate.durationFrom(startDate);
+
+        for (int i = 0; i <= duration; i++) {
+            final AbsoluteDate date = startDate.shiftedBy(i);
+            if (MathLib.abs(fct1.value(date) - fct2.value(date)) > 1e-8) {
+//                System.out.println(fct1.value(date) + "\t" + fct2.value(date)); // TODO
+                isEqual = false;
+            }
+
+        }
+        return isEqual;
     }
 
     /**

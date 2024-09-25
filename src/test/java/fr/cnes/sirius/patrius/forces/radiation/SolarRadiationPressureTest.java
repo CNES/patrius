@@ -15,6 +15,12 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -82,21 +88,30 @@ import fr.cnes.sirius.patrius.assembly.properties.RadiativeProperty;
 import fr.cnes.sirius.patrius.assembly.properties.RadiativeSphereProperty;
 import fr.cnes.sirius.patrius.assembly.properties.features.Facet;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
+import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ACSOLFormatReader;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataFactory;
+import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
+import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
+import fr.cnes.sirius.patrius.frames.UpdatableFrame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.SolidShape;
@@ -121,13 +136,12 @@ import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.DateComponents;
 import fr.cnes.sirius.patrius.time.TimeComponents;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -143,6 +157,78 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  *
  */
 public class SolarRadiationPressureTest {
+
+    /**
+     * @testType UT
+     *
+     * @description check SRP (through {@link SolarRadiationPressure}) and Eclipse events (through {@link EclipseDetector} 
+     *              are synchronized 
+     *
+     * @testPassCriteria SRP before exiting total eclipse is 0. SRP after exiting total eclipse (at start of penumbra) is not 0 
+     *
+     * @referenceVersion 4.13
+     *
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testPRSvsEclipseDetector() throws PatriusException {
+
+        // Initialization
+        // Simple Sun as an orbit around Earth for analytical results
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final PVCoordinatesProvider sun = new KeplerianOrbit(150E9, 0, 0, 0, 0, MathLib.PI, PositionAngle.TRUE, FramesFactory.getGCRF(), date, Constants.WGS84_EARTH_MU);
+        final double sunRadius = 0;
+        final BodyShape earth = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+
+        // Assembly
+        final AssemblyBuilder builder = new AssemblyBuilder();
+        builder.addMainPart("Main");
+        builder.addProperty(new MassProperty(1000.), "Main");
+        builder.addProperty(new RadiativeSphereProperty(1.), "Main");
+        builder.addProperty(new RadiativeProperty(0.5, 0.5, 0.5), "Main");
+        builder.initMainPartFrame(new UpdatableFrame(FramesFactory.getGCRF(), Transform.IDENTITY, "Frame"));
+        final Assembly assembly = builder.returnAssembly();
+        MassProvider massModel = new MassModel(assembly);
+
+        // PRS
+        final SolarRadiationPressure prs = new SolarRadiationPressure(Constants.SEIDELMANN_UA, Constants.CONST_SOL_N_M2, sun, sunRadius, earth, new DirectRadiativeModel(assembly));
+
+        // Eclipse detector
+        final double lr = 0.;
+        final EclipseDetector detector = new EclipseDetector(sun, sunRadius, earth, lr, 60, 1E-3, Action.STOP, Action.STOP, false, false) {
+            @Override
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing,
+                    final boolean forward) throws PatriusException {
+                // Initially satellite is in total eclipse
+                // 1ms before exiting umbra (start of penumbra): total eclipse
+                Assert.assertEquals(0., prs.computeAcceleration(s.shiftedBy(-1E-3)).getNorm(), 0.);
+                // 1ms after exiting umbra (start of penumbra): partial eclipse starts, prs is not null anymore
+                Assert.assertTrue(prs.computeAcceleration(s.shiftedBy(1E-3)).getNorm() > 0);
+                return super.eventOccurred(s, increasing, forward);
+            };
+        };
+        
+        // Signal propagation
+        detector.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+        prs.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Initial state
+        final Orbit orbit = new KeplerianOrbit(7000000 * 100, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getGCRF(), date, Constants.WGS84_EARTH_MU);
+        final Attitude attitude = new Attitude(date, FramesFactory.getGCRF(), AngularCoordinates.IDENTITY);
+        final SpacecraftState state = new SpacecraftState(orbit, attitude, massModel);
+        
+        // Propagator
+        final NumericalPropagator propagator = new NumericalPropagator(new ClassicalRungeKuttaIntegrator(10.));
+        propagator.setAttitudeProvider(new ConstantAttitudeLaw(FramesFactory.getGCRF(), Rotation.IDENTITY));
+        propagator.setMassProviderEquation(massModel);
+        propagator.addEventDetector(detector);
+        propagator.resetInitialState(state);
+        propagator.addForceModel(prs);
+        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(Constants.WGS84_EARTH_MU)));
+
+        // Propagation
+        propagator.propagate(date.shiftedBy(3 * 3600));
+    }
 
     /** Features description. */
     public enum features {
@@ -527,12 +613,12 @@ public class SolarRadiationPressureTest {
     }
 
     @Test
-    public void testLightning() throws PatriusException {
+    public void testLighting() throws PatriusException {
         // Initialization
 
-        final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getEquatorialRadius(),
+        final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
                 new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
-        final SolarRadiationPressure srp2 = new SolarRadiationPressure(this.sun, this.earth.getEquatorialRadius(),
+        final SolarRadiationPressure srp2 = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
                 new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
         srp2.setEclipsesComputation(false);
         Assert.assertFalse(srp2.isEclipseComputation());
@@ -553,18 +639,8 @@ public class SolarRadiationPressureTest {
         for (int t = 1; t < 3 * period; t += 1000) {
             currentDate = this.date.shiftedBy(t);
             try {
-
-                final double ratio = srp.getLightningRatio(k.propagate(currentDate).getPVCoordinates().getPosition(),
-                        this.earth,
-                        new ConstantPVCoordinatesProvider(this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF())
-                                .getPosition().scalarMultiply(-1), FramesFactory.getGCRF()), FramesFactory.getGCRF(),
-                        this.date);
-                final double ratio2 = srp2.getLightningRatio(k.propagate(currentDate).getPVCoordinates().getPosition(),
-                        this.earth,
-                        new ConstantPVCoordinatesProvider(this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF())
-                                .getPosition().scalarMultiply(-1), FramesFactory.getGCRF()), FramesFactory.getGCRF(),
-                        this.date);
-
+                final double ratio = srp.getLightingRatio(null, this.earth, k, FramesFactory.getGCRF(), currentDate);
+                final double ratio2 = srp2.getLightingRatio(null, this.earth, k, FramesFactory.getGCRF(), currentDate);
                 if (MathLib.floor(ratio) != changed) {
                     changed = MathLib.floor(ratio);
                     if (changed == 0) {
@@ -572,49 +648,60 @@ public class SolarRadiationPressureTest {
                     }
                 }
 
-                // When eclipses are disabled, lightning ratio should always be one
+                // When eclipses are disabled, lighting ratio should always be one
                 Assert.assertEquals(1., ratio2, 0.);
             } catch (final PatriusException e) {
                 e.printStackTrace();
             }
         }
-        Assert.assertTrue(4 == count);
+        Assert.assertTrue(3 == count);
     }
 
     /**
-     * Check that lightning ratio in case of Earth exactly between Sun and satellite returns 0.
+     * Check that lighting ratio in case of Earth exactly between Sun and satellite
+     * (total and partial eclipse).
      */
     @Test
-    public void testLightningAlignment() throws PatriusException {
-
-        /*
-         * CIRCULAR
-         */
+    public void testLightingAlignment() throws PatriusException {
         // Initialization
-        SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getEquatorialRadius(),
+        SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
                 new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
 
         // Define aligned spacecraft (Earth exactly between Sun and satellite)
-        final Vector3D satSunVector = this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF()).getPosition()
-                .scalarMultiply(-1);
+        final Vector3D sunPos =
+                this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF()).getPosition();
 
-        // Check lightning ratio is equal to 0
+        // Case 1: Total eclipse
+        // Check lighting ratio is equal to 0
+        final Vector3D satPos1 = this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF())
+                .getPosition().negate().scalarMultiply(1E-3);
+        final ConstantPVCoordinatesProvider satPv1 =
+                new ConstantPVCoordinatesProvider(satPos1, FramesFactory.getGCRF());
         Assert.assertEquals(0,
-                srp.getLightningRatio(satSunVector, this.earth, this.sun, FramesFactory.getGCRF(), this.date), 0.);
+                srp.getLightingRatio(null, this.earth, satPv1, FramesFactory.getGCRF(), this.date),
+                0.);
 
-        /*
-         * ELLIPSOID
-         */
-        // Define aligned spacecraft (Earth exactly between Sun and satellite)
-        srp = new SolarRadiationPressure(this.sun, this.earth, null);
-        // Check lightning ratio is equal to 0
-        Assert.assertEquals(0,
-                srp.getLightningRatio(satSunVector, this.earth, this.sun, FramesFactory.getGCRF(), this.date), 0.);
+        // Case 2: Partial eclipse
+        // Check lighting ratio is equal to expected value
+        final Vector3D satPos2 = this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF())
+                .getPosition().negate().scalarMultiply(1E-2);
+        final ConstantPVCoordinatesProvider satPv2 =
+                new ConstantPVCoordinatesProvider(satPos2, FramesFactory.getGCRF());
+        final double sunApparentRadius = Constants.SUN_RADIUS / satPos2.distance(sunPos);
+        final double earthApprarentRadius = this.earth.getCRadius() / satPos2.getNorm();
+        final double expectedLightingRatio =
+                1 - MathLib.pow(earthApprarentRadius / sunApparentRadius, 2);
+        Assert.assertEquals(expectedLightingRatio,
+                srp.getLightingRatio(null, this.earth, satPv2, FramesFactory.getGCRF(), this.date),
+                1e-6);
 
-        // Check lightning ratio is equal to 1 because eclipses are not computed
+        // Check lighting ratio is equal to 1 because eclipses are not computed
         srp.setEclipsesComputation(false);
         Assert.assertEquals(1.,
-                srp.getLightningRatio(satSunVector, this.earth, this.sun, FramesFactory.getGCRF(), this.date), 0.);
+                srp.getLightingRatio(null, this.earth,
+                        new ConstantPVCoordinatesProvider(satPos1, FramesFactory.getGCRF()),
+                        FramesFactory.getGCRF(), this.date),
+                0.);
         Assert.assertFalse(srp.isEclipseComputation());
     }
 
@@ -624,7 +711,7 @@ public class SolarRadiationPressureTest {
     public void testException() throws PatriusException {
         final SphericalSpacecraft spacecraft = new SphericalSpacecraft(10.0, 1.7, 0, 0, 0, DEFAULT);
         final Parameter kRef = new Parameter("toto", 1.);
-        final SolarRadiationPressure srp = new SolarRadiationPressure(kRef, this.sun, this.earth.getEquatorialRadius(),
+        final SolarRadiationPressure srp = new SolarRadiationPressure(kRef, this.sun, this.earth.getARadius(),
                 spacecraft);
         srp.addDAccDParam(null, kRef, new double[] {});
         Assert.assertFalse(srp.supportsJacobianParameter(kRef));
@@ -665,7 +752,7 @@ public class SolarRadiationPressureTest {
         final DirectRadiativeModel model = new DirectRadiativeModel(assembly);
         Assert.assertEquals(10, model.getParameters().size());
         final SolarRadiationPressure srp = new SolarRadiationPressure(CelestialBodyFactory.getSun(),
-                this.earth.getConjugateRadius(), model);
+            this.earth.getCRadius(), model);
 
         double k = 5;
         for (final Parameter p : srp.getParameters()) {
@@ -1197,7 +1284,7 @@ public class SolarRadiationPressureTest {
         }
 
         final MockRadiationSensitive spacecraft = new MockRadiationSensitive();
-        final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getEquatorialRadius(),
+        final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
                 spacecraft);
         final double[] dAccdParam = new double[3];
         srp.addDAccDParam(new SpacecraftState(this.orbit), KA, dAccdParam);
@@ -1353,7 +1440,7 @@ public class SolarRadiationPressureTest {
         // Initialization
         final SpacecraftState state = new SpacecraftState(this.orbit);
         final SphericalSpacecraft spacecraft = new SphericalSpacecraft(1, 2, 0.1, 0.2, 0.3, "Spacecraft");
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final SolarRadiationPressure srp = new SolarRadiationPressure(sun, this.earth, spacecraft);
 
         // Computation
@@ -1482,14 +1569,14 @@ public class SolarRadiationPressureTest {
      * @throws PatriusException
      * @testType UT
      *
-     * @testedMethod {@link SolarRadiationPressure#getLightningRatio(Vector3D, BodyShape, PVCoordinatesProvider, Frame, AbsoluteDate)}
+     * @testedMethod {@link SolarRadiationPressure#getLightingRatio(Vector3D, BodyShape, PVCoordinatesProvider, Frame, AbsoluteDate)}
      * @testedMethod {@link SolarRadiationPressure#SolarRadiationPressure(double, double, PVCoordinatesProvider, double, double, RadiationSensitive)}
      *
      * @description check that changing the solar radius in the constructor changes the result of
-     *              the lightning ratio
+     *              the lighting ratio
      *
      * @testPassCriteria the
-     *                   {@link SolarRadiationPressure#getLightningRatio(Vector3D, BodyShape, PVCoordinatesProvider, Frame, AbsoluteDate)}
+     *                   {@link SolarRadiationPressure#getLightingRatio(Vector3D, BodyShape, PVCoordinatesProvider, Frame, AbsoluteDate)}
      *                   returns two different values for two different solar radiuses
      */
     @Test
@@ -1514,16 +1601,16 @@ public class SolarRadiationPressureTest {
 
         // A slight shift off the axis for the Sun position so the satellite is in penumbra
         final double shiftFromAxis = 1E7;
-        // Sat-Sun vector is giving the Sun actual position for the computation of the lightning
+        // Sat-Sun vector is giving the Sun actual position for the computation of the lighting
         // ratio
         final Vector3D satSunVector = earthSunPos.scalarMultiply(1 + ratioDistSatEarthSatSun).add(
                 new Vector3D(0, 0, shiftFromAxis));
-        final double ratio1 = srp1.getLightningRatio(satSunVector, this.earth, pvProv, FramesFactory.getGCRF(),
+        final double ratio1 = srp1.getLightingRatio(satSunVector, this.earth, pvProv, FramesFactory.getGCRF(),
                 this.date);
-        final double ratio2 = srp2.getLightningRatio(satSunVector, this.earth, pvProv, FramesFactory.getGCRF(),
+        final double ratio2 = srp2.getLightingRatio(satSunVector, this.earth, pvProv, FramesFactory.getGCRF(),
                 this.date);
 
-        Assert.assertTrue(Math.abs(ratio2 - ratio1) > Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertNotEquals(ratio2, ratio1, Precision.DOUBLE_COMPARISON_EPSILON);
 
     }
 
@@ -1548,7 +1635,7 @@ public class SolarRadiationPressureTest {
      *         file error
      */
     @Before
-    public void setup() throws PatriusException, IOException {
+    public void setup() throws PatriusException {
 
         CNESUtils.clearNewFactoriesAndCallSetDataRoot("SRPwithFlattening");
 

@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2710:18/05/2021:Methode d'interpolation des EOP 
@@ -35,6 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.DateComponents;
 import fr.cnes.sirius.patrius.time.TimeScale;
@@ -230,6 +232,49 @@ public class EOP2000HistoryTest {
     public void testGetters() {
         final EOP2000History history = new EOP2000History(EOPInterpolators.LAGRANGE4);
         Assert.assertEquals(true, history.isActive());
+    }
+
+    /**
+     * @throws PatriusException
+     * @description Evaluate the EOP history serialization / deserialization process.
+     *
+     * @testPassCriteria The EOP history can be serialized with all its parameters and deserialized.
+     */
+    @Test
+    public void testSerialization() throws PatriusException {
+
+        // Filling of a EOP2000History object with a list of entries
+        final TimeScale utc = TimeScalesFactory.getUTC();
+        final List<EOP2000Entry> ets = new ArrayList<>();
+        AbsoluteDate ad = new AbsoluteDate("2003-01-06T00:00:00", utc);
+        ets.add(new EOP2000Entry(ad, -0.2913617, 0.0006026, asToRad(-0.103535), asToRad(0.199584),
+            asToRad(-0.000028), asToRad(0.000075)));
+        ad = new AbsoluteDate("2003-01-07T00:00:00", utc);
+        ets.add(new EOP2000Entry(ad, -0.2920235, 0.0007776, asToRad(-0.106053), asToRad(0.201512),
+            asToRad(-0.000008), asToRad(0.000054)));
+        ad = new AbsoluteDate("2003-01-08T00:00:00", utc);
+        ets.add(new EOP2000Entry(ad, -0.2928453, 0.0008613, asToRad(-0.108629), asToRad(0.203603),
+            asToRad(0.000003), asToRad(-0.000055)));
+        ad = new AbsoluteDate("2003-01-09T00:00:00", utc);
+        ets.add(new EOP2000Entry(ad, -0.2937273, 0.0008817, asToRad(-0.111086), asToRad(0.205778),
+            asToRad(0.000008), asToRad(-0.000140)));
+
+        final EOP2000History history = new EOP2000History(EOPInterpolators.LAGRANGE4);
+        EOP2000History.fillHistory(ets, history);
+
+        final EOP2000History historyDeserialize = TestUtils.serializeAndRecover(history);
+
+        final AbsoluteDate date = new AbsoluteDate(2003, 1, 7, 12, 0, 0, utc);
+        Assert.assertEquals(history.getLOD(date), historyDeserialize.getLOD(date), 1.0e-10);
+        Assert.assertEquals(history.getUT1MinusUTC(date), historyDeserialize.getUT1MinusUTC(date), 1.0e-10);
+        Assert.assertEquals(history.getPoleCorrection(date).getXp(),
+            historyDeserialize.getPoleCorrection(date).getXp(), 1.0e-10);
+        Assert.assertEquals(history.getPoleCorrection(date).getYp(),
+            historyDeserialize.getPoleCorrection(date).getYp(), 1.0e-10);
+        Assert.assertEquals(history.getNutationCorrection(date).getDX(),
+            historyDeserialize.getNutationCorrection(date).getDX(), 1.0e-10);
+        Assert.assertEquals(history.getNutationCorrection(date).getDY(),
+            historyDeserialize.getNutationCorrection(date).getDY(), 1.0e-10);
     }
 
     @Before

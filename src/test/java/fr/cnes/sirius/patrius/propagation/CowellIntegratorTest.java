@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-38:22/05/2023:[PATRIUS] Suppression de setters pour le MultiNumericalPropagator
@@ -67,10 +70,13 @@ import fr.cnes.sirius.patrius.assembly.properties.features.Facet;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusMoon;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.events.maneuverandapsidedetection.ImpulseManeuver;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
@@ -114,9 +120,6 @@ import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.PartialDerivativesEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.multi.MultiNumericalPropagator;
@@ -1262,7 +1265,7 @@ public class CowellIntegratorTest {
      * @return force model
      */
     private static ForceModel dragMSIS2000(final Assembly spacecraft) throws PatriusException {
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF());
         final MSISE2000InputParameters data = new ContinuousMSISE2000SolarData(new ConstantSolarActivity(140, 15));
@@ -1278,7 +1281,7 @@ public class CowellIntegratorTest {
      * @return force model
      */
     private static ForceModel dragMSIS2000PD(final Assembly spacecraft) throws PatriusException {
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF());
         final MSISE2000InputParameters data = new ContinuousMSISE2000SolarData(new ConstantSolarActivity(140, 15));

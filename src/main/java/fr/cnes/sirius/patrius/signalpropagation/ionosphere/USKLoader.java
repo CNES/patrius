@@ -18,6 +18,7 @@
  * @history creation 21/06/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2929:15/11/2021:[PATRIUS] Harmonisation des modeles de troposphere 
@@ -31,7 +32,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import fr.cnes.sirius.patrius.data.DataLoader;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
@@ -141,7 +142,7 @@ public final class USKLoader implements USKProvider, DataLoader {
                          final String name)
         throws IOException, PatriusException {
         // buffer file data
-        final InputStreamReader reader = new InputStreamReader(input, Charset.forName("UTF-8"));
+        final InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8);
 
         final BufferedReader r = new BufferedReader(reader);
 

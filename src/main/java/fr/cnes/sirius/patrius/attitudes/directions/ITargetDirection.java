@@ -18,6 +18,12 @@
  * @history creation 30/11/2011
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-135:08/12/2023:[PATRIUS] Imprecision numerique dans l'interface ITargetDirection
+ * VERSION:4.13:DM:DM-139:08/12/2023:[PATRIUS] Suppression de l'argument frame
+ * dans PVCoordinatesProvider#getNativeFrame
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-14:22/05/2023:[PATRIUS] Nombre max d'iterations dans le calcul de la propagation du signal 
  * VERSION:4.11:DM:DM-3303:22/05/2023:[PATRIUS] Modifications mineures dans UserCelestialBody 
@@ -43,7 +49,7 @@
 package fr.cnes.sirius.patrius.attitudes.directions;
 
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -133,7 +139,7 @@ public interface ITargetDirection extends IDirection {
          * </ul>
          */
         ALL(true, true);
-        
+
         /** Includes light-time correction. */
         private final boolean includeLightTime;
 
@@ -142,6 +148,7 @@ public interface ITargetDirection extends IDirection {
 
         /**
          * Constructor.
+         * 
          * @param includeLightTime includes light-time correction
          * @param includeStellarAberration includes stellar aberration correction
          */
@@ -149,21 +156,23 @@ public interface ITargetDirection extends IDirection {
             this.includeLightTime = includeLightTime;
             this.includeStellarAberration = includeStellarAberration;
         }
-        
+
         /**
          * Returns true if light-time is included.
+         * 
          * @return true if light-time is included, false otherwise
          */
         public boolean hasLightTime() {
-            return includeLightTime;
+            return this.includeLightTime;
         }
 
         /**
          * Returns true if stellar aberration is included.
+         * 
          * @return true if stellar aberration is included, false otherwise
          */
         public boolean hasStellarAberration() {
-            return includeStellarAberration;
+            return this.includeStellarAberration;
         }
     }
 
@@ -180,47 +189,6 @@ public interface ITargetDirection extends IDirection {
      *            if position cannot be computed in given frame
      */
     PVCoordinates getTargetPVCoordinates(AbsoluteDate date, Frame frame) throws PatriusException;
-
-    /**
-     * Provides the direction vector (from origin to target) at entered date, taking into account the type of date
-     * (emission or reception), corrected for light-time and stellar aberration pending the entered <i>correction</i>
-     * parameter.
-     * <p>
-     * Nota: if entered <i>correction</i> is {@link AberrationCorrection#NONE NONE}, invoking this method is equivalent
-     * to invoking the method {@link ITargetDirection#getVector(PVCoordinatesProvider, AbsoluteDate, Frame)}.
-     * </p>
-     *
-     * @param origin
-     *        the current coordinates of the origin point of the direction (may be null, in that specific case, the
-     *        origin of the direction is the frame origin).
-     * @param signalDirection
-     *        the signal direction
-     * @param correction
-     *        the type of correction for light-time and stellar aberration ({@link AberrationCorrection#NONE NONE},
-     *        {@link AberrationCorrection#LIGHT_TIME LT}, {@link AberrationCorrection#STELLAR S}, or
-     *        {@link AberrationCorrection#ALL LT_S}, see <a
-     *        href="https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/abcorr.html#Types%20of%20Corrections">
-     *        aberration corrections</a>). In case of {@link AberrationCorrection#STELLAR S} or of
-     *        {@link AberrationCorrection#ALL LT_S} correction, the stellar aberration is corrected at reception if
-     *        {@link FixedDate#RECEPTION RECEPTION} date type or at transmission if {@link FixedDate#EMISSION EMISSION}
-     *        date type.
-     * @param date
-     *        the date
-     * @param fixedDateType
-     *        the type of the previous given date : emission or reception
-     * @param frame
-     *        the frame to project the vector coordinates
-     * @param epsilon
-     *        the absolute duration threshold used for convergence of signal propagation computation. The epsilon is a
-     *        time absolute error (ex: 1E-14s, in this case, the signal distance accuracy is 1E-14s x 3E8m/s = 3E-6m).
-     * @return the direction vector (from origin to target) at the given date in the given frame
-     * @exception PatriusException
-     *            if some frame specific errors occur
-     */
-    public Vector3D getVector(final PVCoordinatesProvider origin, final SignalDirection signalDirection,
-                              final AberrationCorrection correction, final AbsoluteDate date,
-                              final FixedDate fixedDateType, final Frame frame, final double epsilon)
-        throws PatriusException;
 
     /**
      * Provides the half line containing both origin and target, taking into account the type of date (emission or
@@ -292,8 +260,6 @@ public interface ITargetDirection extends IDirection {
      * @param origin
      *        the current coordinates of the origin point of the direction (may be null, in that specific case, the
      *        origin of the direction is the frame origin).
-     * @param target
-     *        the target
      * @param signalDirection
      *        the signal direction
      * @param correction
@@ -314,34 +280,32 @@ public interface ITargetDirection extends IDirection {
      * @param epsilon
      *        the absolute duration threshold used for convergence of signal propagation computation. The epsilon is a
      *        time absolute error (ex: 1E-14s, in this case, the signal distance accuracy is 1E-14s x 3E8m/s = 3E-6m).
-     * @param referenceFrame reference frame for geometric computation
      * @return the direction vector (from origin to target) at the given date in the given frame
      * @exception PatriusException
      *            if some frame specific errors occur
      */
-    default Vector3D getVector(final PVCoordinatesProvider origin,
-            final PVCoordinatesProvider target,
-            final SignalDirection signalDirection,
-            final AberrationCorrection correction,
-            final AbsoluteDate date,
-            final FixedDate fixedDateType,
-            final Frame frame,
-            final double epsilon,
-            final Frame referenceFrame) throws PatriusException {
+    default Vector3D getVector(final PVCoordinatesProvider origin, 
+                               final SignalDirection signalDirection, 
+                               final AberrationCorrection correction,
+                               final AbsoluteDate date,
+                               final FixedDate fixedDateType, 
+                               final Frame frame, 
+                               final double epsilon) throws PatriusException {
+
         // PV provider of the emitter and receiver
         final PVCoordinatesProvider emitter;
         final PVCoordinatesProvider receiver;
         // Factor related to the signal direction and useful to determine the direction vector
         final double dirFactorSignalDirection;
         switch (signalDirection) {
-            case FROM_TARGET :
-                emitter = target;
+            case FROM_TARGET:
+                emitter = getTargetPvProvider();
                 receiver = origin;
                 dirFactorSignalDirection = -1.;
                 break;
-            case TOWARD_TARGET :
+            case TOWARD_TARGET:
                 emitter = origin;
-                receiver = target;
+                receiver = getTargetPvProvider();
                 dirFactorSignalDirection = 1.;
                 break;
             default:
@@ -349,23 +313,25 @@ public interface ITargetDirection extends IDirection {
                 throw new PatriusRuntimeException(PatriusMessages.INTERNAL_ERROR, null);
         }
 
+        // Inertial frame used for propagation (first pseudo-inertial ancestor)
+        final Frame propFrame = origin.getNativeFrame(date).getFirstPseudoInertialAncestor();
+
         // Initialize the direction vector (from emitter to receiver)
         Vector3D dirVector = null;
+
         // Compute the light-time-dependent direction if apply
         if (correction.hasLightTime()) {
-            // freeze the input frame at the origin date with respect to itself
-            final Frame frozenFrame = referenceFrame.getFrozenFrame(FramesFactory.getICRF(), date, "InertialFrozen");
             // Create the signal propagation model taking into account the light speed
-            final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(frozenFrame, epsilon,
-                    VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+            final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(propFrame, epsilon,
+                VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
             // Compute the result of the signal propagation
             final VacuumSignalPropagation signal = model.computeSignalPropagation(emitter, receiver, date,
                 fixedDateType);
             // Get the light-time corrected direction vector
-            dirVector = signal.getVector(frame);
+            dirVector = signal.getVector();
         } else {
             // Compute the uncorrected direction vector
-            dirVector = this.getVector(origin, date, frame).scalarMultiply(dirFactorSignalDirection);
+            dirVector = this.getVector(origin, date, propFrame).scalarMultiply(dirFactorSignalDirection);
         }
 
         // Apply stellar aberration correction if required
@@ -373,17 +339,19 @@ public interface ITargetDirection extends IDirection {
             if (fixedDateType.equals(FixedDate.EMISSION)) {
                 // Fixed date is emission date
                 // Apply stellar aberration correction to the direction vector
-                dirVector = StellarAberrationCorrection.applyInverseTo(emitter, dirVector, frame,
-                    date);
+                dirVector = LightAberrationTransformation.applyTo(dirVector, emitter.getPVCoordinates(date, propFrame)
+                    .getVelocity(), SignalDirection.TOWARD_TARGET);
             } else {
                 // Fixed date is reception date
                 // Apply stellar aberration correction to the direction vector
-                dirVector = StellarAberrationCorrection.applyTo(receiver, dirVector.negate(), frame,
-                    date).negate();
+                dirVector = LightAberrationTransformation.applyTo(dirVector.negate(),
+                    receiver.getPVCoordinates(date, propFrame).getVelocity(), SignalDirection.FROM_TARGET).negate();
             }
         }
 
-        return dirVector.scalarMultiply(dirFactorSignalDirection);
-    }
+        // rotation from propagation frame to frame
+        final Transform rotPropFrameToFrame = propFrame.getTransformTo(frame, date);
 
+        return rotPropFrameToFrame.transformVector(dirVector.scalarMultiply(dirFactorSignalDirection));
+    }
 }

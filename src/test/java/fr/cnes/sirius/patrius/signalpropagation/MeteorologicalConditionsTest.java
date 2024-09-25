@@ -1,9 +1,12 @@
 /**
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les AbstractTropoFactory
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Ajout de conditions meteorologiques variables dans les modeles de troposphere
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -51,6 +54,12 @@ public class MeteorologicalConditionsTest {
      * @testedMethod {@link MeteorologicalConditions#getPressure()}
      * @testedMethod {@link MeteorologicalConditions#getTemperature()}
      * @testedMethod {@link MeteorologicalConditions#getHumidity()}
+     * @testedMethod {@link MeteorologicalConditions#P0}
+     * @testedMethod {@link MeteorologicalConditions#T0}
+     * @testedMethod {@link MeteorologicalConditions#RH0}
+     * @testedMethod {@link MeteorologicalConditions#H0}
+     * @testedMethod {@link MeteorologicalConditions#ABSOLUTE_ZERO}
+     * @testedMethod {@link MeteorologicalConditions#STANDARD}
      *
      * @testPassCriteria The instance is build without error and the basic getters return the
      *                   expected data.
@@ -64,6 +73,16 @@ public class MeteorologicalConditionsTest {
         Assert.assertEquals(DEFAULT_PRESSURE, meteorologicalConditions.getPressure(), 0.);
         Assert.assertEquals(DEFAULT_TEMPERATURE, meteorologicalConditions.getTemperature(), 0.);
         Assert.assertEquals(DEFAULT_HUMIDITY, meteorologicalConditions.getHumidity(), 0.);
+
+        // Evaluate the static default values by non regression
+        Assert.assertEquals(101325., MeteorologicalConditions.P0, 0.);
+        Assert.assertEquals(18., MeteorologicalConditions.T0, 0.);
+        Assert.assertEquals(50., MeteorologicalConditions.RH0, 0.);
+        Assert.assertEquals(0., MeteorologicalConditions.H0, 0.);
+        Assert.assertEquals(273.15, MeteorologicalConditions.ABSOLUTE_ZERO, 0.);
+        Assert.assertEquals(new MeteorologicalConditions(MeteorologicalConditions.P0, MeteorologicalConditions.T0
+                + MeteorologicalConditions.ABSOLUTE_ZERO, MeteorologicalConditions.RH0),
+            MeteorologicalConditions.STANDARD);
     }
 
     /**

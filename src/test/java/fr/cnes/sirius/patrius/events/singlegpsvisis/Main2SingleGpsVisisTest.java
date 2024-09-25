@@ -18,6 +18,8 @@
  * @history Created 07/05/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3130:10/05/2022:[PATRIUS] Robustifier le calcul des phenomenes des CodedEventsLogger, ...
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -44,9 +46,10 @@ import fr.cnes.sirius.patrius.attitudes.AttitudesSequence;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.CelestialBodyPointed;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.events.CodedEvent;
-import fr.cnes.sirius.patrius.events.CodedEventsLogger;
-import fr.cnes.sirius.patrius.events.GenericCodingEventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEvent;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.Timeline;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -59,7 +62,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
@@ -94,7 +96,7 @@ public class Main2SingleGpsVisisTest {
      * 
      * @testedFeature {@link features#SINGLE_GPS_VISIS}
      * 
-     * @testedMethod {@link NumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.propagation.events.EventDetector)}
+     * @testedMethod {@link NumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.events.EventDetector)}
      * @testedMethod {@link NumericalPropagator#propagate(AbsoluteDate)}
      * 
      * @description Propagation with eclipse detection. Particular case.
@@ -107,7 +109,7 @@ public class Main2SingleGpsVisisTest {
      * 
      * @referenceVersion 3.0
      * 
-     * @nonRegressionVersion 3.0
+     * @nonRegressionVersion 4.13
      */
     @Test
     public void testEclipseDetection2() throws PatriusException {
@@ -184,7 +186,7 @@ public class Main2SingleGpsVisisTest {
 
         Assert.assertEquals(events.size(), 4);
         Assert.assertEquals(events.get(0).getDate().toString(), "2008-01-01T00:29:26.709");
-        Assert.assertEquals(events.get(1).getDate().toString(), "2008-01-01T01:26:11.288");
+        Assert.assertEquals(events.get(1).getDate().toString(), "2008-01-01T01:26:11.289");
         Assert.assertEquals(events.get(2).getDate().toString(), "2008-01-01T02:00:25.179");
         Assert.assertEquals(events.get(3).getDate().toString(), "2008-01-01T02:57:10.161");
         Assert.assertEquals(events.get(0).getCode(), "GPS 0 IN");

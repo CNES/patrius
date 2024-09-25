@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.11.1:DM:DM-75:30/06/2023:[PATRIUS] Degradation performance Patrius 4.11
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3093:10/05/2022:[PATRIUS] Mise en Oeuvre PM2973 , gestion coordonnees et referentiel 
@@ -49,7 +50,6 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
-import fr.cnes.sirius.patrius.frames.FactoryManagedFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.TestUtils;
@@ -63,12 +63,12 @@ import fr.cnes.sirius.patrius.math.random.Well19937a;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.PVCoordinatesTest;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.wrenches.Wrench;
 
@@ -204,7 +204,7 @@ public class TransformTest {
         // define the origin frame
         final Frame originFrame = FramesFactory.getGCRF();
         // define the destination frame
-        final FactoryManagedFrame destinationFrame = FramesFactory.getEME2000();
+        final Frame destinationFrame = FramesFactory.getEME2000();
         final AbsoluteDate date = new AbsoluteDate(2000, 01, 06, 11, 14, 51.704);
         // build the transform needed to pass from the GCRF frame to the EME2000 frame
         final Transform transformGcrfToEme2000 = originFrame.getTransformTo(destinationFrame, date,
@@ -311,7 +311,7 @@ public class TransformTest {
         // change the referential of the origin frame
         originFrame.setReferential(FramesFactory.getEME2000());
         // define a new destination frame
-        final FactoryManagedFrame modifDestinationFrame = FramesFactory.getMOD(false);
+        final Frame modifDestinationFrame = FramesFactory.getMOD(false);
         // change the referential of the destination frame
         modifDestinationFrame.setReferential(FramesFactory.getTOD(false));
         // build the transform needed to pass from the GCRF frame to the MOD frame
@@ -463,6 +463,18 @@ public class TransformTest {
                 Assert.assertEquals(0, b.subtract(a).getNorm(), 1.0e-10);
                 final Vector3D c = transform.transformPosition(a);
                 Assert.assertEquals(0, a.subtract(c).subtract(delta).getNorm(), 1.0e-13);
+
+                // Check the translation of a PV (with non null acc) results in a pv with non-null acc
+                final PVCoordinates pv = new PVCoordinates(
+                    new Vector3D(rnd.nextDouble(), rnd.nextDouble(), rnd.nextDouble()),
+                    new Vector3D(rnd.nextDouble(), rnd.nextDouble(), rnd.nextDouble()),
+                    new Vector3D(rnd.nextDouble(), rnd.nextDouble(), rnd.nextDouble()));
+                final PVCoordinates pv2 = transform.transformPVCoordinates(pv);
+                Assert.assertNotNull(pv2.getAcceleration());
+
+                final Transform transformBis = new Transform(AbsoluteDate.J2000_EPOCH, delta, delta);
+                final PVCoordinates pv3 = transformBis.transformPVCoordinates(pv);
+                Assert.assertNotNull(pv3.getAcceleration());
             }
         }
     }

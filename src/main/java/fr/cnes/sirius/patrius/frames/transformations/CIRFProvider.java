@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+* VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.7:DM:DM-2590:18/05/2021:Configuration des TransformProvider 
@@ -38,6 +40,7 @@ package fr.cnes.sirius.patrius.frames.transformations;
 
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.CIPCoordinates;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -56,13 +59,15 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <p>
  * Its parent frame is the GCRF frame.
  * <p>
- * 
+ *
  * <p>
  * Spin derivative is never computed and is either 0 or null. No analytical formula is available for spin derivative
  * since data only provide CIP motion and its first derivative.
  * </p>
- * <p>Frames configuration precession-nutation model is used for computation.</p>
- * 
+ * <p>
+ * Frames configuration precession-nutation model is used for computation.
+ * </p>
+ *
  * @serial serializable.
  */
 @SuppressWarnings("PMD.NullAssignment")
@@ -79,7 +84,7 @@ public final class CIRFProvider implements TransformProvider {
      * <p>
      * Frames configuration precession-nutation model is used for computation.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param config
@@ -100,7 +105,7 @@ public final class CIRFProvider implements TransformProvider {
      * <p>
      * The transform considers the nutation and precession effects from IERS data.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @return transform at the specified date
@@ -122,7 +127,7 @@ public final class CIRFProvider implements TransformProvider {
      * Spin derivative is never computed and is either 0 or null. No analytical formula is available for spin derivative
      * since data only provide CIP motion and its first derivative.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param computeSpinDerivatives
@@ -150,7 +155,7 @@ public final class CIRFProvider implements TransformProvider {
      * <p>
      * Frames configuration precession-nutation model is used for computation.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param config
@@ -168,29 +173,29 @@ public final class CIRFProvider implements TransformProvider {
                                   final boolean computeSpinDerivatives) throws PatriusException {
 
         Transform result = Transform.IDENTITY;
-        if (!config.getPrecessionNutationModel().getPrecessionNutationModel()
+        if (!config.getCIRFPrecessionNutationModel().getPrecessionNutationModel()
                 .equals(PrecessionNutationModelFactory.NO_PN)) {
             // Computation only if configuration requires CIP motion computation
 
             // evaluate pole motion in celestial frame
-            final double[] cip = config.getCIPMotion(date);
+            final CIPCoordinates cipCoordinates = config.getCIPCoordinates(date);
 
             // No precession/nutation case
-            if (cip[0] == 0 && cip[1] == 0 && cip[2] == 0) {
+            if (cipCoordinates.isCIPMotionZero() && cipCoordinates.isCIPMotionTimeDerivativesZero()) {
                 return Transform.IDENTITY;
             }
 
-            final double xCurrent = cip[0];
-            final double yCurrent = cip[1];
-            final double sCurrent = cip[2];
-
+            // Get CIP
+            final double xCurrent = cipCoordinates.getX();
+            final double yCurrent = cipCoordinates.getY();
+            final double sCurrent = cipCoordinates.getS();
+            
             // Get CIP derivative
-            final double[] cipP = config.getCIPMotionTimeDerivative(date);
-            final double xPCurrent = cipP[0];
-            final double yPCurrent = cipP[1];
-            final double sPCurrent = cipP[2];
-
-            // set up the bias, precession and nutation rotation
+            final double xPCurrent = cipCoordinates.getxP();
+            final double yPCurrent = cipCoordinates.getyP();
+            final double sPCurrent = cipCoordinates.getsP();
+            
+            // Set up the bias, precession and nutation rotation
             final double x2Py2 = xCurrent * xCurrent + yCurrent * yCurrent;
             final double zP1 = 1 + MathLib.sqrt(MathLib.max(0.0, 1 - x2Py2));
             final double r = MathLib.sqrt(x2Py2);
@@ -203,11 +208,10 @@ public final class CIRFProvider implements TransformProvider {
             final double xPrSin = xPr * sin;
             final double yCos = yCurrent * cos;
             final double ySin = yCurrent * sin;
-            final Rotation bpn = new Rotation(true, zP1 * (xPrCos + ySin),
-                    -r * (yCos + xPrSin), r * (xPrCos - ySin),
-                    zP1 * (yCos - xPrSin));
+            final Rotation bpn = new Rotation(true, zP1 * (xPrCos + ySin), 
+                -r * (yCos + xPrSin), r * (xPrCos - ySin), zP1 * (yCos - xPrSin));
 
-            // rotation rate of the transformation from CIRF to GCRF
+            // Rotation rate of the transformation from CIRF to GCRF
             final Vector3D rotationRate = new Vector3D(yPCurrent + sPCurrent * xCurrent,
                     -xPCurrent + sPCurrent * yCurrent, 0);
 
@@ -221,5 +225,4 @@ public final class CIRFProvider implements TransformProvider {
         // Return result
         return result;
     }
-
 }

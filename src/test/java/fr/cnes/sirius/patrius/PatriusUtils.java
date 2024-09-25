@@ -20,6 +20,8 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -47,13 +49,13 @@ import fr.cnes.sirius.patrius.frames.configuration.DiurnalRotation;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
 import fr.cnes.sirius.patrius.frames.configuration.PolarMotion;
-import fr.cnes.sirius.patrius.frames.configuration.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistory;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistoryFactory;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPInterpolators;
 import fr.cnes.sirius.patrius.frames.configuration.eop.NoEOP2000History;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModel;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModel;
@@ -163,7 +165,7 @@ public final class PatriusUtils {
         return getFramesConfiguration(EOPInterpolators.LAGRANGE4, true, false,
                 TidalCorrectionModelFactory.NO_TIDE, LibrationCorrectionModelFactory.NO_LIBRATION,
                 SPrimeModelFactory.SP_IERS2010,
-                PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT);
+            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED);
     }
 
     /**
@@ -240,7 +242,7 @@ public final class PatriusUtils {
 
         return getFramesConfiguration(eopInterpolator, false, false, tidalCorrectionModel,
                 LibrationCorrectionModelFactory.NO_LIBRATION, SPrimeModelFactory.SP_IERS2003,
-                PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED_CONSTANT);
+            PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED);
     }
 
     /**
@@ -269,7 +271,7 @@ public final class PatriusUtils {
         return getFramesConfiguration(EOPInterpolators.LAGRANGE4, true, true,
                 TidalCorrectionModelFactory.TIDE_IERS2010_INTERPOLATED,
                 LibrationCorrectionModelFactory.LIBRATION_IERS2010, SPrimeModelFactory.SP_IERS2010,
-                PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT);
+            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED);
     }
 
     /**
@@ -299,7 +301,7 @@ public final class PatriusUtils {
         return getFramesConfiguration(EOPInterpolators.LAGRANGE4, false, false,
                 TidalCorrectionModelFactory.TIDE_IERS2010_INTERPOLATED,
                 LibrationCorrectionModelFactory.LIBRATION_IERS2010, SPrimeModelFactory.SP_IERS2010,
-                PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT);
+            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED);
     }
 
     /**
@@ -380,7 +382,7 @@ public final class PatriusUtils {
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
         builder.setDiurnalRotation(diurnalRotation);
         builder.setPolarMotion(polarMotion);
-        builder.setPrecessionNutation(precessionNutation);
+        builder.setCIRFPrecessionNutation(precessionNutation);
         builder.setEOPHistory(eop);
 
         // Return the frames configuration build
@@ -636,29 +638,11 @@ public final class PatriusUtils {
                 case "NO_PN":
                     result = PrecessionNutationModelFactory.NO_PN;
                     break;
-                case "IERS2003_DIRECT_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2003_DIRECT_CONSTANT;
+                case "IERS2010_INTERPOLATED":
+                    result = PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED;
                     break;
-                case "IERS2003_DIRECT_NON_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2003_DIRECT_NON_CONSTANT;
-                    break;
-                case "IERS2003_INTERPOLATED_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED_CONSTANT;
-                    break;
-                case "IERS2003_INTERPOLATED_NON_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED_NON_CONSTANT;
-                    break;
-                case "IERS2010_DIRECT_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2010_DIRECT_CONSTANT;
-                    break;
-                case "IERS2010_DIRECT_NON_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2010_DIRECT_NON_CONSTANT;
-                    break;
-                case "IERS2010_INTERPOLATED_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_CONSTANT;
-                    break;
-                case "IERS2010_INTERPOLATED_NON_CONSTANT":
-                    result = PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT;
+                case "IERS2003_INTERPOLATED":
+                    result = PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED;
                     break;
                 case "STELA":
                     result = PrecessionNutationModelFactory.PN_STELA;

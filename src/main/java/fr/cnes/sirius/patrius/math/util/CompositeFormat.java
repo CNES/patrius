@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -51,24 +52,37 @@ public final class CompositeFormat {
      * only customizing that the
      * maximum number of fraction digits is set to 10.
      * 
-     * @return the default number format.
+     * @return the default number format
      */
     public static NumberFormat getDefaultNumberFormat() {
         return getDefaultNumberFormat(Locale.getDefault());
     }
 
     /**
-     * Create a default number format. The default number format is based on
-     * {@link NumberFormat#getInstance(java.util.Locale)} with the only
-     * customizing that the maximum number of fraction digits is set to 10.
+     * Create a default number format. The default number format is based on {@link NumberFormat#getInstance(Locale)}
+     * with the only customizing that the maximum number of fraction digits is set to 10.
      * 
      * @param locale
-     *        the specific locale used by the format.
-     * @return the default number format specific to the given locale.
+     *        the specific locale used by the format
+     * @return the default number format specific to the given locale
      */
     public static NumberFormat getDefaultNumberFormat(final Locale locale) {
+        return getDefaultNumberFormat(locale, C_10);
+    }
+
+    /**
+     * Create a default number format. The default number format is based on {@link NumberFormat#getInstance(Locale)}.
+     * 
+     * @param locale
+     *        the specific locale used by the format
+     * @param maximumFractionDigits
+     *        the maximum number of fraction digits to be shown;
+     *        if less than zero, then zero is used.
+     * @return the default number format specific to the given locale
+     */
+    public static NumberFormat getDefaultNumberFormat(final Locale locale, final int maximumFractionDigits) {
         final NumberFormat nf = NumberFormat.getInstance(locale);
-        nf.setMaximumFractionDigits(C_10);
+        nf.setMaximumFractionDigits(maximumFractionDigits);
         return nf;
     }
 
@@ -93,8 +107,8 @@ public final class CompositeFormat {
      * @param source
      *        the string to parse
      * @param pos
-     *        input/output parsing parameter.
-     * @return the first non-whitespace character.
+     *        input/output parsing parameter
+     * @return the first non-whitespace character
      */
     public static char parseNextCharacter(final String source,
                                           final ParsePosition pos) {
@@ -122,15 +136,15 @@ public final class CompositeFormat {
 
     /**
      * Parses <code>source</code> for special double values. These values
-     * include Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY.
+     * include {@link Double#NaN}, {@link Double#POSITIVE_INFINITY}, {@link Double#NEGATIVE_INFINITY}.
      * 
      * @param source
      *        the string to parse
      * @param value
-     *        the special value to parse.
+     *        the special value to parse
      * @param pos
-     *        input/output parsing parameter.
-     * @return the special number.
+     *        input/output parsing parameter
+     * @return the special number
      */
     private static Number parseNumber(final String source, final double value,
                                       final ParsePosition pos) {
@@ -159,16 +173,16 @@ public final class CompositeFormat {
 
     /**
      * Parses <code>source</code> for a number. This method can parse normal,
-     * numeric values as well as special values. These special values include
-     * Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY.
+     * numeric values as well as special values. These special values include {@link Double#NaN},
+     * {@link Double#POSITIVE_INFINITY}, {@link Double#NEGATIVE_INFINITY}.
      * 
      * @param source
      *        the string to parse
      * @param format
-     *        the number format used to parse normal, numeric values.
+     *        the number format used to parse normal, numeric values
      * @param pos
-     *        input/output parsing parameter.
-     * @return the parsed number.
+     *        input/output parsing parameter
+     * @return the parsed number
      */
     public static Number parseNumber(final String source, final NumberFormat format,
                                      final ParsePosition pos) {
@@ -200,7 +214,7 @@ public final class CompositeFormat {
      * @param expected
      *        expected string
      * @param pos
-     *        input/output parsing parameter.
+     *        input/output parsing parameter
      * @return true if the expected string was there
      */
     public static boolean parseFixedstring(final String source,
@@ -225,8 +239,8 @@ public final class CompositeFormat {
 
     /**
      * Formats a double value to produce a string. In general, the value is
-     * formatted using the formatting rules of <code>format</code>. There are
-     * three exceptions to this:
+     * formatted using the formatting rules of <code>format</code>.<br>
+     * There are three exceptions to this:
      * <ol>
      * <li>NaN is formatted as '(NaN)'</li>
      * <li>Positive infinity is formatted as '(Infinity)'</li>
@@ -234,15 +248,15 @@ public final class CompositeFormat {
      * </ol>
      * 
      * @param value
-     *        the double to format.
+     *        the double to format
      * @param format
-     *        the format used.
+     *        the format used
      * @param toAppendTo
      *        where the text is to be appended
      * @param pos
      *        On input: an alignment field, if desired. On output: the
      *        offsets of the alignment field
-     * @return the value passed in as toAppendTo.
+     * @return the value passed in as toAppendTo
      */
     public static StringBuffer formatDouble(final double value, final NumberFormat format,
                                             final StringBuffer toAppendTo,

@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-109:08/12/2023:[PATRIUS] IsisSpinBiasSlew - Renvoi du
+ * profil de ralliement lorsque le nombre max d'iterations est atteint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -822,5 +824,69 @@ public class IsisSpinBiasSlewTest {
         Assert.assertEquals(slewNumerical2.getNature(), DEFAULT_NATURE2);
         Assert.assertEquals(slewNumerical3.getNature(), nature);
         Assert.assertEquals(slewNumerical4.getNature(), nature);
+    }
+    
+    /**
+     * @throws PatriusException
+     * @testType UT
+     * 
+     * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
+     * 
+     * @testedMethod {@link IsisSpinBiasSlewComputer#computeDuration(PVCoordinatesProvider,AttitudeProvider,
+     *                                                          AbsoluteDate, AttitudeProvider, AbsoluteDate)}
+     * 
+     * @description This test checks an exception is raised due to no convergence and that the exception is not
+     *              raised when the attribute setThrowExceptionOnMaxIterations is set to false.
+     * 
+     * @input {@link IsisSpinBiasSlewComputer} data
+     * 
+     * @output exception + duration
+     * 
+     * @testPassCriteria an exception is thrown at first, then, the good value is returned
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testExceptionMaxIterations() throws PatriusException {
+        // Initialization
+        final AttitudeLaw initialLaw = new ConstantAttitudeLaw(FramesFactory.getEME2000(), new Rotation(new Vector3D(
+            1., 0., 1.), MathLib.toRadians(20.)));
+        final AttitudeLaw finalLaw = new ConstantAttitudeLaw(FramesFactory.getEME2000(), new Rotation(new Vector3D(1.,
+            2., 2.), MathLib.toRadians(50.)));
+        final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+        final double dtSCAO = 0.250;
+        final double thetaMaxAllowed = MathLib.toRadians(179);
+        final double durationMax = 200;
+        final double dtConvergenceThreshold = 0.1;
+        final double[][] inertiaMatrix = { { 305, 0, 0 }, { 0, 315, 0 }, { 0, 0, 90 } };
+        final double rwTorqueAllocAccel = 0.15;
+        final double rwTorqueAllocDecel = 0.15;
+        final double rwDeltaMomentumAlloc = 4.2;
+        final double[][] rwMatrix = {
+            { -0.6830127, -0.6830127, -0.6830127, -0.6830127 },
+            { -0.6830127, 0.6830127, -0.6830127, 0.6830127 },
+            { -0.258819, -0.258819, 0.258819, 0.258819 }
+        };
+        final double tranquillisationTime = 100.;
+        
+        // Max iterations is set to 1 so it cannot converge
+        final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
+            dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
+            rwMatrix, tranquillisationTime, 1);
+        
+        //First check an exception is thrown
+        try {
+            computer.computeDuration(null, initialLaw, initialDate, finalLaw, null);
+            Assert.fail();
+        } catch(PatriusException e) {
+            Assert.assertTrue(true);
+        }
+        
+        // Now change the boolean and test that we get what is calculated in the first iteration
+        computer.setThrowExceptionOnMaxIterations(false);
+        Assert.assertEquals(153.33818, computer.computeDuration(null, initialLaw, initialDate, finalLaw, null),
+                            1.E-5);
     }
 }

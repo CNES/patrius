@@ -5,19 +5,20 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  *
  * @history created 02/03/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -37,8 +38,11 @@ import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.frames.LocalOrbitalFrame;
-import fr.cnes.sirius.patrius.frames.transformations.MODProvider;
+import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
+import fr.cnes.sirius.patrius.frames.configuration.modprecession.IAUMODPrecession;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.CIPCoordinates;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
+import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
@@ -53,15 +57,16 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
 
 /**
  * Class representing the non-inertial contribution for STELA propagator.
- * 
+ *
  * @author Emmanuel Bignon
  * @concurrency thread-safe
  * @version $Id$
  * @since 3.0
- * 
+ *
  */
 public class NonInertialContribution extends AbstractStelaGaussContribution {
 
@@ -82,7 +87,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
 
     /**
      * Constructor.
-     * 
+     *
      * @param quadPointsIn
      *        number of points for Simpson' squaring (must be odd)
      * @param referenceSystemIn
@@ -186,7 +191,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
 
     /**
      * Compute a coefficient to represent the irregular distribution of eccentric anomalies.
-     * 
+     *
      * @param orbit
      *        an orbit
      * @param eAnom
@@ -201,7 +206,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
 
     /**
      * Compute rotation vector derivative from frame1 to frame2 using finite differences.
-     * 
+     *
      * @param date
      *        a date
      * @param frame1
@@ -232,7 +237,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
      * <li>Frame 1 (reference system): CIRF, ICRF, MOD</li>
      * <li>Frame 2 (expression/integration frame): CIRF</li>
      * </ul>
-     * 
+     *
      * @param date
      *        a date
      * @param frame1
@@ -287,7 +292,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
 
     /**
      * Compute rotation vector from ICRF to CIRF.
-     * 
+     *
      * @param date
      *        a date
      * @return rotation vector from ICRF to CIRF
@@ -295,14 +300,13 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
     private static Vector3D computeOmegaICRFToCIRF(final AbsoluteDate date) {
 
         // Compute coefficients
-        final double[] coefs = FramesFactory.getConfiguration().getCIPMotion(date);
-        final double[] dcoefs = FramesFactory.getConfiguration().getCIPMotionTimeDerivative(date);
-        final double x = coefs[0];
-        final double y = coefs[1];
-        final double s = coefs[2];
-        final double dx = dcoefs[0];
-        final double dy = dcoefs[1];
-        final double ds = dcoefs[2];
+        final CIPCoordinates cipCoordinates = FramesFactory.getConfiguration().getCIPCoordinates(date);
+        final double x = cipCoordinates.getX();
+        final double y = cipCoordinates.getY();
+        final double s = cipCoordinates.getS();
+        final double dx = cipCoordinates.getxP();
+        final double dy = cipCoordinates.getyP();
+        final double ds = cipCoordinates.getsP();
 
         // Build intermediate variables
         final double u = x * x + y * y;
@@ -321,21 +325,65 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
 
     /**
      * Compute rotation vector from MOD to EME2000.
-     * 
+     *
      * @param date
      *        a date
      * @return rotation vector from MOD to EME2000
      */
     private static Vector3D computeOmegaMODToEME2000(final AbsoluteDate date) {
-        final double[] euler = new MODProvider().getEulerAngles(date);
+        final double[] euler = getEulerAngles(date);
         final double[] theta = { euler[2], -euler[1], euler[0] };
         final double[] dtheta = { euler[5], -euler[4], euler[3] };
         return computeOmega(theta, dtheta);
     }
 
     /**
+     * Compute Euler angles (3, 2, 3) of MOD => GCRF/EME2000 transformation and their derivatives with respect to time
+     * only in case if IAU precession model.
+     * <p>
+     * Frames configuration must contain a {@link IAUMODPrecession} model, an exception is thrown otherwise.
+     * </p>
+     * .
+     * @param date
+     *        a date
+     * @return Euler angles (3, 2, 3) of MOD => GCRF/EME2000 transformation and their derivatives with respect to time
+     */
+    private static double[] getEulerAngles(final AbsoluteDate date) {
+
+        // Get model
+        final FramesConfiguration config = FramesFactory.getConfiguration();
+        if (!(config.getMODPrecessionModel() instanceof IAUMODPrecession)) {
+            // STELA configuration has an IAUMODPrecession, but nothing prevents the user from using a different
+            // configuration
+            throw new PatriusRuntimeException(PatriusMessages.WRONG_MOD_TYPE, null);
+        }
+        final IAUMODPrecession model = (IAUMODPrecession) config.getMODPrecessionModel();
+        // Compute polynomial derivatives
+        final PolynomialFunction zetaDerivative = model.getPolynomialPrecessionZeta().derivative();
+        final PolynomialFunction thetaDerivative = model.getPolynomialPrecessionTheta().derivative();
+        final PolynomialFunction zDerivative = model.getPolynomialPrecessionZ().derivative();
+
+        // Duration in centuries since J2000 epoch
+        final double ttc = date.durationFromJ2000EpochInCenturies();
+
+        // Euler angles
+        final double zeta = model.getPolynomialPrecessionZeta().value(ttc);
+        final double theta = model.getPolynomialPrecessionTheta().value(ttc);
+        final double z = model.getPolynomialPrecessionZ().value(ttc);
+
+        // Euler angles derivatives
+        final double dzeta = zetaDerivative.value(ttc);
+        final double dtheta = thetaDerivative.value(ttc);
+        final double dz = zDerivative.value(ttc);
+
+        // Return result
+        return new double[] { zeta, theta, z, dzeta / Constants.JULIAN_CENTURY, dtheta / Constants.JULIAN_CENTURY,
+            dz / Constants.JULIAN_CENTURY };
+    }
+
+    /**
      * Compute rotation vector between two frames given Euler angles and their derivatives.
-     * 
+     *
      * @param theta
      *        Euler angles
      * @param dtheta

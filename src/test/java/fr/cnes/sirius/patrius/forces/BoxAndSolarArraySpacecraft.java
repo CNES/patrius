@@ -18,11 +18,12 @@
 /*
  *
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.6:FA:FA-2499:27/01/2021:[PATRIUS] Anomalie dans la gestion des panneaux solaires de la classe Vehicle 
-* VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
+ * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.6:FA:FA-2499:27/01/2021:[PATRIUS] Anomalie dans la gestion des panneaux solaires de la classe Vehicle 
+ * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * VERSION::FA:93:31/03/2014:changed API for partial derivatives
  * VERSION::DM:289:27/08/2014:Refactoring of SpacecraftState and harmonization of state vector
  * VERSION::DM:284:06/10/2014:New architecture for parameterizable Parameters
@@ -62,10 +63,10 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * area and normal vector. This should handle accurately most spacecraft shapes.
  * </p>
  * <p>
- * The solar array rotation with respect to satellite body can be either the best lightning orientation (i.e. Sun
- * exactly in solar array meridian plane defined by solar array rotation axis and solar array normal vector) or a
- * rotation evolving linearly according to a start position and an angular rate (which can be set to 0 for non-rotating
- * panels, which may occur in special modes or during contingencies).
+ * The solar array rotation with respect to satellite body can be either the best lighting orientation (i.e. Sun exactly
+ * in solar array meridian plane defined by solar array rotation axis and solar array normal vector) or a rotation
+ * evolving linearly according to a start position and an angular rate (which can be set to 0 for non-rotating panels,
+ * which may occur in special modes or during contingencies).
  * </p>
  * <p>
  * This model does not take cast shadow between body and solar array into account.
@@ -123,7 +124,7 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     private final String partName;
 
     /**
-     * Build a spacecraft model with best lightning of solar array.
+     * Build a spacecraft model with best lighting of solar array.
      * <p>
      * Solar arrays orientation will be such that at each time the Sun direction will always be in the solar array
      * meridian plane defined by solar array rotation axis and solar array normal vector.
@@ -169,7 +170,7 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     }
 
     /**
-     * Build a spacecraft model with best lightning of solar array.
+     * Build a spacecraft model with best lighting of solar array.
      * <p>
      * The spacecraft body is described by an array of surface vectors. Each facet of the body is describe by a vector
      * normal to the facet (pointing outward of the spacecraft) and whose norm is the surface area in m<sup>2</sup>.
@@ -363,7 +364,7 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
      *        current state information: date, kinematics, attitude
      * @return solar array normal in spacecraft frame
      * @exception PatriusException
-     *            if sun direction cannot be computed in best lightning
+     *            if sun direction cannot be computed in best lighting
      *            configuration
      */
     public synchronized Vector3D getNormal(final SpacecraftState state)
@@ -377,7 +378,7 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
             return new Vector3D(MathLib.cos(alpha), this.saX, MathLib.sin(alpha), this.saY);
         }
 
-        // compute orientation for best lightning
+        // compute orientation for best lighting
         final Frame frame = state.getFrame();
         final Vector3D sunInert = this.sun.getPVCoordinates(date, frame).getPosition().normalize();
         final Vector3D sunSpacecraft = state.getAttitude().getRotation().applyInverseTo(sunInert);
@@ -670,10 +671,8 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     /** {@inheritDoc} */
     @Override
     public void addDDragAccDState(final SpacecraftState s, final double[][] dAccdPos, final double[][] dAccdVel,
-                                  final double density,
-                                  final Vector3D acceleration, final Vector3D relativeVelocity,
-                                  final boolean computeGradientPosition,
-                                  final boolean computeGradientVelocity) throws PatriusException {
+                                  final double density, final Vector3D acceleration, final Vector3D relativeVelocity,
+                                  final boolean computeGradientPosition, final boolean computeGradientVelocity) {
         // this model does not support partial derivatives computation yet:
         throw PatriusException.createInternalError(null);
     }
@@ -681,7 +680,7 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     /** {@inheritDoc} */
     @Override
     public void addDSRPAccDParam(final SpacecraftState s, final Parameter paramName, final double[] dAccdParam,
-                                 final Vector3D satSunVector) throws PatriusException {
+                                 final Vector3D satSunVector) {
         // this model does not support partial derivatives computation yet:
         throw PatriusException.createInternalError(null);
     }
@@ -689,8 +688,7 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     /** {@inheritDoc} */
     @Override
     public void addDSRPAccDState(final SpacecraftState s, final double[][] dAccdPos, final double[][] dAccdVel,
-                                 final Vector3D satSunVector)
-                                                             throws PatriusException {
+                                 final Vector3D satSunVector) {
         // this model does not support partial derivatives computation yet:
         throw PatriusException.createInternalError(null);
     }
@@ -703,15 +701,13 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     }
 
     /**
-     * 
      * @see fr.cnes.sirius.patrius.forces.drag.DragSensitive#addDDragAccDParam(fr.cnes.sirius.patrius.propagation.SpacecraftState,
      *      fr.cnes.sirius.patrius.math.parameter.Parameter, double,
      *      fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D, double[])
      */
     @Override
     public void addDDragAccDParam(final SpacecraftState s, final Parameter param, final double density,
-                                  final Vector3D relativeVelocity,
-                                  final double[] dAccdParam) throws PatriusException {
+                                  final Vector3D relativeVelocity, final double[] dAccdParam) {
         // this model does not support partial derivatives computation yet:
         throw PatriusException.createInternalError(null);
 

@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -213,7 +215,7 @@ public class EllipsoidPointTest {
         // Methods from AbstractBodyPoint
         Assert.assertEquals(name, point.getName());
         Assert.assertEquals(0., Vector3D.distance(new SphericalCoordinates(point.getLLHCoordinates().getLatitude(),
-            point.getLLHCoordinates().getLongitude(), bodyShape.getEquatorialRadius() + altitude)
+            point.getLLHCoordinates().getLongitude(), bodyShape.getARadius() + altitude)
             .getCartesianCoordinates(), point.getPosition()), 1E-9);
         Assert.assertEquals(0., Vector3D.distance(point.getPosition().normalize(), point.getNormal()), 1E-15);
 
@@ -275,7 +277,7 @@ public class EllipsoidPointTest {
         final LLHCoordinates bodycentricCoord = point.getLLHCoordinates(LLHCoordinatesSystem.BODYCENTRIC_RADIAL);
         Assert.assertEquals(9715.90721085705, Vector3D.distance(
             new SphericalCoordinates(bodycentricCoord.getLatitude(), bodycentricCoord.getLongitude(), bodyShape
-                .getEquatorialRadius() + altitude).getCartesianCoordinates(), point.getPosition()), 1E-9);
+                .getARadius() + altitude).getCartesianCoordinates(), point.getPosition()), 1E-9);
         // Expected to be slightly different from position vector
 
         Assert.assertEquals(0.003344005668915436,
@@ -341,7 +343,7 @@ public class EllipsoidPointTest {
         Assert.assertTrue(point.getPVCoordinates(AbsoluteDate.J2000_EPOCH, FramesFactory.getGCRF()).getPosition().equals(position));
         Assert.assertTrue(point.getNormal().equals(new Vector3D(1, 0, 0)));
         Assert.assertEquals(point.angularSeparation(point), 0, 0);
-        Assert.assertEquals(point.getNativeFrame(null, null), FramesFactory.getGCRF());
+        Assert.assertEquals(point.getNativeFrame(null), FramesFactory.getGCRF());
     }
 
     /**

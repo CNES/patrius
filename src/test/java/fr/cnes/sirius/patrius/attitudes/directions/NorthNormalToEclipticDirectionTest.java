@@ -18,6 +18,8 @@
  * @history creation 22/10/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -42,7 +44,7 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.TabulatedAttitudeTest;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -109,7 +111,7 @@ public class NorthNormalToEclipticDirectionTest {
             // frames creation
             final Frame frame = FramesFactory.getGCRF();
             // Sun body
-            final CelestialBody sunBody = CelestialBodyFactory.getSun();
+            final CelestialPoint sunBody = CelestialBodyFactory.getSun();
             // the date
             final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
 
@@ -175,7 +177,7 @@ public class NorthNormalToEclipticDirectionTest {
         // frames creation
         final Frame gcrf = FramesFactory.getGCRF();
         // Sun body
-        final CelestialBody sunBody = CelestialBodyFactory.getSun();
+        final CelestialPoint sunBody = CelestialBodyFactory.getSun();
         // the date
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
 
@@ -233,7 +235,7 @@ public class NorthNormalToEclipticDirectionTest {
         // frames creation
         final Frame gcrf = FramesFactory.getGCRF();
         // Sun body with no velocity
-        final CelestialBody sunBody = new MeeusSun();
+        final CelestialPoint sunBody = new MeeusSun();
         // the date
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
 
@@ -251,7 +253,7 @@ public class NorthNormalToEclipticDirectionTest {
         final Vector3D vector = direction.getVector(inOrigin, date, gcrf);
 
         // non-regression value
-        final Vector3D vectorRef = new Vector3D(-3.3263637107193397E-7, -0.397777136434678, 0.9174820705222075);
+        final Vector3D vectorRef = new Vector3D(-3.3242509297753987E-7, -0.3977772118105524, 0.9174820378427648);
 
         // Compare the reference value to the result
         Assert.assertEquals(vectorRef.getX(), vector.getX(), 0.);

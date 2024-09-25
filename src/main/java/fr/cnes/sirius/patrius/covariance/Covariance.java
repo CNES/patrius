@@ -810,7 +810,7 @@ public class Covariance {
      */
     public String toString(final RealMatrixFormat realMatrixFormat) {
         return toString(realMatrixFormat, DEFAULT_NAME_SEPARATOR, DEFAULT_FIELD_SEPARATOR, true,
-                false);
+            true);
     }
 
     /**

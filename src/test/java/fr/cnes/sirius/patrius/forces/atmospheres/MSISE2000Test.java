@@ -18,6 +18,10 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -58,8 +62,8 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
@@ -71,7 +75,7 @@ import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityData
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataProvider;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.specialized.ClassicalMSISE2000SolarData;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.specialized.ContinuousMSISE2000SolarData;
-import fr.cnes.sirius.patrius.frames.FactoryManagedFrame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
@@ -123,7 +127,7 @@ public class MSISE2000Test {
     /**
      * Frame used for test
      */
-    private FactoryManagedFrame frame;
+    private Frame frame;
     /**
      * position vector
      */
@@ -197,7 +201,7 @@ public class MSISE2000Test {
 
         final ClassicalMSISE2000SolarData msis2000Data = new ClassicalMSISE2000SolarData(reader);
         // pv coordinates of test point
-        final FactoryManagedFrame frame1 = FramesFactory.getMOD(false);
+        final Frame frame1 = FramesFactory.getMOD(false);
         final Vector3D pos1 = new Vector3D(new double[] { 8749870.287474481, -976409.8027621375, -1110696.1958653878 });
         final Vector3D vel1 = new Vector3D(new double[] { -2918.9280434522407, 7866.058181939492, 1758.4000069207825 });
         new PVCoordinates(pos1, vel1);
@@ -206,12 +210,12 @@ public class MSISE2000Test {
         final AbsoluteDate date1 = new AbsoluteDate(2011, 03, 31, 22, 16, 55.4778569, TimeScalesFactory.getUTC());
 
         // earth - stela values
-        final Frame tf1 = new MSISE2000Test.TMODFrame(frame1);
+        final CelestialBodyFrame tf1 = new MSISE2000Test.TMODFrame(frame1);
         final double f = 0.29825765000000E+03;
         final double ae = 6378136.46;
         final OneAxisEllipsoid earth1 = new OneAxisEllipsoid(ae, 1 / f, tf1);
 
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final MSISE2000 atmosModel1 = new MSISE2000(msis2000Data, earth1, sun);
 
         final double density = atmosModel1.getDensity(date1, pos1, frame1);
@@ -424,12 +428,12 @@ public class MSISE2000Test {
      * @output {@link AtmosphereData}
      * 
      * @testPassCriteria sum of partial densities equals total density. Atmosphere data are as expected (reference:
-     *                   scilab ms_msis2000 - threshold: 1E-13, limited due to PATRIUS 4.6 frame conversion
-     *                   optimization)
+     *                   scilab ms_msis2000 - threshold: 1E-7, limited due to PATRIUS 4.6 frame conversion
+     *                   optimization) and different MOD convention (IAU 1976 for PATRIUS, IAU 2006 for CELESTLAB)
      * 
-     * @referenceVersion 4.0
+     * @referenceVersion 4.13
      * 
-     * @nonRegressionVersion 4.0
+     * @nonRegressionVersion 4.13
      */
     @Test
     public void testAtmosphereData() throws PatriusException {
@@ -441,7 +445,7 @@ public class MSISE2000Test {
         final MSISE2000InputParameters msis2000Data = new ClassicalMSISE2000SolarData(provider);
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.46, 1 / 0.29825765000000E+03,
             FramesFactory.getGCRF());
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final MSISE2000 atmosModel = new MSISE2000(msis2000Data, earth, sun);
         final MSISE2000 atm2 = (MSISE2000) atmosModel.copy();
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -469,17 +473,17 @@ public class MSISE2000Test {
 
         // Non-regression
         Assert.assertEquals(8.64860338619198E-17, density, 1E-13);
-        Assert.assertEquals(1217.1426613598985, localTemperature, 1E-13);
-        Assert.assertEquals(1217.1426613599185, exosphericTemperature, 1E-13);
-        Assert.assertEquals(0, (341717210107.43560791016E-28 - densityHe) / densityHe, 1E-13);
-        Assert.assertEquals(0, (1899190.8634123941883445E-28 - densityO) / densityO, 1E-13);
-        Assert.assertEquals(0, (0.0141708268323862962568E-28 - densityN2) / densityN2, 2E-13);
-        Assert.assertEquals(0, (0.0000010500108651131238E-28 - densityO2) / densityO2, 2E-13);
-        Assert.assertEquals(0, (1.183661569500849259E-41 - densityAr) / densityAr, 2E-13);
-        Assert.assertEquals(0, (522482170858.56048583984E-28 - densityH) / densityH, 1E-13);
-        Assert.assertEquals(0, (757899.08704671438317746E-28 - densityN) / densityN, 1E-13);
-        Assert.assertEquals(0, (658300563.23720526695251E-28 - densityAnomalousOxygen) / densityAnomalousOxygen, 1E-13);
-        Assert.assertEquals(0.0021967995676329355945 * 1000, meanAtomicMass, 1E-13);
+        Assert.assertEquals(1217.1426613598985, localTemperature, 1E-6);
+        Assert.assertEquals(1217.1426613599185, exosphericTemperature, 1E-6);
+        Assert.assertEquals(0, (341717210107.43560791016E-28 - densityHe) / densityHe, 1E-7);
+        Assert.assertEquals(0, (1899190.8634123941883445E-28 - densityO) / densityO, 1E-7);
+        Assert.assertEquals(0, (0.0141708268323862962568E-28 - densityN2) / densityN2, 1E-7);
+        Assert.assertEquals(0, (0.0000010500108651131238E-28 - densityO2) / densityO2, 1E-7);
+        Assert.assertEquals(0, (1.183661569500849259E-41 - densityAr) / densityAr, 1E-7);
+        Assert.assertEquals(0, (522482170858.56048583984E-28 - densityH) / densityH, 1E-7);
+        Assert.assertEquals(0, (757899.08704671438317746E-28 - densityN) / densityN, 1E-7);
+        Assert.assertEquals(0, (658300563.23720526695251E-28 - densityAnomalousOxygen) / densityAnomalousOxygen, 1E-7);
+        Assert.assertEquals(0.0021967995676329355945 * 1000, meanAtomicMass, 1E-7);
     }
 
     /**
@@ -515,7 +519,7 @@ public class MSISE2000Test {
         final MSISE2000InputParameters msis2000Data = new ClassicalMSISE2000SolarData(provider);
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.46, 1 / 0.29825765000000E+03,
             FramesFactory.getITRF());
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final MSISE2000 atmosModel = new MSISE2000(msis2000Data, earth, sun);
         final AbsoluteDate date = new AbsoluteDate("2008-01-01T16:25:00", TimeScalesFactory.getUTC());
         final Vector3D pos = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(), 0, 0, 600000, "").getPosition();
@@ -590,7 +594,7 @@ public class MSISE2000Test {
         final double ae = 6378136.46;
         this.earth = new OneAxisEllipsoid(ae, 1 / f, this.tf);
 
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         // Atmospheric model a
         this.atmosModel = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity), this.earth, sun);
     }
@@ -626,7 +630,7 @@ public class MSISE2000Test {
         final MSISE2000 atm = new MSISE2000(data, earthBody, CelestialBodyFactory.getSun());
         Assert.assertTrue(data.equals(atm.getParameters()));
         Assert.assertTrue(earthBody.equals(atm.getEarthBody()));
-        Assert.assertTrue(CelestialBodyFactory.getSun().equals(atm.getSunBody()));
+        Assert.assertTrue(CelestialBodyFactory.getSun().equals(atm.getSun()));
     }
 
     /**
@@ -680,7 +684,7 @@ public class MSISE2000Test {
 
         final Vector3D position = getPositionVector(lat, lon, altitude);
         final AbsoluteDate date = new AbsoluteDate("2012-01-01T12:00:00", TimeScalesFactory.getUTC());
-        final FactoryManagedFrame frame = FramesFactory.getITRF();
+        final Frame frame = FramesFactory.getITRF();
 
         // Atmosphere object
         final double solarActivity[] = { 140.0, 48.0 };
@@ -702,7 +706,7 @@ public class MSISE2000Test {
 
         final Vector3D position = getPositionVector(lat, lon, altitude);
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final FactoryManagedFrame frame = FramesFactory.getITRF();
+        final Frame frame = FramesFactory.getITRF();
 
         // Atmosphere object
         final double solarActivity[] = { 140.0, 48.0 };
@@ -799,7 +803,7 @@ public class MSISE2000Test {
      * @since 1.2
      * 
      */
-    private final class TMODFrame extends Frame {
+    private final class TMODFrame extends CelestialBodyFrame {
 
         /** Serializable UID. */
         private static final long serialVersionUID = 6498012403263820054L;
@@ -813,7 +817,7 @@ public class MSISE2000Test {
          *         if fails
          */
         private TMODFrame(final Frame modFrame) {
-            super(modFrame, new TMODTransformProvider(), "tmod");
+            super(modFrame, new TMODTransformProvider(), "tmod", null);
         }
     }
 

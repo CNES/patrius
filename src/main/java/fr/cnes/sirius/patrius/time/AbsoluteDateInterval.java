@@ -18,6 +18,9 @@
  * @history 03/10/2011
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-105:08/12/2023:[PATRIUS] Renommage de getDateList
+ * VERSION:4.13:FA:FA-93:08/12/2023:[PATRIUS] Generation erronee de liste de dates à  partir d'un interval
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3155:10/05/2022:[PATRIUS] Ajout d'une methode public contains a la classe AbsoluteDateInterval
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -49,11 +52,12 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * using the ComparableInterval class.
  * </p>
  * <p>
- * This implementation enforces that <code>AbsoluteDate.PAST_INFINITE</code> and
- * <code>AbsoluteDate.FUTURE_INFINITE</code> cannot be closed boundaries.
+ * This implementation enforces that {@link AbsoluteDate#PAST_INFINITE -inf} and {@link AbsoluteDate#FUTURE_INFINITE
+ * +inf} cannot be closed boundaries.
  * </p>
- * 
- * @useSample <p>
+ *
+ * @useSample
+ *            <p>
  *            <code>
  * final AbsoluteDate lowEnd = new AbsoluteDate();
  * final AbsoluteDate upEnd = new AbsoluteDate(lowEnd, 4578.14);
@@ -62,79 +66,75 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * final AbsoluteDateInterval dateInterval = new AbsoluteDateInterval(lowInt, lowEnd, upEnd, upInt);
  * </code>
  *            </p>
- * 
+ *
  * @concurrency immutable
- * 
+ *
  * @author cardosop
- * 
+ *
  * @version $Id: AbsoluteDateInterval.java 18083 2017-10-02 16:54:39Z bignon $
- * 
+ *
  * @since 3.0
  */
 public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
 
     /** Interval ] -inf ; +inf [. */
     public static final AbsoluteDateInterval INFINITY = new AbsoluteDateInterval(IntervalEndpointType.OPEN,
-            AbsoluteDate.PAST_INFINITY, AbsoluteDate.FUTURE_INFINITY, IntervalEndpointType.OPEN);
+        AbsoluteDate.PAST_INFINITY, AbsoluteDate.FUTURE_INFINITY, IntervalEndpointType.OPEN);
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -2265247850750610628L;
 
     /**
      * Builds a new {@link AbsoluteDateInterval} with closed endpoints (or open if infinite dates are provided).
      *
      * @param lowerData
-     *        the lower end AbsoluteDate
+     *        The lower end AbsoluteDate
      * @param upperData
-     *        the upper end AbsoluteDate
-     *
+     *        The upper end AbsoluteDate
      * @throws MathIllegalArgumentException
      *         when the interval is invalid (unchecked exception).<br>
      *         In addition to <code>GenericInterval</code> and <code>ComparableInterval</code> checks, the infinite date
      *         boundaries also have to be opened.
-     *
      * @see ComparableInterval
      * @see GenericInterval
      * @see AbsoluteDate
      */
     public AbsoluteDateInterval(final AbsoluteDate lowerData, final AbsoluteDate upperData) {
-        this(decideIntervalEndPoint(lowerData), lowerData, upperData, 
+        this(decideIntervalEndPoint(lowerData), lowerData, upperData,
                 decideIntervalEndPoint(upperData));
-        
+
     }
 
     /**
      * Builds a new {@link AbsoluteDateInterval} with closed endpoints.
      *
      * @param lowerData
-     *        the lower end AbsoluteDate
+     *        The lower end AbsoluteDate
      * @param duration
-     *        the interval duration
-     *
+     *        The interval duration
      * @throws MathIllegalArgumentException
      *         when the interval is invalid (unchecked exception).<br>
      *         In addition to <code>GenericInterval</code> and <code>ComparableInterval</code> checks, the infinite date
      *         boundaries also have to be opened.
-     *
      * @see ComparableInterval
      * @see GenericInterval
      * @see AbsoluteDate
      */
     public AbsoluteDateInterval(final AbsoluteDate lowerData, final double duration) {
-        this(IntervalEndpointType.CLOSED, lowerData, lowerData.shiftedBy(duration), IntervalEndpointType.CLOSED);  
+        this(IntervalEndpointType.CLOSED, lowerData, lowerData.shiftedBy(duration), IntervalEndpointType.CLOSED);
     }
-    
+
     /**
      * Builds a new {@link AbsoluteDateInterval}.
-     * 
+     *
      * @param lowerDataIn
-     *        lower end AbsoluteDate
+     *        Lower end AbsoluteDate
      * @param upperDataIn
-     *        upper end AbsoluteDate
+     *        Upper end AbsoluteDate
      * @param lowerEndpointIn
-     *        lower end boundary type
+     *        Lower end boundary type
      * @param upperEndpointIn
-     *        upper end boundary type
+     *        Upper end boundary type
      * @throws MathIllegalArgumentException
      *         when the interval is invalid (unchecked exception).<br>
      *         In addition to <code>GenericInterval</code> and <code>ComparableInterval</code> checks, the infinite date
@@ -144,11 +144,11 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * @see AbsoluteDate
      */
     public AbsoluteDateInterval(final IntervalEndpointType lowerEndpointIn,
-        final AbsoluteDate lowerDataIn,
-        final AbsoluteDate upperDataIn, final IntervalEndpointType upperEndpointIn) {
+                                final AbsoluteDate lowerDataIn,
+                                final AbsoluteDate upperDataIn, final IntervalEndpointType upperEndpointIn) {
         // The parent constructor performs some validation
         super(lowerEndpointIn, lowerDataIn, upperDataIn, upperEndpointIn);
-        
+
         // calls the AbsoluteDate specific validation
         if (!adIntervalIsOK(lowerEndpointIn, lowerDataIn, upperDataIn, upperEndpointIn)) {
             throw new MathIllegalArgumentException(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN);
@@ -159,20 +159,18 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * Builds a new {@link AbsoluteDateInterval} from a {@link ComparableInterval}<{@link AbsoluteDate}>.
      *
      * @param interval
-     *        the interval
-     *
+     *        The interval
      * @throws MathIllegalArgumentException
      *         when the interval is invalid (unchecked exception).<br>
      *         In addition to <code>GenericInterval</code> and <code>ComparableInterval</code> checks, the infinite date
      *         boundaries also have to be opened.
-     *
      * @see ComparableInterval
      * @see GenericInterval
      * @see AbsoluteDate
      */
     public AbsoluteDateInterval(final ComparableInterval<AbsoluteDate> interval) {
         this(interval.getLowerEndpoint(), interval.getLowerData(), interval.getUpperData(),
-            interval.getUpperEndpoint());
+                interval.getUpperEndpoint());
     }
 
     /**
@@ -185,28 +183,26 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * </p>
      *
      * @param interval
-     *        the interval
+     *        The interval
      * @param referenceDate
-     *        the reference date
-     *
+     *        The reference date
      * @throws MathIllegalArgumentException
      *         when the interval is invalid (unchecked exception).<br>
      *         In addition to <code>GenericInterval</code> and <code>ComparableInterval</code> checks, the infinite date
      *         boundaries also have to be opened.
-     *
      * @see ComparableInterval
      * @see GenericInterval
      * @see AbsoluteDate
      */
     public AbsoluteDateInterval(final ComparableInterval<Double> interval,
-        final AbsoluteDate referenceDate) {
+                                final AbsoluteDate referenceDate) {
         this(interval.getLowerEndpoint(), referenceDate.shiftedBy(interval.getLowerData()),
-            referenceDate.shiftedBy(interval.getUpperData()), interval.getUpperEndpoint());
+                referenceDate.shiftedBy(interval.getUpperData()), interval.getUpperEndpoint());
     }
 
     /**
      * Check the validity of the <code>AbsoluteDate</code>-based interval.<br>
-     * 
+     *
      * <p>
      * Returns <code>false</code> if:
      * <ul>
@@ -216,18 +212,18 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * </p>
      *
      * @param lowerDataIn
-     *        lower end data value
+     *        Lower end data value
      * @param upperDataIn
-     *        upper end data value
+     *        Upper end data value
      * @param lowerEndpointIn
-     *        lower end boundary type
+     *        Lower end boundary type
      * @param upperEndpointIn
-     *        upper end boundary type
-     * @return true if the dates are valid
+     *        Upper end boundary type
+     * @return {@code true} if the dates are valid
      */
     private static boolean adIntervalIsOK(final IntervalEndpointType lowerEndpointIn,
-                                   final AbsoluteDate lowerDataIn, final AbsoluteDate upperDataIn,
-                                   final IntervalEndpointType upperEndpointIn) {
+                                          final AbsoluteDate lowerDataIn, final AbsoluteDate upperDataIn,
+                                          final IntervalEndpointType upperEndpointIn) {
         boolean validFlag = true;
         final AbsoluteDate ld = lowerDataIn;
         final IntervalEndpointType le = lowerEndpointIn;
@@ -236,18 +232,16 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
         final AbsoluteDate past8 = AbsoluteDate.PAST_INFINITY;
         final AbsoluteDate future8 = AbsoluteDate.FUTURE_INFINITY;
         // Empty intervals are forbidden.
-        // An empty interval has one open endpoint
-        // and equal endpoint values
+        // An empty interval has one open endpoint and equal endpoint values
         if ((ld.compareTo(ud) == 0) &&
-            (le == IntervalEndpointType.OPEN || ue == IntervalEndpointType.OPEN)) {
+                (le == IntervalEndpointType.OPEN || ue == IntervalEndpointType.OPEN)) {
             validFlag = false;
         } else if ((ld.equals(past8) || ld.equals(future8)) &&
-                // A closed bracket does not make sense with an infinity endpoint,
-                // so we forbid it
-            le == IntervalEndpointType.CLOSED) {
+                // A closed bracket does not make sense with an infinity endpoint, so we forbid it
+                le == IntervalEndpointType.CLOSED) {
             validFlag = false;
         } else if ((ud.equals(past8) || ud.equals(future8)) &&
-            ue == IntervalEndpointType.CLOSED) {
+                ue == IntervalEndpointType.CLOSED) {
             validFlag = false;
         }
         // return
@@ -256,13 +250,15 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
 
     /**
      * Decider weather the interval bracket should be closed or open when the user did not specify it.
-     * If the date is -inf or +inf the bracket is OPEN, and CLOSED otherwise.
+     * If the date is {@link AbsoluteDate#PAST_INFINITY -inf} or {@link AbsoluteDate#FUTURE_INFINITY +inf} the bracket
+     * is {@link IntervalEndpointType#OPEN OPEN}, and {@link IntervalEndpointType#CLOSED CLOSED} otherwise.
+     *
      * @param data
      *        AbsolutData to decide for the bracket
-     * @return IntervalEndpointType.CLOSED or IntervalEndpointType.OPEN
+     * @return {@link IntervalEndpointType#CLOSED CLOSED} or {@link IntervalEndpointType#OPEN OPEN}
      */
     private static IntervalEndpointType decideIntervalEndPoint(final AbsoluteDate data) {
-        if (data ==  AbsoluteDate.PAST_INFINITY || data ==  AbsoluteDate.FUTURE_INFINITY) {
+        if (AbsoluteDate.PAST_INFINITY.compareTo(data) == 0 || AbsoluteDate.FUTURE_INFINITY.compareTo(data) == 0) {
             return IntervalEndpointType.OPEN;
         }
         return IntervalEndpointType.CLOSED;
@@ -275,9 +271,8 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * <code>AbsoluteDate.durationFrom()</code>.<br>
      * This means the duration is measured in a linear time scale (TAI time scale).<br>
      * </p>
-     * 
+     *
      * @return the interval duration in seconds
-     * 
      * @see AbsoluteDate#durationFrom(AbsoluteDate)
      */
     public double getDuration() {
@@ -310,13 +305,11 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * the later. If the intervals overlap, this duration is 0.<br>
      * The sign of the result is positive if the given interval comes earlier.
      * </p>
-     * 
+     *
      * @param interval
-     *        the given interval
+     *        The given interval
      * @return the duration in seconds
-     * 
      * @see AbsoluteDate#durationFrom(AbsoluteDate)
-     * 
      */
     public double durationFrom(final AbsoluteDateInterval interval) {
         double rez = 0.;
@@ -346,9 +339,9 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * The method checks also the lower and upper end points of the intervals, considering that an interval with an open
      * end point is shorter than an interval with the same duration and a closed end point.
      * </p>
-     * 
+     *
      * @param interval
-     *        other interval
+     *        Other interval
      * @return a negative integer, zero, or a positive integer
      */
     public int compareDurationTo(final AbsoluteDateInterval interval) {
@@ -383,9 +376,9 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * To be merged, the two intervals must overlap or be connected. If that is not the case, the method returns
      * <code>null</code>.
      * </p>
-     * 
+     *
      * @param interval
-     *        the interval to be merged
+     *        The interval to be merged
      * @return the merged interval
      */
     public AbsoluteDateInterval mergeTo(final AbsoluteDateInterval interval) {
@@ -402,9 +395,9 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * <p>
      * If the intervals do not overlap, the method returns null.
      * </p>
-     * 
+     *
      * @param interval
-     *        the interval to be intersected
+     *        The interval to be intersected
      * @return the interval representing the intersection between the two intervals.
      */
     public AbsoluteDateInterval getIntersectionWith(final AbsoluteDateInterval interval) {
@@ -420,11 +413,9 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * Returns the interval with its lower an upper bounds shifted by the specified value.
      *
      * @param shift
-     *        the shift applied to the lower and the upper bounds (in seconds)
-     *
+     *        The shift applied to the lower and the upper bounds (in seconds)
      * @return the shifted interval
      */
-
     public AbsoluteDateInterval shift(final double shift) {
         return this.shift(shift, shift);
     }
@@ -433,10 +424,9 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * Returns the interval with its lower an upper bounds shifted by the specified values.
      *
      * @param lowerShift
-     *        the shift applied to the lower bound (in seconds)
+     *        The shift applied to the lower bound (in seconds)
      * @param upperShift
-     *        the shift applied to the upper bound (in seconds)
-     *
+     *        The shift applied to the upper bound (in seconds)
      * @return the shifted interval
      */
     public AbsoluteDateInterval shift(final double lowerShift, final double upperShift) {
@@ -448,8 +438,7 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * Returns the interval scaled by a given factor with respect to its midpoint.
      *
      * @param scalingFactor
-     *        the scaling factor
-     *
+     *        The scaling factor
      * @return the scaled interval
      */
     public AbsoluteDateInterval scale(final double scalingFactor) {
@@ -464,10 +453,9 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * Returns the interval scaled by a given factor with respect to the specified epoch.
      *
      * @param scalingFactor
-     *        the scaling factor
+     *        The scaling factor
      * @param epoch
-     *        the epoch of reference
-     *
+     *        The epoch of reference
      * @return the scaled interval
      */
     public AbsoluteDateInterval scale(final double scalingFactor, final AbsoluteDate epoch) {
@@ -503,8 +491,7 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * date.
      *
      * @param date
-     *        the reference date
-     *
+     *        The reference date
      * @return a String with boundary brackets and values.
      */
     public String toString(final AbsoluteDate date) {
@@ -518,9 +505,11 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
     }
 
     /**
-     * Returns a String representing the interval using provided Timescale.
-     * @param timeScale timescale in which the dates should be represented
-     * @return a String representation of date interval in provided timescale
+     * Returns a String representing the interval using provided time scale.
+     *
+     * @param timeScale
+     *        Time scale in which the dates should be represented
+     * @return a String representation of date interval in provided time scale
      */
     public String toString(final TimeScale timeScale) {
         final String leftB = "[";
@@ -533,33 +522,37 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
         return startB + spc + this.getLowerData().toString(timeScale) + " ; " + this.getUpperData().toString(timeScale)
                 + spc + endB;
     }
-    
+
     /**
      * Returns a list of dates constructed from the interval, a date every step (in seconds).
      * It takes into account if the interval is open or closed.
-     * Example: For a step = 0.5
-     *          [0, 1]   => 0, 0.5, 1
-     *          [0, 1[   => 0, 0.5 
-     *          ]0, 1[   => 0.5 
-     *          [0, 0.9] => 0, 0.5
      * 
+     * <pre>
+     * Example: 
+     *      For a step = 0.5
+     *          [0, 1] => 0, 0.5, 1
+     *          [0, 1[ => 0, 0.5
+     *          ]0, 1[ => 0.5
+     *          [0, 0.9] => 0, 0.5
+     * </pre>
+     *
      * @param step
-     *        step in seconds between dates
-     * @return list of dates 
+     *        Step in seconds between dates
+     * @return list of dates
      * @throws MathIllegalArgumentException
-     *         when n is smaller than 2
-     *         when lower or upper data is infinity
+     *         if n is smaller than 2<br>
+     *         if lower or upper data is infinity
      */
-    public List<AbsoluteDate> getDateList(final double step) {
+    public List<AbsoluteDate> getDateListFromStep(final double step) {
 
-        // step must be positive and different from 0
+        // Step must be positive and different from 0
         if (step <= 0) {
             throw new MathIllegalArgumentException(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN);
         }
         // data should not be infinity
         final AbsoluteDate lData = this.getLowerData();
         final AbsoluteDate upData = this.getUpperData();
-        if (lData == AbsoluteDate.PAST_INFINITY || upData == AbsoluteDate.FUTURE_INFINITY) {
+        if (AbsoluteDate.PAST_INFINITY.compareTo(lData) == 0 || AbsoluteDate.FUTURE_INFINITY.compareTo(upData) == 0) {
             throw new MathIllegalArgumentException(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN);
         }
         // New list of dates
@@ -584,35 +577,37 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
             } else {
                 break;
             }
-
         }
         return dateList;
     }
-    
+
     /**
-     * Returns a list of dates constructed from the interval evenly distributed in the interval.
+     * Returns a list of dates constructed from the interval evenly distributed in the interval.<br>
      * It takes into account if the interval is open or closed.
-     * Example: For n = 3
-     *          [0, 1]   => 0, 0.5, 1
-     *          [0, 1[   => 0, 0.33, 0.66
-     *          ]0, 1[   => 0.25, 0.5, 0.75
+     * <pre>
+     * Example: 
+     *      For n = 3
+     *          [0, 1] => 0, 0.5, 1
+     *          [0, 1[ => 0, 0.33, 0.66
+     *          ]0, 1[ => 0.25, 0.5, 0.75
+     * </pre>
      * 
      * @param n
-     *        number of dates in the list to return
-     * @return list of dates 
+     *        Number of dates in the list to return
+     * @return list of dates
      * @throws MathIllegalArgumentException
-     *         when n is smaller than 2
-     *         when lower or upper data is infinity
+     *         if n is smaller than 2<br>
+     *         if lower or upper data is infinity
      */
-    public List<AbsoluteDate> getDateList(final int n) {
+    public List<AbsoluteDate> getDateListFromSize(final int n) {
         // n must be minimum 2
         if (n < 2) {
             throw new MathIllegalArgumentException(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN);
         }
-        // data should not be infinity
+        // Data should not be infinity
         final AbsoluteDate lData = this.getLowerData();
         final AbsoluteDate upData = this.getUpperData();
-        if (lData == AbsoluteDate.PAST_INFINITY || upData == AbsoluteDate.FUTURE_INFINITY) {
+        if (AbsoluteDate.PAST_INFINITY.compareTo(lData) == 0 || AbsoluteDate.FUTURE_INFINITY.compareTo(upData) == 0) {
             throw new MathIllegalArgumentException(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN);
         }
 
@@ -631,45 +626,19 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
             nIntervals += 1;
         }
         final double totalDuration = upData.durationFrom(lData);
-        // Compute the step from the number of values in the interval
+        // Compute the step from the number of intervals
         final double step = totalDuration / nIntervals;
 
-        AbsoluteDate next = lData;
-        // Fill the list with the dates
-        while (dateList.size() < n) {
-            next = next.shiftedBy(step);
-            dateList.add(next);
-        }
-        return dateList;
-    }
-    
-    /**
-     * Check whether the given date is contained in the current interval.
-     * 
-     * @param dateIn date to check
-     * @return boolean: if true, the given date is contained in the interval; if false, it is not
-     */
-    public boolean contains(final AbsoluteDate dateIn) {
-        // Define boolean to return
-        final boolean containsDateIn;
-        // Compare given date with respect to lower data
-        final int dateInWrtLowerData = dateIn.compareTo(this.getLowerData());
-        // Compare given date with respect to upper data
-        final int dateInWrtUpperData = dateIn.compareTo(this.getUpperData());
-        // Check if given date is contained in the interval
-        if (dateInWrtLowerData > 0 && dateInWrtUpperData < 0) {
-            containsDateIn = true;
-            // Check if lower end-point is contained in the interval and if given date coincides with it
-        } else if (this.getLowerEndpoint() == IntervalEndpointType.CLOSED && dateInWrtLowerData == 0) {
-            containsDateIn = true;
-            // Check if upper end-point is contained in the interval and if given date coincides with it
-        } else if (this.getUpperEndpoint() == IntervalEndpointType.CLOSED && dateInWrtUpperData == 0) {
-            containsDateIn = true;
-            // Given date is not contained in the interval
-        } else {
-            containsDateIn = false;
+        // Fill the dates between the lower & upper bounds (excluded)
+        for (int i = 1; i < nIntervals; i++) {
+            dateList.add(lData.shiftedBy(step * i));
         }
 
-        return containsDateIn;
+        // Add the upper date if needed
+        if (upInt == IntervalEndpointType.CLOSED) {
+            dateList.add(upData);
+        }
+
+        return dateList;
     }
 }

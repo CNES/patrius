@@ -18,6 +18,13 @@
  * @history creation 01/08/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
@@ -51,9 +58,11 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
@@ -62,7 +71,6 @@ import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -174,7 +182,7 @@ public class MoonMeeusTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.MOON, loader);
 
-        final CelestialBody moonDE = CelestialBodyFactory.getMoon();
+        final CelestialPoint moonDE = CelestialBodyFactory.getMoon();
 
         final Vector3D pos1 = this.moon.getPVCoordinates(date, gcrf).getPosition();
 
@@ -230,13 +238,13 @@ public class MoonMeeusTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.MOON, loader);
 
-        final CelestialBody moonDE = CelestialBodyFactory.getMoon();
+        final CelestialPoint moonDE = CelestialBodyFactory.getMoon();
         // Meeus moon (high precision)
-        final CelestialBody moonMeeus0005 = new MeeusMoon(62, 66, 46);
+        final CelestialPoint moonMeeus0005 = new MeeusMoon(62, 66, 46);
         // Meeus moon (medium precision)
-        final CelestialBody moonMeeus0035 = new MeeusMoon(26, 13, 13);
+        final CelestialPoint moonMeeus0035 = new MeeusMoon(26, 13, 13);
         // Meeus moon (low precision)
-        final CelestialBody moonMeeus025 = new MeeusMoon(9, 4, 3);
+        final CelestialPoint moonMeeus025 = new MeeusMoon(9, 4, 3);
 
         // reference
         final Vector3D posREF = moonDE.getPVCoordinates(date, gcrf).getPosition();
@@ -254,7 +262,7 @@ public class MoonMeeusTest {
         Assert.assertTrue(Vector3D.angle(posREF, pos025) < 0.25 * MathUtils.DEG_TO_RAD);
 
         // Test GetNativeFrame
-        Assert.assertEquals(moonMeeus025.getICRF(), moonMeeus025.getNativeFrame(null, null));
+        Assert.assertEquals(moonMeeus025.getICRF(), moonMeeus025.getNativeFrame(null));
     }
     
     /**
@@ -275,8 +283,8 @@ public class MoonMeeusTest {
     	// arbitrary date 
     	final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
     	
-    	final Frame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
-        final Frame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
+    	final CelestialBodyFrame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
+        final CelestialBodyFrame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
     	
     	final BodyShape actualShape = this.moon.getShape();
     	final BodyShape expectedShape = new OneAxisEllipsoid(this.radius, 0, bodyRotatingFrame, "Moon"); 
@@ -316,7 +324,7 @@ public class MoonMeeusTest {
      * 
      * @testedFeature {@link features#MEEUS_MOON_COVERAGE}
      * 
-     * @description check that the setter method of {@link CelestialBody} is correct.
+     * @description check that the setter method of {@link CelestialPoint} is correct.
      * 
      * @input {@link BodyShape}
      * 
@@ -329,8 +337,8 @@ public class MoonMeeusTest {
     	final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
     	
     	// inertial and rotating frame
-    	final Frame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
-    	final Frame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
+    	final CelestialBodyFrame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
+    	final CelestialBodyFrame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
     	
     	// the default shape
     	final CelestialBody moon = this.moon;

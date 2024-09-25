@@ -22,6 +22,7 @@
  * @history 27/09/2011
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.4:FA:FA-2108:04/10/2019:[PATRIUS] Incoherence hash code/equals dans ComparableInterval
@@ -69,18 +70,18 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  *
  * @concurrency matches the concurrency of the parameter type : using an immutable type is HIGHLY
  *              recommended
- * 
+ *
  * @author Pierre Cardoso
- * 
+ *
  * @version $Id: ComparableInterval.java 18083 2017-10-02 16:54:39Z bignon $
- * 
+ *
  * @since 3.0
- * 
+ *
  */
 public class ComparableInterval<T extends Comparable<T>> extends GenericInterval<T> implements
     Comparable<ComparableInterval<T>> {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -3043430443585844772L;
 
     /** Root int for hash code. */
@@ -111,7 +112,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * The input parameters have to be not null.<br>
      * The lower and upper endpoints also have to be properly ordered.<br>
      * Otherwise a <code>MathIllegalArgumentException</code> is thrown.
-     * 
+     *
      * @param lowerDataIn
      *        lower end data value
      * @param upperDataIn
@@ -125,7 +126,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * @since 1.0
      */
     public ComparableInterval(final IntervalEndpointType lowerEndpointIn, final T lowerDataIn,
-        final T upperDataIn, final IntervalEndpointType upperEndpointIn) {
+                              final T upperDataIn, final IntervalEndpointType upperEndpointIn) {
         super(lowerEndpointIn, lowerDataIn, upperDataIn, upperEndpointIn);
         // Complimentary validity tests for comparable values
         if (!this.comparableIntervalIsOK(lowerDataIn, upperDataIn)) {
@@ -136,15 +137,15 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
 
     /**
      * Returns true if the parameters describe a valid interval.<br>
-     * 
-     * 
+     *
+     *
      * @param lowerDataIn
      *        lower end data value
      * @param upperDataIn
      *        upper end data value
-     * 
+     *
      * @return true when the interval represented by the parameters is valid
-     * 
+     *
      * @since 1.0
      */
     private boolean comparableIntervalIsOK(final T lowerDataIn, final T upperDataIn) {
@@ -160,50 +161,13 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
 
     /**
      * Returns true if the provided value belongs to the interval.
-     * 
+     *
      * @param cmp
      *        the tested value
      * @return true if the value belongs to the interval
      */
     public final boolean contains(final Comparable<T> cmp) {
-        boolean isIn = true;
-        // Test for lower endpoint
-        // (depends on endpoint type)
-        switch (this.getLowerEndpoint()) {
-            case CLOSED:
-                if (cmp.compareTo(this.getLowerData()) < 0) {
-                    isIn = false;
-                }
-                break;
-            case OPEN:
-                if (cmp.compareTo(this.getLowerData()) <= 0) {
-                    isIn = false;
-                }
-                break;
-            default:
-                // Cannot happen
-                break;
-        }
-        // Test for upper endpoint
-        // (depends on endpoint type)
-        if (isIn) {
-            switch (this.getUpperEndpoint()) {
-                case CLOSED:
-                    if (cmp.compareTo(this.getUpperData()) > 0) {
-                        isIn = false;
-                    }
-                    break;
-                case OPEN:
-                    if (cmp.compareTo(this.getUpperData()) >= 0) {
-                        isIn = false;
-                    }
-                    break;
-                default:
-                    // Cannot happen
-                    break;
-            }
-        }
-        return isIn;
+        return compare(cmp) == 0;
     }
 
     /**
@@ -213,7 +177,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * The intervals [l1 ; u1] and [l2 ; u2] overlap if u1>=l2 AND l1<=u2. If one of the end-points is open, the
      * comparison is strict.
      * </p>
-     * 
+     *
      * @param interval
      *        the other interval
      * @return true if the two intervals overlap
@@ -225,7 +189,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
         boolean cond1 = false;
         boolean cond2 = false;
         if (this.getUpperEndpoint() == IntervalEndpointType.OPEN ||
-            interval.getLowerEndpoint() == IntervalEndpointType.OPEN) {
+                interval.getLowerEndpoint() == IntervalEndpointType.OPEN) {
             // strict comparison
             cond1 = this.getUpperData().compareTo(interval.getLowerData()) > 0;
         } else {
@@ -233,7 +197,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
             cond1 = this.getUpperData().compareTo(interval.getLowerData()) >= 0;
         }
         if (this.getLowerEndpoint() == IntervalEndpointType.OPEN ||
-            interval.getUpperEndpoint() == IntervalEndpointType.OPEN) {
+                interval.getUpperEndpoint() == IntervalEndpointType.OPEN) {
             // strict comparison
             cond2 = this.getLowerData().compareTo(interval.getUpperData()) < 0;
         } else {
@@ -251,7 +215,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * The interval [l1; u1] includes the interval [l2; u2] if l1<=l2 and u1>=u2. If the end-point of the including
      * interval is open and the end-point of the included interval is closed, the comparison is strict.
      * </p>
-     * 
+     *
      * @param interval
      *        the interval tested for inclusion
      * @return true if the provided interval is included
@@ -264,14 +228,14 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
         // if the includer endpoint is open and the included is closed,
         // the comparison becomes strict
         if (this.getLowerEndpoint() == IntervalEndpointType.OPEN &&
-            interval.getLowerEndpoint() == IntervalEndpointType.CLOSED) {
+                interval.getLowerEndpoint() == IntervalEndpointType.CLOSED) {
             // strict comparison
             cond1 = this.getLowerData().compareTo(interval.getLowerData()) < 0;
         } else {
             cond1 = this.getLowerData().compareTo(interval.getLowerData()) <= 0;
         }
         if (this.getUpperEndpoint() == IntervalEndpointType.OPEN &&
-            interval.getUpperEndpoint() == IntervalEndpointType.CLOSED) {
+                interval.getUpperEndpoint() == IntervalEndpointType.CLOSED) {
             // strict comparison
             cond2 = this.getUpperData().compareTo(interval.getUpperData()) > 0;
         } else {
@@ -288,7 +252,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * Two end-points connects if their values are identical and their end-points have different types (one is open and
      * the other is closed).
      * </p>
-     * 
+     *
      * @param interval
      *        the interval tested for connection
      * @return true if the provided interval is connected by its upper point
@@ -449,7 +413,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * zero if they are equal, or a positive integer if is it superior. The method also compares the lower end point
      * type of the two intervals.
      * </p>
-     * 
+     *
      * @param interval
      *        the interval tested for lower end point comparison
      * @return a negative integer, zero, or a positive integer
@@ -471,7 +435,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * zero if they are equal, or a positive integer if is it superior. The method also compares the upper end point
      * type of the two intervals.
      * </p>
-     * 
+     *
      * @param interval
      *        the interval tested for upper end point comparison
      * @return a negative integer, zero, or a positive integer
@@ -500,11 +464,11 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
      * upper end point is open while the upper end point of the input interval is closed (and vice-versa);
      * <li>if both upper/lower data and end points are identical, it returns zero.
      * </ul>
-     * 
+     *
      * @param interval
      *        the time interval to be compared.
      * @return a negative integer, zero, or a positive integer
-     * 
+     *
      * @throws ClassCastException
      *         if the specified object's type prevents it
      *         from being compared to this object.
@@ -522,7 +486,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
         if (lowerDateCompare == 0) {
             // check the OPEN/CLOSED boundary:
             final int lowerEndpoint = interval.getLowerEndpoint().compareTo(
-                    this.getLowerEndpoint());
+                this.getLowerEndpoint());
             if (lowerEndpoint == 0) {
                 // if the lower dates are the same, we order by the upper dates:
                 final int upperDateCompare = this.getUpperData().compareTo(interval.getUpperData());
@@ -544,8 +508,33 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
     }
 
     /**
+     * Compare provided comparable to this comparable interval.
+     *
+     * @param comparable
+     *        The comparable to be compared
+     * @return {@code -1} if the comparable is before the interval, {@code 0} if the comparable is included in the
+     *         interval and {@code 1} if the comparable is after the interval
+     */
+    public int compare(final Comparable<T> comparable) {
+        // First check if comparable is before the lower data
+        final int lowerDateCompare = comparable.compareTo(this.getLowerData());
+        if (lowerDateCompare < 0
+                || (lowerDateCompare == 0 && this.getLowerEndpoint().equals(IntervalEndpointType.OPEN))) {
+            return -1;
+        }
+        // Then check if the comparable is after the upper data
+        final int upperDateCompare = comparable.compareTo(this.getUpperData());
+        if (upperDateCompare > 0
+                || (upperDateCompare == 0 && this.getUpperEndpoint().equals(IntervalEndpointType.OPEN))) {
+            return 1;
+        }
+        // Otherwise, it is contained in the interval.
+        return 0;
+    }
+
+    /**
      * Checks if the instance represents the same {@link ComparableInterval} as another instance.
-     * 
+     *
      * @param interval
      *        other interval
      * @return true if the instance and the other are equals
@@ -560,9 +549,9 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
         if ((interval != null) && (interval instanceof ComparableInterval<?>)) {
             final ComparableInterval<?> cInt = (ComparableInterval<?>) interval;
             return this.getLowerData().equals(cInt.getLowerData()) &&
-                this.getUpperData().equals(cInt.getUpperData()) &&
-                this.getLowerEndpoint().equals(cInt.getLowerEndpoint()) &&
-                this.getUpperEndpoint().equals(cInt.getUpperEndpoint());
+                    this.getUpperData().equals(cInt.getUpperData()) &&
+                    this.getLowerEndpoint().equals(cInt.getLowerEndpoint()) &&
+                    this.getUpperEndpoint().equals(cInt.getUpperEndpoint());
         }
         return false;
     }
@@ -570,7 +559,7 @@ public class ComparableInterval<T extends Comparable<T>> extends GenericInterval
     /**
      * Computes the hash code.<br>
      * The standard "clever" hash algorithm is used.
-     * 
+     *
      * @return the hash code value.
      */
     private int computeHashCode() {

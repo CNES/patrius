@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3254:22/05/2023:[PATRIUS] Distinction entre acceleration rotationelle nulle et ZERO
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -36,6 +37,7 @@
 package fr.cnes.sirius.patrius.utils;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
@@ -43,7 +45,6 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.TimeShiftable;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -145,7 +146,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      * @param rotationRateIn
      *        rotation rate Ω (rad/s)
      * @param rotationAccelerationIn
-     *        rotation acceleration dΩ/dt (rad²/s²)
+     *        rotation acceleration dΩ/dt (rad/s²)
      */
     public AngularCoordinates(final Rotation rotationIn,
         final Vector3D rotationRateIn, final Vector3D rotationAccelerationIn) {
@@ -163,7 +164,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      * @param rotationRateIn
      *        rotation rate Ω (rad/s)
      * @param rotationAccelerationIn
-     *        rotation acceleration dΩ/dt (rad²/s²)
+     *        rotation acceleration dΩ/dt (rad/s²)
      * @param projectVelocityAndAcceleration
      *        true if velocity and acceleration should be simply projected, false otherwise
      */
@@ -221,8 +222,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
             final Vector3D ru1Dot = this.rotation.applyInverseTo(u1.getVelocity());
             final Vector3D ru2Dot = this.rotation.applyInverseTo(u2.getVelocity());
             this.rotationRate = Vector3D.inverseCrossProducts(v1.getPosition(), ru1Dot.subtract(v1.getVelocity()),
-                v2.getPosition(), ru2Dot.subtract(v2.getVelocity()),
-                tolerance);
+                v2.getPosition(), ru2Dot.subtract(v2.getVelocity()), tolerance);
 
             final boolean isu1u2NotNull = u1.getAcceleration() != null && u2.getAcceleration() != null;
             final boolean isv1v2NotNull = v1.getAcceleration() != null && v2.getAcceleration() != null;
@@ -342,7 +342,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      *         of the instance
      */
     public AngularCoordinates revert() {
-        return this.revert(false);
+        return revert(false);
     }
 
     /**
@@ -362,7 +362,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      */
     @Override
     public AngularCoordinates shiftedBy(final double dt) {
-        return this.shiftedBy(dt, false);
+        return shiftedBy(dt, false);
     }
 
     /**
@@ -438,7 +438,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
     /**
      * Get the rotation acceleration.
      * 
-     * @return the rotation acceleration vector dΩ/dt (rad²/s²). May be null if not computed at some point
+     * @return the rotation acceleration vector dΩ/dt (rad/s²). May be null if not computed at some point.
      */
     public Vector3D getRotationAcceleration() {
         return this.rotationAcceleration;
@@ -514,7 +514,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      * @see #subtractOffset(AngularCoordinates)
      */
     public AngularCoordinates addOffset(final AngularCoordinates offset) {
-        return this.addOffset(offset, false);
+        return addOffset(offset, false);
     }
 
     /**
@@ -539,7 +539,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      * @see #addOffset(AngularCoordinates)
      */
     public AngularCoordinates subtractOffset(final AngularCoordinates offset, final boolean computeSpinDerivatives) {
-        return this.addOffset(offset.revert(computeSpinDerivatives), computeSpinDerivatives);
+        return addOffset(offset.revert(computeSpinDerivatives), computeSpinDerivatives);
     }
 
     /**
@@ -565,7 +565,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      * @see #addOffset(AngularCoordinates)
      */
     public AngularCoordinates subtractOffset(final AngularCoordinates offset) {
-        return this.subtractOffset(offset, false);
+        return subtractOffset(offset, false);
     }
 
     /**
@@ -578,12 +578,12 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
     public PVCoordinates applyTo(final PVCoordinates pv) {
 
         final Vector3D transformedP = this.rotation.applyInverseTo(pv.getPosition());
-        final Vector3D crossP = projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
+        final Vector3D crossP = this.projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
                 this.rotationRate, transformedP);
         final Vector3D transformedV = this.rotation.applyInverseTo(pv.getVelocity()).subtract(crossP);
-        final Vector3D crossV = projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
+        final Vector3D crossV = this.projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
                 this.rotationRate, transformedV);
-        final Vector3D crossCrossP = projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
+        final Vector3D crossCrossP = this.projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
                 this.rotationRate, crossP);
         final Vector3D crossDotP = this.rotationAcceleration == null ? Vector3D.ZERO :
             Vector3D.crossProduct(this.rotationAcceleration, transformedP);
@@ -594,7 +594,6 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
         }
 
         return new PVCoordinates(transformedP, transformedV, transformedA);
-
     }
 
     /**
@@ -606,24 +605,23 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      */
     public TimeStampedPVCoordinates applyTo(final TimeStampedPVCoordinates pv) {
 
-        final Vector3D transformedP = this.getRotation().applyInverseTo(pv.getPosition());
-        final Vector3D crossP = projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
-                this.getRotationRate(), transformedP);
-        final Vector3D transformedV = this.getRotation().applyInverseTo(pv.getVelocity()).subtract(crossP);
-        final Vector3D crossV = projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
-                this.getRotationRate(), transformedV);
-        final Vector3D crossCrossP = projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
-                this.getRotationRate(), crossP);
+        final Vector3D transformedP = getRotation().applyInverseTo(pv.getPosition());
+        final Vector3D crossP = this.projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
+            getRotationRate(), transformedP);
+        final Vector3D transformedV = getRotation().applyInverseTo(pv.getVelocity()).subtract(crossP);
+        final Vector3D crossV = this.projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
+            getRotationRate(), transformedV);
+        final Vector3D crossCrossP = this.projectVelocityAndAcceleration ? Vector3D.ZERO : Vector3D.crossProduct(
+            getRotationRate(), crossP);
         final Vector3D crossDotP = this.rotationAcceleration == null ? Vector3D.ZERO : Vector3D.crossProduct(
-                this.rotationAcceleration, transformedP);
+            this.rotationAcceleration, transformedP);
         Vector3D transformedA = null;
         if (pv.getAcceleration() != null) {
-            transformedA = new Vector3D(1, this.getRotation().applyInverseTo(pv.getAcceleration()), MINUS_TWO, crossV,
+            transformedA = new Vector3D(1, getRotation().applyInverseTo(pv.getAcceleration()), MINUS_TWO, crossV,
                 -1, crossCrossP, -1, crossDotP);
         }
 
         return new TimeStampedPVCoordinates(pv.getDate(), transformedP, transformedV, transformedA);
-
     }
 
     /**
@@ -642,7 +640,7 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
      * @see #createFromModifiedRodrigues(double[][])
      */
     public double[][] getModifiedRodrigues(final double sign) {
-        return this.getModifiedRodrigues(sign, false);
+        return getModifiedRodrigues(sign, false);
     }
 
     /**
@@ -662,13 +660,13 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
     public double[][] getModifiedRodrigues(final double sign, final boolean computeSpinDerivative) {
 
         // Getters
-        final double q0 = sign * this.getRotation().getQuaternion().getQ0();
-        final double q1 = sign * this.getRotation().getQuaternion().getQ1();
-        final double q2 = sign * this.getRotation().getQuaternion().getQ2();
-        final double q3 = sign * this.getRotation().getQuaternion().getQ3();
-        final double oX = this.getRotationRate().getX();
-        final double oY = this.getRotationRate().getY();
-        final double oZ = this.getRotationRate().getZ();
+        final double q0 = sign * getRotation().getQuaternion().getQ0();
+        final double q1 = sign * getRotation().getQuaternion().getQ1();
+        final double q2 = sign * getRotation().getQuaternion().getQ2();
+        final double q3 = sign * getRotation().getQuaternion().getQ3();
+        final double oX = getRotationRate().getX();
+        final double oY = getRotationRate().getY();
+        final double oZ = getRotationRate().getZ();
 
         // first time-derivatives of the quaternion
         final double q0Dot = 0.5 * MathArrays.linearCombination(-q1, oX, -q2, oY, -q3, oZ);
@@ -729,7 +727,35 @@ public class AngularCoordinates implements TimeShiftable<AngularCoordinates>, Se
 
         // Return result
         return new double[][] { { r1, r2, r3 }, { r1Dot, r2Dot, r3Dot }, { r1DotDot, r2DotDot, r3DotDot } };
+    }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == getClass())) {
+            // Same object type: check all attributes
+            final AngularCoordinates other = (AngularCoordinates) object;
+
+            // Evaluate the attitudes components
+            isEqual = Objects.equals(this.rotation, other.rotation)
+                    && Objects.equals(this.rotationRate, other.rotationRate)
+                    && Objects.equals(this.rotationAcceleration, other.rotationAcceleration)
+                    && this.projectVelocityAndAcceleration == other.projectVelocityAndAcceleration;
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.rotation, this.rotationRate, this.rotationAcceleration,
+            this.projectVelocityAndAcceleration);
     }
 
     /**

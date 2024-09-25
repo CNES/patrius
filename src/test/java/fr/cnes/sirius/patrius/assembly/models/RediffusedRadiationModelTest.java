@@ -18,6 +18,12 @@
  * @history creation 12/03/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -76,7 +82,9 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.radiation.ElementaryFlux;
@@ -84,7 +92,6 @@ import fr.cnes.sirius.patrius.forces.radiation.IEmissivityModel;
 import fr.cnes.sirius.patrius.forces.radiation.KnockeRiesModel;
 import fr.cnes.sirius.patrius.forces.radiation.RediffusedRadiationPressure;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
-import fr.cnes.sirius.patrius.frames.FactoryManagedFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
@@ -370,8 +377,8 @@ public class RediffusedRadiationModelTest {
              * RediffusedRatiationPressure
              */
             final IEmissivityModel model = new KnockeRiesModel();
-            final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
-            final CelestialBody sun = CelestialBodyFactory.getSun();
+            final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
+            final CelestialPoint sun = CelestialBodyFactory.getSun();
             radiativeModel = new RediffusedRadiativeModel(true, true, k0Al, k0Ir, assembly);
             final RediffusedRadiationPressure force = new RediffusedRadiationPressure(sun, itrfFrame, 15, 5, model,
                     radiativeModel);
@@ -445,7 +452,7 @@ public class RediffusedRadiationModelTest {
             }
             
             @Override
-            public void setEphemeris(CelestialBodyEphemeris ephemerisIn) {
+            public void setEphemeris(final CelestialBodyEphemeris ephemerisIn) {
                 // nothing to do
             }
 
@@ -513,24 +520,29 @@ public class RediffusedRadiationModelTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
 
             @Override
-            public IAUPole getIAUPole() {
+            public CelestialBodyIAUOrientation getOrientation() {
                 return null;
             }
 
             @Override
-            public void setIAUPole(final IAUPole iauPoleIn) {
+            public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
                 // nothing to do
             }
 
             @Override
             public void setGM(final double gmIn) {
                 // nothing to do
+            }
+
+            @Override
+            public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+             // nothing to do
+                return null;
             }
         };
 

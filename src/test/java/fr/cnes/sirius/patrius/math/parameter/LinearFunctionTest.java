@@ -78,13 +78,13 @@ public class LinearFunctionTest {
         linFct = new LinearFunction(this.state.getDate(), paramZeroValue, paramSlope);
 
         Assert.assertEquals(2, linFct.getParameters().size());
-        Assert.assertTrue(linFct.getParameters().get(0).equals(paramZeroValue));
-        Assert.assertTrue(linFct.getParameters().get(1).equals(paramSlope));
-
+        Assert.assertEquals(paramZeroValue, linFct.getParameters().get(0));
+        Assert.assertEquals(paramSlope, linFct.getParameters().get(1));
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the {@link LinearFunction} values computation feature.
      * 
      * @testedMethod {@link LinearFunction#value(SpacecraftState)}
@@ -109,15 +109,16 @@ public class LinearFunctionTest {
 
         Assert.assertEquals(zeroValue, linFctTab[1].value(this.state), 0.);
         Assert.assertEquals(zeroValue + (slope * 10.),
-                linFctTab[1].value(this.state.shiftedBy(10.)), 0.);
+            linFctTab[1].value(this.state.shiftedBy(10.)), 0.);
 
         Assert.assertEquals(zeroValue, linFctTab[2].value(this.state), 0.);
         Assert.assertEquals(zeroValue + (slope * 2. * 10.),
-                linFctTab[2].value(this.state.shiftedBy(10.)), 0.);
+            linFctTab[2].value(this.state.shiftedBy(10.)), 0.);
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the {@link LinearFunction} derivatives computation feature.
      * 
      * @testedMethod {@link LinearFunction#derivativeValue(Parameter, SpacecraftState)}
@@ -130,14 +131,14 @@ public class LinearFunctionTest {
         final Parameter paramSlope = new Parameter("slope", 2);
         final Parameter paramZeroValue = new Parameter("zeroValue", 0.5);
         final LinearFunction linFct = new LinearFunction(this.state.getDate(), paramZeroValue,
-                paramSlope);
+            paramSlope);
 
         // Evaluate the derivatives
         Assert.assertEquals(1.0, linFct.derivativeValue(paramZeroValue, this.state.shiftedBy(10.)),
-                0.);
+            0.);
         Assert.assertEquals(10.0, linFct.derivativeValue(paramSlope, this.state.shiftedBy(10.)), 0.);
         Assert.assertEquals(0.,
-                linFct.derivativeValue(new Parameter("random", 1.), this.state.shiftedBy(10.)), 0.);
+            linFct.derivativeValue(new Parameter("random", 1.), this.state.shiftedBy(10.)), 0.);
     }
 
     /**
@@ -154,7 +155,7 @@ public class LinearFunctionTest {
         final Parameter paramSlope = new Parameter("slope", 2);
         final Parameter paramZeroValue = new Parameter("zeroValue", 0.5);
         final LinearFunction linFct = new LinearFunction(this.state.getDate(), paramZeroValue,
-                paramSlope);
+            paramSlope);
 
         // Test constructor with a null attribute
         try {
@@ -189,7 +190,8 @@ public class LinearFunctionTest {
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the function serialization / deserialization process.
      *
      * @testPassCriteria The function can be serialized and deserialized.
@@ -202,17 +204,29 @@ public class LinearFunctionTest {
 
         Assert.assertEquals(linFct.value(this.state), deserializedFct.value(this.state), 0.);
         Assert.assertEquals(linFct.value(this.state.shiftedBy(10.)),
-                deserializedFct.value(this.state.shiftedBy(10.)), 0.);
+            deserializedFct.value(this.state.shiftedBy(10.)), 0.);
     }
 
     /**
-     * Initial state initialization.
+     * @description Check the String representation method behavior.
+     *
+     * @testedMethod {@link LinearFunction#toString()}
+     *
+     * @testPassCriteria The container String representation contains the expected information.
      */
+    @Test
+    public void testToString() {
+        final LinearFunction linFct = new LinearFunction(this.state.getDate(), 1.1, 0.1);
+        final String expectedText = "Value     : f = 1.1 + 0.1 * (t - t0)\n" + "Parameters: [A0; A1]\n";
+        Assert.assertEquals(expectedText, linFct.toString());
+    }
+
+    /** Initial state initialization. */
     @Before
     public void setUp() {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Orbit orbit = new KeplerianOrbit(7000000, 0.01, 0, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);
+            FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);
         this.state = new SpacecraftState(orbit);
     }
 }

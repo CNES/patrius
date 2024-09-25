@@ -18,6 +18,8 @@
  * @history created 20/02/2013
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:FA:FA-3312:22/05/2023:[PATRIUS] TrueInertialFrame pas vraiment pseudo-inertiel AbstractCelestialBody
@@ -45,7 +47,6 @@
 package fr.cnes.sirius.patrius.stela.bodies;
 
 import fr.cnes.sirius.patrius.bodies.AbstractCelestialBody;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
@@ -90,8 +91,6 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  * @concurrency immutable
  * 
- * @see CelestialBody
- * 
  * @author Cedric Dental
  * 
  * @since 1.3
@@ -112,12 +111,6 @@ public class MeeusMoonStela extends AbstractCelestialBody {
      */
     private static final double MOON_RADIUS = 1737400.;
 
-    /**
-     * Cached transform from {@link #getInertialFrame(IAUPoleModelType.CONSTANT)} to integration
-     * frame (CIRF).
-     */
-    private static Transform cachedTransform = null;
-
     /** The Earth Radius. */
     private final double earthRadius;
 
@@ -134,30 +127,6 @@ public class MeeusMoonStela extends AbstractCelestialBody {
         this.earthRadius = inEarthRadius;
         this.setEphemeris(new MeeusMoonStelaEphemeris(getICRF()));
         this.setShape(new OneAxisEllipsoid(MOON_RADIUS, 0., this.getRotatingFrame(IAUPoleModelType.TRUE), "Moon"));
-    }
-
-    /**
-     * Update cached transform from {@link FramesFactory#getMOD(boolean)} to provided frame.
-     * Once called, this transform will always be used when calling
-     * {@link #getPVCoordinates(AbsoluteDate, Frame)} unless a call to {@link #resetTransform()} has
-     * been made
-     * 
-     * @param date
-     *        a date
-     * @param frame
-     *        a frame
-     * @throws PatriusException
-     *         thrown if transformation computation failed
-     */
-    public static void updateTransform(final AbsoluteDate date, final Frame frame) throws PatriusException {
-        cachedTransform = FramesFactory.getMOD(false).getTransformTo(frame, date);
-    }
-
-    /**
-     * Reset cached transform.
-     */
-    public static void resetTransform() {
-        cachedTransform = null;
     }
 
     /** {@inheritDoc} */
@@ -470,7 +439,7 @@ public class MeeusMoonStela extends AbstractCelestialBody {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
             return icrf.getParent();
         }
     }

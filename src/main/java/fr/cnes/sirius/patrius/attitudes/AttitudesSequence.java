@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+* VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3172:10/05/2022:[PATRIUS] Ajout d'un throws PatriusException a la methode init de l'interface EDet
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -46,11 +49,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -370,6 +373,14 @@ public class AttitudesSequence implements AttitudeLaw {
         @Override
         public EventDetector copy() {
             return new Switch(this.event.copy(), this.switchOnIncrease, this.switchOnDecrease, this.next);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final SpacecraftState state, final boolean increasingIn, final boolean forward)
+            throws PatriusException {
+            // Do nothing by default, event is not filtered
+            return false;
         }
     }
 }

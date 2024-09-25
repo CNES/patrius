@@ -18,6 +18,8 @@
  * created 13/03/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -53,19 +55,18 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.NadirPointing;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.events.CodedEvent;
-import fr.cnes.sirius.patrius.events.CodedEventsList;
-import fr.cnes.sirius.patrius.events.CodedEventsLogger;
-import fr.cnes.sirius.patrius.events.CodingEventDetector;
-import fr.cnes.sirius.patrius.events.GenericCodingEventDetector;
-import fr.cnes.sirius.patrius.events.PhenomenaList;
-import fr.cnes.sirius.patrius.events.Phenomenon;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.DihedralFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -84,12 +85,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.DihedralFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
@@ -2089,12 +2084,12 @@ public class PostProcessingTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        final CelestialBody sun = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialPoint sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.EARTH);
 
-        final CelestialBody earth = loaderEarth.loadCelestialBody(CelestialBodyFactory.EARTH);
+        final CelestialPoint earth = loaderEarth.loadCelestialPoint(CelestialBodyFactory.EARTH);
 
         // eclipse
         final EventDetector eclipseDet = new EclipseDetector(sun, Constants.SUN_RADIUS, earth, re, 0, 300, 0.001){

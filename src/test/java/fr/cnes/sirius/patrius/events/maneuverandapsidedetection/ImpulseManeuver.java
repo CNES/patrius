@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage Patrius en vue de mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -35,12 +37,12 @@ package fr.cnes.sirius.patrius.events.maneuverandapsidedetection;
 import java.util.Map;
 
 import fr.cnes.sirius.patrius.attitudes.Attitude;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -54,11 +56,11 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * </p>
  * <p>
  * The maneuver is triggered when an underlying event generates a
- * {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP STOP} event, in which case this class will
- * generate a {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#RESET_STATE RESET_STATE} event (the
+ * {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP STOP} event, in which case this class will
+ * generate a {@link fr.cnes.sirius.patrius.events.EventDetector.Action#RESET_STATE RESET_STATE} event (the
  * stop event from the underlying object is therefore filtered out). In the simple cases, the underlying event detector
- * may be a basic {@link fr.cnes.sirius.patrius.propagation.events.DateDetector date event}, but it can also be a more
- * elaborate {@link fr.cnes.sirius.patrius.propagation.events.ApsideDetector apside event} for apogee maneuvers for
+ * may be a basic {@link fr.cnes.sirius.patrius.events.detectors.DateDetector date event}, but it can also be a more
+ * elaborate {@link fr.cnes.sirius.patrius.events.detectors.ApsideDetector apside event} for apogee maneuvers for
  * example.
  * </p>
  * <p>
@@ -230,5 +232,14 @@ public class ImpulseManeuver implements EventDetector {
     @Override
     public EventDetector copy() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean filterEvent(final SpacecraftState state,
+            final boolean increasing,
+            final boolean forward) throws PatriusException {
+        // Do nothing by default, event is not filtered
+        return false;
     }
 }

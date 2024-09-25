@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION::DM:1489:21/05/2018:add GENOPUS Custom classes
  * VERSION::DM:1782:19/11/2018:generalisation of low-level math framework
@@ -26,6 +27,8 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -113,7 +116,7 @@ public class EventMock extends AbstractDetector {
     /**
      * Does nothing.
      * 
-     * @see fr.cnes.sirius.patrius.propagation.events.EventDetector#init(fr.cnes.sirius.patrius.propagation.SpacecraftState,
+     * @see fr.cnes.sirius.patrius.events.EventDetector#init(fr.cnes.sirius.patrius.propagation.SpacecraftState,
      *      fr.cnes.sirius.patrius.time.AbsoluteDate)
      */
     @Override
@@ -123,7 +126,7 @@ public class EventMock extends AbstractDetector {
 
     /**
      * 
-     * @see fr.cnes.sirius.patrius.propagation.events.AbstractDetector#shouldBeRemoved()
+     * @see fr.cnes.sirius.patrius.events.AbstractDetector#shouldBeRemoved()
      */
     @Override
     public boolean shouldBeRemoved() {

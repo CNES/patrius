@@ -19,6 +19,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3184:10/05/2022:[PATRIUS] Non detection d'evenement pour une propagation de duree tres courte
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -554,8 +555,13 @@ public class EventState {
         if (this.pendingEvent && (MathLib.abs(this.pendingEventTime - t) <= this.stepConvergence)) {
             // force the sign to its value "just after the event"
             this.previousEventTime = t;
-            this.nextAction = this.handler.eventOccurred(t, y, this.increasing, this.forward);
-            this.remove = this.handler.shouldBeRemoved();
+            // Filter event, other variables are updated (g0 in order to account for modulo and unexpected 
+            // g sign change, etc.)
+            if (!this.handler.filterEvent(t, y, increasing, forward)) {
+                // eventOccurred only if event not filtered
+                this.nextAction = this.handler.eventOccurred(t, y, this.increasing, this.forward);
+                this.remove = this.handler.shouldBeRemoved();
+            }
             this.g0Old = this.g0;
             this.g0 = this.increasing ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
         } else {

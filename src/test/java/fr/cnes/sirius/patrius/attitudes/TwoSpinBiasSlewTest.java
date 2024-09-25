@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2801:18/05/2021:Suppression des classes et methodes depreciees suite au refactoring des slews
@@ -52,7 +53,7 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.slew.TwoSpinBiasSlewComputer;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -388,7 +389,7 @@ public class TwoSpinBiasSlewTest {
         this.initialDate = new AbsoluteDate(new DateComponents(2008, 04, 07), TimeComponents.H00,
                 TimeScalesFactory.getTAI());
         // Initial attitude law:
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final Frame frame = FramesFactory.getEME2000();
         this.startLaw = new CelestialBodyPointed(frame, sun, Vector3D.PLUS_K, Vector3D.PLUS_I, Vector3D.PLUS_K);
         // Final attitude law:

@@ -18,6 +18,12 @@
  * @history creation 03/03/2017
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3303:22/05/2023:[PATRIUS] Modifications mineures dans UserCelestialBody 
@@ -65,6 +71,7 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractHarmonicGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
@@ -87,7 +94,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -120,8 +126,8 @@ public class UserCelestialBodyTest {
 
     @BeforeClass
     public static void setUpBeforeClass() {
-        Report.printClassHeader(UserCelestialBodyTest.class.getSimpleName(),
-            "User-defined celestial body");
+        Utils.setDataRoot("regular-dataCNES-2003");
+        Report.printClassHeader(UserCelestialBodyTest.class.getSimpleName(), "User-defined celestial body");
     }
 
     /**
@@ -165,9 +171,9 @@ public class UserCelestialBodyTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame)
+            public Frame getNativeFrame(final AbsoluteDate date)
                 throws PatriusException {
-                return neptuneExpected.getNativeFrame(null, null);
+                return neptuneExpected.getNativeFrame(null);
             }
         };
         // geometric shape parameters
@@ -314,10 +320,10 @@ public class UserCelestialBodyTest {
             .equals(NewtonianGravityModel.class));
 
         // Test GetNativeFrame
-        Assert.assertEquals(pvProvider.getNativeFrame(null, null).getName(),
-            neptuneActual.getNativeFrame(null, null).getName());
-        Assert.assertEquals(pvProvider.getNativeFrame(null, null).getName(),
-            neptuneActualAttractionModel.getNativeFrame(null, null).getName());
+        Assert.assertEquals(pvProvider.getNativeFrame(null).getName(),
+            neptuneActual.getNativeFrame(null).getName());
+        Assert.assertEquals(pvProvider.getNativeFrame(null).getName(),
+            neptuneActualAttractionModel.getNativeFrame(null).getName());
     }
 
     /**
@@ -358,7 +364,7 @@ public class UserCelestialBodyTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame)
+            public Frame getNativeFrame(final AbsoluteDate date)
                 throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
@@ -462,22 +468,22 @@ public class UserCelestialBodyTest {
     public void testToString() throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
         // JPL (Moon)
-        final CelestialBody body1 = CelestialBodyFactory.getMoon();
+        final CelestialPoint body1 = CelestialBodyFactory.getMoon();
         Assert.assertNotNull(body1.toString());
         // Meeus Moon
-        final CelestialBody body2 = new MeeusMoon();
+        final CelestialPoint body2 = new MeeusMoon();
         Assert.assertNotNull(body2.toString());
         // Meeus Sun
-        final CelestialBody body3 = new MeeusSun(MODEL.BOARD);
+        final CelestialPoint body3 = new MeeusSun(MODEL.BOARD);
         Assert.assertNotNull(body3.toString());
 
         // UserCelestialBody (Moon) with GM
-        final CelestialBody body4 = new UserCelestialBody("My body", new MeeusMoon(), 1.23456789,
+        final CelestialPoint body4 = new UserCelestialBody("My body", new MeeusMoon(), 1.23456789,
             IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory.getICRF(),
             new MeeusMoon().getShape());
 
         // UserCelestialBody (Moon) with attraction model
-        final CelestialBody body5 = new UserCelestialBody("My body", new MeeusMoon(), new NewtonianGravityModel(
+        final CelestialPoint body5 = new UserCelestialBody("My body", new MeeusMoon(), new NewtonianGravityModel(
             1.23456789), IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory.getICRF(),
             new MeeusMoon().getShape());
 
@@ -493,6 +499,8 @@ public class UserCelestialBodyTest {
         builder.append(end);
         builder.append("- EME2000 frame: My body EME2000 frame");
         builder.append(end);
+        builder.append("- Ecliptic J2000 frame: My body EclipticJ2000 frame");
+        builder.append(end);
         builder.append("- Inertial frame: My body Inertial frame (constant model)");
         builder.append(end);
         builder.append("- Mean equator frame: My body Inertial frame (mean model)");
@@ -506,7 +514,7 @@ public class UserCelestialBodyTest {
         builder.append("- True rotating frame: My body Rotating frame (true model)");
         builder.append(end);
         builder
-            .append("- IAU pole origin: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
+            .append("- orientation: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
         builder.append(end);
         builder.append("- Ephemeris origin: - Name: Meeus Moon");
         builder.append(end);
@@ -517,6 +525,8 @@ public class UserCelestialBodyTest {
         builder.append("- ICRF frame: Meeus Moon ICRF frame");
         builder.append(end);
         builder.append("- EME2000 frame: Meeus Moon EME2000 frame");
+        builder.append(end);
+        builder.append("- Ecliptic J2000 frame: Meeus Moon EclipticJ2000 frame");
         builder.append(end);
         builder.append("- Inertial frame: Meeus Moon Inertial frame (constant model)");
         builder.append(end);
@@ -531,15 +541,15 @@ public class UserCelestialBodyTest {
         builder.append("- True rotating frame: Meeus Moon Rotating frame (true model)");
         builder.append(end);
         builder
-            .append("- IAU pole origin: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
+            .append("- orientation: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
         builder.append(end);
         builder.append("- Ephemeris origin: Meeus Moon model (class fr.cnes.sirius.patrius.bodies.MeeusMoon)");
         final String expected = builder.toString();
-        Assert.assertTrue(body4.toString().equals(expected));
-        Assert.assertTrue(body5.toString().equals(expected));
+        Assert.assertEquals(expected, body4.toString());
+        Assert.assertEquals(expected, body5.toString());
 
         // JPL (Moon)
-        final CelestialBody body6 = CelestialBodyFactory.getBodies().get("Moon");
+        final CelestialPoint body6 = CelestialBodyFactory.getBodies().get("Moon");
         Assert.assertNotNull(body6.toString());
     }
 

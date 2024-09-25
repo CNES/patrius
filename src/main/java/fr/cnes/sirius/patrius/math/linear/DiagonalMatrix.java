@@ -20,6 +20,7 @@
  */
 /* 
  * HISTORY
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
@@ -170,46 +171,35 @@ public class DiagonalMatrix extends AbstractRealMatrix implements SymmetricMatri
 
     /** {@inheritDoc} */
     @Override
-    public double getMin() {
-        double min;
-
-        if (this.getRowDimension() == 1) {
-            // There is no off-diagonal elements: the only entry is the minimum
-            min = this.getEntry(0, 0);
-        } else {
-            // There are off-diagonal elements
-            // The minimum is initially set to zero
-            min = 0.;
-            final int n = this.getRowDimension();
-            for (int i = 0; i < n; i++) {
-                // Search the min element on the diagonal
-                min = MathLib.min(min, this.data[i]);
-            }
+    public double[][] getData() {
+        final int n = this.getRowDimension();
+        final double[][] out = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            out[i][i] = this.data[i];
         }
+        return out;
+    }
 
-        return min;
+    /**
+     * Gets a reference to the internal data array storing the diagonal elements of the matrix.
+     * <p>
+     * <em>This method is only provided for optimization purposes.<br>
+     * Any modification made on the returned array will change the values of this matrix.</em>
+     * </p>
+     *
+     * @return a direct reference to the internal data array storing the diagonal elements of the
+     *         matrix
+     */
+    // Reason: internal array access provided for optimization purposes
+    @SuppressWarnings("PMD.MethodReturnsInternalArray")
+    public double[] getDataRef() {
+        return this.data;
     }
 
     /** {@inheritDoc} */
     @Override
-    public double getMax() {
-        double max;
-
-        if (this.getRowDimension() == 1) {
-            // There is no off-diagonal elements: the only entry is the maximum
-            max = this.getEntry(0, 0);
-        } else {
-            // There are off-diagonal elements
-            // The maximum is initially set to zero
-            max = 0.;
-            final int n = this.getRowDimension();
-            for (int i = 0; i < n; i++) {
-                // Search the max element on the diagonal
-                max = MathLib.max(max, this.data[i]);
-            }
-        }
-
-        return max;
+    public double[] getDiagonal() {
+        return this.data.clone();
     }
 
     /** {@inheritDoc} */
@@ -245,35 +235,71 @@ public class DiagonalMatrix extends AbstractRealMatrix implements SymmetricMatri
 
     /** {@inheritDoc} */
     @Override
-    public double[][] getData() {
-        final int n = this.getRowDimension();
-        final double[][] out = new double[n][n];
-        for (int i = 0; i < n; i++) {
-            out[i][i] = this.data[i];
-        }
-        return out;
-    }
+    public double getMin(final boolean absValue) {
+        double min;
 
-    /**
-     * Gets a reference to the internal data array storing the diagonal elements of the matrix.
-     * <p>
-     * <em>This method is only provided for optimization purposes.<br>
-     * Any modification made on the returned array will change the values of this matrix.</em>
-     * </p>
-     *
-     * @return a direct reference to the internal data array storing the diagonal elements of the
-     *         matrix
-     */
-    // Reason: internal array access provided for optimization purposes
-    @SuppressWarnings("PMD.MethodReturnsInternalArray")
-    public double[] getDataRef() {
-        return this.data;
+        if (absValue) {
+            // The minimum absolute value is always 0
+            // Note: off-diagonal elements are 0 and the absolute value of the diagonal elements are >= 0
+            min = 0.;
+        } else if (this.getRowDimension() == 1) {
+            // The only entry is the minimum
+            min = this.getEntry(0, 0);
+        } else {
+            // The minimum is initially set to zero (note: off-diagonal elements are 0)
+            min = 0.;
+            final int n = this.getRowDimension();
+            for (int i = 0; i < n; i++) {
+                // Search the min element on the diagonal
+                min = MathLib.min(min, this.data[i]);
+            }
+        }
+
+        return min;
     }
 
     /** {@inheritDoc} */
     @Override
-    public double[] getDiagonal() {
-        return this.data.clone();
+    public double getMax(final boolean absValue) {
+        double max;
+
+        if (this.getRowDimension() == 1) {
+            // The only entry is the maximum
+            if (absValue) {
+                // Consider the absolute value
+                max = MathLib.abs(this.data[0]);
+            } else {
+                // Consider the value
+                max = this.data[0];
+            }
+        } else {
+            // The maximum is initially set to zero (note: off-diagonal elements are 0)
+            max = 0.;
+            final int n = this.getRowDimension();
+            for (int i = 0; i < n; i++) {
+                // Search the max element on the diagonal
+                if (absValue) {
+                    // Consider the absolute value
+                    max = MathLib.max(max, MathLib.abs(this.data[i]));
+                } else {
+                    // Consider the value
+                    max = MathLib.max(max, this.data[i]);
+                }
+            }
+        }
+
+        return max;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public RealMatrix getAbs() {
+        // Compute the absolute values of the diagonal elements, then build a new diagonal matrix
+        final double[] absData = new double[this.getRowDimension()];
+        for (int i = 0; i < absData.length; i++) {
+            absData[i] = MathLib.abs(this.data[i]);
+        }
+        return new DiagonalMatrix(absData, false);
     }
 
     /** {@inheritDoc} */

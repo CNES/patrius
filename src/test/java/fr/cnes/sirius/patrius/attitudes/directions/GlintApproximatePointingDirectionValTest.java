@@ -18,6 +18,8 @@
  * @history creation 15/10/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -52,14 +54,16 @@ import fr.cnes.sirius.patrius.attitudes.AbstractAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudesSequence;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.NadirSolarIncidenceDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
@@ -75,9 +79,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.PVCoordinatesPropagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.NadirSolarIncidenceDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -111,9 +112,9 @@ public class GlintApproximatePointingDirectionValTest {
     /** Gravitational constant */
     private final double mu = Constants.WGS84_EARTH_MU;
     /** flatten earth shape */
-    private EllipsoidBodyShape earthShape;
+    private OneAxisEllipsoid earthShape;
     /** sun ephemeris */
-    private CelestialBody sun;
+    private CelestialPoint sun;
     /** epsilon comparison */
     private final double epsilon = 4E-5;
 
@@ -324,7 +325,7 @@ public class GlintApproximatePointingDirectionValTest {
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.SUN);
-        this.sun = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+        this.sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         this.sun = new MeeusSun();
 
         this.earthShape = new OneAxisEllipsoid(this.equatorialRadius, this.flatness,

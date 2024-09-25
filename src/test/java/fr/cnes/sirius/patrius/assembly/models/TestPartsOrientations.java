@@ -16,6 +16,11 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -56,8 +61,9 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
@@ -126,7 +132,7 @@ public class TestPartsOrientations {
         }
 
         @Override
-        public CelestialBodyFrame getInertialFrame(IAUPoleModelType iauPole) throws PatriusException {
+        public CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPole) throws PatriusException {
             return null;
         }
 
@@ -173,22 +179,27 @@ public class TestPartsOrientations {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date,
-                final Frame frame) throws PatriusException {
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
             return CelestialBodyFactory.getSun().getICRF();
         }
 
         @Override
-        public IAUPole getIAUPole() {
+        public CelestialBodyIAUOrientation getOrientation() {
             return null;
         }
 
         @Override
-        public void setIAUPole(final IAUPole iauPoleIn) {
+        public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
         }
 
         @Override
         public void setGM(final double gmIn) {
+        }
+
+        @Override
+        public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+         // nothing to do
+            return null;
         }
     };
 
@@ -240,8 +251,8 @@ public class TestPartsOrientations {
 
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
-        final Frame gcrf = FramesFactory.getGCRF();
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
 
         /*
          * Oriented and displaced facet
@@ -339,8 +350,8 @@ public class TestPartsOrientations {
 
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
-        final Frame gcrf = FramesFactory.getGCRF();
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
 
         /*
          * Oriented and displaced facet

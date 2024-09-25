@@ -81,18 +81,18 @@ public class FacetBodyShapeStatisticsTest {
         // Load Phobos .obj mesh
         final String modelFilePhobos = "mnt" + File.separator + "Phobos_Ernst_HD.obj";
         final String fullNamePhobos = FacetBodyShape.class.getClassLoader().getResource(modelFilePhobos).toURI()
-                .getPath();
+            .getPath();
 
-        bodyPhobos = new FacetBodyShape("", FramesFactory.getGCRF(), EllipsoidType.INNER_SPHERE, new ObjMeshLoader(
-                fullNamePhobos));
+        bodyPhobos = new FacetBodyShape("", FramesFactory.getGCRF(), new ObjMeshLoader(
+            fullNamePhobos));
 
         // Sphere .obj mesh
         final String modelFileSphere = "mnt" + File.separator + "SphericalBody.obj";
         final String fullNameSphere = FacetBodyShape.class.getClassLoader().getResource(modelFileSphere).toURI()
-                .getPath();
+            .getPath();
 
-        bodySphere = new FacetBodyShape("", FramesFactory.getGCRF(), EllipsoidType.INNER_SPHERE, new ObjMeshLoader(
-                fullNameSphere));
+        bodySphere = new FacetBodyShape("", FramesFactory.getGCRF(), new ObjMeshLoader(
+            fullNameSphere));
     }
 
     /**
@@ -189,7 +189,7 @@ public class FacetBodyShapeStatisticsTest {
         Assert.assertEquals(0, (radiusStats.getMax() - altitudeStats.getMax()) / radiusStats.getMax(), EPS);
         Assert.assertEquals(0, (radiusStats.getMean() - altitudeStats.getMean()) / radiusStats.getMean(), EPS);
         Assert.assertEquals(0, (radiusStats.getVariance() - altitudeStats.getVariance()) / radiusStats.getVariance(),
-                EPS);
+            EPS);
         Assert.assertEquals(0, (radiusStats.getSumsq() - altitudeStats.getSumsq()) / radiusStats.getSumsq(), EPS);
         Assert.assertEquals(0, (radiusStats.getStandardDeviation() - altitudeStats.getStandardDeviation())
                 / radiusStats.getStandardDeviation(), EPS);
@@ -225,14 +225,14 @@ public class FacetBodyShapeStatisticsTest {
         final SummaryStatistics altitudeStats12km = facetStats.computeStatisticsForAltitude(sphere12km);
 
         Assert.assertEquals(0., (MathLib.abs(altitudeStats12km.getMin() - altitudeStats11km.getMin()) - 1000.) / 1000.,
-                EPS);
+            EPS);
         Assert.assertEquals(0., (MathLib.abs(altitudeStats12km.getMax() - altitudeStats11km.getMax()) - 1000.) / 1000.,
-                EPS);
+            EPS);
         Assert.assertEquals(0.,
-                (MathLib.abs(altitudeStats12km.getMean() - altitudeStats11km.getMean()) - 1000.) / 1000., EPS);
+            (MathLib.abs(altitudeStats12km.getMean() - altitudeStats11km.getMean()) - 1000.) / 1000., EPS);
         Assert.assertEquals(0,
-                (altitudeStats12km.getVariance() - altitudeStats11km.getVariance()) / altitudeStats12km.getVariance(),
-                EPS);
+            (altitudeStats12km.getVariance() - altitudeStats11km.getVariance()) / altitudeStats12km.getVariance(),
+            EPS);
         Assert.assertEquals(0, (altitudeStats12km.getStandardDeviation() - altitudeStats11km.getStandardDeviation())
                 / altitudeStats12km.getStandardDeviation(), EPS);
 

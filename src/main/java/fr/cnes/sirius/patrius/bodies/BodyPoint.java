@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * END-HISTORY
  */
@@ -173,13 +175,13 @@ public interface BodyPoint extends PVCoordinatesProvider {
     @Override
     public default PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
         final PVCoordinates pvInBodyFrame = new PVCoordinates(getPosition(), Vector3D.ZERO, Vector3D.ZERO);
-        return getNativeFrame(date, frame).getTransformTo(frame, date).transformPVCoordinates(pvInBodyFrame);
+        return getNativeFrame(date).getTransformTo(frame, date).transformPVCoordinates(pvInBodyFrame);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unused")
     @Override
-    public default Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+    public default Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return getBodyShape().getBodyFrame();
     }
 

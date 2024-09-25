@@ -17,6 +17,7 @@
 /* Copyright 2002-2015 CS Systèmes d'Information
  *
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -29,6 +30,7 @@
 package fr.cnes.sirius.patrius.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
@@ -48,7 +50,6 @@ import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -332,6 +333,7 @@ public class TimeStampedAngularCoordinatesTest {
         integrator.addStepHandler(new StepNormalizer(dt / 2000, new FixedStepHandler(){
             @Override
             public void init(final double t0, final double[] y0, final double t) {
+                // Nothing to do
             }
 
             @Override
@@ -488,6 +490,51 @@ public class TimeStampedAngularCoordinatesTest {
     }
 
     @Test
+    public void testEqualsAndHashCode() {
+
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final AngularCoordinates angular = new AngularCoordinates(new Rotation(Vector3D.PLUS_I, 0.1), Vector3D.PLUS_J,
+            Vector3D.PLUS_K, false);
+
+        // New instance
+        final TimeStampedAngularCoordinates instance = new TimeStampedAngularCoordinates(date, angular);
+
+        // Check the hashCode consistency between calls
+        final int hashCode = instance.hashCode();
+        Assert.assertEquals(hashCode, instance.hashCode());
+
+        // Compared object is null
+        Assert.assertFalse(instance.equals(null));
+
+        // Compared object is a different class
+        Assert.assertFalse(instance.equals(new Object()));
+
+        // Same instance
+        Assert.assertEquals(instance, instance);
+
+        // Same data, but different instances
+        AngularCoordinates other = new TimeStampedAngularCoordinates(date, angular);
+
+        Assert.assertEquals(other, instance);
+        Assert.assertEquals(instance, other);
+        Assert.assertEquals(other.hashCode(), instance.hashCode());
+
+        // Different date
+        other = new TimeStampedAngularCoordinates(AbsoluteDate.FIFTIES_EPOCH_TAI, angular);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different angular coordinates
+        other = new TimeStampedAngularCoordinates(date, new AngularCoordinates());
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+    }
+
+    @Test
     public void testSerialization() {
 
         // random test
@@ -508,6 +555,36 @@ public class TimeStampedAngularCoordinatesTest {
             final TimeStampedAngularCoordinates c2 = TestUtils.serializeAndRecover(c);
             assertEqualsTimeStampedAngularCoordinates(c, c2);
         }
+    }
+
+    @Test
+    public void testComparison() {
+
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final AngularCoordinates angular =
+            new AngularCoordinates(new Rotation(false, 0.48, 0.64, 0.36, 0.48), Vector3D.ZERO, Vector3D.ZERO);
+
+        final TimeStampedAngularCoordinates orient1 = new TimeStampedAngularCoordinates(date, angular);
+        final TimeStampedAngularCoordinates orient2 = new TimeStampedAngularCoordinates(date.shiftedBy(-1), angular);
+        final TimeStampedAngularCoordinates orient3 = new TimeStampedAngularCoordinates(date.shiftedBy(2), angular);
+        final TimeStampedAngularCoordinates orient4 = new TimeStampedAngularCoordinates(date.shiftedBy(1), angular);
+        final TimeStampedAngularCoordinates orient5 = new TimeStampedAngularCoordinates(date, angular);
+
+        Assert.assertEquals(1, orient1.compareTo(orient2)); // orient1 is after orient2
+        Assert.assertEquals(-1, orient2.compareTo(orient3)); // orient2 is before orient3
+        Assert.assertEquals(1, orient3.compareTo(orient4)); // orient3 is after orient4
+        Assert.assertEquals(0, orient1.compareTo(orient5)); // orient1 is at the same date as orient5
+
+        // Evaluate the TimeStampedAngularCoordinates ordering
+        final TimeStampedAngularCoordinates[] orients =
+            new TimeStampedAngularCoordinates[] { orient1, orient2, orient3, orient4, orient5 };
+        Arrays.sort(orients);
+
+        Assert.assertEquals(orient2, orients[0]);
+        Assert.assertEquals(orient1, orients[1]);
+        Assert.assertEquals(orient5, orients[2]);
+        Assert.assertEquals(orient4, orients[3]);
+        Assert.assertEquals(orient3, orients[4]);
     }
 
     public static void assertEqualsTimeStampedAngularCoordinates(final TimeStampedAngularCoordinates c1,

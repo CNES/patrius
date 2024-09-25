@@ -19,6 +19,13 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
@@ -54,12 +61,15 @@ import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusMoon;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationFactory;
@@ -69,7 +79,6 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.DateComponents;
 import fr.cnes.sirius.patrius.time.TimeComponents;
@@ -136,7 +145,6 @@ public class MeeusMoonStelaTest {
      */
     @Test
     public void testUpdatePosition() throws PatriusException {
-        MeeusMoonStela.resetTransform();
         final double eps = 1e-15;
         final Vector3D position = this.moon.getPVCoordinates(this.date, FramesFactory.getMOD(false)).getPosition();
         final double normP = position.getNorm();
@@ -175,7 +183,6 @@ public class MeeusMoonStelaTest {
             ComparisonType.RELATIVE);
 
         // Initialization
-        MeeusMoonStela.resetTransform();
         final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(22370 * 86400 - 67.184 + 35);
         // Computation
         final Vector3D position = this.moon.getPVCoordinates(date, FramesFactory.getCIRF()).getPosition();
@@ -191,8 +198,6 @@ public class MeeusMoonStelaTest {
         Assert.assertEquals((exp[2] - zp) / exp[2], 0, 7E-12);
 
         Report.printToReport("Position", new Vector3D(exp), new Vector3D(xp, yp, zp));
-
-        MeeusMoonStela.resetTransform();
     }
 
     /**
@@ -221,7 +226,7 @@ public class MeeusMoonStelaTest {
             AbsoluteDate.J2000_EPOCH));
 
         // Test GetNativeFrame
-        Assert.assertEquals(this.moon.getICRF(), this.moon.getNativeFrame(null, null));
+        Assert.assertEquals(this.moon.getICRF(), this.moon.getNativeFrame(null));
     }
     
     /**
@@ -239,8 +244,8 @@ public class MeeusMoonStelaTest {
     @Test
     public void testGetShape() throws PatriusException {
     	
-    	final Frame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
-        final Frame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
+    	final CelestialBodyFrame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
+        final CelestialBodyFrame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
     	
     	final BodyShape actualShape = this.moon.getShape();
     	final BodyShape expectedShape = new OneAxisEllipsoid(this.radius, 0, bodyRotatingFrame, "Moon"); 
@@ -280,7 +285,7 @@ public class MeeusMoonStelaTest {
      * 
      * @testedFeature {@link features#MEEUS_MOON_STELA}
      * 
-     * @description check that the setter method of {@link CelestialBody} is correct.
+     * @description check that the setter method of {@link CelestialPoint} is correct.
      * 
      * @input {@link BodyShape}
      * 
@@ -289,8 +294,8 @@ public class MeeusMoonStelaTest {
     @Test
     public void testSetShape() throws PatriusException{
     	
-    	final Frame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
-    	final Frame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
+    	final CelestialBodyFrame bodyRotatingFrame = this.moon.getRotatingFrame(IAUPoleModelType.TRUE);
+    	final CelestialBodyFrame bodyInertialFrame = this.moon.getInertialFrame(IAUPoleModelType.CONSTANT);
     	
     	// the default shape
     	final CelestialBody moon = this.moon;

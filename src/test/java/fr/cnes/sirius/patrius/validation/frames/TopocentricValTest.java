@@ -19,6 +19,8 @@
  * @history creation 18/10/2011
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -40,6 +42,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -72,7 +75,7 @@ public class TopocentricValTest {
     private AbsoluteDate date;
 
     /** Reference frame = ITRF 2005. */
-    private Frame frameITRF2005;
+    private CelestialBodyFrame frameITRF2005;
 
     /** North topocentric frame. */
     private final String northFrame = "north topocentric frame";
@@ -551,24 +554,24 @@ public class TopocentricValTest {
         final double ZRateRef = 12;
 
         // Reference Outputs
-        final double XangleRef = -1.076854957875316;
+        final double XangleRef = 1.076854957875316;
         final double YangleRef = 0.9348634533745954;
         final double rangeRef = 124.29802894656054;
-        final double XangleRateRef = -0.4091743119266047;
+        final double XangleRateRef = 0.4091743119266047;
         final double YangleRateRef = -0.6368236827766715;
         final double rangeRateRef = 29.84761730690871;
 
         // Non regression
-        final double XangleNReg = -1.0768549578753155;
+        final double XangleNReg = 1.0768549578753155;
         final double YangleNReg = 0.9348634533745958;
         final double rangeNReg = 124.29802894656054;
-        final double XangleRateNReg = -0.4091743119266055;
+        final double XangleRateNReg = 0.4091743119266055;
         final double YangleRateNReg = -0.6368236827766712;
         final double rangeRateNReg = 29.84761730690871;
 
-        final double XangleNReg1 = -1.0768549578753155;
+        final double XangleNReg1 = 1.0768549578753155;
         final double YangleNReg1 = 0.9348634533745958;
-        final double XangleRateNReg1 = -0.4091743119266055;
+        final double XangleRateNReg1 = 0.4091743119266055;
         final double YangleRateNReg1 = -0.6368236827766712;
 
         // North topocentric frame
@@ -647,8 +650,8 @@ public class TopocentricValTest {
      * 
      * @testPassCriteria outputs from computation should be equal to expected values :
      *                   <p>
-     *                   X = 99.99999999999996 m Y = -65.00000000000007 m Z = 35.0 m Vx = -23.00000000000006 m/s Vy =
-     *                   -85.99999999999999 m/s Vz = 12.0 m/s
+     *                   X = 99.99999999999996 m Y = 65.00000000000007 m Z = 35.0 m Vx = -23.00000000000006 m/s Vy =
+     *                   85.99999999999999 m/s Vz = 12.0 m/s
      *                   </p>
      * 
      *                   The epsilon used for distances is 1e-12 on the distances (100 times the
@@ -677,18 +680,18 @@ public class TopocentricValTest {
 
         // Reference outputs
         final double XRef = 99.99999999999996;
-        final double YRef = -65.00000000000007;
+        final double YRef = 65.00000000000007;
         final double ZRef = 35.0;
         final double XRateRef = -23.00000000000006;
-        final double YRateRef = -85.99999999999999;
+        final double YRateRef = 85.99999999999999;
         final double ZRateRef = 12.0;
 
         // Non regression
         final double XNReg = 99.99999999999996;
-        final double YNReg = -65.00000000000007;
+        final double YNReg = 65.00000000000007;
         final double ZNReg = 34.999999999999986;
         final double XRateNReg = -23.000000000000068;
-        final double YRateNReg = -86.00000000000001;
+        final double YRateNReg = 86.00000000000001;
         final double ZRateNReg = 11.999999999999995;
 
         /*
@@ -821,9 +824,9 @@ public class TopocentricValTest {
      * 
      * @testPassCriteria outputs from computation should be equal to expected values
      *                   <p>
-     *                   X (cardan) = 0. rad (valeur arbitraire) | j'aurais dit X = -pi/2 * sign(y) Y (cardan) =
-     *                   1.1071487177940904 rad | OK distance = 111.80339887498948 m | OK Vit_X = 0.24 rad/s | OK Vit_Y
-     *                   = 0.596 rad/s | OK Vit_distance = -59.03219460599445 m/s | OK
+     *                   X (cardan) = -pi/2 | OK Y (cardan) = 1.1071487177940904 rad | OK distance = 111.80339887498948m
+     *                   | OK Vit_X = 0.24 rad/s | OK Vit_Y = 0.596 rad/s | OK Vit_distance = -59.03219460599445 m/s |
+     *                   OK
      *                   </p>
      * 
      *                   The epsilon used for angles is 1e-7 (1e7 times the epsilon for double
@@ -835,8 +838,6 @@ public class TopocentricValTest {
      *                   distances, 1e-12
      *                   The epsilon used for angular velocities is the same as the epsilon used for
      *                   angles, 1e-7
-     * 
-     *                   The X angle reference value isn't 0 rad but pi/2
      * 
      * @referenceVersion 1.0
      * 
@@ -858,18 +859,18 @@ public class TopocentricValTest {
         final double ZRateRef = 12;
 
         // Reference Outputs
-        final double XangleRef = FastMath.PI / 2;
+        final double XangleRef = -FastMath.PI / 2;
         final double YangleRef = 1.1071487177940904;
         final double rangeRef = 111.80339887498948;
-        final double XangleRateRef = -0.24;
+        final double XangleRateRef = 0.24;
         final double YangleRateRef = 0.596;
         final double rangeRateRef = -59.03219460599445;
 
         // Non regression
-        final double XangleNReg = 1.5707963267948966;
+        final double XangleNReg = -1.5707963267948966;
         final double YangleNReg = 1.1071487177940906;
         final double rangeNReg = 111.80339887498948;
-        final double XangleRateNReg = -0.24;
+        final double XangleRateNReg = 0.24;
         final double YangleRateNReg = 0.596;
         final double rangeRateNReg = -59.03219460599445;
 
@@ -971,18 +972,18 @@ public class TopocentricValTest {
         final double ZRateRef = 12;
 
         // Reference Outputs
-        final double XangleRef = -1.076854957875316;
+        final double XangleRef = 1.076854957875316;
         final double YangleRef = 0.9348634533745954;
         final double rangeRef = 124.29802894656054;
-        final double XangleRateRef = -0.4091743119266047;
+        final double XangleRateRef = 0.4091743119266047;
         final double YangleRateRef = -0.6368236827766715;
         final double rangeRateRef = 29.84761730690871;
 
         // Non regression
-        final double XangleNReg = -1.0768549578753155;
+        final double XangleNReg = 1.0768549578753155;
         final double YangleNReg = 0.9348634533745958;
         final double rangeNReg = 124.29802894656054;
-        final double XangleRateNReg = -0.4091743119266055;
+        final double XangleRateNReg = 0.4091743119266055;
         final double YangleRateNReg = -0.6368236827766712;
         final double rangeRateNReg = 29.84761730690871;
 
@@ -1044,8 +1045,8 @@ public class TopocentricValTest {
      * 
      * @testPassCriteria outputs from computation should be equal to expected values
      *                   <p>
-     *                   X = 99.99999999999996 m Y = -65.00000000000007 m Z = 35.0 m Vx = -23.00000000000006 m/s Vy =
-     *                   -85.99999999999999 m/s Vz = 12.0 m/s
+     *                   X = 99.99999999999996 m Y = 65.00000000000007 m Z = 35.0 m Vx = -23.00000000000006 m/s Vy =
+     *                   85.99999999999999 m/s Vz = 12.0 m/s
      *                   </p>
      * 
      *                   The epsilon used for distances is 1e-12 on the distances (100 times the
@@ -1078,10 +1079,10 @@ public class TopocentricValTest {
 
         // Reference outputs
         final double XRef = 99.99999999999996;
-        final double YRef = -65.00000000000007;
+        final double YRef = 65.00000000000007;
         final double ZRef = 35.0;
         final double XRateRef = -23.00000000000006;
-        final double YRateRef = -85.99999999999999;
+        final double YRateRef = 85.99999999999999;
         final double ZRateRef = 12.0;
 
         /*
@@ -1124,7 +1125,6 @@ public class TopocentricValTest {
             YRateRef, this.epsilonVelocity, "elevation deviation");
         this.validate.assertEqualsWithRelativeTolerance(zd, ZRateRef, this.epsilonNonReg,
             ZRateRef, this.epsilonVelocity, "elevation deviation");
-
     }
 
     /**
@@ -1207,10 +1207,8 @@ public class TopocentricValTest {
      * 
      * @testPassCriteria outputs from computation should be equal to expected values
      *                   <p>
-     *                   X (cardan) = 0. rad (valeur arbitraire) | j'aurais dit X = -pi/2 * sign(y) Y (cardan) =
-     *                   1.1071487177940904 rad | OK distance = 111.80339887498948 m | OK
-     *                   </p>
-     *                   The X angle reference value isn't 0 rad but pi/2
+     *                   X (cardan) = -pi/2 | OK Y (cardan) = 1.1071487177940904 rad | OK distance = 111.80339887498948m
+     *                   | OK
      * 
      * @referenceVersion 1.0
      * 
@@ -1229,12 +1227,12 @@ public class TopocentricValTest {
         final double ZRef = 0;
 
         // Reference Outputs
-        final double XangleRef = FastMath.PI / 2;
+        final double XangleRef = -FastMath.PI / 2;
         final double YangleRef = 1.1071487177940904;
         final double rangeRef = 111.80339887498948;
 
         // Non regression
-        final double XangleNReg = 1.5707963267948966;
+        final double XangleNReg = -1.5707963267948966;
         final double YangleNReg = 1.1071487177940906;
         final double rangeNReg = 111.80339887498948;
 
@@ -1266,25 +1264,25 @@ public class TopocentricValTest {
             YangleRef, this.epsilonAngle, "elevation deviation");
         this.validate.assertEqualsWithRelativeTolerance(range, rangeNReg, this.epsilonNonReg,
             rangeRef, this.epsilonDistance, "elevation deviation");
-
     }
 
-/**
+    /**
      * @testType UT
      * 
-     * @testedMethod {@link TopocentricFrame#getDElevation(Vector3D, Frame, AbsoluteDate)
+     * @testedMethod {@link TopocentricFrame#getDElevation(Vector3D, Frame, AbsoluteDate)}
      * 
      * @description unit test for the elevation partial derivatives computation by finite difference.
-     * <p>
-     * For each partial derivatives:
-     * <ul>
-     * <li>Display the results: absolute and relative differences</li>
-     * <li>Non regression validation test wrt reference values</li>
-     * </ul>
-     * </p>
+     *              <p>
+     *              For each partial derivatives:
+     *              <ul>
+     *              <li>Display the results: absolute and relative differences</li>
+     *              <li>Non regression validation test wrt reference values</li>
+     *              </ul>
+     *              </p>
      * 
-     * @testPassCriteria the absolute and relative differences are displayed to be evaluated by the user. 
-     * When they are OK (close to 0), the values are saved to be evaluated with a non-regression test (1e-16 threshold).
+     * @testPassCriteria the absolute and relative differences are displayed to be evaluated by the user.
+     *                   When they are OK (close to 0), the values are saved to be evaluated with a non-regression test
+     *                   (1e-16 threshold).
      * 
      * @referenceVersion 1.0
      * 
@@ -1382,22 +1380,23 @@ public class TopocentricValTest {
         Assert.assertEquals(1.3878179993404016E-7, dElev.getZ(), validityThreshold);
     }
 
-/**
+    /**
      * @testType UT
      * 
-     * @testedMethod {@link TopocentricFrame#getDAzimuth(Vector3D, Frame, AbsoluteDate)
+     * @testedMethod {@link TopocentricFrame#getDAzimuth(Vector3D, Frame, AbsoluteDate)}
      * 
      * @description unit test for the elevation partial derivatives computation by finite difference.
-     * <p>
-     * For each partial derivatives:
-     * <ul>
-     * <li>Display the results: absolute and relative differences</li>
-     * <li>Non regression validation test wrt reference values</li>
-     * </ul>
-     * </p>
+     *              <p>
+     *              For each partial derivatives:
+     *              <ul>
+     *              <li>Display the results: absolute and relative differences</li>
+     *              <li>Non regression validation test wrt reference values</li>
+     *              </ul>
+     *              </p>
      * 
-     * @testPassCriteria the absolute and relative differences are displayed to be evaluated by the user. 
-     * When they are OK (close to 0), the values are saved to be evaluated with a non-regression test (1e-16 threshold).
+     * @testPassCriteria the absolute and relative differences are displayed to be evaluated by the user.
+     *                   When they are OK (close to 0), the values are saved to be evaluated with a non-regression test
+     *                   (1e-16 threshold).
      * 
      * @referenceVersion 1.0
      * 

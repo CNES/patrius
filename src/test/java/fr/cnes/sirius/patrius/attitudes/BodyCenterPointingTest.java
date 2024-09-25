@@ -18,6 +18,10 @@
 /*
  * 
  * HISTORY
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -53,6 +57,7 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -92,7 +97,7 @@ public class BodyCenterPointingTest {
     private CircularOrbit circ;
 
     // Reference frame = ITRF 2005
-    private Frame itrf;
+    private CelestialBodyFrame itrf;
 
     // Transform from EME2000 to ITRF2005
     private Transform eme2000ToItrf;
@@ -244,8 +249,7 @@ public class BodyCenterPointingTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };

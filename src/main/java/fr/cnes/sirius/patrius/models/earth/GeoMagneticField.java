@@ -18,6 +18,7 @@
 /* Copyright 2011-2012 Space Applications Services
  *
  * HISTORY
+* VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
  *          lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC) 
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint

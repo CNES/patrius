@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -54,6 +57,7 @@ import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
 import fr.cnes.sirius.patrius.forces.radiation.RadiationSensitive;
 import fr.cnes.sirius.patrius.forces.radiation.SolarRadiationPressure;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -318,7 +322,7 @@ public class ExtrapolTask implements ParallelTask {
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
             EphemerisType.MOON);
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
         return new ThirdBodyAttraction(moon.getGravityModel());
     }
 
@@ -335,7 +339,7 @@ public class ExtrapolTask implements ParallelTask {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
             EphemerisType.SUN);
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
         return new ThirdBodyAttraction(sun.getGravityModel());
     }
 
@@ -352,7 +356,7 @@ public class ExtrapolTask implements ParallelTask {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
             EphemerisType.MARS);
-        final CelestialBody mars = loader.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialBody mars = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MARS);
         return new ThirdBodyAttraction(mars.getGravityModel());
     }
 
@@ -369,7 +373,7 @@ public class ExtrapolTask implements ParallelTask {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
             EphemerisType.JUPITER);
-        final CelestialBody jupiter = loader.loadCelestialBody(CelestialBodyFactory.JUPITER);
+        final CelestialBody jupiter = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.JUPITER);
         return new ThirdBodyAttraction(jupiter.getGravityModel());
     }
 
@@ -386,7 +390,7 @@ public class ExtrapolTask implements ParallelTask {
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
             EphemerisType.VENUS);
-        final CelestialBody venus = loader.loadCelestialBody(CelestialBodyFactory.VENUS);
+        final CelestialBody venus = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.VENUS);
         return new ThirdBodyAttraction(venus.getGravityModel());
     }
 
@@ -429,7 +433,7 @@ public class ExtrapolTask implements ParallelTask {
      *         should not happen
      */
     private static ForceModel getDTM2000Force() throws PatriusException {
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.460, 1.0 / 298.257222101, itrf);
         final SolarInputs97to05 in = SolarInputs97to05.getInstance();
@@ -447,7 +451,7 @@ public class ExtrapolTask implements ParallelTask {
      *         should not happen
      */
     private static ForceModel getHarrisPriesterForce() throws PatriusException {
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.460, 1.0 / 298.257222101, itrf);
         final HarrisPriester hp = new HarrisPriester(sun, earth);
@@ -511,7 +515,7 @@ public class ExtrapolTask implements ParallelTask {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
 
         loaderSUN = new JPLCelestialBodyLoader(this.jplFile, EphemerisType.SUN);
-        loaderSUN.loadCelestialBody(CelestialBodyFactory.SUN);
+        loaderSUN.loadCelestialPoint(CelestialBodyFactory.SUN);
     }
 
 }

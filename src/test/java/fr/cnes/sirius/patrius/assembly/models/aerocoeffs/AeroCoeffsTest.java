@@ -17,6 +17,8 @@
  * @history creation 23/05/2018
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-121:08/12/2023:[PATRIUS] Anomalie dans les classes AeroCoeffBy...
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -27,9 +29,10 @@
  */
 package fr.cnes.sirius.patrius.assembly.models.aerocoeffs;
 
-import junit.framework.Assert;
+import java.util.Arrays;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -57,6 +60,9 @@ import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
+/**
+ * Unit test class for the aero coeff class.
+ */
 public class AeroCoeffsTest {
 
     /** Features description. */
@@ -108,8 +114,7 @@ public class AeroCoeffsTest {
     @Test
     public void aeroCoeffByAltitudeTest() {
 
-        final EllipsoidBodyShape earthShape = new OneAxisEllipsoid(
-            Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
             Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getGCRF(), "Earth");
 
         // Initialization
@@ -128,9 +133,17 @@ public class AeroCoeffsTest {
         final double expectedAltitude = 7000000 * (1. - 0.01) - Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS;
         final double expected = 2.4 + (expectedAltitude - 500E3) / (600E3 - 500E3) * (2.5 - 2.4);
         Assert.assertEquals(expected, actual, 1E-14);
+        
+        // Check out of interval: boundary value is returned
+        final Orbit orbit2 = new KeplerianOrbit(1E8, 0.01, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getGCRF(),
+                AbsoluteDate.J2000_EPOCH, Constants.GRIM5C1_EARTH_MU);
+        final SpacecraftState state2 = new SpacecraftState(orbit2);
+        Assert.assertEquals(2.5, aeroCoeff.value(state2), 0.);
     }
 
     /**
+     * @throws PatriusException
+     *         if an error occurs
      * @testType UT
      * 
      * @testedFeature {@link features#AERO_COEFFICIENT}
@@ -152,8 +165,7 @@ public class AeroCoeffsTest {
     @Test
     public void aeroCoeffByAoATest() throws PatriusException {
 
-        final EllipsoidBodyShape earthShape = new OneAxisEllipsoid(
-            Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
             Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getGCRF(), "Earth");
         final AttitudeLaw attitudeLaw =
             new ConstantAttitudeLaw(FramesFactory.getGCRF(), new Rotation(Vector3D.PLUS_I, FastMath.PI / 2.));
@@ -179,6 +191,8 @@ public class AeroCoeffsTest {
     }
 
     /**
+     * @throws PatriusException
+     *         if an error occurs
      * @testType UT
      * 
      * @testedFeature {@link features#AERO_COEFFICIENT}
@@ -223,10 +237,12 @@ public class AeroCoeffsTest {
         final double actual = aeroCoeff.value(state);
         final double expectedMach = 7.5336096244782444;
         final double expected = 2.2 + (expectedMach - 7.4) / (7.6 - 7.4) * (2.3 - 2.2);
-        Assert.assertEquals(expected, actual, 1E-14);
+        Assert.assertEquals(expected, actual, 1E-13);
     }
 
     /**
+     * @throws PatriusException
+     *         if an error occurs
      * @testType UT
      * 
      * @testedFeature {@link features#AERO_COEFFICIENT}
@@ -248,8 +264,7 @@ public class AeroCoeffsTest {
     @Test
     public void aeroCoeffByAoAAndMachTest() throws PatriusException {
 
-        final EllipsoidBodyShape earthShape = new OneAxisEllipsoid(
-            Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
             Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getITRF(), "Earth");
         final Atmosphere atmosphere = new US76(earthShape);
         final AttitudeLaw attitudeLaw = new ConstantAttitudeLaw(FramesFactory.getGCRF(), Rotation.IDENTITY);
@@ -280,19 +295,19 @@ public class AeroCoeffsTest {
         final double actual = aeroCoeff.value(state);
         final double expectedMach = 7.5336096244782444;
         final double expected = 2.2 + (expectedMach - 7.4) / (7.6 - 7.4) * (2.3 - 2.2);
-        Assert.assertEquals(expected, actual, 1E-14);
+        Assert.assertEquals(expected, actual, 1E-13);
 
         // Checks
-        Assert.assertEquals(0, aeroCoeff.getParameters().size(), 0);
+        Assert.assertEquals(0, aeroCoeff.getParameters().size(), 0.);
         Assert.assertFalse(aeroCoeff.supportsParameter(null));
-        Assert.assertEquals(0, aeroCoeff.derivativeValue(null, null), 0);
+        Assert.assertEquals(0, aeroCoeff.derivativeValue(null, null), 0.);
         Assert.assertFalse(aeroCoeff.isDifferentiableBy(null));
         Assert.assertEquals(xVariables, aeroCoeff.getAoAArray());
         Assert.assertEquals(yVariables, aeroCoeff.getMachArray());
-        Assert.assertEquals(zVariables, aeroCoeff.getAerodynamicCoefficientsArray());
-        Assert.assertEquals(xVariables[2], aeroCoeff.getFunction().getxtab()[2]);
-        Assert.assertEquals(yVariables[2], aeroCoeff.getFunction().getytab()[2]);
-        Assert.assertEquals(zVariables[2][3], aeroCoeff.getFunction().getValues()[2][3]);
+        Assert.assertTrue(Arrays.deepEquals(zVariables, aeroCoeff.getAerodynamicCoefficientsArray()));
+        Assert.assertEquals(xVariables[2], aeroCoeff.getFunction().getxtab()[2], 0.);
+        Assert.assertEquals(yVariables[2], aeroCoeff.getFunction().getytab()[2], 0.);
+        Assert.assertEquals(zVariables[2][3], aeroCoeff.getFunction().getValues()[2][3], 0.);
         Assert.assertNotNull(aeroCoeff.toString());
     }
 
@@ -328,11 +343,12 @@ public class AeroCoeffsTest {
         Assert.assertEquals(expected, actual, 1E-14);
 
         // Checks
-        Assert.assertEquals(0, aeroCoeff.getParameters().size(), 1);
-        Assert.assertEquals(0, aeroCoeff.derivativeValue(p, null), 1);
-        Assert.assertEquals(2.8, aeroCoeff.getAerodynamicCoefficient());
+        Assert.assertEquals(0, aeroCoeff.getParameters().size(), 1.);
+        Assert.assertEquals(0, aeroCoeff.derivativeValue(p, null), 1.);
+        Assert.assertEquals(2.8, aeroCoeff.getAerodynamicCoefficient(), 0.);
         Assert.assertTrue(aeroCoeff.supportsParameter(p));
         Assert.assertTrue(aeroCoeff.isDifferentiableBy(p));
+        Assert.assertEquals("AeroCoeffConstant[Cst param: Parameter:2.8]", aeroCoeff.toString());
     }
 
     /**
@@ -364,8 +380,7 @@ public class AeroCoeffsTest {
     @Test
     public void aeroCoeffOneVarFunctionalTest() {
 
-        final EllipsoidBodyShape earthShape = new OneAxisEllipsoid(
-            Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
+        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
             Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getGCRF(), "Earth");
 
         // Initialization
@@ -374,14 +389,14 @@ public class AeroCoeffsTest {
         final AeroCoeffByAltitude aeroCoeff = new AeroCoeffByAltitude(xVariables, yVariables, earthShape);
 
         // Checks
-        Assert.assertEquals(0, aeroCoeff.getParameters().size(), 0);
+        Assert.assertEquals(0, aeroCoeff.getParameters().size(), 0.);
         Assert.assertFalse(aeroCoeff.supportsParameter(null));
-        Assert.assertEquals(0, aeroCoeff.derivativeValue(null, null), 0);
+        Assert.assertEquals(0, aeroCoeff.derivativeValue(null, null), 0.);
         Assert.assertFalse(aeroCoeff.isDifferentiableBy(null));
         Assert.assertEquals(xVariables, aeroCoeff.getXArray());
         Assert.assertEquals(yVariables, aeroCoeff.getYArray());
-        Assert.assertEquals(xVariables[2], aeroCoeff.getFunction().getxtab()[3]);
-        Assert.assertEquals(yVariables[2], aeroCoeff.getFunction().getValues()[3]);
+        Assert.assertEquals(xVariables[2], aeroCoeff.getFunction().getxtab()[3], 0.);
+        Assert.assertEquals(yVariables[2], aeroCoeff.getFunction().getValues()[3], 0.);
         Assert.assertNotNull(aeroCoeff.toString());
     }
 }

@@ -17,6 +17,7 @@
  * @history creation 05/04/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -30,7 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -130,7 +131,7 @@ public class CelestialBodyFactoryThirdTest {
             C_D_L.await();
 
             // Pick one celestial body
-            final CelestialBody b1 = CelestialBodyFactory.getEarth();
+            final CelestialPoint b1 = CelestialBodyFactory.getEarth();
             // Wait a bit to delay the IO slowdown
             Thread.sleep(1000);
             System.out.println("Body : " + b1.toString());

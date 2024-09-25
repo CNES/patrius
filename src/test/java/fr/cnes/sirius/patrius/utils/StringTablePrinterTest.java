@@ -9,6 +9,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.utils;
 
 import org.junit.Assert;

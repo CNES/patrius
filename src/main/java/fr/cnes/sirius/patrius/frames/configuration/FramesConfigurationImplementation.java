@@ -17,6 +17,9 @@
  * @history creation 28/06/2012
  *
  * HISTORY
+ * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -33,9 +36,15 @@ import fr.cnes.sirius.patrius.frames.configuration.eop.NoEOP2000History;
 import fr.cnes.sirius.patrius.frames.configuration.eop.NutationCorrection;
 import fr.cnes.sirius.patrius.frames.configuration.eop.PoleCorrection;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.modprecession.IAUMODPrecession;
+import fr.cnes.sirius.patrius.frames.configuration.modprecession.IAUMODPrecessionConvention;
+import fr.cnes.sirius.patrius.frames.configuration.modprecession.MODPrecessionModel;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.CIPCoordinates;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
@@ -43,24 +52,33 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * This class represents a frames configuration.
- * 
+ *
  * @author Julie Anton, Rami Houdroge
  * @version $Id: FramesConfigurationImplementation.java 18073 2017-10-02 16:48:07Z bignon $
  * @since 1.2
  */
 public class FramesConfigurationImplementation implements FramesConfiguration {
+
     /** Serializable UID. */
     private static final long serialVersionUID = -7815355641864558021L;
+
     /** EOP history. */
     private EOPHistory historyEOP = new NoEOP2000History();
+
     /** Polar motion model. */
     private PolarMotion polarMotion = new PolarMotion(false, TidalCorrectionModelFactory.NO_TIDE,
         LibrationCorrectionModelFactory.NO_LIBRATION, SPrimeModelFactory.NO_SP);
+
     /** Diurnal rotation model. */
     private DiurnalRotation diurnalRotation = new DiurnalRotation(TidalCorrectionModelFactory.NO_TIDE,
         LibrationCorrectionModelFactory.NO_LIBRATION);
-    /** Precession nutation model. */
-    private PrecessionNutation precessionNutation = new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN);
+
+    /** CIRF precession nutation model. */
+    private PrecessionNutation cirfPrecessionNutation = new PrecessionNutation(false,
+        PrecessionNutationModelFactory.NO_PN);
+
+    /** MOD Precession model. */
+    private MODPrecessionModel modPrecession = new IAUMODPrecession(IAUMODPrecessionConvention.IAU1976, 1, 3);
 
     /**
      * Protected constructor.
@@ -71,7 +89,7 @@ public class FramesConfigurationImplementation implements FramesConfiguration {
 
     /**
      * Set the polar motion model.
-     * 
+     *
      * @param model
      *        polar motion model
      */
@@ -81,7 +99,7 @@ public class FramesConfigurationImplementation implements FramesConfiguration {
 
     /**
      * Set the diurnal rotation model.
-     * 
+     *
      * @param model
      *        diurnal rotation model
      */
@@ -91,17 +109,27 @@ public class FramesConfigurationImplementation implements FramesConfiguration {
 
     /**
      * Set the precession nutation model.
-     * 
+     *
      * @param model
      *        precession nutation model
      */
-    protected void setPrecessionNutationModel(final PrecessionNutation model) {
-        this.precessionNutation = model;
+    protected void setCIRFPrecessionNutationModel(final PrecessionNutation model) {
+        this.cirfPrecessionNutation = model;
+    }
+
+    /**
+     * Set the MOD precession model.
+     *
+     * @param model
+     *        MOD precession
+     */
+    protected void setMODPrecessionModel(final MODPrecessionModel model) {
+        this.modPrecession = model;
     }
 
     /**
      * Set the EOP history.
-     * 
+     *
      * @param eopHistory
      *        EOP history
      */
@@ -111,15 +139,13 @@ public class FramesConfigurationImplementation implements FramesConfiguration {
 
     /** {@inheritDoc} */
     @Override
-    public double[] getPolarMotion(final AbsoluteDate date) throws PatriusException {
-        final PoleCorrection pole;
+    public PoleCorrection getPolarMotion(final AbsoluteDate date) throws PatriusException {
+        PoleCorrection pole = this.polarMotion.getPoleCorrection(date);
         if (this.polarMotion.useEopData()) {
-            pole = this.historyEOP.getPoleCorrection(date);
-        } else {
-            pole = PoleCorrection.NULL_CORRECTION;
+            final PoleCorrection eopCorrection = this.historyEOP.getPoleCorrection(date);
+            pole = new PoleCorrection(pole.getXp() + eopCorrection.getXp(), pole.getYp() + eopCorrection.getYp());
         }
-        final PoleCorrection correction = this.polarMotion.getPoleCorrection(date);
-        return new double[] { pole.getXp() + correction.getXp(), pole.getYp() + correction.getYp() };
+        return pole;
     }
 
     /** {@inheritDoc} */
@@ -142,89 +168,69 @@ public class FramesConfigurationImplementation implements FramesConfiguration {
 
     /** {@inheritDoc} */
     @Override
-    public double[] getCIPMotion(final AbsoluteDate date) {
-
-        // get cip array
-        final double[] cip = this.precessionNutation.getCIPMotion(date);
-        final NutationCorrection corr;
-        if (this.precessionNutation.useEopData()) {
-            corr = this.historyEOP.getNutationCorrection(date);
-        } else {
-            // null correction if the nutation correction does not used
-            corr = NutationCorrection.NULL_CORRECTION;
+    public CIPCoordinates getCIPCoordinates(final AbsoluteDate date) {
+        CIPCoordinates cip = this.cirfPrecessionNutation.getCIPCoordinates(date);
+        if (this.cirfPrecessionNutation.useEopData()) {
+            final NutationCorrection nutationCorrection = this.historyEOP.getNutationCorrection(date);
+            cip = new CIPCoordinates(cip.getDate(), cip.getX() + nutationCorrection.getDX(), cip.getxP(), cip.getY()
+                    + nutationCorrection.getDY(),
+                cip.getyP(), cip.getS(), cip.getsP());
         }
-        // initialize cip corrected array
-        final double[] cipCorrected = new double[3];
-        cipCorrected[0] = cip[0] + corr.getDX();
-        cipCorrected[1] = cip[1] + corr.getDY();
-        cipCorrected[2] = cip[2];
-        return cipCorrected;
+        return cip;
     }
 
     /** {@inheritDoc} */
     @Override
-    public double[] getCIPMotionTimeDerivative(final AbsoluteDate date) {
-        return this.precessionNutation.getCIPMotionTimeDerivative(date);
+    public double getEarthObliquity(final AbsoluteDate date) {
+        return modPrecession.getEarthObliquity(date);
     }
 
-    /**
-     * Get the time interval of validity.
-     * 
-     * @return time interval of validity
-     */
+    /** {@inheritDoc} */
+    @Override
+    public Rotation getMODPrecession(final AbsoluteDate date) {
+        return modPrecession.getMODPrecession(date);
+    }
+
+    /** {@inheritDoc} */
     @Override
     public AbsoluteDateInterval getTimeIntervalOfValidity() {
         return new AbsoluteDateInterval(IntervalEndpointType.CLOSED, this.historyEOP.getStartDate(),
             this.historyEOP.getEndDate(), IntervalEndpointType.CLOSED);
     }
 
-    /**
-     * Get the EOP interpolation method.
-     * 
-     * @return the EOP interpolation method used
-     */
+    /** {@inheritDoc} */
     @Override
     public EOPInterpolators getEOPInterpolationMethod() {
         return this.historyEOP.getEOPInterpolationMethod();
     }
 
-    /**
-     * Get the EOP history.
-     * 
-     * @return the EOP history
-     */
+    /** {@inheritDoc} */
     @Override
     public EOPHistory getEOPHistory() {
         return this.historyEOP;
     }
 
-    /**
-     * Get the polar motion model.
-     * 
-     * @return the pola motion model
-     */
+    /** {@inheritDoc} */
     @Override
     public PolarMotion getPolarMotionModel() {
         return this.polarMotion;
     }
 
-    /**
-     * Get the diurnal rotation model.
-     * 
-     * @return the diurnal rotation model
-     */
+    /** {@inheritDoc} */
     @Override
     public DiurnalRotation getDiurnalRotationModel() {
         return this.diurnalRotation;
     }
 
-    /**
-     * Get the precession nutation model.
-     * 
-     * @return the precession nutation model
-     */
+    /** {@inheritDoc} */
     @Override
-    public PrecessionNutation getPrecessionNutationModel() {
-        return this.precessionNutation;
+    public PrecessionNutation getCIRFPrecessionNutationModel() {
+        return this.cirfPrecessionNutation;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public MODPrecessionModel getMODPrecessionModel() {
+        return this.modPrecession;
     }
 }

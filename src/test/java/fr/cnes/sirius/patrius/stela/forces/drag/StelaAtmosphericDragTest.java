@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3126:10/05/2022:[PATRIUS] Imports obsoletes suite a suppression de reflexion Java dans Patrius 
@@ -49,7 +50,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
@@ -118,12 +119,12 @@ public class StelaAtmosphericDragTest {
     /**
      * The Sun.
      */
-    private static CelestialBody sun;
+    private static CelestialPoint sun;
 
     /**
      * The Moon.
      */
-    private static CelestialBody moon;
+    private static CelestialPoint moon;
 
     /**
      * The Stela Cd value.
@@ -538,6 +539,18 @@ public class StelaAtmosphericDragTest {
         @Override
         public double getAe() {
             return Constants.CNES_STELA_AE;
+        }
+
+        @Override
+        public double[][] getSigmaC(int n, int m, boolean normalized) throws PatriusException {
+         // Unused
+            return null;
+        }
+
+        @Override
+        public double[][] getSigmaS(int n, int m, boolean normalized) throws PatriusException {
+         // Unused
+            return null;
         }
     }
 }

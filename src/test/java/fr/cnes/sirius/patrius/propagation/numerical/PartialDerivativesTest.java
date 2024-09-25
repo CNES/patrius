@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
 * VERSION:4.11:DM:DM-40:22/05/2023:[PATRIUS] Gestion derivees par rapport au coefficient k dans les GravityModel
 * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -63,6 +66,7 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.gravity.CunninghamGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
@@ -91,7 +95,6 @@ import fr.cnes.sirius.patrius.orbits.OrbitType;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepInterpolator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -109,7 +112,7 @@ public class PartialDerivativesTest {
 
         final PotentialCoefficientsProvider provider = GravityFieldFactory.getPotentialProvider();
         final double mu = provider.getMu();
-        DrozinerGravityModel gravityModel = new DrozinerGravityModel(FramesFactory.getITRF(),
+        final DrozinerGravityModel gravityModel = new DrozinerGravityModel(FramesFactory.getITRF(),
             6378136.460, mu, provider.getC(5, 5, true), provider.getS(5, 5, true));
         gravityModel.setCentralTermContribution(false);
         final ForceModel gravityField = new DirectBodyAttraction(gravityModel);
@@ -234,7 +237,7 @@ public class PartialDerivativesTest {
         final PotentialCoefficientsProvider provider = GravityFieldFactory.getPotentialProvider();
         final Parameter muParam = new Parameter("mu", provider.getMu());
         final Parameter aeParam = new Parameter("ae", 6378136.460);
-        DrozinerGravityModel gravityModel = new DrozinerGravityModel(FramesFactory.getITRF(),
+        final DrozinerGravityModel gravityModel = new DrozinerGravityModel(FramesFactory.getITRF(),
             aeParam, muParam, provider.getC(5, 5, true), provider.getS(5, 5, true));
         gravityModel.setCentralTermContribution(false);
         final ForceModel gravityField = new DirectBodyAttraction(gravityModel);
@@ -468,8 +471,8 @@ public class PartialDerivativesTest {
 
         // FA-3246: specify a different output frame and check that a transform is well used (non
         // regression). Previously the specified output frame wasn't used.
-        final double[] dYdYP2ItrfRef = { -3.0521685348103427, 5.629009477032916, 2.999753246950044,
-                0.3541839238029258, 1.9688492744338593, 5.999946102709936 };
+        final double[] dYdYP2ItrfRef = { -3.0521685348103436, 5.629009477032913, 2.999753246950042, 0.3541839237978011,
+            1.9688492744248953, 5.999946102721538 };
         mapper.getParametersJacobian(param2, state, dYdYP2ActItrf, OrbitType.CARTESIAN,
                 PositionAngle.TRUE, FramesFactory.getITRF());
         checkDoubleArray(dYdYP2ItrfRef, dYdYP2ActItrf);
@@ -785,11 +788,10 @@ public class PartialDerivativesTest {
                 throw new PropagationException(oe);
             }
         }
-
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data:potential/shm-format");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

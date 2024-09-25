@@ -15,8 +15,12 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
+ * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
- * VERSION:4.11:FA:FA-3321:22/05/2023:[PATRIUS] Thread safety issue a la creation des FactoryManagedFrame
+ * VERSION:4.11:FA:FA-3321:22/05/2023:[PATRIUS] Thread safety issue a la creation des CelestialBodyFrame
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
@@ -46,7 +50,9 @@ import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationFactory;
 import fr.cnes.sirius.patrius.frames.transformations.CIRFProvider;
 import fr.cnes.sirius.patrius.frames.transformations.EMBProvider;
 import fr.cnes.sirius.patrius.frames.transformations.EME2000Provider;
-import fr.cnes.sirius.patrius.frames.transformations.EODProvider;
+import fr.cnes.sirius.patrius.frames.transformations.EclipticJ2000Provider;
+import fr.cnes.sirius.patrius.frames.transformations.EclipticMODProvider;
+import fr.cnes.sirius.patrius.frames.transformations.G50Provider;
 import fr.cnes.sirius.patrius.frames.transformations.GCRFProvider;
 import fr.cnes.sirius.patrius.frames.transformations.GTODProvider;
 import fr.cnes.sirius.patrius.frames.transformations.ITRFEquinoxProvider;
@@ -125,9 +131,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  *  (Terrestrial Intermediate Reference Frame) TIRF  EOD     GTOD                 GTOD  (Green. True Of Date) EOD
  *                                              │                           w/o EOP corrections
  *                                  Pole motion │                                  │
- *                                              │                                  ├────────────┐
- *                                              │                                  │            │
- * (International Terrestrial Reference Frame) ITRF                               ITRF        VEIS1950
+ *                                              │                                  ├────────────┬─────────────┐
+ *                                              │                                  │            │             │
+ * (International Terrestrial Reference Frame) ITRF                               ITRF        VEIS1950   G50 (Gamma 50)
  *                                                                           equinox-based
  * 
  * </pre>
@@ -143,14 +149,14 @@ public final class FramesFactory implements Serializable {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 1720647682459923909L;
-    
+
     /** 24. */
     private static final int TWENTY_FOUR = 24;
     /** 8. */
     private static final int EIGHT = 8;
 
     /** Predefined frames. */
-    private static transient Map<Predefined, FactoryManagedFrame> frames = new ConcurrentHashMap<>();
+    private static final transient Map<Predefined, CelestialBodyFrame> FRAMES = new ConcurrentHashMap<>();
 
     /** Frames configuration. */
     private static final AtomicReference<FramesConfiguration> CONFIG_REF = new AtomicReference<>();
@@ -217,6 +223,10 @@ public final class FramesFactory implements Serializable {
                 // Case Veis 1950
                 res = getVeis1950();
                 break;
+            case G50:
+                // Case G50
+                res = getG50();
+                break;
             case GTOD_WITHOUT_EOP_CORRECTIONS:
                 // Case GTOD without EOP corrections
                 res = getGTOD(false);
@@ -241,17 +251,21 @@ public final class FramesFactory implements Serializable {
                 // Case MOD with EOP corrections
                 res = getMOD(true);
                 break;
+            case ECLIPTIC_J2000:
+                // Case EclipticJ2000
+                res = getEclipticJ2000();
+                break;
             case TEME:
                 // Case TEME
                 res = getTEME();
                 break;
-            case EOD_WITH_EOP_CORRECTIONS:
+            case ECLIPTIC_MOD_WITH_EOP_CORRECTIONS:
                 // Case EOD with EOP corrections
-                res = getEODFrame(true);
+                res = getEclipticMOD(true);
                 break;
-            case EOD_WITHOUT_EOP_CORRECTIONS:
+            case ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS:
                 // EOD without EOP corrections
-                res = getEODFrame(false);
+                res = getEclipticMOD(false);
                 break;
             default:
                 // Cannot happen
@@ -267,22 +281,22 @@ public final class FramesFactory implements Serializable {
      * Get the unique GCRF frame.
      * 
      * @return the unique instance of the GCRF frame
-s     */
-    public static FactoryManagedFrame getGCRF() {
+     */
+    public static CelestialBodyFrame getGCRF() {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.GCRF;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getEMB(), new GCRFProvider(), true, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -290,27 +304,27 @@ s     */
         // Return result
         return frame;
     }
-
+    
     /**
      * Get the unique Earth-Moon barycenter frame. It is aligned with GCRF and ICRF frame.
      * 
      * @return the unique instance of the Earth-Moon barycenter frame
      */
-    public static FactoryManagedFrame getEMB() {
+    public static CelestialBodyFrame getEMB() {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.EMB;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getICRF(), new EMBProvider(), true, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -339,21 +353,21 @@ s     */
      * 
      * @return the selected reference frame singleton.
      */
-    public static FactoryManagedFrame getCIRF() {
+    public static CelestialBodyFrame getCIRF() {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.CIRF;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getGCRF(), new CIRFProvider(), true, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -369,20 +383,20 @@ s     */
      * @exception PatriusException if the precession-nutation model data embedded in the library
      *            cannot be read.
      */
-    public static FactoryManagedFrame getTIRF() throws PatriusException {
+    public static CelestialBodyFrame getTIRF() throws PatriusException {
         // try to find an already built frame
         final Predefined factoryKey = Predefined.TIRF;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getCIRF(), new TIRFProvider(), false, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -398,22 +412,22 @@ s     */
      * @exception PatriusException if the precession-nutation model data embedded in the library
      *            cannot be read.
      */
-    public static FactoryManagedFrame getITRF() throws PatriusException {
+    public static CelestialBodyFrame getITRF() throws PatriusException {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.ITRF;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     final Frame tirfFrame = getTIRF();
                     frame = new FactoryManagedFrame(tirfFrame, new ITRFProvider(), false, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -430,22 +444,22 @@ s     */
      * 
      * @return the unique instance of the EME2000 frame
      */
-    public static FactoryManagedFrame getEME2000() {
+    public static CelestialBodyFrame getEME2000() {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.EME2000;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getGCRF(), new EME2000Provider(), true,
-                            factoryKey);
-                    frames.put(factoryKey, frame);
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -463,22 +477,55 @@ s     */
      * @return the selected reference frame singleton.
      * @exception PatriusException if data embedded in the library cannot be read
      */
-    public static FactoryManagedFrame getVeis1950() throws PatriusException {
+    public static CelestialBodyFrame getVeis1950() throws PatriusException {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.VEIS_1950;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(FramesFactory.getGTOD(false), new VEISProvider(), true,
-                            factoryKey);
-                    frames.put(factoryKey, frame);
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
+                }
+            }
+        }
+
+        // Return result
+        return frame;
+    }
+
+    /**
+     * Get the G50 reference frame.
+     * <p>
+     * Its parent frame is the GTOD frame without EOP corrections.
+     * <p>
+     * 
+     * @return the selected reference frame singleton.
+     * @exception PatriusException if data embedded in the library cannot be read
+     */
+    public static CelestialBodyFrame getG50() throws PatriusException {
+
+        // try to find an already built frame
+        final Predefined factoryKey = Predefined.G50;
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
+
+        // Double-check locking
+        if (frame == null) {
+            synchronized (FramesFactory.class) {
+                if (FRAMES.get(factoryKey) == null) {
+                    // Build unique instance
+                    frame = new FactoryManagedFrame(FramesFactory.getGTOD(false), new G50Provider(), true,
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
+                } else {
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -493,22 +540,22 @@ s     */
      * @return the selected reference frame singleton.
      * @exception PatriusException if data embedded in the library cannot be read
      */
-    public static FactoryManagedFrame getITRFEquinox() throws PatriusException {
+    public static CelestialBodyFrame getITRFEquinox() throws PatriusException {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.ITRF_EQUINOX;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getGTOD(true), new ITRFEquinoxProvider(), false,
-                            factoryKey);
-                    frames.put(factoryKey, frame);
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -529,23 +576,23 @@ s     */
      * @return the selected reference frame singleton.
      * @exception PatriusException if data embedded in the library cannot be read
      */
-    public static FactoryManagedFrame getGTOD(final boolean applyEOPCorr) throws PatriusException {
+    public static CelestialBodyFrame getGTOD(final boolean applyEOPCorr) throws PatriusException {
 
         // try to find an already built frame
         final Predefined factoryKey = applyEOPCorr ? Predefined.GTOD_WITH_EOP_CORRECTIONS
             : Predefined.GTOD_WITHOUT_EOP_CORRECTIONS;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getTOD(applyEOPCorr), new GTODProvider(), false,
-                            factoryKey);
-                    frames.put(factoryKey, frame);
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -566,7 +613,7 @@ s     */
      * @return the selected reference frame singleton.
      * @exception PatriusException if data embedded in the library cannot be read
      */
-    public static FactoryManagedFrame getTOD(final boolean applyEOPCorr) throws PatriusException {
+    public static CelestialBodyFrame getTOD(final boolean applyEOPCorr) throws PatriusException {
 
         // try to find an already built frame
         final Predefined factoryKey;
@@ -583,22 +630,22 @@ s     */
             interpolationPoints = 6;
             pointsPerDay = EIGHT;
         }
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     final TransformProvider interpolating = new InterpolatingTransformProvider(new TODProvider(
-                            applyEOPCorr), true, false, AbsoluteDate.PAST_INFINITY, AbsoluteDate.FUTURE_INFINITY,
-                            interpolationPoints, Constants.JULIAN_DAY / pointsPerDay,
-                            PatriusConfiguration.getCacheSlotsNumber(), Constants.JULIAN_YEAR,
-                            30 * Constants.JULIAN_DAY);
+                        applyEOPCorr), true, false, AbsoluteDate.PAST_INFINITY, AbsoluteDate.FUTURE_INFINITY,
+                        interpolationPoints, Constants.JULIAN_DAY / pointsPerDay,
+                        PatriusConfiguration.getCacheSlotsNumber(), Constants.JULIAN_YEAR,
+                        30 * Constants.JULIAN_DAY);
                     frame = new FactoryManagedFrame(getMOD(applyEOPCorr), interpolating, true, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -618,23 +665,23 @@ s     */
      * @param applyEOPCorr if true, EOP corrections are applied (EME2000/GCRF bias compensation)
      * @return the selected reference frame singleton.
      */
-    public static FactoryManagedFrame getMOD(final boolean applyEOPCorr) {
+    public static CelestialBodyFrame getMOD(final boolean applyEOPCorr) {
 
         // try to find an already built frame
         final Predefined factoryKey = applyEOPCorr ? Predefined.MOD_WITH_EOP_CORRECTIONS
             : Predefined.MOD_WITHOUT_EOP_CORRECTIONS;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(applyEOPCorr ? FramesFactory.getGCRF()
-                            : FramesFactory.getEME2000(), new MODProvider(), true, factoryKey);
-                    frames.put(factoryKey, frame);
+                        : FramesFactory.getEME2000(), new MODProvider(), true, factoryKey);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -655,21 +702,21 @@ s     */
      * @return the selected reference frame singleton.
      * @exception PatriusException if data embedded in the library cannot be read
      */
-    public static FactoryManagedFrame getTEME() throws PatriusException {
+    public static CelestialBodyFrame getTEME() throws PatriusException {
 
         // try to find an already built frame
         final Predefined factoryKey = Predefined.TEME;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     frame = new FactoryManagedFrame(getTOD(false), new TEMEProvider(), true, factoryKey);
-                    frames.put(factoryKey, frame);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -680,30 +727,59 @@ s     */
 
     /**
      * <p>
-     * This class implements the EOD frame (mean ecliptic and equinox of the epoch).
+     * This class implements the Ecliptic MOD frame (mean ecliptic and equinox of the epoch) (formerly called EOD).
      * </p>
-     * See "Astronomical Algorithms", chapter 24 "Solar Coordinates", Jean Meeus, 1991.
      * 
      * @param applyEOPCorr true to take into account EOP corrections
-     * @return the EOD frame
+     * @return the Ecliptic MOD frame
      * */
-    public static FactoryManagedFrame getEODFrame(final boolean applyEOPCorr) {
+    public static CelestialBodyFrame getEclipticMOD(final boolean applyEOPCorr) {
 
         // try to find an already built frame
-        final Predefined factoryKey = applyEOPCorr ? Predefined.EOD_WITH_EOP_CORRECTIONS
-            : Predefined.EOD_WITHOUT_EOP_CORRECTIONS;
-        FactoryManagedFrame frame = frames.get(factoryKey);
+        final Predefined factoryKey = applyEOPCorr ? Predefined.ECLIPTIC_MOD_WITH_EOP_CORRECTIONS
+            : Predefined.ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS;
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
         if (frame == null) {
             synchronized (FramesFactory.class) {
-                if (frames.get(factoryKey) == null) {
+                if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getMOD(applyEOPCorr), new EODProvider(), true,
-                            factoryKey);
-                    frames.put(factoryKey, frame);
+                    frame = new FactoryManagedFrame(getMOD(applyEOPCorr), new EclipticMODProvider(), true,
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
                 } else {
-                    frame = frames.get(factoryKey);
+                    frame = FRAMES.get(factoryKey);
+                }
+            }
+        }
+
+        // Return result
+        return frame;
+    }
+
+    /**
+     * <p>
+     * This class implements the Ecliptic J2000 frame.
+     * </p>
+     * See "Astronomical Algorithms", chapter 24 "Solar Coordinates", Jean Meeus, 1991.
+     * 
+     * @return the EclipticJ2000 frame
+     * */
+    public static CelestialBodyFrame getEclipticJ2000() {
+        final Predefined factoryKey = Predefined.ECLIPTIC_J2000;
+        CelestialBodyFrame frame = FRAMES.get(factoryKey);
+
+        // Double-check locking
+        if (frame == null) {
+            synchronized (FramesFactory.class) {
+                if (FRAMES.get(factoryKey) == null) {
+                    // Build unique instance
+                    frame = new FactoryManagedFrame(getICRF(), new EclipticJ2000Provider(), true,
+                        factoryKey);
+                    FRAMES.put(factoryKey, frame);
+                } else {
+                    frame = FRAMES.get(factoryKey);
                 }
             }
         }
@@ -784,7 +860,7 @@ s     */
     public static void clearConfiguration() {
         CONFIG_REF.set(null);
     }
-    
+
     /**
      * Clear the frames tree.
      * <p>
@@ -792,6 +868,7 @@ s     */
      * </p>
      */
     public static void clear() {
-        frames.clear();
+        FRAMES.clear();
     }
+
 }

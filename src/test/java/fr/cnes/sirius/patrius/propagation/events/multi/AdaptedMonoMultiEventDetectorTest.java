@@ -18,6 +18,8 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2089:15/05/2019:[PATRIUS] passage a Java 8
@@ -50,6 +52,13 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.MultiAbstractDetector;
+import fr.cnes.sirius.patrius.events.MultiEventDetector;
+import fr.cnes.sirius.patrius.events.utils.AdaptedMonoEventDetector;
+import fr.cnes.sirius.patrius.events.utils.AdaptedMultiEventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -58,9 +67,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.numerical.multi.MultiStateVectorInfo;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -185,6 +191,14 @@ public class AdaptedMonoMultiEventDetectorTest {
         public EventDetector copy() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final SpacecraftState state,
+                final boolean increasing,
+                final boolean forward) throws PatriusException {
+            return false;
+        }
     }
 
     /**
@@ -257,6 +271,14 @@ public class AdaptedMonoMultiEventDetectorTest {
         @Override
         public int getSlopeSelection() {
             return 2;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final Map<String, SpacecraftState> states,
+                final boolean increasing,
+                final boolean forward) throws PatriusException {
+            return false;
         }
     }
 
@@ -786,6 +808,14 @@ public class AdaptedMonoMultiEventDetectorTest {
             public boolean shouldBeRemoved() {
                 return false;
             }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final Map<String, SpacecraftState> states,
+                    final boolean increasing,
+                    final boolean forward) throws PatriusException {
+                return false;
+            }
         };
         detector.init(states, refDate);
         Assert.assertEquals(states.hashCode(), detector.resetStates(states).hashCode());
@@ -807,6 +837,14 @@ public class AdaptedMonoMultiEventDetectorTest {
 
                 @Override
                 public boolean shouldBeRemoved() {
+                    return false;
+                }
+
+                /** {@inheritDoc} */
+                @Override
+                public boolean filterEvent(final Map<String, SpacecraftState> states,
+                        final boolean increasing,
+                        final boolean forward) throws PatriusException {
                     return false;
                 }
             };

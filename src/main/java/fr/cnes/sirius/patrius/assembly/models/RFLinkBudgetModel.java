@@ -18,6 +18,7 @@
  * @history created 03/09/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2460:27/05/2020:Prise en compte des temps de propagation dans les calculs evenements
@@ -40,7 +41,7 @@ import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.IPart;
 import fr.cnes.sirius.patrius.assembly.PropertyType;
 import fr.cnes.sirius.patrius.assembly.properties.RFAntennaProperty;
-import fr.cnes.sirius.patrius.events.sensor.RFVisibilityDetector;
+import fr.cnes.sirius.patrius.events.detectors.RFVisibilityDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.groundstation.RFStationAntenna;

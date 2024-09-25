@@ -1,13 +1,13 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,8 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
- *          lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC) 
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au
+ * lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC)
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les
@@ -28,14 +29,13 @@
 package fr.cnes.sirius.patrius.signalpropagation.troposphere;
 
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
-import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditionsProvider;
 
 /**
  * This class describes the tropospheric correction factory around the {@link AzoulayModel Azoulay model}.
  *
  * @author bonitt
  */
-public class AzoulayModelFactory extends AbstractTroposphericCorrectionFactory {
+public class AzoulayModelFactory extends AbstractMeteoBasedCorrectionFactory<AzoulayModel> {
 
     /**
      * True if the correction due to the troposphere is computed from the geometric value of the elevation, to get the
@@ -47,7 +47,8 @@ public class AzoulayModelFactory extends AbstractTroposphericCorrectionFactory {
     /**
      * Azoulay model factory constructor.
      * <p>
-     * By default, the {@link #isGeometricElevation} value is set to {@code true}.
+     * By default, the correction due to the troposphere is computed from the geometric value of the elevation, to get
+     * the apparent elevation value.
      * </p>
      */
     public AzoulayModelFactory() {
@@ -56,7 +57,7 @@ public class AzoulayModelFactory extends AbstractTroposphericCorrectionFactory {
 
     /**
      * Azoulay model factory constructor.
-     * 
+     *
      * @param isGeometricElevation
      *        True if the correction due to the troposphere is computed from the geometric value of the elevation, to
      *        get the apparent elevation value; false if the correction is computed from the apparent value of the
@@ -69,9 +70,8 @@ public class AzoulayModelFactory extends AbstractTroposphericCorrectionFactory {
 
     /** {@inheritDoc} */
     @Override
-    protected TroposphericCorrection buildTropoCorrection(final TroposphericCorrectionKey key) {
-        final MeteorologicalConditionsProvider meteoConditionsProvider = key.getMeteoConditionsProvider();
-        return new AzoulayModel(meteoConditionsProvider,
+    protected AzoulayModel buildMeteoBasedCorrection(final MeteoBasedKey key) {
+        return new AzoulayModel(key.getMeteoConditionsProvider(),
             key.getPoint().getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getHeight(), this.isGeometricElevation);
     }
 }

@@ -18,6 +18,8 @@
  * @history Created 17/02/2016
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -38,15 +40,15 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FrameConvention;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
 import fr.cnes.sirius.patrius.frames.configuration.PolarMotion;
-import fr.cnes.sirius.patrius.frames.configuration.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.eop.PoleCorrection;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
@@ -292,8 +294,8 @@ public class LenseThirringRelativisticEffectTest {
     /**
      * @testType UT
      * 
-     * @testedMethod {@link LenseThirringRelativisticEffect#LenseThirringEffect(CelestialBody, boolean, boolean)}
-     * @testedMethod {@link LenseThirringRelativisticEffect#LenseThirringEffect(CelestialBody, double, double, boolean, boolean)}
+     * @testedMethod {@link LenseThirringRelativisticEffect#LenseThirringEffect(CelestialPoint, boolean, boolean)}
+     * @testedMethod {@link LenseThirringRelativisticEffect#LenseThirringEffect(CelestialPoint, double, double, boolean, boolean)}
      * 
      * @description compute acceleration partial derivatives wrt position
      * 
@@ -373,7 +375,7 @@ public class LenseThirringRelativisticEffectTest {
         // return new double[3];
         // }
         // };
-        builder.setPrecessionNutation(new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN));
+        builder.setCIRFPrecessionNutation(new PrecessionNutation(false, PrecessionNutationModelFactory.NO_PN));
         final LibrationCorrectionModel libration = new LibrationCorrectionModel(){
             /**
              * 

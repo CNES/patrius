@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-131:08/12/2023:[PATRIUS] TranslatedFrame pas obligatoirement inertiel si son parent l'est
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2968:15/11/2021:[PATRIUS] gestion du centre des reperes 
@@ -57,11 +58,16 @@ public class TranslatedFrame extends Frame {
      *        center of this frame
      * @param name
      *        name of the frame
+     * @param pseudoInertial
+     *        true if frame is considered pseudo-inertial (i.e. suitable for propagating orbit)
      * @exception IllegalArgumentException
      *            if the parent frame is null
      */
-    public TranslatedFrame(final Frame parent, final PVCoordinatesProvider center, final String name) {
-        super(parent, new FrameTranslation(parent, center), name, parent.isPseudoInertial());
+    public TranslatedFrame(final Frame parent,
+            final PVCoordinatesProvider center,
+            final String name,
+            final boolean pseudoInertial) {
+        super(parent, new FrameTranslation(parent, center), name, pseudoInertial);
         this.center = center;
     }
 

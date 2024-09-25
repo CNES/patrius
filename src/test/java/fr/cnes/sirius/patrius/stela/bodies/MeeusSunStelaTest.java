@@ -117,7 +117,6 @@ public class MeeusSunStelaTest {
      */
     @Test
     public void testUpdatePosition() throws PatriusException {
-        MeeusSun.resetTransform();
         final Vector3D position = this.sun.getPVCoordinates(this.date, FramesFactory.getMOD(false)).getPosition();
         final double normP = position.getNorm();
         final double xp = position.getX() / normP;
@@ -144,7 +143,6 @@ public class MeeusSunStelaTest {
             ComparisonType.RELATIVE);
 
         // Initialization
-        MeeusSun.resetTransform();
         final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(22370 * 86400 - 67.184 + 35);
         // Computation
         final Vector3D position = this.sun.getPVCoordinates(date, FramesFactory.getCIRF()).getPosition();
@@ -160,8 +158,6 @@ public class MeeusSunStelaTest {
         Assert.assertEquals((exp[2] - zp) / exp[2], 0, 5E-12);
 
         Report.printToReport("Position", new Vector3D(exp), new Vector3D(xp, yp, zp));
-
-        MeeusSun.resetTransform();
     }
 
     /**

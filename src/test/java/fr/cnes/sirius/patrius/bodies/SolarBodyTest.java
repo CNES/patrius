@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
 * VERSION:4.11:FA:FA-3257:22/05/2023:[PATRIUS] Suite 3182
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -280,7 +281,7 @@ public class SolarBodyTest {
     }
 
     @Before
-    public void setup() throws PatriusException {
+    public void setup() {
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }
 

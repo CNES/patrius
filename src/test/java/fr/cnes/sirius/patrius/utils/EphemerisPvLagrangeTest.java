@@ -18,6 +18,7 @@
  * @history 25/09/2015
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -59,6 +60,7 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.EphemerisPvLagrange;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
@@ -571,14 +573,140 @@ public class EphemerisPvLagrangeTest {
      * 
      * @nonRegressionVersion 3.1
      */
-    @Test(expected = PatriusException.class)
-    public void testGetPVCoordinatesDegradedInterpolationDate() throws PatriusException {
+    @Test
+    public void testGetPVCoordinatesDegradedInterpolationDate() {
 
         // EphemerisPvLagrange instantiation from spacecraft states table computed in setup
-        final EphemerisPvLagrange ephPvLagrange = new EphemerisPvLagrange(tabSpacecraftStates, 8,
-                null);
-        // interpolate to first date + 150 s.
-        ephPvLagrange.getPVCoordinates(tabSpacecraftStates[0].getDate().shiftedBy(150), null);
+        final EphemerisPvLagrange ephPvLagrange = new EphemerisPvLagrange(tabSpacecraftStates, 8, null);
+
+        // Try to interpolate to first date + 150 s.
+        try {
+            ephPvLagrange.getPVCoordinates(tabSpacecraftStates[0].getDate().shiftedBy(150), null);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            // Expected ; FA-114: check the message describes the points values in the error message
+            Assert.assertTrue(e.getMessage().contains("7"));
+            Assert.assertTrue(e.getMessage().contains("8"));
+        }
+
+        // Expected ; FA-114: check the message describes the points values in the error message
+        EphemerisPvLagrange ephPvLagrangeBis = new EphemerisPvLagrange(tabSpacecraftStates, 8, null);
+        try {
+            ephPvLagrangeBis.indexValidity(2);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(e.getMessage().contains("7"));
+            Assert.assertTrue(e.getMessage().contains("8"));
+        }
+        try {
+            ephPvLagrangeBis.indexValidity(2876);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(e.getMessage().contains("7"));
+            Assert.assertTrue(e.getMessage().contains("8"));
+        }
+
+        ephPvLagrangeBis = new EphemerisPvLagrange(tabSpacecraftStates, 2, null);
+        try {
+            ephPvLagrangeBis.indexValidity(-1);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(e.getMessage().contains("1"));
+            Assert.assertTrue(e.getMessage().contains("2"));
+        }
+        try {
+            ephPvLagrangeBis.indexValidity(2879);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(e.getMessage().contains("1"));
+            Assert.assertTrue(e.getMessage().contains("2"));
+        }
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#INTERPOLATION}
+     * 
+     * @testedMethod {@link EphemerisPvLagrange#EphemerisPvLagrange(SpacecraftState[], int, fr.cnes.sirius.patrius.math.utils.ISearchIndex)}
+     * @testedMethod {@link EphemerisPvLagrange#getPVCoordinates(AbsoluteDate, Frame)}
+     * 
+     * @description Test of the interpolation with a very long ephemeris (10 years)
+     * 
+     * @input SpacecraftStates[] tabSpacecraftStates computed in setup
+     * @input int order = 8 : Classical value for a lagrange polynome interpolation
+     * @input ISearchIndex algo = null : Classical use of this constructor
+     * @input AbsoluteDate interpolationDate = First spacecraft state date + 510 s + 1e-8 s.
+     * @input Frame frame = null : Frame by default
+     * 
+     * @output Two EphemerisPvLagrange (one with a short ephemeris and one with a 10 years
+     *         ephemeris).
+     * @output Three PVcoordinates (interpolation at the same date from each one).
+     * 
+     * @testPassCriteria class instantiation without exception.
+     * @testPassCriteria Distance between position from each interpolation is 0.
+     * @testPassCriteria Distance between velocity from each interpolation is 0.
+     * 
+     * @throws PatriusException
+     *         should not happen
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testEphemerisPvLagrangeNumericalPrecision() throws PatriusException {
+        // initial orbit : date = 01/01/2005 00:00:00.000 in TAI, a = 1.5 UA, e = 0.001, i = 40
+        // deg, po = 10 deg, go
+        // = 15 deg, M = 20 deg in GCRF
+        final AbsoluteDate date = new AbsoluteDate(2005, 1, 1, TimeScalesFactory.getTAI());
+        final double a = 75e9;
+        final Orbit initialOrbit = new KeplerianOrbit(a, 0.5, MathLib.toRadians(40),
+                MathLib.toRadians(10), MathLib.toRadians(15), MathLib.toRadians(20),
+                PositionAngle.MEAN, frame, date, mu);
+
+        final SpacecraftState[] shortTabSpacecraftStates = new SpacecraftState[16];
+        final SpacecraftState[] longTabSpacecraftStates = new SpacecraftState[17];
+
+        final KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+        AbsoluteDate currentDate = initialOrbit.getDate();
+
+        // Create a spacecraft state 10 years in the past for the long ephemeris
+        longTabSpacecraftStates[0] =
+                propagator.getSpacecraftState(initialOrbit.getDate().shiftedBy(-10 * 365 * 86400));
+
+        for (int i = 0; i < shortTabSpacecraftStates.length; i++) {
+            final SpacecraftState spacecraftState = propagator.getSpacecraftState(currentDate);
+            shortTabSpacecraftStates[i] = spacecraftState;
+            longTabSpacecraftStates[i + 1] = spacecraftState;
+            currentDate = currentDate.shiftedBy(STEP);
+        }
+
+        // EphemerisPvLagrange instantiation from spacecraft states table computed in setup
+        final EphemerisPvLagrange shortEphem =
+                new EphemerisPvLagrange(shortTabSpacecraftStates, 8, null);
+        final EphemerisPvLagrange longEphem =
+                new EphemerisPvLagrange(longTabSpacecraftStates, 8, null);
+
+        // Test if the interpolation from each one to the same date give the same result.
+        // The date is shifted by 8.5 steps plus a small epsilon,, so that the epsilon is lost if
+        // the interpolation in done incorrectly in the long ephemeris.
+        final double shift = 8.5 * STEP;
+        final double shiftEps = 1e-8;
+        final PVCoordinates shortEphemPV =
+                shortEphem.getPVCoordinates(date.shiftedBy(shift + shiftEps), null);
+        final PVCoordinates longEphemPV =
+                longEphem.getPVCoordinates(date.shiftedBy(shift + shiftEps), null);
+
+        // the distance between each position should be 0
+        final double distPos =
+                Vector3D.distance(shortEphemPV.getPosition(), longEphemPV.getPosition());
+        Assert.assertEquals(0., distPos, 0);
+
+        // the distance between each velocity should be 0
+        final double distVel =
+                Vector3D.distance(shortEphemPV.getVelocity(), longEphemPV.getVelocity());
+        Assert.assertEquals(0., distVel, 0);
     }
 
     /**

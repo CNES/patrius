@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:FA:FA-3278:22/05/2023:[PATRIUS] Doublon de classes pour le corps celeste Earth
  * END-HISTORY
  */
@@ -48,8 +50,7 @@ public class EarthEphemeris implements CelestialBodyEphemeris {
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date,
-            final Frame frame) {
+    public Frame getNativeFrame(final AbsoluteDate date) {
         return FramesFactory.getGCRF();
     }
 }

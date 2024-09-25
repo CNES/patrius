@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -39,8 +42,8 @@ package fr.cnes.sirius.patrius.propagation;
 import java.util.Collection;
 
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -322,8 +325,7 @@ public interface Propagator extends SpacecraftStateProvider {
 
     /** {@inheritDoc} */
     @Override
-    default Frame getNativeFrame(final AbsoluteDate date,
-            final Frame frame) throws PatriusException {
+    default Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return getFrame();
     }
 

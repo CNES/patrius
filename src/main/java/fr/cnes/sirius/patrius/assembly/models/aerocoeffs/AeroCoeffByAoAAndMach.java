@@ -29,7 +29,7 @@ package fr.cnes.sirius.patrius.assembly.models.aerocoeffs;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
 import fr.cnes.sirius.patrius.math.analysis.interpolation.BiLinearIntervalsFunction;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
@@ -68,7 +68,7 @@ public class AeroCoeffByAoAAndMach implements AerodynamicCoefficient {
     private final double[][] dataArray;
 
     /** Earth shape. */
-    private final EllipsoidBodyShape earthShape;
+    private final OneAxisEllipsoid earthShape;
 
     /** Atmosphere. */
     private final Atmosphere atmosphere;
@@ -83,8 +83,8 @@ public class AeroCoeffByAoAAndMach implements AerodynamicCoefficient {
      * @param earthShapeIn earth shape
      */
     public AeroCoeffByAoAAndMach(final double[] anglesOfAttack, final double[] machNumbers,
-        final double[][] coeffs, final Atmosphere atmosphere,
-        final EllipsoidBodyShape earthShapeIn) {
+                                 final double[][] coeffs, final Atmosphere atmosphere,
+                                 final OneAxisEllipsoid earthShapeIn) {
 
         this.aoAArray = anglesOfAttack;
         this.machArray = machNumbers;
@@ -97,8 +97,7 @@ public class AeroCoeffByAoAAndMach implements AerodynamicCoefficient {
             new BinarySearchIndexClosedOpen(anglesOfAttack));
         final RecordSegmentSearchIndex searchAlgorithmOrd = new RecordSegmentSearchIndex(
             new BinarySearchIndexClosedOpen(machNumbers));
-        this.function = new BiLinearIntervalsFunction(searchAlgorithmAbs, searchAlgorithmOrd,
-            coeffs);
+        this.function = new BiLinearIntervalsFunction(searchAlgorithmAbs, searchAlgorithmOrd, coeffs);
     }
 
     /** {@inheritDoc} */
@@ -107,8 +106,7 @@ public class AeroCoeffByAoAAndMach implements AerodynamicCoefficient {
         double value = 0;
         try {
             final double mach = AeroCoeffByMach.machFromSpacecraftState(state, this.atmosphere);
-            final double angleOfAttack = AeroCoeffByAoA.angleOfAttackFromSpacecraftState(state,
-                this.earthShape);
+            final double angleOfAttack = AeroCoeffByAoA.angleOfAttackFromSpacecraftState(state, this.earthShape);
             value = this.function.value(angleOfAttack, mach);
         } catch (final PatriusException e) {
             // If the x variable cannot be computed, as this function

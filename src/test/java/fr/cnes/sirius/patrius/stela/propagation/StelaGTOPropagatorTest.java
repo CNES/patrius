@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -78,9 +80,14 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ACSOLFormatReader;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
@@ -117,11 +124,6 @@ import fr.cnes.sirius.patrius.propagation.AdditionalStateProvider;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation.AttitudeType;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
@@ -227,7 +229,7 @@ public class StelaGTOPropagatorTest {
     StelaGTOPropagator propagator42;
     StelaGTOPropagator propagatorT;
     /** The sun */
-    CelestialBody sun = null;
+    CelestialPoint sun = null;
 
     /**
      * @throws PatriusException
@@ -2667,8 +2669,6 @@ public class StelaGTOPropagatorTest {
         }
 
         // Check derivative (SRP)
-        MeeusSun.resetTransform();
-
         final double[] expectedDerivative = { -3.729652240478421E-6, 4.912262413926257E-10, 8.760975783806423E-10,
             1.756180192119048E-10, 1.022333051130011E-11, -5.119652856700734E-11 };
         final double[][] expectedDerivativeSTM = {
@@ -2784,8 +2784,6 @@ public class StelaGTOPropagatorTest {
         final SpacecraftState finalStateOsc = propagator.propagate(initialDate.shiftedBy(1));
         final StelaEquinoctialOrbit finalOrbitOsc = new StelaEquinoctialOrbit(finalStateOsc.getOrbit());
 
-        MeeusSun.resetTransform();
-        MeeusMoonStela.resetTransform();
         final StelaEquinoctialOrbit meanInitSEOrb = orbitNatureConverter.toMean(oscInitSEOrb);
         propagator.setInitialState(new SpacecraftState(meanInitSEOrb), 1000, false);
         final SpacecraftState finalStateMean = propagator.propagate(initialDate.shiftedBy(1));

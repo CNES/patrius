@@ -367,7 +367,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @return the concatenated matrix
      */
     RealMatrix concatenateDiagonally(final RealMatrix m, final boolean rightConcatenation,
-            final boolean lowerConcatenation);
+                                     final boolean lowerConcatenation);
 
     /**
      * Sets the decomposition builder the {@link RealMatrix#getInverse() getInverse()} method should
@@ -377,7 +377,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      *        the default decomposition builder
      */
     void setDefaultDecomposition(
-            final Function<RealMatrix, Decomposition> defaultDecompositionBuilder);
+                                 final Function<RealMatrix, Decomposition> defaultDecompositionBuilder);
 
     /**
      * Gets the decomposition builder the {@link RealMatrix#getInverse() getInverse()} method uses
@@ -478,14 +478,43 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      *
      * @return the minimum value of the matrix
      */
-    double getMin();
+    default double getMin() {
+        return getMin(false);
+    }
+
+    /**
+     * Returns the minimum value of the matrix.
+     * 
+     * @param absValue
+     *        Indicates if the absolute minimum value should be returned
+     * @return the minimum value of the matrix
+     */
+    double getMin(boolean absValue);
 
     /**
      * Returns the maximum value of the matrix.
      *
      * @return the maximum value of the matrix
      */
-    double getMax();
+    default double getMax() {
+        return getMax(false);
+    }
+
+    /**
+     * Returns the maximum value of the matrix.
+     * 
+     * @param absValue
+     *        Indicates if the absolute maximum value should be returned
+     * @return the maximum value of the matrix
+     */
+    double getMax(boolean absValue);
+
+    /**
+     * Returns the corresponding absolute values matrix.
+     * 
+     * @return the corresponding absolute values matrix
+     */
+    RealMatrix getAbs();
 
     /**
      * Gets a submatrix.
@@ -568,7 +597,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      *         if the destination array is too small
      */
     void copySubMatrix(int startRow, int endRow, int startColumn, int endColumn,
-            double[][] destination);
+                       double[][] destination);
 
     /**
      * Copies a submatrix into a given 2D array.
@@ -601,7 +630,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      *         if the destination array is too small
      */
     void copySubMatrix(int startRow, int endRow, int startColumn, int endColumn,
-            double[][] destination, int startRowDest, int startColumnDest);
+                       double[][] destination, int startRowDest, int startColumnDest);
 
     /**
      * Copies a submatrix into a given 2D array.
@@ -658,7 +687,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      *         if the destination array is too small
      */
     void copySubMatrix(int[] selectedRows, int[] selectedColumns, double[][] destination,
-            int startRowDest, int startColumnDest);
+                       int startRowDest, int startColumnDest);
 
     /**
      * Replaces part of the matrix with a given submatrix, starting at the specified row and column.
@@ -668,6 +697,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * <p>
      * <b>Usage example:</b>
      * </p>
+     * 
      * <pre>
      * // Initial matrix
      * matrix = [a<sub>00</sub>, a<sub>10</sub>, a<sub>20</sub>]
@@ -1262,7 +1292,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @see #walkInOptimizedOrder(RealMatrixPreservingVisitor, int, int, int, int)
      */
     double walkInRowOrder(RealMatrixChangingVisitor visitor, int startRow, int endRow,
-            int startColumn, int endColumn);
+                          int startColumn, int endColumn);
 
     /**
      * Visits (but don't change) some matrix entries in row order.
@@ -1300,7 +1330,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @see #walkInOptimizedOrder(RealMatrixPreservingVisitor, int, int, int, int)
      */
     double walkInRowOrder(RealMatrixPreservingVisitor visitor, int startRow, int endRow,
-            int startColumn, int endColumn);
+                          int startColumn, int endColumn);
 
     /**
      * Visits (and possibly change) all matrix entries in column order.
@@ -1386,7 +1416,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @see #walkInOptimizedOrder(RealMatrixPreservingVisitor, int, int, int, int)
      */
     double walkInColumnOrder(RealMatrixChangingVisitor visitor, int startRow, int endRow,
-            int startColumn, int endColumn);
+                             int startColumn, int endColumn);
 
     /**
      * Visits (but don't change) some matrix entries in column order.
@@ -1424,7 +1454,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @see #walkInOptimizedOrder(RealMatrixPreservingVisitor, int, int, int, int)
      */
     double walkInColumnOrder(RealMatrixPreservingVisitor visitor, int startRow, int endRow,
-            int startColumn, int endColumn);
+                             int startColumn, int endColumn);
 
     /**
      * Visits (and possibly change) all matrix entries using the fastest possible order.
@@ -1510,7 +1540,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @see #walkInOptimizedOrder(RealMatrixPreservingVisitor, int, int, int, int)
      */
     double walkInOptimizedOrder(RealMatrixChangingVisitor visitor, int startRow, int endRow,
-            int startColumn, int endColumn);
+                                int startColumn, int endColumn);
 
     /**
      * Visits (but don't change) some matrix entries using the fastest possible order.
@@ -1548,7 +1578,7 @@ public interface RealMatrix extends AnyMatrix, Serializable {
      * @see #walkInOptimizedOrder(RealMatrixChangingVisitor, int, int, int, int)
      */
     double walkInOptimizedOrder(RealMatrixPreservingVisitor visitor, int startRow, int endRow,
-            int startColumn, int endColumn);
+                                int startColumn, int endColumn);
 
     /**
      * Gets a string representation of this matrix using the specified format.

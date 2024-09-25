@@ -1,13 +1,13 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,12 +15,15 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.time.interpolation;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.function.Function;
 
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
@@ -33,6 +36,18 @@ import fr.cnes.sirius.patrius.tools.cache.FIFOThreadSafeCache;
 
 /**
  * Class representing an interpolable ephemeris for any time stamped data. It is thread-safe.
+ *
+ * <p>
+ * This class makes a difference between 3 interval types:
+ * <ul>
+ * <li>The samples interval corresponds to the first and last date of the provided samples.</li>
+ * <li>The optimal interval is related to the order of interpolation. Indeed, interpolation is of best quality when it
+ * is performed between the 2 central points of the interpolation (if interpolation is of order 8, then interpolation
+ * quality is best if there are 4 points before and 4 points after).</li>
+ * <li>The usable interval corresponds, depending on {@link #isAcceptOutOfOptimalRange}, either to the samples interval
+ * or to the optimal interval</li>
+ * </ul>
+ * </p>
  *
  * @param <IN>
  *        The type of the samples to be interpolated
@@ -51,15 +66,15 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
     /** Mutualize end error message. */
     private static final String END_MESSAGE = ")";
-    
+
     /** The samples of time stamped data. It must be sorted. */
     private final IN[] samples;
 
-    /** Cache value for the first date */
-    private final AbsoluteDate firstDate;
+    /** Cache value for the first usable date. */
+    private final AbsoluteDate firstUsableDate;
 
-    /** Cache value for the last date */
-    private final AbsoluteDate lastDate;
+    /** Cache value for the last usable date. */
+    private final AbsoluteDate lastUsableDate;
 
     /** Half the order of interpolation. */
     private final int halfOrder;
@@ -88,12 +103,12 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
      * Note: The interpolation function builder has to implement {@link Serializable} if the interpolable ephemeris
      * should be serializable (not required).
      * </p>
-     * 
+     *
      * @param samples
      *        The array of samples
      * @param order
      *        Interpolation order (number of points to use for the interpolation). It must be even.
-     * @param interpolationFunctionBuilder
+     * @param interpFctBuilder
      *        The function that can build an interpolation function
      * @param acceptOutOfOptimalRange
      *        Indicates whether accept dates outside of the optimal interval which is a sub-interval from the full
@@ -106,10 +121,11 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
      *         if the order isn't an even number or is lower than 2
      *         if the interpolable ephemeris length is lower than the order
      */
-    public TimeStampedInterpolableEphemeris(final IN[] samples, final int order,
-        final TimeStampedInterpolationFunctionBuilder<IN, OUT> interpolationFunctionBuilder,
-        final boolean acceptOutOfOptimalRange) {
-        this(samples, order, interpolationFunctionBuilder, acceptOutOfOptimalRange, true, true,
+    public TimeStampedInterpolableEphemeris(final IN[] samples,
+                                            final int order,
+                                            final TimeStampedInterpolationFunctionBuilder<IN, OUT> interpFctBuilder,
+                                            final boolean acceptOutOfOptimalRange) {
+        this(samples, order, interpFctBuilder, acceptOutOfOptimalRange, true, true,
                 FIFOThreadSafeCache.DEFAULT_MAX_SIZE);
     }
 
@@ -119,12 +135,12 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
      * Note: The interpolation function builder has to implement {@link Serializable} if the interpolable ephemeris
      * should be serializable (not required).
      * </p>
-     * 
+     *
      * @param samples
      *        The array of samples
      * @param order
      *        Interpolation order (number of points to use for the interpolation). It must be even.
-     * @param interpolationFunctionBuilder
+     * @param interpFctBuilder
      *        The function that can build an interpolation function
      * @param acceptOutOfOptimalRange
      *        Indicates whether accept dates outside of the optimal interval which is a sub-interval from the full
@@ -145,13 +161,14 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
      * @throws NotPositiveException
      *         if {@code cacheSize < 0}
      */
-    public TimeStampedInterpolableEphemeris(final IN[] samples, final int order,
-        final TimeStampedInterpolationFunctionBuilder<IN, OUT> interpolationFunctionBuilder,
-        final boolean acceptOutOfOptimalRange, final boolean copySamples,
-        final boolean checkStrictlySorted, final int cacheSize) {
+    public TimeStampedInterpolableEphemeris(final IN[] samples,
+                                            final int order,
+                                            final TimeStampedInterpolationFunctionBuilder<IN, OUT> interpFctBuilder,
+                                            final boolean acceptOutOfOptimalRange, final boolean copySamples,
+                                            final boolean checkStrictlySorted, final int cacheSize) {
 
         // Check inputs
-        if (samples == null || interpolationFunctionBuilder == null) {
+        if (samples == null || interpFctBuilder == null) {
             throw new NullArgumentException();
         }
         if (checkStrictlySorted && !isStrictlySorted(samples)) {
@@ -171,23 +188,126 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
         this.samples = copySamples ? samples.clone() : samples;
         this.halfOrder = order / 2;
         this.acceptOutOfOptimalRange = acceptOutOfOptimalRange;
-        this.interpolationFunctionBuilder = interpolationFunctionBuilder;
+        this.interpolationFunctionBuilder = interpFctBuilder;
         this.cache = new FIFOThreadSafeCache<>(cacheSize);
         this.searchMethod = SearchMethod.PROPORTIONAL;
 
-        this.firstDate = getFirstSample().getDate();
-        this.lastDate = getLastSample().getDate();
+        // Define the usable first/last dates depending on the acceptOutOfOptimalRange value
+        if (acceptOutOfOptimalRange) {
+            this.firstUsableDate = getFirstDate();
+            this.lastUsableDate = getLastDate();
+        } else {
+            this.firstUsableDate = getFirstOptimalDate();
+            this.lastUsableDate = getLastOptimalDate();
+        }
+    }
+
+    /**
+     * Private constructor.
+     *
+     * @param samples
+     *        The array of samples
+     * @param halfOrder
+     *        Half the order of interpolation
+     * @param acceptOutOfOptimalRange
+     *        Indicates whether accept dates outside of the optimal interval which is a sub-interval from the full
+     *        interval interval required for interpolation with respect to the interpolation order
+     * @param interpFctBuilder
+     *        The interpolation function builder
+     * @param cache
+     *        The cache storing the last interpolation functions to avoid repeating computations
+     * @param searchMethod
+     *        Search method for the right interval of samples
+     */
+    private TimeStampedInterpolableEphemeris(final IN[] samples,
+                                             final int halfOrder,
+                                             final boolean acceptOutOfOptimalRange,
+                                             final TimeStampedInterpolationFunctionBuilder<IN, OUT> interpFctBuilder,
+                                             final FIFOThreadSafeCache<AbsoluteDateInterval,
+                                             Function<AbsoluteDate, ? extends OUT>> cache,
+                                             final SearchMethod searchMethod) {
+        this.samples = samples;
+        this.halfOrder = halfOrder;
+        this.acceptOutOfOptimalRange = acceptOutOfOptimalRange;
+        this.interpolationFunctionBuilder = interpFctBuilder;
+        this.cache = cache;
+        this.searchMethod = searchMethod;
+
+        // Define the usable first/last dates depending on the acceptOutOfOptimalRange value
+        if (acceptOutOfOptimalRange) {
+            this.firstUsableDate = getFirstDate();
+            this.lastUsableDate = getLastDate();
+        } else {
+            this.firstUsableDate = getFirstOptimalDate();
+            this.lastUsableDate = getLastOptimalDate();
+        }
+    }
+
+    /**
+     * Extend the current interpolable ephemeris with new samples while keeping the cache.
+     *
+     * <p>
+     * Note: The current ephemeris should not be used anymore after being extended since it will share the same cache as
+     * the returned extended ephemeris.
+     * </p>
+     *
+     * @param extraSamples
+     *        The extra sample to extend the ephemeris
+     * @param addOnTheRight
+     *        Indicate if the samples should be added on the right (after) or on the left (before) the existing samples
+     * @param checkStrictlySorted
+     *        Indicate if the extraSample should be checked to be strictly increasingly sorted.
+     *        Should be deactivated only if it is guaranteed by the user.
+     * @return a new interpolable ephemeris containing the concatenated samples and the cache
+     * @throws IllegalArgumentException
+     *         if the extra samples dates are not coherent with respect to the {@code addOnTheRight} boolean
+     *         or if the extra samples are not strictly sorted (while {@code checkStrictlySorted} is activated)
+     */
+    public TimeStampedInterpolableEphemeris<IN, OUT> extendInterpolableEphemeris(final IN[] extraSamples,
+                                                                                 final boolean addOnTheRight,
+                                                                                 final boolean checkStrictlySorted) {
+        // Check extraSamples are strictly sorted
+        if (checkStrictlySorted && !isStrictlySorted(extraSamples)) {
+            throw new IllegalArgumentException("The extraSamples should be sorted");
+        }
+
+        // Build the extendedSamples
+        final IN[] extendedSamples;
+        if (addOnTheRight) {
+            // Add the extra samples on the right of the existing samples
+            if (extraSamples[0].getDate().compareTo(this.getLastDate()) <= 0) {
+                throw new IllegalArgumentException(
+                    "The first date of the extra samples is not strictly after the last date of the existing samples.");
+            }
+            // Create the new extendedSample from the existing samples
+            extendedSamples = Arrays.copyOf(this.samples, this.samples.length + extraSamples.length);
+            // Add the extraSamples
+            System.arraycopy(extraSamples, 0, extendedSamples, this.samples.length, extraSamples.length);
+        } else {
+            // Add the extra sample on the left of the existing samples
+            if (extraSamples[extraSamples.length - 1].getDate().compareTo(this.getFirstDate()) >= 0) {
+                throw new IllegalArgumentException("The last date of the extra samples is not strictly before "
+                        + "the first date of the existing samples.");
+            }
+            // Create the new extendedSample from the extra samples
+            extendedSamples = Arrays.copyOf(extraSamples, this.samples.length + extraSamples.length);
+            // Add the existing samples
+            System.arraycopy(this.samples, 0, extendedSamples, extraSamples.length, this.samples.length);
+        }
+
+        return new TimeStampedInterpolableEphemeris<>(extendedSamples, this.halfOrder, this.acceptOutOfOptimalRange,
+            this.interpolationFunctionBuilder, this.cache, this.searchMethod);
     }
 
     /**
      * Returns an interpolated instance at the required date.
-     * 
+     *
      * @param date
      *        The date of the interpolation
      * @return the interpolated instance
      * @throws IllegalStateException
      *         if the date is outside the supported interval
-     *         if the instance has the setting {@code acceptOutOfRange = false} and the date is outside the optimal
+     *         or if the instance has the setting {@code acceptOutOfRange = false} and the date is outside the optimal
      *         interval which is a sub-interval from the full interval interval required for interpolation with respect
      *         to the interpolation order
      */
@@ -200,20 +320,27 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
                 //
 
                 // Initialize variables to the bounds of the samples
-                int indexInf = 0;
-                int indexSup = this.samples.length - 1;
+                int indexInf;
+                int indexSup;
+                if (this.acceptOutOfOptimalRange) {
+                    indexInf = 0;
+                    indexSup = this.samples.length - 1;
+                } else {
+                    indexInf = this.halfOrder - 1;
+                    indexSup = this.samples.length - this.halfOrder;
+                }
 
-                AbsoluteDate dateInf = this.firstDate;
-                AbsoluteDate dateSup = this.lastDate;
+                AbsoluteDate dateInf = this.firstUsableDate;
+                AbsoluteDate dateSup = this.lastUsableDate;
 
                 // Check bounds
                 final int dateInfComp = date.compareTo(dateInf);
                 final int dateSupComp = date.compareTo(dateSup);
 
                 if (dateInfComp < 0 || dateSupComp > 0) {
-                    // If the date is outside the supported interval [dateInf, dateSup], raise an exception
-                    throw new IllegalStateException(START_MESSAGE + date + ") is outside the supported interval "
-                            + new AbsoluteDateInterval(this.getFirstDate(), this.getLastDate()));
+                    // If the date is outside the usable interval [dateInf, dateSup], raise an exception
+                    throw new IllegalStateException(START_MESSAGE + date + ") is outside the usable interval "
+                            + new AbsoluteDateInterval(this.getFirstUsableDate(), this.getLastUsableDate()));
                 }
 
                 if (dateInfComp == 0) {
@@ -256,32 +383,17 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
                 int interpolationIndexInf = indexInf - this.halfOrder + 1;
                 int interpolationIndexSup = indexSup + this.halfOrder - 1;
 
-                // Evaluate when the interpolation index are out of the bounds
-                if (interpolationIndexInf < 0 || interpolationIndexSup > this.samples.length - 1) {
-
-                    // When it's not allowed, throw an exception
-                    if (!this.acceptOutOfOptimalRange) {
-                        final AbsoluteDateInterval optimInterval = new AbsoluteDateInterval(
-                            this.samples[this.halfOrder - 1].getDate(),
-                            this.samples[this.samples.length - this.halfOrder].getDate());
-                        final AbsoluteDateInterval interval = 
-                            new AbsoluteDateInterval(this.getFirstDate(), this.getLastDate());
-                        final int order = this.halfOrder * 2;
-                        throw new IllegalStateException(START_MESSAGE + date
-                                + ") is outside the optimal interval " + optimInterval
-                                + " which is a sub-interval from the full interval " + interval
-                                + " required for interpolation with respect to the interpolation order (" + order
-                                + "). This is not allowed by the class settings (acceptOutOfRange = false).");
-                    }
-
-                    // Otherwise, shift the interpolation index so that we remain in the bounds
-                    if (interpolationIndexInf < 0) {
-                        interpolationIndexSup -= interpolationIndexInf;
-                        interpolationIndexInf = 0;
-                    } else {
-                        interpolationIndexInf += this.samples.length - 1 - interpolationIndexSup;
-                        interpolationIndexSup = this.samples.length - 1;
-                    }
+                // Otherwise, shift the interpolation index so that we remain in the bounds
+                if (interpolationIndexInf < 0) {
+                    // We are not in the optimal interval, but it was allowed by the user
+                    // shift the interpolation index so that we remain in the bounds
+                    interpolationIndexSup -= interpolationIndexInf;
+                    interpolationIndexInf = 0;
+                } else if (interpolationIndexSup > this.samples.length - 1) {
+                    // We are not in the optimal interval, but it was allowed by the user
+                    // shift the interpolation index so that we remain in the bounds
+                    interpolationIndexInf += this.samples.length - 1 - interpolationIndexSup;
+                    interpolationIndexSup = this.samples.length - 1;
                 }
 
                 final Function<AbsoluteDate, ? extends OUT> interpolationFunction =
@@ -297,7 +409,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
     /**
      * Getter for the floor index for the given date.<br>
      * If the provided date is before the first sample, -1 is returned.
-     * 
+     *
      * @param date
      *        The date to look for
      * @return the floor index
@@ -306,8 +418,8 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
         // Initialize the superior variable to the bounds of the samples
         int indexSup = this.samples.length - 1;
 
-        AbsoluteDate dateInf = this.firstDate;
-        AbsoluteDate dateSup = this.lastDate;
+        AbsoluteDate dateInf = this.getFirstDate();
+        AbsoluteDate dateSup = this.getLastDate();
 
         // Check bounds
         final int dateInfComp = date.compareTo(dateInf);
@@ -351,7 +463,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
     /**
      * Getter for the ceiling index for the given date.<br>
      * If the provided date is after the last sample, -1 is returned.
-     * 
+     *
      * @param date
      *        The date to look for
      * @return the ceiling index
@@ -360,8 +472,8 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
         // Initialize the superior variable to the bounds of the samples
         int indexSup = this.samples.length - 1;
 
-        AbsoluteDate dateInf = this.firstDate;
-        AbsoluteDate dateSup = this.lastDate;
+        AbsoluteDate dateInf = this.getFirstDate();
+        AbsoluteDate dateSup = this.getLastDate();
 
         // Check bounds
         final int dateInfComp = date.compareTo(dateInf);
@@ -404,7 +516,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
     /**
      * Getter for the floor sample for the given date.
-     * 
+     *
      * @param date
      *        The date to look for
      * @return the ceiling index
@@ -414,7 +526,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
     public IN getFloorSample(final AbsoluteDate date) {
         final int floorIndex = getFloorIndex(date);
         if (floorIndex < 0) {
-            throw new IllegalStateException(START_MESSAGE + date + ") is before the first sample (" 
+            throw new IllegalStateException(START_MESSAGE + date + ") is before the first sample ("
                     + this.getFirstSample().getDate() + END_MESSAGE);
         }
         return this.samples[floorIndex];
@@ -422,7 +534,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
     /**
      * Getter for the ceiling sample for the given date.
-     * 
+     *
      * @param date
      *        The date to look for
      * @return the ceiling index
@@ -432,7 +544,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
     public IN getCeilingSample(final AbsoluteDate date) {
         final int ceilingIndex = getCeilingIndex(date);
         if (ceilingIndex < 0) {
-            throw new IllegalStateException(START_MESSAGE + date + ") is after the last sample (" 
+            throw new IllegalStateException(START_MESSAGE + date + ") is after the last sample ("
                     + this.getLastSample().getDate() + END_MESSAGE);
         }
         return this.samples[ceilingIndex];
@@ -440,43 +552,91 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
     /**
      * Getter for the first sample.
-     * 
+     *
      * @return the first sample
      */
-    public IN getFirstSample() {
+    // Implementation note: This method is declared final, so it can't be {@code Override} and it can be called safely
+    // from the constructor
+    public final IN getFirstSample() {
         return this.samples[0];
     }
 
     /**
      * Getter for the last sample.
-     * 
+     *
      * @return the last sample
      */
-    public IN getLastSample() {
+    // Implementation note: This method is declared final, so it can't be {@code Override} and it can be called safely
+    // from the constructor
+    public final IN getLastSample() {
         return this.samples[this.samples.length - 1];
     }
 
     /**
      * Getter for the first date.
-     * 
+     *
      * @return the first date
      */
-    public AbsoluteDate getFirstDate() {
-        return this.firstDate;
+    // Implementation note: This method is declared final, so it can't be {@code Override} and it can be called safely
+    // from the constructor
+    public final AbsoluteDate getFirstDate() {
+        return getFirstSample().getDate();
     }
 
     /**
      * Getter for the last date.
-     * 
+     *
      * @return the last date
      */
-    public AbsoluteDate getLastDate() {
-        return this.lastDate;
+    // Implementation note: This method is declared final, so it can't be {@code Override} and it can be called safely
+    // from the constructor
+    public final AbsoluteDate getLastDate() {
+        return getLastSample().getDate();
+    }
+
+    /**
+     * Getter for the first usable date.
+     *
+     * @return the first usable date
+     */
+    public AbsoluteDate getFirstUsableDate() {
+        return this.firstUsableDate;
+    }
+
+    /**
+     * Getter for the last usable date.
+     *
+     * @return the last usable date
+     */
+    public AbsoluteDate getLastUsableDate() {
+        return this.lastUsableDate;
+    }
+
+    /**
+     * Getter for the first optimal date.
+     *
+     * @return the first optimal date
+     */
+    // Implementation note: This method is declared final, so it can't be {@code Override} and it can be called safely
+    // from the constructor
+    public final AbsoluteDate getFirstOptimalDate() {
+        return this.samples[this.halfOrder - 1].getDate();
+    }
+
+    /**
+     * Getter for the last optimal date.
+     *
+     * @return the last date
+     */
+    // Implementation note: This method is declared final, so it can't be {@code Override} and it can be called safely
+    // from the constructor
+    public final AbsoluteDate getLastOptimalDate() {
+        return this.samples[this.samples.length - this.halfOrder].getDate();
     }
 
     /**
      * Getter for the sample size.
-     * 
+     *
      * @return the sample size
      */
     public int getSampleSize() {
@@ -485,7 +645,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
     /**
      * Getter for the samples array.
-     * 
+     *
      * @param copy
      *        if {@code true} return a copy of the samples array, otherwise return the stored array
      * @return the samples array
@@ -502,7 +662,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
     /**
      * Provides the ratio of reusability of the internal cache. This method can help to chose the size of the cache.
-     * 
+     *
      * @return the reusability ratio (0 means no reusability at all, 0.5 means that the supplier is called only half
      *         time compared to computeIf method)
      */
@@ -544,9 +704,18 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
         this.searchMethod = searchMethod;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String toString() {
+        final String txt = "TimeStampedInterpolableEphemeris{firstUsableDate=%s, lastUsableDate=%s, "
+                + "interpolationOrder=%d, nbSamples=%d}";
+        return String.format(Locale.US, txt, this.firstUsableDate.toString(), this.lastUsableDate.toString(),
+            this.halfOrder * 2, this.samples.length);
+    }
+
     /**
      * Checks whether the samples are strictly sorted (in increasing order and no samples with the same date).
-     * 
+     *
      * @param samples
      *        The samples of time stamped data to check
      * @return {@code true} if the samples are strictly sorted, {@code false} otherwise
@@ -607,7 +776,7 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
 
         /**
          * Computes the middle point index in the range [indexInf ; indexSup].
-         * 
+         *
          * @param indexInf
          *        Inferior index
          * @param indexSup

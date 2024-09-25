@@ -73,29 +73,30 @@ public class AzoulayModelTest {
         AZOULAY_MODEL
     }
 
-    /** pressure [Pa] */
-    final double pressure = 102000;
+    /** Pressure [Pa]. */
+    final double pressure = 102000.;
 
-    /** temperature [K] */
+    /** Temperature [K]. */
     final double temperature = 20 + 273.16;
 
-    /** moisture [percent] */
-    final double humidity = 20;
+    /** Humidity [%]. */
+    final double humidity = 20.;
 
+    /** Default date. */
     final AbsoluteDate defaultDate = new AbsoluteDate();
 
-    final MeteorologicalConditions meteoConditions = new MeteorologicalConditions(this.pressure, this.temperature,
-        this.humidity);
-
+    /** Meteorological conditions provider. */
     final MeteorologicalConditionsProvider meteoConditionsProvider = new ConstantMeteorologicalConditionsProvider(
-        this.meteoConditions);
+        new MeteorologicalConditions(this.pressure, this.temperature, this.humidity));
 
-    /** geodetic altitude [m] */
-    final double altitude = 150;
+    /** Geodetic altitude [m]. */
+    final double altitude = 150.;
 
-    /** correction */
-    final AzoulayModel correction = new AzoulayModel(this.meteoConditionsProvider, this.altitude);
-    final AzoulayModel correctionFalse = new AzoulayModel(this.meteoConditionsProvider, this.altitude, false);
+    /** Correction model with the correction computed from the geometric elevation value. */
+    final AzoulayModel modelGeo = new AzoulayModel(this.meteoConditionsProvider, this.altitude);
+
+    /** Correction model with the correction computed from the apparent elevation value. */
+    final AzoulayModel modelApp = new AzoulayModel(this.meteoConditionsProvider, this.altitude, false);
 
     /**
      * Epsilon for double comparison. Epsilon is only 3E-3 since C1 coefficient is incorrect in FDS reference.
@@ -104,37 +105,10 @@ public class AzoulayModelTest {
     private final double comparisonEpsilon = 3E-3;
 
     /**
-     * FDS results : distance and elevation corrections from measured elevations.
-     * FDS geometric/apparent results are inverted.
+     * FDS results : [geometricElevation ; elevationCorrectionFromGeometricElevation ;
+     * signaDelayFromGeometricElevation].
      */
     private final double[][] fromGeometricFDS = {
-        { 0.0000000000000000E+00, 7.0186137947256559E-03, 5.5399279540983365E+01 },
-        { 7.8539816339744828E-02, 3.2570796758294566E-03, 2.5788257998881956E+01 },
-        { 1.5707963267948966E-01, 1.7681734535243221E-03, 1.4130505880522938E+01 },
-        { 2.3561944901923448E-01, 1.1879825117610513E-03, 9.6434249044240126E+00 },
-        { 3.1415926535897931E-01, 8.8354969199112572E-04, 7.3329280788108600E+00 },
-        { 3.9269908169872414E-01, 6.9520120355675132E-04, 5.9394733849319410E+00 },
-        { 4.7123889803846897E-01, 5.6609934555378830E-04, 5.0149261265583904E+00 },
-        { 5.4977871437821380E-01, 4.7116788862108772E-04, 4.3617690750007299E+00 },
-        { 6.2831853071795862E-01, 3.9766426029535780E-04, 3.8798209834929827E+00 },
-        { 7.0685834705770345E-01, 3.3843200779002443E-04, 3.5130043396411961E+00 },
-        { 7.8539816339744828E-01, 2.8913919625673753E-04, 3.2275630764777574E+00 },
-        { 8.6393797973719300E-01, 2.4700491534528779E-04, 3.0020225548857828E+00 },
-        { 9.4247779607693793E-01, 2.1015613526106458E-04, 2.8221244356223636E+00 },
-        { 1.0210176124166828E+00, 1.7727869277642935E-04, 2.6780840937250314E+00 },
-        { 1.0995574287564276E+00, 1.4741642362839751E-04, 2.5630193040621463E+00 },
-        { 1.1780972450961724E+00, 1.1984965661138330E-04, 2.4720081864577401E+00 },
-        { 1.2566370614359172E+00, 9.4018404333596911E-05, 2.4015038279851049E+00 },
-        { 1.3351768777756621E+00, 6.9471754649471493E-05, 2.3489608894741485E+00 },
-        { 1.4137166941154069E+00, 4.5833081844277171E-05, 2.3125939773686941E+00 },
-        { 1.4922565104551517E+00, 2.2774962521002370E-05, 2.2912218578814851E+00 },
-        { 1.5707963267948966E+00, 1.7719712138937553E-20, 2.2841708113059385E+00 } };
-
-    /**
-     * FDS results : distance and elevation corrections from apparent elevations.
-     * FDS geometric/apparent results are inverted.
-     */
-    private final double[][] fromApparentFDS = {
         { 0.0000000000000000E+00, 6.9190792696190283E-03, 5.4614979422360584E+01 },
         { 7.8539816339744828E-02, 3.1567685599087499E-03, 2.5000363755935268E+01 },
         { 1.5707963267948966E-01, 1.7494120249064880E-03, 1.3984510593505965E+01 },
@@ -157,6 +131,31 @@ public class AzoulayModelTest {
         { 1.4922565104551517E+00, 2.2768331085547873E-05, 2.2912177586556592E+00 },
         { 1.5707963267948966E+00, 1.7719712138937553E-20, 2.2841708113059385E+00 } };
 
+    /** FDS results : [apparentElevation ; elevationCorrectionFromApparentElevation ; signaDelayFromApparentElevation]. */
+    private final double[][] fromApparentFDS = {
+        { 0.0000000000000000E+00, 7.0186137947256559E-03, 5.5399279540983365E+01 },
+        { 7.8539816339744828E-02, 3.2570796758294566E-03, 2.5788257998881956E+01 },
+        { 1.5707963267948966E-01, 1.7681734535243221E-03, 1.4130505880522938E+01 },
+        { 2.3561944901923448E-01, 1.1879825117610513E-03, 9.6434249044240126E+00 },
+        { 3.1415926535897931E-01, 8.8354969199112572E-04, 7.3329280788108600E+00 },
+        { 3.9269908169872414E-01, 6.9520120355675132E-04, 5.9394733849319410E+00 },
+        { 4.7123889803846897E-01, 5.6609934555378830E-04, 5.0149261265583904E+00 },
+        { 5.4977871437821380E-01, 4.7116788862108772E-04, 4.3617690750007299E+00 },
+        { 6.2831853071795862E-01, 3.9766426029535780E-04, 3.8798209834929827E+00 },
+        { 7.0685834705770345E-01, 3.3843200779002443E-04, 3.5130043396411961E+00 },
+        { 7.8539816339744828E-01, 2.8913919625673753E-04, 3.2275630764777574E+00 },
+        { 8.6393797973719300E-01, 2.4700491534528779E-04, 3.0020225548857828E+00 },
+        { 9.4247779607693793E-01, 2.1015613526106458E-04, 2.8221244356223636E+00 },
+        { 1.0210176124166828E+00, 1.7727869277642935E-04, 2.6780840937250314E+00 },
+        { 1.0995574287564276E+00, 1.4741642362839751E-04, 2.5630193040621463E+00 },
+        { 1.1780972450961724E+00, 1.1984965661138330E-04, 2.4720081864577401E+00 },
+        { 1.2566370614359172E+00, 9.4018404333596911E-05, 2.4015038279851049E+00 },
+        { 1.3351768777756621E+00, 6.9471754649471493E-05, 2.3489608894741485E+00 },
+        { 1.4137166941154069E+00, 4.5833081844277171E-05, 2.3125939773686941E+00 },
+        { 1.4922565104551517E+00, 2.2774962521002370E-05, 2.2912218578814851E+00 },
+        { 1.5707963267948966E+00, 1.7719712138937553E-20, 2.2841708113059385E+00 } };
+
+    /** Before all tests. */
     @BeforeClass
     public static void setUpBeforeClass() {
         Report.printClassHeader(AzoulayModelTest.class.getSimpleName(), "Azoulay model");
@@ -167,8 +166,8 @@ public class AzoulayModelTest {
      * 
      * @testedFeature {@link features#AZOULAY_MODEL}
      * 
-     * @testedMethod {@link AzoulayModel#computeElevationCorrection(double)}
-     * @testedMethod {@link AzoulayModel#computeSignalDelay(double)}
+     * @testedMethod {@link AzoulayModel#computeElevationCorrectionFromGeometricElevation(AbsoluteDate, double)}
+     * @testedMethod {@link AzoulayModel#computeSignalDelay(AbsoluteDate, double)}
      * 
      * @description tests for the Azoulay tropospheric correction model from geometric elevations
      * 
@@ -189,24 +188,19 @@ public class AzoulayModelTest {
         Report.printMethodHeader("testCorrectionsFromGeometricElevation", "Azoulay model computation", "FDS",
             this.comparisonEpsilon, ComparisonType.ABSOLUTE);
 
-        // loop on input elevations from 0 to Pi/2
-        for (int i = 0; i < this.fromGeometricFDS.length; i++) {
+        // loop on input elevations from 0 to PI/2
+        for (final double[] element : this.fromGeometricFDS) {
 
-            final double geometricElevation = this.fromGeometricFDS[i][0];
+            final double geometricElevation = element[0];
+
             final double[] correctionRes = new double[2];
-            correctionRes[0] = this.correctionFalse.computeElevationCorrection(this.defaultDate,
+            correctionRes[0] = this.modelGeo.computeElevationCorrectionFromGeometricElevation(this.defaultDate,
                 geometricElevation);
-            correctionRes[1] = this.correctionFalse.computeSignalDelay(this.defaultDate, geometricElevation)
+            correctionRes[1] = this.modelGeo.computeSignalDelay(this.defaultDate, geometricElevation)
                     * Constants.SPEED_OF_LIGHT;
 
-            Assert.assertEquals(0., (this.fromGeometricFDS[i][1] - correctionRes[0]) / this.fromGeometricFDS[i][1],
-                this.comparisonEpsilon);
-            Assert.assertEquals(0., (this.fromGeometricFDS[i][2] - correctionRes[1]) / this.fromGeometricFDS[i][2],
-                this.comparisonEpsilon);
-
-            if (i == 0) {
-                Report.printToReport("Correction", this.fromGeometricFDS[i][1], correctionRes[0]);
-            }
+            Assert.assertEquals(0., (element[1] - correctionRes[0]) / element[1], this.comparisonEpsilon);
+            Assert.assertEquals(0., (element[2] - correctionRes[1]) / element[2], this.comparisonEpsilon);
         }
     }
 
@@ -215,7 +209,7 @@ public class AzoulayModelTest {
      * 
      * @testedFeature {@link features#AZOULAY_MODEL}
      * 
-     * @testedMethod {@link AzoulayModel#computeElevationCorrection(AbsoluteDate, double)}
+     * @testedMethod {@link AzoulayModel#computeElevationCorrectionFromApparentElevation(AbsoluteDate, double)}
      * @testedMethod {@link AzoulayModel#computeSignalDelay(AbsoluteDate, double)}
      * 
      * @description tests for the Azoulay tropospheric correction model from apparent elevations
@@ -234,15 +228,18 @@ public class AzoulayModelTest {
     @Test
     public void testCorrectionsFromApparentElevation() {
 
-        // loop on input elevations from 0 to Pi/2
+        Report.printMethodHeader("testCorrectionsFromApparentElevation", "Azoulay model computation", "FDS",
+            this.comparisonEpsilon, ComparisonType.ABSOLUTE);
+
+        // loop on input elevations from 0 to PI/2
         for (final double[] element : this.fromApparentFDS) {
 
             final double apparentElevation = element[0];
 
             final double[] correctionRes = new double[2];
-            correctionRes[0] = this.correction
-                .computeElevationCorrection(this.defaultDate, apparentElevation);
-            correctionRes[1] = this.correction.computeSignalDelay(this.defaultDate, apparentElevation)
+            correctionRes[0] = this.modelApp.computeElevationCorrectionFromApparentElevation(this.defaultDate,
+                apparentElevation);
+            correctionRes[1] = this.modelApp.computeSignalDelay(this.defaultDate, apparentElevation)
                     * Constants.SPEED_OF_LIGHT;
 
             Assert.assertEquals(0., (element[1] - correctionRes[0]) / element[1], this.comparisonEpsilon);
@@ -255,7 +252,10 @@ public class AzoulayModelTest {
      * @testedMethod {@link AzoulayModel#supportsParameter(Parameter)}
      * @testedMethod {@link AzoulayModel#getParameters()}
      * @testedMethod {@link AzoulayModel#derivativeValue(Parameter, double)}
+     * @testedMethod {@link AzoulayModel#derivativeValueFromApparentElevation(Parameter, double)}
+     * @testedMethod {@link AzoulayModel#derivativeValueFromGeometricElevation(Parameter, double)}
      * @testedMethod {@link AzoulayModel#isDifferentiableBy(Parameter)}
+     * @testedMethod {@link AzoulayModel#getMinimalToleratedApparentElevation()}
      * 
      * @description tests the parameters methods
      * 
@@ -263,10 +263,14 @@ public class AzoulayModelTest {
      */
     @Test
     public void testParameters() {
-        Assert.assertFalse(this.correction.supportsParameter(new Parameter("param", 1.)));
-        Assert.assertTrue(this.correction.getParameters().isEmpty());
-        Assert.assertEquals(0., this.correction.derivativeValue(new Parameter("param", 1.), 0.01), 0.);
-        Assert.assertFalse(this.correction.isDifferentiableBy(new Parameter("param", 1.)));
+        final Parameter param = new Parameter("param", 1.);
+        Assert.assertFalse(this.modelGeo.supportsParameter(param));
+        Assert.assertTrue(this.modelGeo.getParameters().isEmpty());
+        Assert.assertEquals(0., this.modelGeo.derivativeValue(param, 0.01), 0.);
+        Assert.assertEquals(0., this.modelGeo.derivativeValueFromApparentElevation(param, 0.1), 0.);
+        Assert.assertEquals(0., this.modelGeo.derivativeValueFromGeometricElevation(param, 0.1), 0.);
+        Assert.assertFalse(this.modelGeo.isDifferentiableBy(param));
+        Assert.assertEquals(-MathUtils.HALF_PI, this.modelGeo.getMinimalToleratedApparentElevation(), 0.);
     }
 
     /**
@@ -277,7 +281,7 @@ public class AzoulayModelTest {
     @Test
     public void testSerialization() {
 
-        final AzoulayModel model = this.correction;
+        final AzoulayModel model = this.modelGeo;
         final AzoulayModel deserializedModel = TestUtils.serializeAndRecover(model);
 
         Assert.assertEquals(model.computeSignalDelay(this.defaultDate, MathUtils.HALF_PI),

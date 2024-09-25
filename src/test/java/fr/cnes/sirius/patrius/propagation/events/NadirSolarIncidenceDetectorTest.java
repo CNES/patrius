@@ -18,6 +18,14 @@
  * @history created 11/06/12
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:FA:FA-104:08/12/2023:[PATRIUS] Completer le TU de NadirSolarIncidenceDetector
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.11.1:DM:DM-80:30/06/2023:[PATRIUS] Discriminer le "increasing" et "decreasing" dans NadirSolarIncidenceDetector (suite)
  * VERSION:4.11:DM:DM-3291:22/05/2023:[PATRIUS] Discriminer le "increasing" et "decreasing" dans NadirSolarIncidenceDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -36,6 +44,7 @@ package fr.cnes.sirius.patrius.propagation.events;
 import java.util.ArrayList;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -45,8 +54,17 @@ import fr.cnes.sirius.patrius.attitudes.directions.BasicPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.NadirSolarIncidenceDetector;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -61,7 +79,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -93,7 +110,21 @@ public class NadirSolarIncidenceDetectorTest {
     }
 
     /** Epsilon for dates comparison. */
-    private final double datesComparisonEpsilon = 1.0e-3;
+    private double datesComparisonEpsilon;
+
+    /**
+     * Setup configuration frame, orekit data, and all common parameter of the tests
+     * 
+     * @throws PatriusException should not happen
+     */
+    @Before
+    public void setup() throws PatriusException {
+        // Orekit initialization
+        Utils.setDataRoot("regular-dataCNES-2003");
+        FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
+
+        this.datesComparisonEpsilon = 1.0e-3;
+    }
 
     /**
      * @throws PatriusException
@@ -118,21 +149,16 @@ public class NadirSolarIncidenceDetectorTest {
      * @nonRegressionVersion 1.2
      */
     @Test
-    public void testNAdirSunIncidenceDetector() throws PatriusException {
-
-        // Orekit initialization
-        Utils.setDataRoot("regular-dataCNES-2003");
-        FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
+    public void testNadirSunIncidenceDetector() throws PatriusException {
 
         // Orbit initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame EME2000Frame = FramesFactory.getEME2000();
+        final CelestialBodyFrame EME2000Frame = FramesFactory.getEME2000();
 
         final AttitudeProvider attitudeProv = new ConstantAttitudeLaw(FramesFactory.getEME2000(), Rotation.IDENTITY);
         final double a = 7500000.0;
         final Orbit tISSOrbit = new KeplerianOrbit(a, 0.0, MathUtils.HALF_PI, 0.0, 0.0, 0.0,
             PositionAngle.TRUE, EME2000Frame, date, Utils.mu);
-        final Propagator propagator = new KeplerianPropagator(tISSOrbit, attitudeProv);
         final double period = 2.0 * FastMath.PI * MathLib.sqrt(a * a * a / Utils.mu);
 
         // earth
@@ -147,26 +173,33 @@ public class NadirSolarIncidenceDetectorTest {
 
         // detector
         final double incidenceToDetect = 3 * FastMath.PI / 8.;
-        final NadirSolarIncidenceDetector detector = new NadirSolarIncidenceDetector(incidenceToDetect, earth,
-            AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD);
-        detector.setSun(sun);
-        final NadirSolarIncidenceDetector detector2 = (NadirSolarIncidenceDetector) detector.copy();
+        
+        for (int slopeSelection = 0; slopeSelection<=2; slopeSelection++) {
+            final NadirSolarIncidenceDetector detector = new NadirSolarIncidenceDetector(slopeSelection,
+                    incidenceToDetect, earth, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                    Action.STOP, Action.STOP, false, false, null);
+            detector.setSun(sun);
 
-        propagator.addEventDetector(detector2);
+            final Propagator propagator = new KeplerianPropagator(tISSOrbit, attitudeProv);
+            propagator.addEventDetector(detector);
 
-        // physical angle from earth center to detect (the stop date is when the g function is decreasing)
-        // sunDist / sin(PI - incidenceToDetect) = r / sin (incidenceToDetect - angleFromEarthCenter)
-        final double angleFromEarthCenter = incidenceToDetect -
-                MathLib.asin(r * MathLib.sin(FastMath.PI - incidenceToDetect) / sunDist);
+            // physical angle from earth center to detect (the stop date is when the g function is decreasing)
+            // sunDist / sin(PI - incidenceToDetect) = r / sin (incidenceToDetect - angleFromEarthCenter)
+            final double angleFromEarthCenter = incidenceToDetect
+                    - MathLib.asin(r * MathLib.sin(FastMath.PI - incidenceToDetect) / sunDist);
 
-        // associated date from propagation beginning
-        final double timeDetected = period * angleFromEarthCenter / (2. * FastMath.PI);
+            // associated date from propagation beginning
+            double timeDetected = period * angleFromEarthCenter / (2. * FastMath.PI);
+            if (slopeSelection == EventDetector.DECREASING) {
+                timeDetected = period - timeDetected;
+            }
 
-        // test
-        final SpacecraftState endState = propagator.propagate(date.shiftedBy(10000.0));
+            // test
+            final SpacecraftState endState = propagator.propagate(date.shiftedBy(10000.0));
 
-        Assert.assertEquals(timeDetected, endState.getDate().durationFrom(date), this.datesComparisonEpsilon);
-        Assert.assertEquals(sun, detector2.getSun());
+            Assert.assertEquals(timeDetected, endState.getDate().durationFrom(date), this.datesComparisonEpsilon);
+            Assert.assertEquals(sun, detector.getSun());
+        }
     }
 
     /**
@@ -195,7 +228,7 @@ public class NadirSolarIncidenceDetectorTest {
 
         final double incidenceToDetect = 3 * FastMath.PI / 8.;
         // earth
-        final Frame EME2000Frame = FramesFactory.getEME2000();
+        final CelestialBodyFrame EME2000Frame = FramesFactory.getEME2000();
         final double r = 6000000.0;
         final BodyShape earth = new OneAxisEllipsoid(r, 0.0, EME2000Frame);
 
@@ -211,7 +244,7 @@ public class NadirSolarIncidenceDetectorTest {
      * 
      * @testedFeature {@link features#VALIDATE_NADIR_SOLAR_INCIDENCE}
      * 
-     * @testedMethod {@link NadirSolarIncidenceDetector#NadirSolarIncidenceDetector(double, BodyShape, double, double, Action, boolean, CelestialBody)}
+     * @testedMethod {@link NadirSolarIncidenceDetector#NadirSolarIncidenceDetector(double, BodyShape, double, double, Action, boolean, CelestialPoint)}
      * 
      * @description checks user Sun model is properly taken into account
      * 
@@ -229,7 +262,6 @@ public class NadirSolarIncidenceDetectorTest {
     @Test
     public void sunConstructorTest() throws PatriusException {
         // Initialization
-        Utils.setDataRoot("regular-dataCNES-2003");
         final BodyShape earth = new OneAxisEllipsoid(Constants.EGM96_EARTH_EQUATORIAL_RADIUS, 0.0,
             FramesFactory.getGCRF());
         final Orbit orbit = new KeplerianOrbit(7500000.0, 0.0, MathUtils.HALF_PI, 0.0, 0.0, 0.0, PositionAngle.TRUE,
@@ -269,11 +301,11 @@ public class NadirSolarIncidenceDetectorTest {
         // Checks on the copy function for the most complete and different detector (with respect to the one built by
         // using the simplest default constructor)
         final NadirSolarIncidenceDetector detector10copy = (NadirSolarIncidenceDetector) detector10.copy();
-        Assert.assertTrue(detector10copy.actionAtEntry == detector10.actionAtEntry);
-        Assert.assertTrue(detector10copy.actionAtExit == detector10.actionAtExit);
-        Assert.assertTrue(detector10copy.removeAtEntry == detector10.removeAtEntry);
-        Assert.assertTrue(detector10copy.removeAtExit == detector10.removeAtExit);
-        Assert.assertTrue(detector10copy.shouldBeRemovedFlag == detector10.shouldBeRemovedFlag);
+        Assert.assertTrue(detector10copy.getActionAtEntry() == detector10.getActionAtEntry());
+        Assert.assertTrue(detector10copy.getActionAtExit() == detector10.getActionAtExit());
+        Assert.assertTrue(detector10copy.isRemoveAtEntry() == detector10.isRemoveAtEntry());
+        Assert.assertTrue(detector10copy.isRemoveAtExit() == detector10.isRemoveAtExit());
+        Assert.assertTrue(detector10copy.shouldBeRemoved() == detector10.shouldBeRemoved());
         Assert.assertTrue(detector10copy.getMaxCheckInterval() == detector10.getMaxCheckInterval());
         Assert.assertTrue(detector10copy.getPropagationDelayType() == detector10.getPropagationDelayType());
         Assert.assertTrue(detector10copy.getSlopeSelection() == detector10.getSlopeSelection());
@@ -341,5 +373,77 @@ public class NadirSolarIncidenceDetectorTest {
                 }
             }
         }
+    }
+
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final BodyShape earth = new OneAxisEllipsoid(Constants.EGM96_EARTH_EQUATORIAL_RADIUS, 0.0,
+            FramesFactory.getGCRF());
+        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final NadirSolarIncidenceDetector eventDetector1 = new NadirSolarIncidenceDetector(0,
+            3 * FastMath.PI / 8., earth, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+            Action.CONTINUE, Action.CONTINUE, false, false, sun);
+        final NadirSolarIncidenceDetector eventDetector2 = (NadirSolarIncidenceDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final Frame EME2000Frame = FramesFactory.getEME2000();
+
+        final AttitudeProvider attitudeProv = new ConstantAttitudeLaw(FramesFactory.getEME2000(), Rotation.IDENTITY);
+        final double a = 7500000.0;
+        final Orbit tISSOrbit = new KeplerianOrbit(a, 0.0, MathUtils.HALF_PI, 0.0, 0.0, 0.0,
+            PositionAngle.TRUE, EME2000Frame, date, Utils.mu);
+
+        final Propagator propagator = new KeplerianPropagator(tISSOrbit, attitudeProv);
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(date.shiftedBy(4 * 3600.));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T13:35:54.674"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T13:35:54.674"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T15:23:43.759"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T15:23:43.759"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T13:27:43.614"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2000-01-01T13:35:54.290"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T15:15:32.700"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2000-01-01T15:23:43.375"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(sun, eventDetector1.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
     }
 }

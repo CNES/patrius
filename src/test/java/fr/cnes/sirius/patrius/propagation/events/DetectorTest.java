@@ -18,6 +18,11 @@
 /*
  * 
  * HISTORY
+* VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-14:22/05/2023:[PATRIUS] Nombre max d'iterations dans le calcul de la propagation du signal  
  * VERSION:4.11:DM:DM-3318:22/05/2023:[PATRIUS] Besoin de forcer la normalisation dans la classe QuaternionPolynomialSegment
@@ -60,23 +65,40 @@ import fr.cnes.sirius.patrius.assembly.models.SensorModel;
 import fr.cnes.sirius.patrius.assembly.properties.RFAntennaProperty;
 import fr.cnes.sirius.patrius.assembly.properties.SensorProperty;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.ApparentRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.bodies.ConstantRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.events.CentralBodyMaskCircularFOVDetector;
-import fr.cnes.sirius.patrius.events.sensor.ExtremaSightAxisDetector;
-import fr.cnes.sirius.patrius.events.sensor.MaskingDetector;
-import fr.cnes.sirius.patrius.events.sensor.RFVisibilityDetector;
-import fr.cnes.sirius.patrius.events.sensor.SensorInhibitionDetector;
-import fr.cnes.sirius.patrius.events.sensor.SensorVisibilityDetector;
-import fr.cnes.sirius.patrius.events.sensor.StationToSatMutualVisibilityDetector;
-import fr.cnes.sirius.patrius.events.sensor.TargetInFieldOfViewDetector;
-import fr.cnes.sirius.patrius.events.sensor.VisibilityFromStationDetector;
-import fr.cnes.sirius.patrius.events.sensor.VisibilityFromStationDetector.LinkType;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.ApparentElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.BetaAngleDetector;
+import fr.cnes.sirius.patrius.events.detectors.CentralBodyMaskCircularFOVDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.DihedralFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaSightAxisDetector;
+import fr.cnes.sirius.patrius.events.detectors.GroundMaskElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.LocalTimeAngleDetector;
+import fr.cnes.sirius.patrius.events.detectors.MaskingDetector;
+import fr.cnes.sirius.patrius.events.detectors.NadirSolarIncidenceDetector;
+import fr.cnes.sirius.patrius.events.detectors.RFVisibilityDetector;
+import fr.cnes.sirius.patrius.events.detectors.SensorInhibitionDetector;
+import fr.cnes.sirius.patrius.events.detectors.SensorVisibilityDetector;
+import fr.cnes.sirius.patrius.events.detectors.SolarTimeAngleDetector;
+import fr.cnes.sirius.patrius.events.detectors.StationToSatMutualVisibilityDetector;
+import fr.cnes.sirius.patrius.events.detectors.TargetInFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector;
+import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -97,8 +119,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -214,7 +234,7 @@ public class DetectorTest {
         final Assembly assembly2 = buildAssembly("Main2");
 
         // Sun
-        final CelestialBody sun1 = CelestialBodyFactory.getSun();
+        final CelestialPoint sun1 = CelestialBodyFactory.getSun();
 
         // Station and sensors
         // Masking body and spacecraft located 311km above station
@@ -222,14 +242,14 @@ public class DetectorTest {
         final GeometricStationAntenna station = new GeometricStationAntenna(topo, new CircularField("", 0.01,
             Vector3D.PLUS_K));
         final SensorModel sensor = new SensorModel(assembly, "Main");
-        final Frame bodyFrame = new Frame(station.getTopoFrame(), new Transform(AbsoluteDate.J2000_EPOCH,
-            Vector3D.PLUS_K.scalarMultiply(311E3)), "BodyFrame1");
+        final CelestialBodyFrame bodyFrame = new CelestialBodyFrame(station.getTopoFrame(), new Transform(AbsoluteDate.J2000_EPOCH,
+            Vector3D.PLUS_K.scalarMultiply(311E3)), "BodyFrame1", null);
         sensor.addMaskingCelestialBody(new OneAxisEllipsoid(100., 0, bodyFrame, "Body1"));
         sensor.setMainTarget(topo, new ConstantRadiusProvider(1.));
         final SensorModel sensor2 = new SensorModel(assembly2, "Main2");
         sensor2.setMainTarget(topo, new ConstantRadiusProvider(1.));
-        final Frame bodyFrame2 = new Frame(station.getTopoFrame(), new Transform(AbsoluteDate.J2000_EPOCH,
-            Vector3D.PLUS_K.scalarMultiply(311E3)), "BodyFrame1");
+        final CelestialBodyFrame bodyFrame2 = new CelestialBodyFrame(station.getTopoFrame(), new Transform(AbsoluteDate.J2000_EPOCH,
+            Vector3D.PLUS_K.scalarMultiply(311E3)), "BodyFrame1", null);
         sensor2.addMaskingCelestialBody(new OneAxisEllipsoid(100., 0, bodyFrame2, "Body2"));
 
         // Station
@@ -264,9 +284,9 @@ public class DetectorTest {
 
         // Beta angle detector (accuracy probably limited because beta angle remains almost constant due to simplified
         // configuration)
-        AbstractDetector d1 = new BetaAngleDetector(-0.402, 10, 1E-12, Action.STOP, false, sun1);
-        CelestialBody sun2 = buildDelayedSun(computeEventDate(d1));
-        AbstractDetector d2 = new BetaAngleDetector(-0.402, 10, 1E-12, Action.STOP, false, sun2);
+        AbstractSignalPropagationDetector d1 = new BetaAngleDetector(-0.402, 10, 1E-12, Action.STOP, false, sun1);
+        CelestialPoint sun2 = buildDelayedSun(computeEventDate(d1));
+        AbstractSignalPropagationDetector d2 = new BetaAngleDetector(-0.402, 10, 1E-12, Action.STOP, false, sun2);
         checkPropagation(d1, d2, 0.);
 
         // Local time angle detector
@@ -470,7 +490,8 @@ public class DetectorTest {
      * @param deltaEventTime delta event time taking into account ICRF/GCRF movement
      * @throws PatriusException thrown if failed
      */
-    private static void checkPropagation(final AbstractDetector detector1, final AbstractDetector detector2,
+    private static void checkPropagation(final AbstractSignalPropagationDetector detector1,
+                                         final AbstractSignalPropagationDetector detector2,
                                          final double deltaEventTime) throws PatriusException {
 
         // Initialization
@@ -509,7 +530,8 @@ public class DetectorTest {
      * @param detector1 detector to use for light speed propagation
      * @throws PatriusException thrown if failed
      */
-    private static AbsoluteDate computeEventDate(final AbstractDetector detector1) throws PatriusException {
+    private static AbsoluteDate computeEventDate(final AbstractSignalPropagationDetector detector1)
+        throws PatriusException {
 
         // Initialization
         final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
@@ -536,7 +558,7 @@ public class DetectorTest {
      * @return delayed sun
      * @throws PatriusException thrown if failed
      */
-    private static CelestialBody buildDelayedSun(final AbsoluteDate eventDate) throws PatriusException {
+    private static CelestialPoint buildDelayedSun(final AbsoluteDate eventDate) throws PatriusException {
 
         // Initialization
         final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
@@ -568,8 +590,8 @@ public class DetectorTest {
      * @param expectedDelay expected detection delay
      * @throws PatriusException thrown if failed
      */
-    private static void checkPropagationWithStation(final AbstractDetector detector, final double expectedDelay)
-        throws PatriusException {
+    private static void checkPropagationWithStation(final AbstractSignalPropagationDetector detector,
+                                                    final double expectedDelay) throws PatriusException {
 
         // Propagation, stops at first event detection
         // Light speed
@@ -593,7 +615,8 @@ public class DetectorTest {
      * @param dt initial date shift
      * @throws PatriusException thrown if failed
      */
-    private static AbsoluteDate propagate(final AbstractDetector detector, final PropagationDelayType delayType,
+    private static AbsoluteDate propagate(final AbstractSignalPropagationDetector detector,
+                                          final PropagationDelayType delayType,
                                           final double dt) throws PatriusException {
 
         // Initialization
@@ -613,12 +636,15 @@ public class DetectorTest {
     }
 
     /**
-     * @description Check that the {@link AbstractDetector#setMaxIterSignalPropagation(int)} method is operational
+     * @throws PatriusException
+     *         if Sun could not be retrieved
+     * @description Check that the {@link AbstractSignalPropagationDetector#setMaxIterSignalPropagation(int)} method is
+     *              operational
      */
     @Test
-    public void testSetMaxIterSignalPropagation() {
+    public void testSetMaxIterSignalPropagation() throws PatriusException {
         // A random detector
-        final AbstractDetector detector = new AltitudeDetector(50, null);
+        final AbstractSignalPropagationDetector detector = new BetaAngleDetector(0.3);
 
         Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER, detector.getMaxIterationCount());
 

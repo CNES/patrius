@@ -18,6 +18,8 @@
  * @history Created 15/04/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -29,10 +31,11 @@
  */
 package fr.cnes.sirius.patrius.frames.configuration;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.frames.configuration.eop.PoleCorrection;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.CIPCoordinates;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.StelaPrecessionNutationModel;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -83,23 +86,25 @@ public class StelaFramesConfigurationTest {
 
         // Input data
         final AbsoluteDate date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(86400. * 36525 + 35);
+        final CIPCoordinates cipCoor = config.getCIPCoordinates(date);
 
         // Check CIP motion time derivatives
-        final double[] cipMotionDot = config.getCIPMotionTimeDerivative(date);
+        final double[] cipMotionDot = cipCoor.getCIPMotionTimeDerivatives();
         final double[] expcipMotionDot = new double[] { 3.943038448025564E-12, -3.772267703167182E-14,
             1.200522242427558E-16 };
         checkDoubleRel(expcipMotionDot, cipMotionDot, 1E-11);
         // Check CIP motion
-        final double[] cipMotion = config.getCIPMotion(date);
+        final double[] cipMotion = cipCoor.getCIPMotion();
         final double[] expcipMotion = new double[] { 0.0048864281689152385, -5.35914364524393E-5, 9.61875385627665E-8 };
         checkDoubleRel(expcipMotion, cipMotion, 1E-14);
         // Check others
-        checkDoubleAbs(config.getPolarMotion(date), new double[] { 0, 0 }, 0);
-        Assert.assertEquals(config.getSprime(date), 0.);
-        Assert.assertNotNull(config.getPrecessionNutationModel());
-        Assert.assertEquals(FrameConvention.STELA, config.getPrecessionNutationModel().getPrecessionNutationModel()
+        final PoleCorrection poleCorr = config.getPolarMotion(date);
+        Assert.assertEquals(0., poleCorr.getXp(), 0.);
+        Assert.assertEquals(0., poleCorr.getYp(), 0.);
+        Assert.assertEquals(0., config.getSprime(date), 0.);
+        Assert.assertNotNull(config.getCIRFPrecessionNutationModel());
+        Assert.assertEquals(FrameConvention.STELA, config.getCIRFPrecessionNutationModel().getPrecessionNutationModel()
             .getOrigin());
-        Assert.assertEquals(false, config.getPrecessionNutationModel().getPrecessionNutationModel().isConstant());
     }
 
     /**
@@ -109,16 +114,6 @@ public class StelaFramesConfigurationTest {
         Assert.assertEquals(dExpected.length, dActual.length);
         for (int i = 0; i < dExpected.length; i++) {
             Assert.assertEquals(0, MathLib.abs((dExpected[i] - dActual[i]) / dExpected[i]), tol);
-        }
-    }
-
-    /**
-     * absolute check for double[] array.
-     */
-    public static void checkDoubleAbs(final double[] dExpected, final double[] dActual, final double tol) {
-        Assert.assertEquals(dExpected.length, dActual.length);
-        for (int i = 0; i < dExpected.length; i++) {
-            Assert.assertEquals(0, MathLib.abs(dExpected[i] - dActual[i]), tol);
         }
     }
 }

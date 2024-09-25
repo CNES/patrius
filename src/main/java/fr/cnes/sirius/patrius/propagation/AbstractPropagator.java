@@ -15,6 +15,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-45:08/12/2023:[PATRIUS]Probleme de detection d'evenement
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] Attitude spacecraft state lazy
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -55,6 +59,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.utils.EventState;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.exception.NoBracketingException;
 import fr.cnes.sirius.patrius.math.exception.TooManyEvaluationsException;
@@ -65,8 +71,6 @@ import fr.cnes.sirius.patrius.orbits.OrbitType;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.analytical.AnalyticalEphemerisModeHandler;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventState;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepInterpolator;
@@ -646,7 +650,11 @@ public abstract class AbstractPropagator implements Propagator{
                         state.storeState(this.interpolator.getInterpolatedState(), true);
                         this.interpolator.setInterpolatedDate(eventT);
                     }
-                    if (!state.equals(currentEvent) && state.evaluateStep(this.interpolator)) {
+                    // Event too close to be detected
+                    final boolean closeEvent = state.getT0() != null
+                            && MathLib.abs(state.getT0().durationFrom(eventT)) <= state.getEventDetector()
+                                    .getThreshold();
+                    if (!state.equals(currentEvent) && !closeEvent && state.evaluateStep(this.interpolator)) {
                         // A missed event has been found during the reduced step
                         // If event occurs exactly at reset_state event time: it should not be considered since this
                         // event
@@ -907,8 +915,7 @@ public abstract class AbstractPropagator implements Propagator{
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date,
-                final Frame frame) throws PatriusException {
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
             return AbstractPropagator.this.getFrame();
         }
     }

@@ -18,6 +18,8 @@
  * @history created 25/09/2015
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-199:17/01/2024:[PATRIUS] Utilisation du dernier point utilisable dans EphemerisPvHermite
+ * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -182,14 +184,23 @@ public class EphemerisPvHermite extends AbstractBoundedPVProvider {
 
         final double duration = date.durationFrom(this.getDateRef());
 
-        // If input date is out of bounds throw illegal argument exception, else proceed
-        if ((duration >= 0) && (date.durationFrom(this.getMaxDate()) <= 0)) {
+        // If input date is out of bounds throw illegal argument exception
+        if ((duration < 0) || (date.durationFrom(this.getMaxDate()) > 0)) {
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.DATE_OUTSIDE_INTERVAL);
+        }
 
+        // Check if date is exactly on validity interval bounds, in that case (!= null) returns boundary state
+        PVCoordinates interpolPV = this.checkBounds(date);
+
+        if (interpolPV == null) {
             // Search the index
             final int index = this.getSearchIndex().getIndex(duration);
 
             // the interpolation is valid only if 0<= index +1 -interpoOrder/2 or index + order/2 <= maximalIndex
             final int i0 = this.indexValidity(index);
+
+            // Duration from closest date in order to minimize numerical quality issues
+            final double durationI0 = date.durationFrom(this.tDate[i0]);
 
             // If the last call was already for a date between the interpolator dates,
             // reuse the last interpolator instance
@@ -204,7 +215,7 @@ public class EphemerisPvHermite extends AbstractBoundedPVProvider {
                 double[] vit;
                 double[] acc;
                 for (int i = 0; i < this.polyOrder; i++) {
-                    deltat = this.tDate[i0 + i].durationFrom(this.getDateRef());
+                    deltat = this.tDate[i0 + i].durationFrom(this.tDate[i0]);
                     pos = this.tPVCoord[i0 + i].getPosition().toArray();
                     vit = this.tPVCoord[i0 + i].getVelocity().toArray();
 
@@ -219,20 +230,18 @@ public class EphemerisPvHermite extends AbstractBoundedPVProvider {
             }
 
             // Get the hermite interpolation results
-            final Vector3D p = new Vector3D(this.interpolatorPV.value(duration));
-            final Vector3D v = new Vector3D(this.interpolatorPV.derivative(duration));
+            final Vector3D p = new Vector3D(this.interpolatorPV.value(durationI0));
+            final Vector3D v = new Vector3D(this.interpolatorPV.derivative(durationI0));
 
-            PVCoordinates interpolPV = new PVCoordinates(p, v);
+            interpolPV = new PVCoordinates(p, v);
 
             // If needed, convert position, velocity to the right frame
             if ((frame != null) && (this.getFrame() != frame)) {
                 final Transform t = this.getFrame().getTransformTo(frame, date);
                 interpolPV = t.transformPVCoordinates(interpolPV);
             }
-
-            return interpolPV;
         }
-        // else
-        throw PatriusException.createIllegalArgumentException(PatriusMessages.DATE_OUTSIDE_INTERVAL);
+
+        return interpolPV;
     }
 }

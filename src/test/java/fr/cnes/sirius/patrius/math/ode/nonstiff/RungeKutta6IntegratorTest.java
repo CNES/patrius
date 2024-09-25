@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -43,6 +44,7 @@ import fr.cnes.sirius.patrius.math.ode.events.EventHandler.Action;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepHandler;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepInterpolator;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * @description test class for RungeKutta6Integrator
@@ -153,6 +155,15 @@ public class RungeKutta6IntegratorTest {
             @Override
             public int getSlopeSelection() {
                 return 2;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
             }
         }, Double.POSITIVE_INFINITY, 1.0e-20, 100);
         finalT = integrator.integrate(ode, t0, y0, tEvent + 120, y);
@@ -587,6 +598,15 @@ public class RungeKutta6IntegratorTest {
             @Override
             public int getSlopeSelection() {
                 return 2;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
+                return false;
             }
         }
 

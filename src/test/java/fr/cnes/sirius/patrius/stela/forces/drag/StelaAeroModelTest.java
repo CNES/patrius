@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -49,7 +50,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
@@ -228,7 +229,7 @@ public class StelaAeroModelTest {
         final double ae = 6378136.46;
 
         // Celestial bodies:
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
 
         // Constant solar activity:
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
@@ -304,7 +305,7 @@ public class StelaAeroModelTest {
         final double ae = 6378136.46;
 
         // Celestial bodies:
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
 
         // Constant solar activity:
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
@@ -378,7 +379,7 @@ public class StelaAeroModelTest {
         final double ae = Double.NaN;
 
         // Celestial bodies:
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
 
         // Constant solar activity:
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
@@ -428,7 +429,7 @@ public class StelaAeroModelTest {
 
         // Initialization
         this.testSetup();
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
         final double f = 0.29825765000000E+03;
         final double ae = Constants.CNES_STELA_AE;
@@ -464,7 +465,7 @@ public class StelaAeroModelTest {
         // Thu Mar 31 22:16:55 GMT 2011
         date = new AbsoluteDate(2011, 03, 31, 22, 16, 55.4778569, TimeScalesFactory.getUTC());
         frame = FramesFactory.getITRF();
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
         final double f = 0.29825765000000E+03;
         final double ae = Constants.CNES_STELA_AE;

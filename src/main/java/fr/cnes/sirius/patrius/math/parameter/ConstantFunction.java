@@ -20,9 +20,10 @@
  *
  * @history creation 01/09/2014
  */
-/* 
+/*
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
@@ -32,13 +33,12 @@
  */
 package fr.cnes.sirius.patrius.math.parameter;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.function.Function;
 
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableFunction;
 
 /**
  * This class is used to define a constant parameterizable function.
@@ -57,6 +57,9 @@ public class ConstantFunction extends LinearCombinationFunction {
 
     /** Serializable UID. */
     private static final long serialVersionUID = -4651028856848403142L;
+
+    /** The parameter associates to the function. */
+    private final transient Parameter param;
 
     /**
      * Constructor of a constant function <i>f = a0</i> using the input value.
@@ -85,12 +88,12 @@ public class ConstantFunction extends LinearCombinationFunction {
      *
      * @param param
      *        the a0 parameter
-     * @throws NullArgumentException if {@code param} is {@code null}
+     * @throws NullArgumentException
+     *         if {@code param} is {@code null}
      */
-    @SuppressWarnings("unchecked")
     public ConstantFunction(final Parameter param) {
-        super(Collections.singletonMap(param,
-                (Serializable & Function<SpacecraftState, Double>) state -> 1.0));
+        super(Collections.singletonMap(param, (SerializableFunction<SpacecraftState, Double>) state -> 1.0));
+        this.param = param;
     }
 
     /**
@@ -100,12 +103,20 @@ public class ConstantFunction extends LinearCombinationFunction {
      *         parameter as double
      */
     public double value() {
-        // Constant value
-        return this.getParameters().get(0).getValue();
+        return this.param.getValue();
     }
 
     /**
-     * Return the function parameter [a0] (also called [value]) stored in a list.
+     * Getter for the parameter associated to this constant function.
+     *
+     * @return the parameter
+     */
+    public Parameter getParameter() {
+        return this.param;
+    }
+
+    /**
+     * Return the function parameter [a0] stored in a list.
      * <p>
      * The list is returned in a shallow copy.
      * </p>
@@ -115,7 +126,30 @@ public class ConstantFunction extends LinearCombinationFunction {
     @Override
     @SuppressWarnings("PMD.LooseCoupling")
     public ArrayList<Parameter> getParameters() {
-        // Implementation note: override in order to have a specific javadoc
-        return new ArrayList<>(this.functions.keySet());
+        // Implementation note: override in order to have a specific javadoc for this function
+        return super.getParameters();
+    }
+
+    /**
+     * Getter for a String representation of this function.
+     * 
+     * @return a String representation of this function
+     */
+    @Override
+    public String toString() {
+        final StringBuilder myStringBuilder = new StringBuilder();
+        myStringBuilder.append("Value    : f = " + this.param.getValue() + "\n");
+        myStringBuilder.append("Parameter: [" + this.param.getName() + "]\n");
+
+        return myStringBuilder.toString();
+    }
+
+    /**
+     * Internal method to recover the final transient attribute after deserialization.
+     *
+     * @return the deserialized object
+     */
+    private Object readResolve() {
+        return new ConstantFunction(this.getParameters().get(0));
     }
 }

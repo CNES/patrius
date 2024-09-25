@@ -30,7 +30,6 @@ package fr.cnes.sirius.patrius.math.parameter;
 
 import java.io.File;
 import java.util.Locale;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -45,6 +44,7 @@ import fr.cnes.sirius.patrius.orbits.orbitalparameters.OrbitalCoordinate;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableFunction;
 
 /**
  * Unit tests for {@linkplain StandardFieldDescriptors}.
@@ -79,7 +79,7 @@ public class StandardFieldDescriptorsTest {
     @Test
     public void testParameterName() {
         final FieldDescriptor<String> descriptor = StandardFieldDescriptors.PARAMETER_NAME;
-        final Function<String, String> initialPrintFunction = descriptor.getPrintFunction();
+        final SerializableFunction<String, String> initialPrintFunction = descriptor.getPrintFunction();
 
         Assert.assertEquals("parameter_name", descriptor.getName());
         Assert.assertEquals(String.class, descriptor.getFieldClass());
@@ -118,7 +118,7 @@ public class StandardFieldDescriptorsTest {
     @Test
     public void testForceModel() throws PatriusException {
         final FieldDescriptor<Class<? extends ForceModel>> descriptor = StandardFieldDescriptors.FORCE_MODEL;
-        final Function<Class<? extends ForceModel>, String> initialPrintFunction = descriptor
+        final SerializableFunction<Class<? extends ForceModel>, String> initialPrintFunction = descriptor
             .getPrintFunction();
 
         Assert.assertEquals("force_model", descriptor.getName());
@@ -166,7 +166,7 @@ public class StandardFieldDescriptorsTest {
     @Test
     public void testDate() {
         final FieldDescriptor<AbsoluteDate> descriptor = StandardFieldDescriptors.DATE;
-        final Function<AbsoluteDate, String> initialPrintFunction = descriptor.getPrintFunction();
+        final SerializableFunction<AbsoluteDate, String> initialPrintFunction = descriptor.getPrintFunction();
 
         Assert.assertEquals("date", descriptor.getName());
         Assert.assertEquals(AbsoluteDate.class, descriptor.getFieldClass());
@@ -202,8 +202,7 @@ public class StandardFieldDescriptorsTest {
     @Test
     public void testDateInterval() {
         final FieldDescriptor<AbsoluteDateInterval> descriptor = StandardFieldDescriptors.DATE_INTERVAL;
-        final Function<AbsoluteDateInterval, String> initialPrintFunction = descriptor
-                .getPrintFunction();
+        final SerializableFunction<AbsoluteDateInterval, String> initialPrintFunction = descriptor.getPrintFunction();
 
         Assert.assertEquals("date_interval", descriptor.getName());
         Assert.assertEquals(AbsoluteDateInterval.class, descriptor.getFieldClass());
@@ -239,8 +238,7 @@ public class StandardFieldDescriptorsTest {
     @Test
     public void testOrbitalCoordinate() {
         final FieldDescriptor<OrbitalCoordinate> descriptor = StandardFieldDescriptors.ORBITAL_COORDINATE;
-        final Function<OrbitalCoordinate, String> initialPrintFunction = descriptor
-                .getPrintFunction();
+        final SerializableFunction<OrbitalCoordinate, String> initialPrintFunction = descriptor.getPrintFunction();
 
         Assert.assertEquals("orbital_coordinate", descriptor.getName());
         Assert.assertEquals(OrbitalCoordinate.class, descriptor.getFieldClass());

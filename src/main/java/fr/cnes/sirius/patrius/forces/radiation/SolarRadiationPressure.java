@@ -16,6 +16,14 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
+ * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.11.1:FA:FA-82:30/06/2023:[PATRIUS] Reliquat DM 3306
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.10:DM:DM-3244:03/11/2022:[PATRIUS] Ajout propagation du signal dans ExtremaElevationDetector
@@ -31,8 +39,13 @@ import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.models.DirectRadiativeModel;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.GradientModel;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -47,12 +60,11 @@ import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
+import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -136,6 +148,24 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
     /** Multiplicative factor. */
     private double multiplicativeFactor = 1.;
 
+    /** Propagation delay type (initialized to {@link PropagationDelayType#INSTANTANEOUS} by default). */
+    private PropagationDelayType propagationDelayType = PropagationDelayType.INSTANTANEOUS;
+
+    /** Inertial frame for signal propagation computation. */
+    private Frame inertialFrame;
+
+    /**
+     * Epsilon for signal propagation computation (initialized to {@link VacuumSignalPropagationModel#DEFAULT_THRESHOLD}
+     * by default).
+     */
+    private double epsSignalPropagation = VacuumSignalPropagationModel.DEFAULT_THRESHOLD;
+
+    /**
+     * Maximum number of iterations for signal propagation computation (initialized to
+     * {@link VacuumSignalPropagationModel#DEFAULT_MAX_ITER} by default).
+     */
+    private int maxIterSignalPropagation = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
+
     /**
      * Simple constructor with default reference values.
      * <p>
@@ -148,7 +178,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -160,7 +190,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        The physical and geometrical spacecraft representation
      */
     public SolarRadiationPressure(final PVCoordinatesProvider sun, final double occultingBodyRadius,
-            final RadiationSensitive spacecraft) {
+                                  final RadiationSensitive spacecraft) {
         this(sun, occultingBodyRadius, spacecraft, true);
     }
 
@@ -176,7 +206,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -191,7 +221,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final PVCoordinatesProvider sun, final double occultingBodyRadius,
-            final RadiationSensitive spacecraft, final boolean computePD) {
+                                  final RadiationSensitive spacecraft, final boolean computePD) {
         this(sun, occultingBodyRadius, FramesFactory.getGCRF(), spacecraft, computePD);
     }
 
@@ -207,7 +237,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -224,7 +254,8 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final PVCoordinatesProvider sun, final double occultingBodyRadius,
-            final Frame occultingBodyFrame, final RadiationSensitive spacecraft, final boolean computePD) {
+                                  final CelestialBodyFrame occultingBodyFrame, final RadiationSensitive spacecraft,
+                                  final boolean computePD) {
         this(Constants.SEIDELMANN_UA, Constants.CONST_SOL_N_M2, sun, Constants.SUN_RADIUS, occultingBodyRadius,
                 occultingBodyFrame,
                 spacecraft, computePD);
@@ -240,7 +271,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -258,7 +289,8 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        The physical and geometrical spacecraft representation
      */
     public SolarRadiationPressure(final double dRef, final double pRef, final PVCoordinatesProvider sun,
-            final double sunRadiusIn, final double occultingBodyRadius, final RadiationSensitive spacecraft) {
+                                  final double sunRadiusIn, final double occultingBodyRadius,
+                                  final RadiationSensitive spacecraft) {
         this(dRef, pRef, sun, sunRadiusIn, occultingBodyRadius, spacecraft, true);
     }
 
@@ -272,7 +304,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -293,8 +325,9 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final double dRef, final double pRef, final PVCoordinatesProvider sun,
-            final double sunRadiusIn, final double occultingBodyRadius, final RadiationSensitive spacecraft,
-            final boolean computePD) {
+                                  final double sunRadiusIn, final double occultingBodyRadius,
+                                  final RadiationSensitive spacecraft,
+                                  final boolean computePD) {
         this(dRef, pRef, sun, sunRadiusIn, occultingBodyRadius, FramesFactory.getGCRF(), spacecraft, computePD);
     }
 
@@ -308,7 +341,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -331,8 +364,9 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final double dRef, final double pRef, final PVCoordinatesProvider sun,
-            final double sunRadiusIn, final double occultingBodyRadius, final Frame occultingBodyFrame,
-            final RadiationSensitive spacecraft, final boolean computePD) {
+                                  final double sunRadiusIn, final double occultingBodyRadius,
+                                  final CelestialBodyFrame occultingBodyFrame,
+                                  final RadiationSensitive spacecraft, final boolean computePD) {
         this(new Parameter(REFERENCE_FLUX, convertRadiativePressureToFlux(dRef, pRef)), sun, sunRadiusIn,
                 occultingBodyRadius, occultingBodyFrame, spacecraft, computePD);
     }
@@ -342,7 +376,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -356,7 +390,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        The physical and geometrical spacecraft representation
      */
     public SolarRadiationPressure(final Parameter refFluxParam, final PVCoordinatesProvider sun,
-            final double occultingBodyRadius, final RadiationSensitive spacecraft) {
+                                  final double occultingBodyRadius, final RadiationSensitive spacecraft) {
         this(refFluxParam, sun, occultingBodyRadius, spacecraft, true);
     }
 
@@ -365,7 +399,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -382,7 +416,8 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final Parameter refFluxParam, final PVCoordinatesProvider sun,
-            final double occultingBodyRadius, final RadiationSensitive spacecraft, final boolean computePD) {
+                                  final double occultingBodyRadius, final RadiationSensitive spacecraft,
+                                  final boolean computePD) {
         this(refFluxParam, sun, Constants.SUN_RADIUS, occultingBodyRadius, FramesFactory.getGCRF(), spacecraft,
                 computePD);
     }
@@ -392,7 +427,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * <p>
      * Note: this constructor defines a spherical/circular occulting body (see
      * {@link #buildOccultingBodies(double, Frame)}.<br>
-     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lightning ratio} and the
+     * The {@link #getLightningRatio(SpacecraftState, Frame, AbsoluteDate) lighting ratio} and the
      * {@link #getEventsDetectors() events detectors} computation will be optimized.
      * </p>
      *
@@ -413,8 +448,9 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final Parameter refFluxParam, final PVCoordinatesProvider sun,
-            final double sunRadiusIn, final double occultingBodyRadius, final Frame occultingBodyFrame,
-            final RadiationSensitive spacecraft, final boolean computePD) {
+                                  final double sunRadiusIn, final double occultingBodyRadius,
+                                  final CelestialBodyFrame occultingBodyFrame,
+                                  final RadiationSensitive spacecraft, final boolean computePD) {
         this(refFluxParam, sun, sunRadiusIn, buildOccultingBodies(occultingBodyRadius, occultingBodyFrame), spacecraft,
                 computePD);
     }
@@ -437,7 +473,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        The physical and geometrical spacecraft representation
      */
     public SolarRadiationPressure(final PVCoordinatesProvider sunBody, final BodyShape occultingBody,
-            final RadiationSensitive spacecraftModel) {
+                                  final RadiationSensitive spacecraftModel) {
         this(sunBody, occultingBody, spacecraftModel, true);
     }
 
@@ -462,7 +498,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final PVCoordinatesProvider sunBody, final BodyShape occultingBody,
-            final RadiationSensitive spacecraftModel, final boolean computePD) {
+                                  final RadiationSensitive spacecraftModel, final boolean computePD) {
         this(Constants.SEIDELMANN_UA, Constants.CONST_SOL_N_M2, sunBody, Constants.SUN_RADIUS, occultingBody,
                 spacecraftModel, computePD);
     }
@@ -489,7 +525,8 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        The physical and geometrical spacecraft representation
      */
     public SolarRadiationPressure(final double dRef, final double pRef, final PVCoordinatesProvider sunBody,
-            final double sunRadiusIn, final BodyShape occultingBody, final RadiationSensitive spacecraftModel) {
+                                  final double sunRadiusIn, final BodyShape occultingBody,
+                                  final RadiationSensitive spacecraftModel) {
         this(dRef, pRef, sunBody, sunRadiusIn, occultingBody, spacecraftModel, true);
     }
 
@@ -518,8 +555,9 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final double dRef, final double pRef, final PVCoordinatesProvider sunBody,
-            final double sunRadiusIn, final BodyShape occultingBody, final RadiationSensitive spacecraftModel,
-            final boolean computePD) {
+                                  final double sunRadiusIn, final BodyShape occultingBody,
+                                  final RadiationSensitive spacecraftModel,
+                                  final boolean computePD) {
         this(new Parameter(REFERENCE_FLUX, pRef * dRef * dRef), sunBody, sunRadiusIn, occultingBody, spacecraftModel,
                 computePD);
 
@@ -538,7 +576,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        The physical and geometrical spacecraft representation
      */
     public SolarRadiationPressure(final Parameter referenceFlux, final PVCoordinatesProvider sunBody,
-            final BodyShape occultingBody, final RadiationSensitive spacecraftModel) {
+                                  final BodyShape occultingBody, final RadiationSensitive spacecraftModel) {
         this(referenceFlux, sunBody, Constants.SUN_RADIUS, occultingBody, spacecraftModel, true);
     }
 
@@ -560,8 +598,9 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        {@code false} otherwise
      */
     public SolarRadiationPressure(final Parameter referenceFlux, final PVCoordinatesProvider sunBody,
-            final double sunRadiusIn, final BodyShape occultingBody, final RadiationSensitive spacecraftModel,
-            final boolean computePD) {
+                                  final double sunRadiusIn, final BodyShape occultingBody,
+                                  final RadiationSensitive spacecraftModel,
+                                  final boolean computePD) {
         super();
         // Reference flux normalized for a 1m distance (N)
         this.addParameter(referenceFlux);
@@ -570,7 +609,8 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
             this.addJacobiansParameter(spacecraftModel.getJacobianParameters());
         }
         // Enrich the parameters with the force model descriptor
-        ParameterUtils.addFieldToParameters(getParameters(), StandardFieldDescriptors.FORCE_MODEL, this.getClass());
+        ParameterUtils.addFieldToParameters(this.getParameters(), StandardFieldDescriptors.FORCE_MODEL,
+            this.getClass());
 
         // Store the inputs
         this.fluxParam = referenceFlux;
@@ -580,7 +620,6 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
         this.computePartialDerivativesWrtPosition = computePD;
 
         // Initialize the cache values as empty
-        this.cachedSatSunVector = Vector3D.NaN;
         this.cachedPosition = Vector3D.NaN;
         this.cachedDate = AbsoluteDate.PAST_INFINITY;
         this.cachedSatSunVector = Vector3D.NaN;
@@ -609,10 +648,10 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        Multiplicative factor
      */
     public SolarRadiationPressure(final double dRef, final double pRef, final PVCoordinatesProvider sunBody,
-            final double sunRadiusIn, final BodyShape occultingBody, final Assembly assembly,
-            final double multiplicativeFactorIn) {
+                                  final double sunRadiusIn, final BodyShape occultingBody, final Assembly assembly,
+                                  final double multiplicativeFactorIn) {
         this(dRef, pRef, sunBody, sunRadiusIn, occultingBody, spacecraftModelFromAssembly(assembly,
-                multiplicativeFactorIn));
+            multiplicativeFactorIn));
         this.multiplicativeFactor = multiplicativeFactorIn;
     }
 
@@ -628,7 +667,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
         this(otherInstance.getReferenceFlux(), otherInstance.getSunBody(), otherInstance.getOccultingBodies().get(0),
                 spacecraftModelFromAssembly(assembly, otherInstance.getMultiplicativeFactor()));
         for (int i = 1; i < otherInstance.getOccultingBodies().size(); i++) {
-            addOccultingBody(otherInstance.getOccultingBodies().get(i));
+            this.addOccultingBody(otherInstance.getOccultingBodies().get(i));
         }
         this.multiplicativeFactor = otherInstance.getMultiplicativeFactor();
     }
@@ -644,7 +683,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      * @return the {@link DirectRadiativeModel} object
      */
     private static DirectRadiativeModel spacecraftModelFromAssembly(final Assembly assembly,
-            final double multiplicativeFactor) {
+                                                                    final double multiplicativeFactor) {
         return new DirectRadiativeModel(assembly, multiplicativeFactor);
     }
 
@@ -662,7 +701,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
         final AbsoluteDate date = s.getDate();
         final Frame frame = s.getFrame();
         final double r2 = satSunVector.getNormSq();
-        return this.fluxParam.getValue() * getGlobalLightningRatio(satSunVector, s.getOrbit(), frame, date) / r2;
+        return this.fluxParam.getValue() * this.getGlobalLightingRatio(satSunVector, s.getOrbit(), frame, date) / r2;
     }
 
     /**
@@ -701,7 +740,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
     }
 
     /**
-     * Get the global lightning ratio ([0-1]).
+     * Get the global lighting ratio ([0-1]).
      * <p>
      * In case of multiple occulting bodies, the assumption is made that only one body occults the
      * spacecraft at a time.
@@ -715,30 +754,31 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        Frame in which is defined the position
      * @param date
      *        Date
-     * @return lightning ratio
+     * @return lighting ratio
      * @exception PatriusException
      *            if an error occurs
      */
-    private double getGlobalLightningRatio(final Vector3D satSunVector, final PVCoordinatesProvider pv,
-            final Frame frame, final AbsoluteDate date) throws PatriusException {
+    private double getGlobalLightingRatio(final Vector3D satSunVector, final PVCoordinatesProvider pv,
+                                          final Frame frame, final AbsoluteDate date)
+        throws PatriusException {
 
         // Full computation
 
-        double lightningRatio = 1.;
+        double lightingRatio = 1.;
 
-        for (int i = 0; i < this.occultingBodies.size(); i++) {
-            final double result = getLightningRatio(satSunVector, this.occultingBodies.get(i), pv, frame, date);
+        for (final BodyShape shape : this.occultingBodies) {
+            final double result = this.getLightingRatio(satSunVector, shape, pv, frame, date);
 
-            // Update total lightning ratio
+            // Update total lighting ratio
             // Assumption: occulting bodies are not superposed from satellite point of view
-            lightningRatio = MathLib.min(result, lightningRatio);
+            lightingRatio = MathLib.min(result, lightingRatio);
         }
 
-        return lightningRatio;
+        return lightingRatio;
     }
 
     /**
-     * Get the lightning ratio ([0-1]) for provided occulting body.
+     * Get the lighting ratio ([0-1]) for provided occulting body.
      *
      * @param satSunVector
      *        Sat-Sun vector in spacecraft state frame
@@ -750,76 +790,98 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        Frame in which is defined the position
      * @param date
      *        Date
-     * @return lightning ratio
+     * @return lighting ratio
      * @exception PatriusException
      *            if an error occurs
      */
-    public double getLightningRatio(final Vector3D satSunVector, final BodyShape occultingBody,
-            final PVCoordinatesProvider pv, final Frame frame, final AbsoluteDate date) throws PatriusException {
+    public double getLightingRatio(final Vector3D satSunVector, final BodyShape occultingBody,
+                                   final PVCoordinatesProvider pv, final Frame frame, final AbsoluteDate date)
+        throws PatriusException {
 
         if (!this.eclipsesComputationFlag) {
-            // No eclipse computation: lightning ratio is 1
+            // No eclipse computation: lighting ratio is 1
             return 1.;
         }
 
-        // Full computation
+        // Declare the lightning ratio
+        double lightningRatio;
+        // Check the PATRIUS 4.12 compatibility in terms of computation
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS:
+                // Full computation
+                // Get position in occulting body frame
+                final Transform t = frame.getTransformTo(occultingBody.getBodyFrame(), date);
+                final Vector3D posBodyFrame = t.transformPosition(pv.getPVCoordinates(date, frame).getPosition());
+                final Vector3D satSunVectorBodyFrame = t.transformVector(satSunVector);
 
-        // Get position in occulting body frame
-        final Transform t = frame.getTransformTo(occultingBody.getBodyFrame(), date);
-        final Vector3D posBodyFrame = t.transformPosition(pv.getPVCoordinates(date, frame).getPosition());
-        final Vector3D satSunVectorBodyFrame = t.transformVector(satSunVector);
+                // Occulting body apparent radius
+                final double r = posBodyFrame.getNorm();
+                final double occultingRadius = occultingBody.getApparentRadius(pv, date, this.sun,
+                    PropagationDelayType.INSTANTANEOUS);
+                final double value = MathLib.divide(occultingRadius, r);
+                final double alphaOccultingBody = MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, value)));
 
-        // Occulting body apparent radius
-        final double r = posBodyFrame.getNorm();
-        final double occultingRadius = occultingBody.getApparentRadius(pv, date, this.sun,
-                PropagationDelayType.INSTANTANEOUS);
-        final double value = MathLib.divide(occultingRadius, r);
-        final double alphaOccultingBody = MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, value)));
+                // Definition of the Sun's apparent radius
+                final double value2 = MathLib.divide(this.sunRadius, satSunVectorBodyFrame.getNorm());
+                final double alphaSun = MathLib.asin(MathLib.min(1.0, value2));
 
-        // Definition of the Sun's apparent radius
-        final double value2 = MathLib.divide(this.sunRadius, satSunVectorBodyFrame.getNorm());
-        final double alphaSun = MathLib.asin(MathLib.min(1.0, value2));
+                // Sat-occulting body vector
+                final Vector3D satBodyVector = posBodyFrame.negate();
 
-        // Sat-occulting body vector
-        final Vector3D satBodyVector = posBodyFrame.negate();
+                // Retrieve the Sat-Sun / Sat-Central body angle
+                final double sunOccultingBodyAngle = Vector3D.angle(satSunVectorBodyFrame, satBodyVector);
 
-        // Retrieve the Sat-Sun / Sat-Central body angle
-        final double sunOccultingBodyAngle = Vector3D.angle(satSunVectorBodyFrame, satBodyVector);
+                lightningRatio = 1.;
 
-        double lightningRatio = 1.;
+                // Is the satellite in complete umbra ?
+                final double zeroValue = 0.0;
+                if (sunOccultingBodyAngle - alphaOccultingBody + alphaSun <= zeroValue) {
+                    lightningRatio = 0.;
+                } else if (sunOccultingBodyAngle == 0) {
+                    // Satellite behind occulting body and exactly in line with occulted and occulting
+                    // bodies
+                    lightningRatio = 0.;
+                } else if (sunOccultingBodyAngle - alphaOccultingBody - alphaSun < zeroValue) {
+                    // Compute a lightning ratio in penumbra
 
-        // Is the satellite in complete umbra ?
-        if (sunOccultingBodyAngle - alphaOccultingBody + alphaSun <= 0.0) {
-            lightningRatio = 0.;
-        } else if (sunOccultingBodyAngle == 0) {
-            // Satellite behind occulting body and exactly in line with occulted and occulting
-            // bodies
-            lightningRatio = 0.;
-        } else if (sunOccultingBodyAngle - alphaOccultingBody - alphaSun < 0.0) {
-            // Compute a lightning ratio in penumbra
+                    final double sEA2 = sunOccultingBodyAngle * sunOccultingBodyAngle;
+                    final double oo2sEA = MathLib.divide(1.0, 2. * sunOccultingBodyAngle);
+                    final double aS2 = alphaSun * alphaSun;
+                    final double aE2 = alphaOccultingBody * alphaOccultingBody;
+                    final double aE2maS2 = aE2 - aS2;
 
-            final double sEA2 = sunOccultingBodyAngle * sunOccultingBodyAngle;
-            final double oo2sEA = MathLib.divide(1.0, 2. * sunOccultingBodyAngle);
-            final double aS2 = alphaSun * alphaSun;
-            final double aE2 = alphaOccultingBody * alphaOccultingBody;
-            final double aE2maS2 = aE2 - aS2;
+                    final double alpha1 = (sEA2 - aE2maS2) * oo2sEA;
+                    final double alpha2 = (sEA2 + aE2maS2) * oo2sEA;
 
-            final double alpha1 = (sEA2 - aE2maS2) * oo2sEA;
-            final double alpha2 = (sEA2 + aE2maS2) * oo2sEA;
+                    // Protection against numerical inaccuracy at boundaries
+                    final double a1oaS = MathLib.min(1.0, MathLib.max(-1.0, MathLib.divide(alpha1, alphaSun)));
+                    final double aS2ma12 = MathLib.max(0.0, aS2 - alpha1 * alpha1);
+                    final double a2oaE =
+                        MathLib.min(1.0, MathLib.max(-1.0, MathLib.divide(alpha2, alphaOccultingBody)));
+                    final double aE2ma22 = MathLib.max(0.0, aE2 - alpha2 * alpha2);
 
-            // Protection against numerical inaccuracy at boundaries
-            final double a1oaS = MathLib.min(1.0, MathLib.max(-1.0, MathLib.divide(alpha1, alphaSun)));
-            final double aS2ma12 = MathLib.max(0.0, aS2 - alpha1 * alpha1);
-            final double a2oaE = MathLib.min(1.0, MathLib.max(-1.0, MathLib.divide(alpha2, alphaOccultingBody)));
-            final double aE2ma22 = MathLib.max(0.0, aE2 - alpha2 * alpha2);
+                    final double p1 = aS2 * MathLib.acos(a1oaS) - alpha1 * MathLib.sqrt(aS2ma12);
+                    final double p2 = aE2 * MathLib.acos(a2oaE) - alpha2 * MathLib.sqrt(aE2ma22);
 
-            final double p1 = aS2 * MathLib.acos(a1oaS) - alpha1 * MathLib.sqrt(aS2ma12);
-            final double p2 = aE2 * MathLib.acos(a2oaE) - alpha2 * MathLib.sqrt(aE2ma22);
+                    lightningRatio = 1. - MathLib.divide(p1 + p2, FastMath.PI * aS2);
+                }
+                // Return the lightning ratio
+                return lightningRatio;
 
-            lightningRatio = 1. - MathLib.divide(p1 + p2, FastMath.PI * aS2);
+            case NEW_MODELS:
+                // Full computation
+                final LightingRatio lightingRatioComputer = new LightingRatio(occultingBody, this.sun, this.sunRadius);
+                lightingRatioComputer.setPropagationDelayType(this.getPropagationDelayType(), this.getInertialFrame());
+                lightingRatioComputer.setEpsilonSignalPropagation(this.getEpsilonSignalPropagation());
+                lightingRatioComputer.setMaxIterSignalPropagation(this.getMaxIterSignalPropagation());
+                return lightingRatioComputer.compute(pv, date);
+
+            default:
+                throw new IllegalArgumentException(
+                    "Unsupported compatibility mode : " + PatriusConfiguration.getPatriusCompatibilityMode());
         }
 
-        return lightningRatio;
     }
 
     /**
@@ -861,31 +923,24 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
         // List of event detectors
         final List<EventDetector> detectors = new ArrayList<>();
         // Add detectors for each occulting bodies
-        for (int i = 0; i < this.occultingBodies.size(); i++) {
-            EventDetector umbra = null;
-            EventDetector penumbra = null;
-            final BodyShape occultingBody = this.occultingBodies.get(i);
+        for (final BodyShape occultingBody : this.occultingBodies) {
 
-            umbra = new EclipseDetector(this.sun, this.sunRadius, occultingBody, 0., MAX_CHECK, THRESHOLD){
-                /** Serializable UID. */
-                private static final long serialVersionUID = 1190059096406524800L;
+            // Umbra
+            final EclipseDetector umbra = new EclipseDetector(this.sun, this.sunRadius, occultingBody, 0., MAX_CHECK,
+                THRESHOLD, Action.RESET_DERIVATIVES, Action.RESET_DERIVATIVES);
+            // Penumbra
+            final EclipseDetector penumbra = new EclipseDetector(this.sun, this.sunRadius, occultingBody, 1.,
+                MAX_CHECK, THRESHOLD, Action.RESET_DERIVATIVES, Action.RESET_DERIVATIVES);
 
-                /** {@inheritDoc} */
-                @Override
-                public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
-                    return Action.RESET_DERIVATIVES;
-                }
-            };
-            penumbra = new EclipseDetector(this.sun, this.sunRadius, occultingBody, 1., MAX_CHECK, THRESHOLD){
-                /** Serializable UID. */
-                private static final long serialVersionUID = 7357417667871064338L;
+            // Parameterize signal propagation computation
+            umbra.setPropagationDelayType(this.getPropagationDelayType(), this.getInertialFrame());
+            umbra.setEpsilonSignalPropagation(this.getEpsilonSignalPropagation());
+            umbra.setMaxIterSignalPropagation(this.getMaxIterSignalPropagation());
+            penumbra.setPropagationDelayType(this.getPropagationDelayType(), this.getInertialFrame());
+            penumbra.setEpsilonSignalPropagation(this.getEpsilonSignalPropagation());
+            penumbra.setMaxIterSignalPropagation(this.getMaxIterSignalPropagation());
 
-                /** {@inheritDoc} */
-                @Override
-                public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
-                    return Action.RESET_DERIVATIVES;
-                }
-            };
+            // Add detectors
             detectors.add(umbra);
             detectors.add(penumbra);
         }
@@ -896,7 +951,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
     /** {@inheritDoc} */
     @Override
     public void addDAccDState(final SpacecraftState s, final double[][] dAccdPos, final double[][] dAccdVel)
-            throws PatriusException {
+        throws PatriusException {
 
         if (this.computeGradientPosition()) {
             // containers
@@ -910,7 +965,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
             this.spacecraft.addDSRPAccDState(s, dAccdPosModel, dAccdVelModel, satSunVector);
 
             // multiplication factor
-            final double cAlpha = getGlobalLightningRatio(satSunVector, s.getOrbit(), s.getFrame(), s.getDate());
+            final double cAlpha = this.getGlobalLightingRatio(satSunVector, s.getOrbit(), s.getFrame(), s.getDate());
 
             final double a = MathLib.divide(this.fluxParam.getValue() * cAlpha, satSunVector.getNormSq());
 
@@ -930,7 +985,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
     /** {@inheritDoc} */
     @Override
     public void addDAccDParam(final SpacecraftState s, final Parameter param, final double[] dAccdParam)
-            throws PatriusException {
+        throws PatriusException {
 
         // parameter
         if (!this.supportsJacobianParameter(param)) {
@@ -945,7 +1000,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
         this.spacecraft.addDSRPAccDParam(s, param, dAccdParamModel, satSunVector);
 
         // coefficient
-        final double cAlpha = getGlobalLightningRatio(satSunVector, s.getOrbit(), s.getFrame(), s.getDate());
+        final double cAlpha = this.getGlobalLightingRatio(satSunVector, s.getOrbit(), s.getFrame(), s.getDate());
 
         final double a = MathLib.divide(this.fluxParam.getValue() * cAlpha, satSunVector.getNormSq());
 
@@ -1047,12 +1102,14 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      *        Occulting body-centered frame
      * @return the occulting body
      */
-    private static BodyShape buildOccultingBodies(final double occultingBodyRadius, final Frame occultingBodyFrame) {
+    private static BodyShape buildOccultingBodies(final double occultingBodyRadius,
+                                                  final CelestialBodyFrame occultingBodyFrame) {
         return new OneAxisEllipsoid(occultingBodyRadius, 0., occultingBodyFrame, "CircularBody");
     }
 
     /**
      * Get the solar flux (SF) from the solar radiation pressure: SF = pRef * dRef<sup>2</sup>
+     *
      * @param dRef Reference distance for the solar radiation pressure (m)
      * @param pRef solar radiation pressure at reference distance dRef (N/m<sup>2</sup>)
      *
@@ -1060,5 +1117,88 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
      */
     public static double convertRadiativePressureToFlux(final double dRef, final double pRef) {
         return pRef * dRef * dRef;
+    }
+
+    /**
+     * Getter for the propagation delay type.
+     * 
+     * @return the propagation delay type
+     */
+    public PropagationDelayType getPropagationDelayType() {
+        return this.propagationDelayType;
+    }
+
+    /**
+     * Setter for the propagation delay computation type. Warning: check Javadoc of detector to see if detector takes
+     * into account propagation time delay. if not, signals are always considered instantaneous. The provided frame is
+     * used to compute the signal propagation when delay is taken into account.
+     * 
+     * @param propagationDelayTypeIn
+     *        Propagation delay type used in events computation
+     * @param frameIn
+     *        Frame to use for signal propagation with delay (may be null if propagation delay type is
+     *        considered instantaneous). Warning: the usage of a pseudo inertial frame is tolerated, however it will
+     *        lead to some inaccuracies due to the non-invariance of the frame with respect to time. For this reason,
+     *        it is suggested to use the ICRF frame or a frame which is frozen with respect to the ICRF.
+     * @throws IllegalArgumentException
+     *         if the provided frame is not pseudo inertial.
+     */
+    public void setPropagationDelayType(final PropagationDelayType propagationDelayTypeIn,
+                                        final Frame frameIn) {
+        // check whether the provided frame is pseudo inertial or not
+        if (frameIn != null && !frameIn.isPseudoInertial()) {
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.PDB_NOT_INERTIAL_FRAME, frameIn);
+        }
+        this.propagationDelayType = propagationDelayTypeIn;
+        this.inertialFrame = frameIn;
+    }
+
+    /**
+     * Getter for the inertial frame used for signal propagation computation.
+     * 
+     * @return the inertial frame
+     */
+    public Frame getInertialFrame() {
+        return this.inertialFrame;
+    }
+
+    /**
+     * Getter for the epsilon for signal propagation when signal propagation is taken into account.
+     * 
+     * @return the epsilon for signal propagation when signal propagation is taken into account
+     */
+    public double getEpsilonSignalPropagation() {
+        return this.epsSignalPropagation;
+    }
+
+    /**
+     * Setter for the epsilon for signal propagation when signal propagation is taken into account.<br>
+     * This epsilon (in s) directly reflect the accuracy of signal propagation (1s of accuracy = 3E8m of accuracy on
+     * distance between emitter and receiver)
+     * 
+     * @param epsilon
+     *        Epsilon for the signal propagation
+     */
+    public void setEpsilonSignalPropagation(final double epsilon) {
+        this.epsSignalPropagation = epsilon;
+    }
+
+    /**
+     * Getter for the maximum number of iterations for signal propagation when signal propagation is taken into account.
+     * 
+     * @return the maximum number of iterations for signal propagation
+     */
+    public int getMaxIterSignalPropagation() {
+        return this.maxIterSignalPropagation;
+    }
+
+    /**
+     * Setter for the maximum number of iterations for signal propagation when signal propagation is taken into account.
+     * 
+     * @param maxIterSignalPropagationIn
+     *        Maximum number of iterations for signal propagation
+     */
+    public void setMaxIterSignalPropagation(final int maxIterSignalPropagationIn) {
+        this.maxIterSignalPropagation = maxIterSignalPropagationIn;
     }
 }

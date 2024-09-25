@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
  * VERSION:4.11:DM:DM-3217:22/05/2023:[PATRIUS] Modeles broadcast et almanach GNSS
@@ -35,6 +36,8 @@ package fr.cnes.sirius.patrius.forces.maneuvers;
 import fr.cnes.sirius.patrius.assembly.properties.PropulsiveProperty;
 import fr.cnes.sirius.patrius.assembly.properties.TankProperty;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -45,8 +48,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -60,13 +61,13 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
  * {@link fr.cnes.sirius.patrius.propagation.Propagator Propagator}.
  * </p>
  * <p>
- * The impulse maneuver is associated to a triggering {@link fr.cnes.sirius.patrius.propagation.events.EventDetector
+ * The impulse maneuver is associated to a triggering {@link fr.cnes.sirius.patrius.events.EventDetector
  * EventDetector}: the maneuver is triggered <b>only if</b> the underlying event generates a
- * {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP STOP} event, in which case this class will
- * generate a {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#RESET_STATE RESET_STATE} event (the
+ * {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP STOP} event, in which case this class will
+ * generate a {@link fr.cnes.sirius.patrius.events.EventDetector.Action#RESET_STATE RESET_STATE} event (the
  * stop event from the underlying object is therefore filtered out). In the simple cases, the underlying event detector
- * may be a basic {@link fr.cnes.sirius.patrius.propagation.events.DateDetector date event}, but it can also be a more
- * elaborate {@link fr.cnes.sirius.patrius.propagation.events.ApsideDetector apside event} for apogee maneuvers for
+ * may be a basic {@link fr.cnes.sirius.patrius.events.detectors.DateDetector date event}, but it can also be a more
+ * elaborate {@link fr.cnes.sirius.patrius.events.detectors.ApsideDetector apside event} for apogee maneuvers for
  * example.
  * </p>
  * <p>

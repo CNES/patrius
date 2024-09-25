@@ -18,6 +18,10 @@
  * @history 30/09/2015
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-199:17/01/2024:[PATRIUS] Utilisation du dernier point utilisable dans EphemerisPvHermite
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -64,6 +68,7 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.EphemerisPvHermite;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.EphemerisPvLagrange;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
@@ -623,7 +628,7 @@ public class EphemerisPvHermiteTest {
         }
 
         // Test getNativeFrame
-        Assert.assertEquals(ephPvHermite.getFrame(), ephPvHermite.getNativeFrame(null, null));
+        Assert.assertEquals(ephPvHermite.getFrame(), ephPvHermite.getNativeFrame(null));
     }
 
     /**
@@ -752,6 +757,92 @@ public class EphemerisPvHermiteTest {
     }
 
     /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#INTERPOLATION}
+     * 
+     * @testedMethod {@link EphemerisPvHermite#EphemerisPvHermite(SpacecraftState[], Vector3D[], fr.cnes.sirius.patrius.math.utils.ISearchIndex)}
+     * @testedMethod {@link EphemerisPvHermite#getPVCoordinates(AbsoluteDate, Frame)}
+     * 
+     * @description Test of the interpolation with a very long ephemeris (10 years)
+     * 
+     * @input SpacecraftState[] tabSpacecraftStates computed in setup
+     * @input Vector3D[] tabAcc = null
+     * @input ISearchIndex algo = null
+     * @input AbsoluteDate interpolationDate = First spacecraft state date + 510 s + 1e-8 s.
+     * @input Frame frame = null : Frame by default
+     * 
+     * @output Two EphemerisPvHermite (one with a short ephemeris and one with a 10 years
+     *         ephemeris).
+     * @output Three PVcoordinates (interpolation at the same date from each one).
+     * 
+     * @testPassCriteria class instantiation without exception.
+     * @testPassCriteria Distance between position from each interpolation is 0.
+     * @testPassCriteria Distance between velocity from each interpolation is 0.
+     * 
+     * @throws PatriusException
+     *         should not happen
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testEphemerisPvHermiteNumericalPrecision() throws PatriusException {
+        // initial orbit : date = 01/01/2005 00:00:00.000 in TAI, a = 1.5 UA, e = 0.001, i = 40
+        // deg, po = 10 deg, go
+        // = 15 deg, M = 20 deg in GCRF
+        final AbsoluteDate date = new AbsoluteDate(2005, 1, 1, TimeScalesFactory.getTAI());
+        final double a = 75e9; // 1.5 UA
+        final Orbit initialOrbit = new KeplerianOrbit(a, 0.5, MathLib.toRadians(40),
+                MathLib.toRadians(10), MathLib.toRadians(15), MathLib.toRadians(20),
+                PositionAngle.MEAN, frame, date, mu);
+
+        final SpacecraftState[] shortTabSpacecraftStates = new SpacecraftState[16];
+        final SpacecraftState[] longTabSpacecraftStates = new SpacecraftState[17];
+
+        final KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+        AbsoluteDate currentDate = initialOrbit.getDate();
+
+        // Create a spacecraft state 10 years in the past for the long ephemeris
+        longTabSpacecraftStates[0] =
+                propagator.getSpacecraftState(initialOrbit.getDate().shiftedBy(-10 * 365 * 86400));
+
+        for (int i = 0; i < shortTabSpacecraftStates.length; i++) {
+            final SpacecraftState spacecraftState = propagator.getSpacecraftState(currentDate);
+            shortTabSpacecraftStates[i] = spacecraftState;
+            longTabSpacecraftStates[i + 1] = spacecraftState;
+            currentDate = currentDate.shiftedBy(STEP);
+        }
+
+        // EphemerisPvLagrange instantiation from spacecraft states table computed in setup
+        final EphemerisPvHermite shortEphem =
+                new EphemerisPvHermite(shortTabSpacecraftStates, null, null);
+        final EphemerisPvHermite longEphem =
+                new EphemerisPvHermite(longTabSpacecraftStates, null, null);
+
+        // Test if the interpolation from each one to the same date give the same result.
+        // The date is shifted by 8.5 steps plus a small epsilon,, so that the epsilon is lost if
+        // the interpolation in done incorrectly in the long ephemeris.
+        final double shift = 8.5 * STEP;
+        final double shiftEps = 1e-8;
+        final PVCoordinates shortEphemPV =
+                shortEphem.getPVCoordinates(date.shiftedBy(shift + shiftEps), null);
+        final PVCoordinates longEphemPV =
+                longEphem.getPVCoordinates(date.shiftedBy(shift + shiftEps), null);
+
+        // the distance between each position should be 0
+        final double distPos =
+                Vector3D.distance(shortEphemPV.getPosition(), longEphemPV.getPosition());
+        Assert.assertEquals(0., distPos, 0);
+
+        // the distance between each velocity should be 0
+        final double distVel =
+                Vector3D.distance(shortEphemPV.getVelocity(), longEphemPV.getVelocity());
+        Assert.assertEquals(0., distVel, 0);
+    }
+
+    /**
      * @throws PatriusException
      *         if date of interpolation is too near from min and max input dates compare to Lagrange
      *         order
@@ -779,7 +870,7 @@ public class EphemerisPvHermiteTest {
                 searchIndex);
         final EphemerisPvHermite deserializedEphem = TestUtils.serializeAndRecover(ephem);
 
-        for (int i = 3; i < interval.getDuration() / STEP - 3; i++) {
+        for (int i = 0; i < interval.getDuration() / STEP; i++) {
             final AbsoluteDate date = interval.getLowerData().shiftedBy(i * STEP);
             Assert.assertEquals(ephem.getPVCoordinates(date, frame),
                     deserializedEphem.getPVCoordinates(date, frame));

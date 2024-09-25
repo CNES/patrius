@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -24,7 +26,7 @@ package fr.cnes.sirius.patrius.utils;
 /**
  * Utility class for setting global configuration parameters.
  * 
- * @author Luc Maisonobe
+ * @author Luc Maisonobe, amouroum
  */
 public final class PatriusConfiguration {
 
@@ -33,6 +35,26 @@ public final class PatriusConfiguration {
 
     /** Default cache slot number. */
     private static final int DEFAULT_CACHE_SLOT_NUMBER = 100;
+
+    /** Enumeration for different patrius configuration for backward compatibility. */
+    public static enum PatriusVersionCompatibility {
+        /** Uses exclusively algorithms from version 4.12 of Patrius. */
+        OLD_MODELS,
+
+        /**
+         * Uses algorithms from version 4.12 of Patrius, except for AbstractBodyAttraction methods. Used for SIRIUS
+         * users.
+         */
+        MIXED_MODELS,
+
+        /** Uses exclusively algorithms from the last version of Patrius. This is the default setting. */
+        NEW_MODELS
+    }
+
+    /**
+     * Flag to indicate the compatibility mode of Patrius. See {@link PatriusVersionCompatibility} for more information.
+     */
+    private static PatriusVersionCompatibility patriusCompatibilityMode = PatriusVersionCompatibility.OLD_MODELS;
 
     static {
         cacheSlotNumber = DEFAULT_CACHE_SLOT_NUMBER;
@@ -55,7 +77,7 @@ public final class PatriusConfiguration {
      *        number of slots to use in caches
      */
     public static void setCacheSlotsNumber(final int slotsNumber) {
-        PatriusConfiguration.cacheSlotNumber = slotsNumber;
+        cacheSlotNumber = slotsNumber;
     }
 
     /**
@@ -65,6 +87,21 @@ public final class PatriusConfiguration {
      */
     public static int getCacheSlotsNumber() {
         return cacheSlotNumber;
+    }
+
+    /**
+     * @return the patrius412Compatible
+     */
+    public static PatriusVersionCompatibility getPatriusCompatibilityMode() {
+        return patriusCompatibilityMode;
+    }
+
+    /**
+     * @param patriusCompatibilityModel
+     *        the Patrius compatibility mode to set
+     */
+    public static void setPatriusCompatibilityMode(final PatriusVersionCompatibility patriusCompatibilityMode) {
+        PatriusConfiguration.patriusCompatibilityMode = patriusCompatibilityMode;
     }
 
 }

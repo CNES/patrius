@@ -18,6 +18,7 @@
  * @history creation 03/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-99:08/12/2023:[PATRIUS] Ajout du repere de calcul dans MomentumDirection
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -35,6 +36,7 @@ import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.MomentumDirection;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -82,14 +84,14 @@ public class SunPointing extends TwoDirectionAttitudeLaw {
      * Sun is defined by {@link CelestialBodyFactory#getSun()} (JPL ephemeris model).
      * </p>
      * 
-     * @param body : celestial body associated to the satellite orbit.
+     * @param bodyFrame : celestial body frame associated to the satellite orbit.
      * @param firstAxis : satellite axis aligned with the first direction.
      * @param secondAxis : satellite axis aligned at best with the second direction.
      * @throws PatriusException if the sun cannot be built
      */
-    public SunPointing(final CelestialBody body, final Vector3D firstAxis, final Vector3D secondAxis)
+    public SunPointing(final CelestialBodyFrame bodyFrame, final Vector3D firstAxis, final Vector3D secondAxis)
         throws PatriusException {
-        this(body, firstAxis, secondAxis, CelestialBodyFactory.getSun());
+        this(bodyFrame, firstAxis, secondAxis, CelestialBodyFactory.getSun());
     }
 
     /**
@@ -111,14 +113,16 @@ public class SunPointing extends TwoDirectionAttitudeLaw {
      * Constructor of the sun pointing attitude law. The first direction is the sun-satellite
      * direction, the second direction is the normal to the satellite orbit.
      * 
-     * @param body celestial body associated to the satellite orbit.
+     * @param bodyFrame celestial body frame associated to the satellite orbit.
      * @param firstAxis satellite axis aligned with the first direction.
      * @param secondAxis satellite axis aligned at best with the second direction.
      * @param sun sun
+     * @throws PatriusException thrown if body inertial frame cannot be built
      */
-    public SunPointing(final CelestialBody body, final Vector3D firstAxis,
-        final Vector3D secondAxis, final CelestialBody sun) {
-        super(new GenericTargetDirection(sun), new MomentumDirection(body), firstAxis, secondAxis);
+    public SunPointing(final CelestialBodyFrame bodyFrame, final Vector3D firstAxis,
+        final Vector3D secondAxis, final CelestialBody sun) throws PatriusException {
+        super(new GenericTargetDirection(sun), new MomentumDirection(bodyFrame),
+                firstAxis, secondAxis);
     }
 
     /** {@inheritDoc} */

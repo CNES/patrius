@@ -122,7 +122,7 @@ public class SynodicFrameTest {
         Assert.assertEquals(velocity.getX(), 0.0, Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(velocity.getY(), 0.0, Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(velocity.getZ(), 0.0, Precision.DOUBLE_COMPARISON_EPSILON);
-        Assert.assertNull(acceleration);
+        Assert.assertEquals(Vector3D.ZERO, acceleration);
         final Transform t2 = frame2.getTransformTo(lof, date);
         Assert.assertTrue(t2.getRotation().isIdentity());
         Assert.assertTrue(t2.getRotationRate().isZero());

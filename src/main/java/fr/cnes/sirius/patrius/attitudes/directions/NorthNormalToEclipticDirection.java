@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes façade ALGO DV SIRUS 
  * VERSION:4.11:FA:FA-3320:22/05/2023:[PATRIUS] Mauvaise implementation de la methode hashCode de Vector3D
@@ -15,9 +16,11 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.attitudes.directions;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -33,7 +36,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  *
- * Direction towards normal of ecliptic plane as computed in GCRF
+ * Direction towards normal of ecliptic plane as computed in GCRF.
  *
  * @concurrency immutable
  *
@@ -47,18 +50,18 @@ public class NorthNormalToEclipticDirection implements IDirection {
     /** Earth center frame: GCRF. */
     private static final Frame EARTH_FRAME = FramesFactory.getGCRF();
 
-    /** Celestial body for the SUN. */
-    private final CelestialBody sunBody;
+    /** The Sun. */
+    private final CelestialPoint sun;
 
     /**
-     * Constructor for celestial body center direction from Earth center : the celestial body's center is the target
+     * Constructor for celestial object center direction from Earth center : the celestial object center is the target
      * point.
      *
      * @param sun
-     *            the Sun celestial body
+     *            the Sun
      */
-    public NorthNormalToEclipticDirection(final CelestialBody sun) {
-        this.sunBody = sun;
+    public NorthNormalToEclipticDirection(final CelestialPoint sun) {
+        this.sun = sun;
     }
 
     /**
@@ -72,7 +75,7 @@ public class NorthNormalToEclipticDirection implements IDirection {
      */
     private final Vector3D computeDirNormalToEcliptic(final AbsoluteDate date) throws PatriusException {
         // get Sun PV as seen from Earth
-        final PVCoordinates sunPV = sunBody.getPVCoordinates(date, EARTH_FRAME);
+        final PVCoordinates sunPV = sun.getPVCoordinates(date, EARTH_FRAME);
 
         // normal to Ecliptic in North sense (orbital momentum)
         final Vector3D normalToEcliptic;
@@ -81,8 +84,8 @@ public class NorthNormalToEclipticDirection implements IDirection {
                 && MathLib.abs(sunVelocity.getY()) <= Precision.DOUBLE_COMPARISON_EPSILON
                 && MathLib.abs(sunVelocity.getZ()) <= Precision.DOUBLE_COMPARISON_EPSILON) {
             // finite differences O(2) with a eps of 32 seconds
-            final PVCoordinates sunPosPrev = sunBody.getPVCoordinates(date.shiftedBy(-32.), EARTH_FRAME);
-            final PVCoordinates sunPosNext = sunBody.getPVCoordinates(date.shiftedBy(32.), EARTH_FRAME);
+            final PVCoordinates sunPosPrev = sun.getPVCoordinates(date.shiftedBy(-32.), EARTH_FRAME);
+            final PVCoordinates sunPosNext = sun.getPVCoordinates(date.shiftedBy(32.), EARTH_FRAME);
             final Vector3D velocity =
                 sunPosNext.getPosition().subtract(sunPosPrev.getPosition()).scalarMultiply(1. / 64.);
             normalToEcliptic = Vector3D.crossProduct(sunPV.getPosition(), velocity);

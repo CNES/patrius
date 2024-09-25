@@ -18,6 +18,7 @@
  * @history Created 27/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:FA:FA-3320:22/05/2023:[PATRIUS] Mauvaise implementation de la methode hashCode de Vector3D
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -2197,16 +2198,11 @@ public class AeroModelTest {
 
     }
 
-    /**
-     * General set up method.
-     * 
-     * @throws PatriusException
-     *         if an Orekit error occurs
-     */
+    /** General set up method. */
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         // Orekit data initialization
-        fr.cnes.sirius.patrius.Utils.setDataRoot("regular-dataPBASE");
+        Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }
 }

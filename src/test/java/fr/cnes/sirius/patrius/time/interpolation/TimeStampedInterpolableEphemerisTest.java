@@ -1,13 +1,22 @@
 /**
+ * Copyright 2011-2022 CNES
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *
  * HISTORY
- * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * END-HISTORY
- */
-/*
- */
-/*
- */
-/*
  */
 package fr.cnes.sirius.patrius.time.interpolation;
 
@@ -41,9 +50,6 @@ public class TimeStampedInterpolableEphemerisTest {
 
     /** Initialized samples. */
     private static AbsoluteDate[] samples;
-
-    // TODO discuter de l'ajout d'un test multi-thread (le interpolation function builder risque de ne pas bien
-    // fonctionner en multi)
 
     /**
      * @description Builds a new instance and tests the basic getters.
@@ -153,6 +159,70 @@ public class TimeStampedInterpolableEphemerisTest {
 
         evaluateInterpolateExactMatch(SearchMethod.PROPORTIONAL, 4, expectedIndexInfSup4);
         evaluateInterpolateExactMatch(SearchMethod.DICHOTOMY, 4, expectedIndexInfSup4);
+    }
+
+    @Test
+    public void testExtendInterpolableEphemeris() {
+
+        // Parameters
+        TimeStampedInterpolableEphemeris<AbsoluteDate, AbsoluteDate> interpolableEphem;
+        TimeStampedInterpolableEphemeris<AbsoluteDate, AbsoluteDate> extendInterpolableEphem;
+        AbsoluteDate[] newSamples;
+        final int newSize = 5;
+
+        // #1: Extend the interpolable ephemeris with the new samples on the left
+        newSamples = new AbsoluteDate[newSize];
+        for (int i = 0; i < newSize; i++) {
+            newSamples[i] = AbsoluteDate.J2000_EPOCH.shiftedBy(2 * i - 50); // New samples strictly before the samples
+        }
+        interpolableEphem = new TimeStampedInterpolableEphemeris<>(samples, 4, simpleBuilder, true);
+        extendInterpolableEphem = interpolableEphem.extendInterpolableEphemeris(newSamples, false, false);
+
+        Assert.assertEquals(interpolableEphem.getSampleSize() + newSize, extendInterpolableEphem.getSampleSize());
+
+        // #1bis: Try to extend the interpolable ephemeris on the right with the new samples strictly defined on the
+        // left (should fail)
+        try {
+            interpolableEphem.extendInterpolableEphemeris(newSamples, true, false);
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // #2: Extend the interpolable ephemeris with the new samples on the right
+        newSamples = new AbsoluteDate[newSize];
+        for (int i = 0; i < newSize; i++) {
+            newSamples[i] = AbsoluteDate.J2000_EPOCH.shiftedBy(2 * i + 1000); // New samples strictly after the samples
+        }
+        interpolableEphem = new TimeStampedInterpolableEphemeris<>(samples, 4, simpleBuilder, false); // For coverage
+        extendInterpolableEphem = interpolableEphem.extendInterpolableEphemeris(newSamples, true, true);
+
+        Assert.assertEquals(interpolableEphem.getSampleSize() + newSize, extendInterpolableEphem.getSampleSize());
+
+        // #2bis: Try to extend the interpolable ephemeris on the left with the new samples strictly defined on the
+        // right (should fail)
+        try {
+            interpolableEphem.extendInterpolableEphemeris(newSamples, false, false);
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
+
+        // #3: Try to extend the interpolable ephemeris with non-sorted new samples and the verification (should fail)
+        newSamples = new AbsoluteDate[newSize];
+        newSamples[0] = AbsoluteDate.J2000_EPOCH.shiftedBy(10);
+        for (int i = 1; i < newSize; i++) {
+            newSamples[i] = AbsoluteDate.J2000_EPOCH.shiftedBy(2 * i); // New samples strictly after the samples
+        }
+        try {
+            interpolableEphem.extendInterpolableEphemeris(newSamples, true, true);
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            // expected
+            Assert.assertTrue(true);
+        }
     }
 
     /**
@@ -455,6 +525,16 @@ public class TimeStampedInterpolableEphemerisTest {
         Assert.assertEquals(interpolableEphem.getCacheReusabilityRatio(),
             deserializedInterpolableEphem.getCacheReusabilityRatio(), 0.);
         simpleBuilder.clear(); // Reset the builder
+    }
+
+    @Test
+    public void testToString() {
+        final TimeStampedInterpolableEphemeris<AbsoluteDate, AbsoluteDate> interpolableEphem =
+            new TimeStampedInterpolableEphemeris<>(samples, 4, simpleBuilder, true, false, false, 7);
+
+        final String expectedTxt = "TimeStampedInterpolableEphemeris{firstUsableDate=2000-01-01T11:59:27.816, "
+                + "lastUsableDate=2000-01-01T12:08:27.816, interpolationOrder=4, nbSamples=10}";
+        Assert.assertEquals(expectedTxt, interpolableEphem.toString());
     }
 
     /**

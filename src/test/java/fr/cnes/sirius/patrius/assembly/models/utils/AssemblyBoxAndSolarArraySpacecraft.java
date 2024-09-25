@@ -18,6 +18,7 @@
  * @history creation 21/05/2012
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2499:27/01/2021:[PATRIUS] Anomalie dans la gestion des panneaux solaires de la classe Vehicle 
@@ -146,13 +147,11 @@ public class AssemblyBoxAndSolarArraySpacecraft implements DragSensitive, Radiat
      *        (used only for radiation pressure
      * @throws PatriusException
      */
-    public AssemblyBoxAndSolarArraySpacecraft(final double xLength, final double yLength,
-        final double zLength, final PVCoordinatesProvider sun,
-        final double solarArrayArea,
-        final Vector3D solarArrayAxis,
-        final double dragCoeff, final double absorptionCoeff,
-        final double specularReflectionCoeff,
-        final double diffuseReflectionCoeff) throws PatriusException {
+    public AssemblyBoxAndSolarArraySpacecraft(final double xLength, final double yLength, final double zLength,
+                                              final PVCoordinatesProvider sun, final double solarArrayArea,
+                                              final Vector3D solarArrayAxis, final double dragCoeff,
+                                              final double absorptionCoeff, final double specularReflectionCoeff,
+                                              final double diffuseReflectionCoeff) throws PatriusException {
         this.dragCoefficient = dragCoeff;
         this.saZ = solarArrayAxis;
         this.inSolarArrayArea = solarArrayArea;
@@ -178,10 +177,8 @@ public class AssemblyBoxAndSolarArraySpacecraft implements DragSensitive, Radiat
      * @return the built assembly
      * @throws PatriusException
      */
-    private Assembly buildAssembly(final double xLength, final double yLength,
-                                   final double zLength,
-                                   final double solarArrayArea,
-                                   final Vector3D solarArrayAxis) throws PatriusException {
+    private Assembly buildAssembly(final double xLength, final double yLength, final double zLength,
+                                   final double solarArrayArea, final Vector3D solarArrayAxis) throws PatriusException {
         final AssemblyBuilder abul = new AssemblyBuilder();
 
         // facets
@@ -260,15 +257,13 @@ public class AssemblyBoxAndSolarArraySpacecraft implements DragSensitive, Radiat
      * @param state
      *        current state information: date, kinematics, attitude
      * @exception PatriusException
-     *            if sun direction cannot be computed in best lightning
-     *            configuration
+     *            if sun direction cannot be computed in best lighting configuration
      */
-    private void updateSolarPanel(final SpacecraftState state)
-                                                              throws PatriusException {
+    private void updateSolarPanel(final SpacecraftState state) throws PatriusException {
 
         final AbsoluteDate date = state.getDate();
 
-        // compute orientation for best lightning
+        // compute orientation for best lighting
         final Frame frame = state.getFrame();
         final Vector3D sunInert = this.inSun.getPVCoordinates(date, frame).getPosition().normalize();
         final Vector3D sunSpacecraft = state.getAttitude().getRotation().applyInverseTo(sunInert);
@@ -297,8 +292,7 @@ public class AssemblyBoxAndSolarArraySpacecraft implements DragSensitive, Radiat
 
     @Override
     public Vector3D dragAcceleration(final SpacecraftState state, final double density,
-                                     final Vector3D relativeVelocity)
-                                                                     throws PatriusException {
+                                     final Vector3D relativeVelocity) throws PatriusException {
         this.updateSolarPanel(state);
 
         // Update the assembly mass with the state's mass
@@ -314,24 +308,21 @@ public class AssemblyBoxAndSolarArraySpacecraft implements DragSensitive, Radiat
 
     @Override
     public void addDDragAccDParam(final SpacecraftState s, final Parameter param, final double density,
-                                  final Vector3D relativeVelocity, final double[] dAccdParam)
-                                                                                             throws PatriusException {
+                                  final Vector3D relativeVelocity, final double[] dAccdParam) throws PatriusException {
         // does nothing
     }
 
     @Override
     public void addDDragAccDState(final SpacecraftState s, final double[][] dAccdPos, final double[][] dAccdVel,
-                                  final double density,
-                                  final Vector3D acceleration, final Vector3D relativeVelocity,
-                                  final boolean computeGradientPosition,
-                                  final boolean computeGradientVelocity) throws PatriusException {
+                                  final double density, final Vector3D acceleration, final Vector3D relativeVelocity,
+                                  final boolean computeGradientPosition, final boolean computeGradientVelocity)
+        throws PatriusException {
         // does nothing
     }
 
     @Override
-    public Vector3D
-            radiationPressureAcceleration(final SpacecraftState state, final Vector3D flux)
-                                                                                           throws PatriusException {
+    public Vector3D radiationPressureAcceleration(final SpacecraftState state, final Vector3D flux)
+        throws PatriusException {
         this.updateSolarPanel(state);
 
         // Update the assembly mass with the state's mass
@@ -347,8 +338,7 @@ public class AssemblyBoxAndSolarArraySpacecraft implements DragSensitive, Radiat
 
     @Override
     public void addDSRPAccDParam(final SpacecraftState s, final Parameter param, final double[] dAccdParam,
-                                 final Vector3D satSunVector)
-                                                             throws PatriusException {
+                                 final Vector3D satSunVector) throws PatriusException {
         // does nothing
     }
 

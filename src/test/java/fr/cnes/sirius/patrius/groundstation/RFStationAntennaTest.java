@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -103,7 +105,7 @@ public class RFStationAntennaTest {
         Assert.assertEquals(0., station.getCombinerLoss(), 0.0);
 
         // Test getNativeFrame
-        Assert.assertEquals(station.getFrame(), station.getNativeFrame(null, null));
+        Assert.assertEquals(station.getFrame(), station.getNativeFrame(null));
     }
 
     /**

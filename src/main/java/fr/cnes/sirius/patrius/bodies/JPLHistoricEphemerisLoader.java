@@ -14,6 +14,11 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.10.1:FA:FA-3267:02/12/2022:[PATRIUS] Anomalie dans gestion acceleration null du PVCoordinates (suite)
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -57,7 +62,7 @@ import fr.cnes.sirius.patrius.utils.exception.TimeStampedCacheException;
 
 /**
  * Loader for JPL ephemerides binary files (DE 4xx) and similar formats (INPOP 06/08/10).
- * It loads only the {@link CelestialBodyEphemeris}. For {@link CelestialBody} loader,
+ * It loads only the {@link CelestialBodyEphemeris}. For {@link CelestialPoint} loader,
  * see dedicated class.
  * <p>
  * JPL ephemerides binary files contain ephemerides for all solar system planets.
@@ -99,7 +104,7 @@ import fr.cnes.sirius.patrius.utils.exception.TimeStampedCacheException;
  * @since 4.10
  */
 public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
-    
+
     /** Default supported files name pattern for JPL DE files. */
     public static final String DEFAULT_DE_SUPPORTED_NAMES = "^[lu]nx[mp](\\d\\d\\d\\d)\\.(?:4\\d\\d)$";
 
@@ -266,13 +271,11 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
      *        regular expression for supported files names
      * @param generateTypeIn
      *        ephemeris type to generate
-     * @exception PatriusException
-     *            if the header constants cannot be read
      */
     public JPLHistoricEphemerisLoader(final String supportedNamesIn,
-            final EphemerisType generateTypeIn) throws PatriusException {
-        supportedNames = supportedNamesIn;
-        constants = new ThreadLocal<AtomicReference<Map<String, Double>>>(){
+                                      final EphemerisType generateTypeIn) {
+        this.supportedNames = supportedNamesIn;
+        this.constants = new ThreadLocal<AtomicReference<Map<String, Double>>>(){
             /** {@inheritDoc} */
             @Override
             protected AtomicReference<Map<String, Double>> initialValue() {
@@ -280,17 +283,17 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             }
         };
 
-        maxChunksDuration = Double.NaN;
-        generateType = generateTypeIn;
+        this.maxChunksDuration = Double.NaN;
+        this.generateType = generateTypeIn;
         if (generateTypeIn == EphemerisType.SOLAR_SYSTEM_BARYCENTER) {
-            loadType = EphemerisType.EARTH_MOON;
+            this.loadType = EphemerisType.EARTH_MOON;
         } else if (generateTypeIn == EphemerisType.EARTH_MOON) {
-            loadType = EphemerisType.MOON;
+            this.loadType = EphemerisType.MOON;
         } else {
-            loadType = generateTypeIn;
+            this.loadType = generateTypeIn;
         }
 
-        ephemerides = new EphemerisPerThread().getThreadLocal();
+        this.ephemerides = new EphemerisPerThread().getThreadLocal();
     }
 
     /**
@@ -308,14 +311,15 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
         // Initialization
         final CelestialBodyEphemeris res;
 
-        switch (generateType) {
+        switch (this.generateType) {
             case SOLAR_SYSTEM_BARYCENTER:
-                final CelestialBodyFrame icrf = CelestialBodyFactory.getBody(CelestialBodyFactory.EARTH_MOON).getICRF();
+                final CelestialBodyFrame icrf =
+                    CelestialBodyFactory.getPoint(CelestialBodyFactory.EARTH_MOON).getICRF();
                 res = new JPLCelestialBodyEphemeris(name, -1.0, icrf);
                 break;
             case EARTH_MOON:
                 res = new JPLCelestialBodyEphemeris(name, 1.0 / (1.0 + getLoadedEarthMoonMassRatio()),
-                        FramesFactory.getGCRF());
+                    FramesFactory.getGCRF());
                 break;
             case EARTH:
                 res = new EarthEphemeris();
@@ -367,6 +371,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
     // CHECKSTYLE: stop CyclomaticComplexity check
     // CHECKSTYLE: stop ReturnCount check
     // Reason: Orekit code kept as such
+    @Override
     public double getLoadedGravitationalCoefficient(final EphemerisType body)
         throws PatriusException {
         // CHECKSTYLE: resume ReturnCount check
@@ -456,14 +461,14 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
     public double getLoadedConstant(final String... names) throws PatriusException {
 
         // lazy loading of constants
-        Map<String, Double> map = constants.get().get();
+        Map<String, Double> map = this.constants.get().get();
         if (map == null) {
             final ConstantsParser parser = new ConstantsParser();
-            if (!DataProvidersManager.getInstance().feed(supportedNames, parser)) {
+            if (!DataProvidersManager.getInstance().feed(this.supportedNames, parser)) {
                 throw new PatriusException(PatriusMessages.NO_JPL_EPHEMERIDES_BINARY_FILES_FOUND);
             }
             map = parser.getConstants();
-            constants.get().compareAndSet(null, map);
+            this.constants.get().compareAndSet(null, map);
         }
         // loop on the names
         for (final String name : names) {
@@ -483,7 +488,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
      * @return chunks maximal duration in seconds
      */
     public double getMaxChunksDuration() {
-        return maxChunksDuration;
+        return this.maxChunksDuration;
     }
 
     /**
@@ -558,7 +563,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             // Note: for extracting the strings from the binary file, it makes no difference
             // if the file is stored in big-endian or little-endian notation
             final String constantName = extractString(first,
-                    HEADER_CONSTANTS_NAMES_OFFSET + i * 6, 6);
+                HEADER_CONSTANTS_NAMES_OFFSET + i * 6, 6);
             if (constantName.length() == 0) {
                 // no more constants to read
                 break;
@@ -594,7 +599,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
      *            if a read error occurs
      */
     private static boolean readInRecord(final InputStream input, final byte[] record,
-            final int start) throws IOException {
+                                        final int start) throws IOException {
         int index = start;
         while (index != record.length) {
             final int n = input.read(record, index, record.length - index);
@@ -616,7 +621,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
     private void detectEndianess(final byte[] record) {
 
         // default to big-endian
-        bigEndian = true;
+        this.bigEndian = true;
 
         // first try to read the DE number in big-endian format
         // the number is stored as unsigned int, so we have to convert it properly
@@ -625,7 +630,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
         // simple heuristic: if the read value is larger than half the range of an integer
         // assume the file is in little-endian format
         if (deNum > (1 << HALF_INTEGER_RANGE)) {
-            bigEndian = false;
+            this.bigEndian = false;
         }
     }
 
@@ -702,7 +707,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             seconds -= Constants.JULIAN_DAY;
         }
         return new AbsoluteDate(new DateComponents(DateComponents.JULIAN_EPOCH, jDay),
-            new TimeComponents(seconds), timeScale);
+            new TimeComponents(seconds), this.timeScale);
     }
 
     /**
@@ -729,7 +734,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
         final long l2 = (record[offset + 6]) & BYTE_LONG;
         final long l1 = (record[offset + C_7]) & BYTE_LONG;
         long l;
-        if (bigEndian) {
+        if (this.bigEndian) {
             // Big endian
             l = (l8 << C1);
             l |= (l7 << C2);
@@ -771,7 +776,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
         final int l2 = (record[offset + 2]) & BYTE_INT;
         final int l1 = (record[offset + 3]) & BYTE_INT;
 
-        if (bigEndian) {
+        if (this.bigEndian) {
             return (l4 << C5) | (l3 << C6) | (l2 << C_8) | l1;
         }
         return (l1 << C5) | (l2 << C6) | (l3 << C_8) | l4;
@@ -819,14 +824,14 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
         ClassNotFoundException {
         stream.defaultReadObject();
         // manually deserialize and initialize the ThreadLocal parameters
-        constants = new ThreadLocal<AtomicReference<Map<String, Double>>>(){
+        this.constants = new ThreadLocal<AtomicReference<Map<String, Double>>>(){
             /** {@inheritDoc} */
             @Override
             protected AtomicReference<Map<String, Double>> initialValue() {
                 return new AtomicReference<>();
             }
         };
-        ephemerides = new EphemerisPerThread().getThreadLocal();
+        this.ephemerides = new EphemerisPerThread().getThreadLocal();
     }
 
     /** Local parser for header constants. */
@@ -841,13 +846,13 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
          * @return local constants map
          */
         public Map<String, Double> getConstants() {
-            return localConstants;
+            return this.localConstants;
         }
 
         /** {@inheritDoc} */
         @Override
         public boolean stillAcceptsData() {
-            return localConstants == null;
+            return this.localConstants == null;
         }
 
         /** {@inheritDoc} */
@@ -864,7 +869,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 throw new PatriusException(PatriusMessages.UNABLE_TO_READ_JPL_HEADER, name);
             }
 
-            localConstants = parseConstants(first, second, name);
+            this.localConstants = parseConstants(first, second, name);
         }
 
     }
@@ -872,7 +877,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
     /** Local parser for Chebyshev polynomials. */
     private class EphemerisParser implements DataLoader, TimeStampedGenerator<PosVelChebyshev> {
 
-         /** Serializable UID. */
+        /** Serializable UID. */
         private static final long serialVersionUID = 8808047350880399695L;
 
         /** List of Chebyshev polynomials read. */
@@ -912,8 +917,8 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
          * Simple constructor.
          */
         public EphemerisParser() {
-            entries = new ArrayList<>();
-            chunksDuration = Double.NaN;
+            this.entries = new ArrayList<>();
+            this.chunksDuration = Double.NaN;
         }
 
         /** {@inheritDoc} */
@@ -923,29 +928,29 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
 
             try {
                 // prepare reading
-                entries.clear();
+                this.entries.clear();
                 if (existing == null) {
                     // we want ephemeris data for the first time, set up an arbitrary first range
-                    start = date.shiftedBy(-cacheSize);
-                    end = date.shiftedBy(+cacheSize);
+                    this.start = date.shiftedBy(-cacheSize);
+                    this.end = date.shiftedBy(+cacheSize);
                 } else if (existing.getDate().compareTo(date) <= 0) {
                     // we want to extend an existing range towards future dates
-                    start = existing.getDate();
-                    end = date;
+                    this.start = existing.getDate();
+                    this.end = date;
                 } else {
                     // we want to extend an existing range towards past dates
-                    start = date;
-                    end = existing.getDate();
+                    this.start = date;
+                    this.end = existing.getDate();
                 }
 
                 // get new entries in the specified data range
-                if (!DataProvidersManager.getInstance().feed(supportedNames, this)) {
+                if (!DataProvidersManager.getInstance().feed(JPLHistoricEphemerisLoader.this.supportedNames, this)) {
                     throw new PatriusException(PatriusMessages.NO_JPL_EPHEMERIDES_BINARY_FILES_FOUND);
                 }
 
-                Collections.sort(entries, (o1, o2) -> o1.getDate().compareTo(o2.getDate()));
+                Collections.sort(this.entries, (o1, o2) -> o1.getDate().compareTo(o2.getDate()));
 
-                return entries;
+                return this.entries;
 
             } catch (final PatriusException oe) {
                 throw new TimeStampedCacheException(oe);
@@ -958,7 +963,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             // Special case for Earth: we do not really load any ephemeris data
             // Other cases: we have to look for data in all available ephemerides files as there
             // may be data overlaps that result in incomplete data
-            return (generateType != EphemerisType.EARTH);
+            return (JPLHistoricEphemerisLoader.this.generateType != EphemerisType.EARTH);
         }
 
         /** {@inheritDoc} */
@@ -977,8 +982,8 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 throw new PatriusException(PatriusMessages.UNABLE_TO_READ_JPL_HEADER, name);
             }
 
-            if (constants.get().get() == null) {
-                constants.get().compareAndSet(null,
+            if (JPLHistoricEphemerisLoader.this.constants.get().get() == null) {
+                JPLHistoricEphemerisLoader.this.constants.get().compareAndSet(null,
                     parseConstants(first, second, name));
             }
 
@@ -1005,12 +1010,12 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             // parse first header record
             parseFirstHeaderRecord(first, name);
 
-            if (startEpoch.compareTo(end) < 0 && finalEpoch.compareTo(start) > 0) {
+            if (this.startEpoch.compareTo(this.end) < 0 && this.finalEpoch.compareTo(this.start) > 0) {
                 // this file contains data in the range we are looking for, read it
                 final byte[] record = new byte[first.length];
                 while (readInRecord(input, record, 0)) {
                     final AbsoluteDate rangeStart = parseDataRecord(record);
-                    if (rangeStart.compareTo(end) > 0) {
+                    if (rangeStart.compareTo(this.end) > 0) {
                         // we have already exceeded the range we were interested in,
                         // we interrupt parsing here
                         return;
@@ -1040,34 +1045,34 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             // as default, 3 polynomial coefficients for the cartesian coordinates
             // (x, y, z) are contained in the file, positions are in kilometers
             // and times are in TDB
-            components = 3;
-            positionUnit = KM_TO_M;
-            timeScale = TimeScalesFactory.getTDB();
+            this.components = 3;
+            this.positionUnit = KM_TO_M;
+            JPLHistoricEphemerisLoader.this.timeScale = TimeScalesFactory.getTDB();
 
             if (deNum == INPOP_DE_NUMBER) {
                 // an INPOP file may contain 6 components (including coefficients for the velocity vector)
                 final double format = getLoadedConstant("FORMAT");
                 if (!Double.isNaN(format) && (int) MathLib.IEEEremainder(format, C_10) != 1) {
-                    components = 6;
+                    this.components = 6;
                 }
 
                 // INPOP files may have their polynomials expressed in AU
                 final double unite = getLoadedConstant("UNITE");
                 if (!Double.isNaN(unite) && (int) unite == 0) {
-                    positionUnit = getLoadedAstronomicalUnit();
+                    this.positionUnit = getLoadedAstronomicalUnit();
                 }
 
                 // INPOP files may have their times expressed in TCB
                 final double timesc = getLoadedConstant("TIMESC");
                 if (!Double.isNaN(timesc) && (int) timesc == 1) {
-                    timeScale = TimeScalesFactory.getTCB();
+                    JPLHistoricEphemerisLoader.this.timeScale = TimeScalesFactory.getTCB();
                 }
             }
 
             // extract covered date range
-            startEpoch = extractDate(record, HEADER_START_EPOCH_OFFSET);
-            finalEpoch = extractDate(record, HEADER_END_EPOCH_OFFSET);
-            boolean ok = finalEpoch.compareTo(startEpoch) > 0;
+            this.startEpoch = extractDate(record, HEADER_START_EPOCH_OFFSET);
+            this.finalEpoch = extractDate(record, HEADER_END_EPOCH_OFFSET);
+            boolean ok = this.finalEpoch.compareTo(this.startEpoch) > 0;
 
             // indices of the Chebyshev coefficients for each ephemeris
             for (int i = 0; i < CHEBYCHEV_NUMBER; ++i) {
@@ -1078,36 +1083,37 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 final int row3 = extractInt(record, HEADER_CHEBISHEV_INDICES_OFFSET + 8
                         + (4 + 8) * i);
                 ok = ok && (row1 >= 0) && (row2 >= 0) && (row3 >= 0);
-                final boolean c1 = (i == 0) && (loadType == EphemerisType.MERCURY);
-                final boolean c2 = (i == 1) && (loadType == EphemerisType.VENUS);
-                final boolean c3 = (i == 2) && (loadType == EphemerisType.EARTH_MOON);
-                final boolean c4 = (i == 3) && (loadType == EphemerisType.MARS);
-                final boolean c5 = (i == 4) && (loadType == EphemerisType.JUPITER);
-                final boolean c6 = (i == 5) && (loadType == EphemerisType.SATURN);
-                final boolean c7 = (i == 6) && (loadType == EphemerisType.URANUS);
-                final boolean c8 = (i == C_7) && (loadType == EphemerisType.NEPTUNE);
-                final boolean c9 = (i == C_8) && (loadType == EphemerisType.PLUTO);
-                final boolean c10 = (i == C_9) && (loadType == EphemerisType.MOON);
-                final boolean c11 = (i == C_10) && (loadType == EphemerisType.SUN);
+                final boolean c1 = (i == 0) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.MERCURY);
+                final boolean c2 = (i == 1) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.VENUS);
+                final boolean c3 = (i == 2) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.EARTH_MOON);
+                final boolean c4 = (i == 3) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.MARS);
+                final boolean c5 = (i == 4) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.JUPITER);
+                final boolean c6 = (i == 5) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.SATURN);
+                final boolean c7 = (i == 6) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.URANUS);
+                final boolean c8 = (i == C_7) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.NEPTUNE);
+                final boolean c9 = (i == C_8) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.PLUTO);
+                final boolean c10 = (i == C_9) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.MOON);
+                final boolean c11 = (i == C_10) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.SUN);
                 final boolean c1c2c3c4 = c1 || c2 || c3 || c4;
                 final boolean c5c6c7c8 = c5 || c6 || c7 || c8;
                 final boolean c9c10c11 = c9 || c10 || c11;
                 if (c1c2c3c4 || c5c6c7c8 || c9c10c11) {
-                    firstIndex = row1;
-                    coeffs = row2;
-                    chunks = row3;
+                    this.firstIndex = row1;
+                    this.coeffs = row2;
+                    this.chunks = row3;
                 }
             }
 
             // compute chunks duration
             final double timeSpan = extractDouble(record, HEADER_CHUNK_DURATION_OFFSET);
             ok = ok && (timeSpan > 0) && (timeSpan < MAX_TIMESPAN);
-            chunksDuration = Constants.JULIAN_DAY * (timeSpan / chunks);
-            if (Double.isNaN(maxChunksDuration)) {
-                maxChunksDuration = chunksDuration;
+            this.chunksDuration = Constants.JULIAN_DAY * (timeSpan / this.chunks);
+            if (Double.isNaN(JPLHistoricEphemerisLoader.this.maxChunksDuration)) {
+                JPLHistoricEphemerisLoader.this.maxChunksDuration = this.chunksDuration;
             } else {
-                maxChunksDuration = MathLib.max(maxChunksDuration,
-                    chunksDuration);
+                JPLHistoricEphemerisLoader.this.maxChunksDuration = MathLib.max(
+                    JPLHistoricEphemerisLoader.this.maxChunksDuration,
+                    this.chunksDuration);
             }
 
             // sanity checks
@@ -1129,30 +1135,30 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
 
             // extract time range covered by the record
             final AbsoluteDate rangeStart = extractDate(record, DATA_START_RANGE_OFFSET);
-            if (rangeStart.compareTo(startEpoch) < 0) {
+            if (rangeStart.compareTo(this.startEpoch) < 0) {
                 throw new PatriusException(PatriusMessages.OUT_OF_RANGE_EPHEMERIDES_DATE, rangeStart,
-                    startEpoch,
-                    finalEpoch);
+                    this.startEpoch,
+                    this.finalEpoch);
             }
 
             final AbsoluteDate rangeEnd = extractDate(record, DATE_END_RANGE_OFFSET);
-            if (rangeEnd.compareTo(finalEpoch) > 0) {
+            if (rangeEnd.compareTo(this.finalEpoch) > 0) {
                 throw new PatriusException(PatriusMessages.OUT_OF_RANGE_EPHEMERIDES_DATE, rangeEnd,
-                    startEpoch,
-                    finalEpoch);
+                    this.startEpoch,
+                    this.finalEpoch);
             }
 
-            if (rangeStart.compareTo(end) > 0 || rangeEnd.compareTo(start) < 0) {
+            if (rangeStart.compareTo(this.end) > 0 || rangeEnd.compareTo(this.start) < 0) {
                 // we are not interested in this record, don't parse it
                 return rangeEnd;
             }
 
             // loop over chunks inside the time range
             AbsoluteDate chunkEnd = rangeStart;
-            final int nbChunks = chunks;
-            final int nbCoeffs = coeffs;
-            final int first = firstIndex;
-            final double duration = chunksDuration;
+            final int nbChunks = this.chunks;
+            final int nbCoeffs = this.coeffs;
+            final int first = this.firstIndex;
+            final double duration = this.chunksDuration;
             for (int i = 0; i < nbChunks; ++i) {
 
                 // set up chunk validity range
@@ -1168,20 +1174,20 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 for (int k = 0; k < nbCoeffs; ++k) {
                     // by now, only use the position components
                     // if there are also velocity components contained in the file, ignore them
-                    final int index = first + components * i * nbCoeffs + k - 1;
+                    final int index = first + this.components * i * nbCoeffs + k - 1;
                     xCoeffs[k] =
-                        positionUnit
+                        this.positionUnit
                                 * extractDouble(record, C_8 * index);
                     yCoeffs[k] =
-                        positionUnit
+                        this.positionUnit
                                 * extractDouble(record, C_8 * (index + nbCoeffs));
                     zCoeffs[k] =
-                        positionUnit
+                        this.positionUnit
                                 * extractDouble(record, C_8 * (index + 2 * nbCoeffs));
                 }
 
                 // build the position-velocity model for current chunk
-                entries.add(new PosVelChebyshev(chunkStart, duration, xCoeffs, yCoeffs, zCoeffs));
+                this.entries.add(new PosVelChebyshev(chunkStart, duration, xCoeffs, yCoeffs, zCoeffs));
             }
 
             return rangeStart;
@@ -1204,14 +1210,14 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
          * Simple constructor.
          *
          * @param name
-         *            name of the body
+         *        name of the body
          * @param scaleIn
-         *            scaling factor for position-velocity
+         *        scaling factor for position-velocity
          * @param parentFrame
-         *            parent frame (usually it should be the ICRF centered on the parent body)
+         *        parent frame (usually it should be the ICRF centered on the parent body)
          */
         public JPLCelestialBodyEphemeris(final String name, final double scaleIn, final Frame parentFrame) {
-            scale = scaleIn;
+            this.scale = scaleIn;
             this.parentFrame = parentFrame;
         }
 
@@ -1224,7 +1230,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             PosVelChebyshev chebyshev = null;
             try {
                 // Try with latest data
-                chebyshev = ephemerides.get().getLatest();
+                chebyshev = JPLHistoricEphemerisLoader.this.ephemerides.get().getLatest();
                 if (chebyshev.inRange(date)) {
                     // Required date is in latest data range
                     isOK = true;
@@ -1237,11 +1243,11 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             if (!isOK) {
                 try {
                     // Try load neighbor data
-                    chebyshev = ephemerides.get().getNeighbors(date)[0];
+                    chebyshev = JPLHistoricEphemerisLoader.this.ephemerides.get().getNeighbors(date)[0];
                 } catch (final TimeStampedCacheException tce) {
                     // Date out of ephemeris bounds
                     // Try latest again (unclear)
-                    chebyshev = ephemerides.get().getLatest();
+                    chebyshev = JPLHistoricEphemerisLoader.this.ephemerides.get().getLatest();
                     if (!chebyshev.inRange(date)) {
                         // we were not able to recover from the error, the date is too far
                         throw tce;
@@ -1249,22 +1255,22 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 }
             }
 
-//            PosVelChebyshev chebyshev;
-//            try {
-//                chebyshev = ephemerides.get().getNeighbors(date)[0];
-//            } catch (final TimeStampedCacheException tce) {
-//                // we cannot bracket the date, check if the last available chunk covers the specified date
-//                chebyshev = ephemerides.get().getLatest();
-//                if (!chebyshev.inRange(date)) {
-//                    // we were not able to recover from the error, the date is too far
-//                    throw tce;
-//                }
-//            }
+            // PosVelChebyshev chebyshev;
+            // try {
+            // chebyshev = ephemerides.get().getNeighbors(date)[0];
+            // } catch (final TimeStampedCacheException tce) {
+            // // we cannot bracket the date, check if the last available chunk covers the specified date
+            // chebyshev = ephemerides.get().getLatest();
+            // if (!chebyshev.inRange(date)) {
+            // // we were not able to recover from the error, the date is too far
+            // throw tce;
+            // }
+            // }
             final PVCoordinates pv = chebyshev.getPositionVelocity(date);
-            final PVCoordinates scaledPV = new PVCoordinates(scale, pv);
+            final PVCoordinates scaledPV = new PVCoordinates(this.scale, pv);
 
             // the raw PV are relative to the parent frame
-            final Transform transform = parentFrame.getTransformTo(frame, date, true);
+            final Transform transform = this.parentFrame.getTransformTo(frame, date, true);
 
             // convert to request frame
             return transform.transformPVCoordinates(scaledPV);
@@ -1273,9 +1279,8 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date,
-                final Frame frame) throws PatriusException {
-            return parentFrame;
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+            return this.parentFrame;
         }
     }
 
@@ -1283,8 +1288,6 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
      * Provides per-thread Ephemeris.
      *
      * @author Emmanuel Bignon
-     *
-     * @version $Id: PrecessionNutationPerThread.java 18073 2017-10-02 16:48:07Z bignon $
      *
      * @since 4.5
      */
@@ -1298,9 +1301,8 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 /** {@inheritDoc} */
                 @Override
                 protected TimeStampedCache<PosVelChebyshev> initialValue() {
-                return new TimeStampedCache<>(2, PatriusConfiguration.getCacheSlotsNumber(),
-                        Double.POSITIVE_INFINITY, cacheSize,
-                        new EphemerisParser(), PosVelChebyshev.class);
+                    return new TimeStampedCache<>(2, PatriusConfiguration.getCacheSlotsNumber(),
+                        Double.POSITIVE_INFINITY, cacheSize, new EphemerisParser(), PosVelChebyshev.class);
                 }
             };
 
@@ -1310,7 +1312,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
          * @return a model
          */
         public ThreadLocal<TimeStampedCache<PosVelChebyshev>> getThreadLocal() {
-            return threadLocalModel;
+            return this.threadLocalModel;
         }
     }
 }

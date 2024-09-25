@@ -18,6 +18,7 @@
  * @history created 11/02/2013
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -41,7 +42,7 @@ package fr.cnes.sirius.patrius.stela.forces.gravity;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -206,8 +207,8 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
     /** Static allocation to speed up computing: order 8. */
     private static final double[][] betaY8 = new double[45][9];
 
-    /** The celestial body representing the third body. */
-    private final CelestialBody body;
+    /** The celestial object representing the third body. */
+    private final CelestialPoint object;
 
     /** The max degree of computation of the perturbation. */
     private final int thirdBodyDegreeMaxPerturbation;
@@ -258,10 +259,10 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param inThirdBodyDegreeMaxPD
      *        the max degree of computation of the partial derivatives
      */
-    public StelaThirdBodyAttraction(final CelestialBody thirdBody, final int inThirdBodyDegreeMaxPerturbation,
+    public StelaThirdBodyAttraction(final CelestialPoint thirdBody, final int inThirdBodyDegreeMaxPerturbation,
         final int inThirdBodyDegreeMaxShortPeriods, final int inThirdBodyDegreeMaxPD) {
 
-        this.body = thirdBody;
+        this.object = thirdBody;
 
         // The reference frame is the CIRF frame
         this.frame = FramesFactory.getCIRF();
@@ -291,12 +292,12 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
         final double ey = orbit.getEquinoctialEy();
         final double ix = orbit.getIx();
         final double iy = orbit.getIy();
-        final Vector3D position = this.body.getPVCoordinates(orbit.getDate(), this.frame).getPosition();
+        final Vector3D position = this.object.getPVCoordinates(orbit.getDate(), this.frame).getPosition();
         final double normP = position.getNorm();
         final double xp = MathLib.divide(position.getX(), normP);
         final double yp = MathLib.divide(position.getY(), normP);
         final double zp = MathLib.divide(position.getZ(), normP);
-        final double mu = this.body.getGM();
+        final double mu = this.object.getGM();
         this.dPotThirdBody.clear();
         switch (this.thirdBodyDegreeMaxPerturbation) {
             case 2:
@@ -359,12 +360,12 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
         final double ey = orbit.getEquinoctialEy();
         final double ix = orbit.getIx();
         final double iy = orbit.getIy();
-        final Vector3D position = this.body.getPVCoordinates(orbit.getDate(), this.frame).getPosition();
+        final Vector3D position = this.object.getPVCoordinates(orbit.getDate(), this.frame).getPosition();
         final double normP = position.getNorm();
         final double xp = position.getX() / normP;
         final double yp = position.getY() / normP;
         final double zp = position.getZ() / normP;
-        final double mu = this.body.getGM();
+        final double mu = this.object.getGM();
         switch (this.thirdBodyDegreeMaxPD) {
             case 2:
                 partialDerivatives = thirdBodyDeg2SecDerivMat(a, ex, ey, ix, iy, xp, yp, zp, normP, mu);
@@ -13836,12 +13837,12 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
         final double ey = orbit.getEquinoctialEy();
         final double ix = orbit.getIx();
         final double iy = orbit.getIy();
-        final Vector3D position = this.body.getPVCoordinates(orbit.getDate(), this.frame).getPosition();
+        final Vector3D position = this.object.getPVCoordinates(orbit.getDate(), this.frame).getPosition();
         final double normP = position.getNorm();
         final double xp = position.getX() / normP;
         final double yp = position.getY() / normP;
         final double zp = position.getZ() / normP;
-        final double mup = this.body.getGM();
+        final double mup = this.object.getGM();
         final double ksi = orbit.getLM();
         // Get some T2 and T8 parameters
         final double e = MathLib.sqrt(ex * ex + ey * ey);

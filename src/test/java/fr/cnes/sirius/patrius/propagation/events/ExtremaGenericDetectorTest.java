@@ -1,5 +1,7 @@
 /**
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-39:08/12/2023:[PATRIUS] Generalisation de DotProductDetector et ExtremaDotProductDetector
  * VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -7,22 +9,6 @@
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * END-HISTORY
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
  */
 /*
  */
@@ -34,10 +20,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.attitudes.directions.BasicPVCoordinatesProvider;
+import fr.cnes.sirius.patrius.attitudes.directions.GenericTargetDirection;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.events.CodedEventsLogger;
-import fr.cnes.sirius.patrius.events.CodingEventDetector;
-import fr.cnes.sirius.patrius.events.GenericCodingEventDetector;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.DotProductDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaGenericDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaGenericDetector.ExtremumType;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.CodingEventDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -45,15 +40,18 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
+import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.EquinoctialOrbit;
+import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
+import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.ExtremaGenericDetector.ExtremumType;
+import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
@@ -483,5 +481,218 @@ public class ExtremaGenericDetectorTest {
                         .compareTo(refEventsLogger.getLoggedCodedEventSet().first().getCodedEvent().getComment()), 0);
         Assert.assertTrue(resEventsLogger.getLoggedCodedEventSet().first().getCodedEvent().getDate()
                 .equals(refEventsLogger.getLoggedCodedEventSet().first().getCodedEvent().getDate(), 1.0E-10));
+    }
+
+    /**
+     * @testType UT
+     *
+     * @testedMethod {@link ExtremaGenericDetector#eventOccurred(SpacecraftState, boolean, boolean)}
+     *
+     * @description tests that the position of the satellite when the event occurs is correct
+     *
+     * @input an extrema dot product detector, a keplerian propagator, and a target vector
+     *
+     * @testPassCriteria the distance between the end state (when the event occurs) and the
+     *                   reference position is lower than 1e-5
+     *
+     * @referenceVersion 4.11
+     *
+     * @nonRegressionVersion 4.11
+     */
+    @Test
+    public void testDotProductKeplerianPropagator() throws PatriusException {
+
+        // propagator
+        final Frame eme2000Frame = FramesFactory.getEME2000();
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final double a = 7000000.0;
+
+        final Orbit initialOrbit = new KeplerianOrbit(a, 0.0, 0.0, 0.0, 0.0, 0.0, PositionAngle.TRUE, eme2000Frame,
+            date, Utils.mu);
+
+        KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+        final SpacecraftState initialState = new SpacecraftState(initialOrbit);
+
+        propagator.resetInitialState(initialState);
+        // Propagate over a half orbit period :
+        final double time = 5 * initialOrbit.getKeplerianPeriod();
+
+        // Target PV: (5,0,0),(0,0,0) in EME2000
+        PVCoordinatesProvider pvCoordTarget = new BasicPVCoordinatesProvider(new PVCoordinates(new Vector3D(0, 5, 0),
+            new Vector3D(0, 0, 0)), eme2000Frame);
+
+        // Testing the detector for different target positions/extremum type/normalizing
+
+        // detector creation with Target position (0,5,0), searching minimum
+        DotProductDetector dotProductPassageDetector = new DotProductDetector(pvCoordTarget, true,
+                false, 0, eme2000Frame, 0);
+        EventDetector detector = new ExtremaGenericDetector<DotProductDetector>(
+                dotProductPassageDetector, ExtremumType.MIN, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                Action.STOP, Action.STOP);
+        propagator = new KeplerianPropagator(initialOrbit);
+        propagator.addEventDetector(detector);
+        SpacecraftState endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, new Vector3D(0.0, -a, 0.0).distance(endState.getPVCoordinates().getPosition()), 1e-5);
+
+        // detector creation with Target position (0,5,0), searching maximum
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, false, true, 0, eme2000Frame, 1);
+        detector = new ExtremaGenericDetector<DotProductDetector>(dotProductPassageDetector, ExtremumType.MAX,
+                0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, Action.STOP);
+        propagator = new KeplerianPropagator(initialOrbit);
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, new Vector3D(0.0, a, 0.0).distance(endState.getPVCoordinates().getPosition()), 1e-5);
+
+        // detector creation with Target position (0,5,0), searching minimum or maximum
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, true, true, 0, eme2000Frame, 2);
+        detector = new ExtremaGenericDetector<DotProductDetector>(dotProductPassageDetector,
+                ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, Action.STOP);
+        propagator = new KeplerianPropagator(initialOrbit);
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, new Vector3D(0.0, a, 0.0).distance(endState.getPVCoordinates().getPosition()), 1e-5);
+
+        // detector tests with different PV of target
+        pvCoordTarget = new BasicPVCoordinatesProvider(
+            new PVCoordinates(new Vector3D(-15, 0, 0), new Vector3D(0, 0, 0)), eme2000Frame);
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, false, false, 0, eme2000Frame, 2);
+        detector = new ExtremaGenericDetector<DotProductDetector>(dotProductPassageDetector,
+                ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, Action.STOP);
+        propagator = new KeplerianPropagator(initialOrbit);
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, new Vector3D(a, 0.0, 0.0).distance(endState.getPVCoordinates().getPosition()), 1e-5);
+
+        // detector creation
+        pvCoordTarget = new BasicPVCoordinatesProvider(
+            new PVCoordinates(new Vector3D(15, 15, 0), new Vector3D(0, 0, 0)), eme2000Frame);
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, false, false, 0, eme2000Frame, 2);
+        detector = new ExtremaGenericDetector<DotProductDetector>(dotProductPassageDetector,
+                ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, Action.STOP);
+        propagator = new KeplerianPropagator(initialOrbit);
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+        Assert.assertEquals(0.0, new Vector3D(a * MathLib.cos(MathLib.PI / 4), a * MathLib.sin(MathLib.PI / 4), 0.0)
+            .distance(endState.getPVCoordinates().getPosition()), 1e-5);
+
+        // detector creation with no frame specified
+        pvCoordTarget = new BasicPVCoordinatesProvider(
+            new PVCoordinates(new Vector3D(15, 0, 0), new Vector3D(0, 0, 0)), eme2000Frame);
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, false, false, 0, null, 2);
+        detector = new ExtremaGenericDetector<DotProductDetector>(dotProductPassageDetector,
+                ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, Action.STOP);
+        propagator = new KeplerianPropagator(initialOrbit);
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+        Assert.assertEquals(0.0, new Vector3D(a, 0, 0.0)
+            .distance(endState.getPVCoordinates().getPosition()), 1e-5);
+    }
+
+    /**
+     * @testType UT
+     *
+     * @testedMethod {@link ExtremaGenericDetector#eventOccurred(SpacecraftState, boolean, boolean)}
+     *
+     * @description tests the well fonctionning of extrema dot product detector when using different constructors
+     *
+     * @input an extrema dot product detector, a keplerian propagator, and a target vector
+     *
+     * @testPassCriteria the distance between the end state (when the event occurs) and the
+     *                   reference position is lower than 1e-5
+     *
+     * @referenceVersion 4.13
+     *
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testDotProductSeveralConstructors() throws PatriusException {
+
+        // propagator
+        final Frame eme2000Frame = FramesFactory.getEME2000();
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final double a = 7000000.0;
+
+        final Orbit initialOrbit = new KeplerianOrbit(a, 0.0, 0.0, 0.0, 0.0, 0.0, PositionAngle.TRUE, eme2000Frame,
+            date, Utils.mu);
+
+        final KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+        final SpacecraftState initialState = new SpacecraftState(initialOrbit);
+
+        propagator.resetInitialState(initialState);
+        // Propagate over a half orbit period :
+        final double time = 5 * initialOrbit.getKeplerianPeriod();
+
+        // Target PV: (5,0,0),(0,0,0) in EME2000
+        PVCoordinatesProvider pvCoordTarget = new BasicPVCoordinatesProvider(new PVCoordinates(new Vector3D(0, 5, 0),
+            new Vector3D(0, 0, 0)), eme2000Frame);
+
+        // Testing the detector for different target positions/extremum type/normalizing
+
+        // detector creation with Target position (0,5,0), searching minimum
+        DotProductDetector dotProductPassageDetector = new DotProductDetector(new GenericTargetDirection(pvCoordTarget), true,
+                false, 0, eme2000Frame, 2);
+        ExtremaGenericDetector<DotProductDetector> detector = new ExtremaGenericDetector<DotProductDetector>(
+                dotProductPassageDetector, ExtremumType.MIN, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                Action.STOP, Action.STOP);
+        propagator.addEventDetector(detector);
+        SpacecraftState endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, detector.g(endState), Precision.DOUBLE_COMPARISON_EPSILON);
+
+        // detector creation with Target position (0,5,0), searching maximum
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, true,
+                true, 0, eme2000Frame, 1);
+        detector = new ExtremaGenericDetector<DotProductDetector>(
+                dotProductPassageDetector, ExtremumType.MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                Action.STOP, Action.STOP);
+        propagator.clearEventsDetectors();
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, detector.g(endState), Precision.DOUBLE_COMPARISON_EPSILON);
+
+        // detector creation with Target position (0,5,0), searching minimum or maximum
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, true,
+                true, 0, eme2000Frame, 2);
+        detector = new ExtremaGenericDetector<DotProductDetector>(
+                dotProductPassageDetector, ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                Action.STOP, Action.STOP);
+        propagator.clearEventsDetectors();
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, detector.g(endState), Precision.DOUBLE_COMPARISON_EPSILON);
+
+        // detector tests with different PV of target and reference direction
+        pvCoordTarget = new BasicPVCoordinatesProvider(
+            new PVCoordinates(new Vector3D(-15, 0, 0), new Vector3D(0, 0, 0)), eme2000Frame);
+        dotProductPassageDetector = new DotProductDetector(pvCoordTarget, false,
+                false, 0, eme2000Frame, 2);
+        detector = new ExtremaGenericDetector<DotProductDetector>(
+                dotProductPassageDetector, ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD);
+        propagator.clearEventsDetectors();
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, new Vector3D(a, 0.0, 0.0).distance(endState.getPVCoordinates().getPosition()), 1e-5);
+
+        // Now retest with the reference direction
+        final PVCoordinatesProvider pvCoordRef = new BasicPVCoordinatesProvider(new PVCoordinates(new Vector3D(a, 0.0,
+            0.0), new Vector3D(0, 0, 0)), eme2000Frame);
+        dotProductPassageDetector = new DotProductDetector(new GenericTargetDirection(pvCoordRef),
+                new GenericTargetDirection(pvCoordTarget), false,
+                false, 0, eme2000Frame, 2, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                Action.STOP, Action.STOP);
+        detector = new ExtremaGenericDetector<DotProductDetector>(
+                dotProductPassageDetector, ExtremumType.MIN_MAX, 0.5, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD,
+                Action.STOP, Action.STOP);
+        propagator.addEventDetector(detector);
+        endState = propagator.propagate(date.shiftedBy(time));
+
+        Assert.assertEquals(0.0, new Vector3D(a, 0.0, 0.0).distance(endState.getPVCoordinates().getPosition()), 1e-5);
     }
 }

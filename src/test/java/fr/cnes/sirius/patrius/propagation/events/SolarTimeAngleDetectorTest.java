@@ -17,6 +17,11 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.11.1:FA:FA-78:30/06/2023:[PATRIUS] Reliquat DM 3258 sur les TU des détecteurs SolarTime et LocalTime
  * VERSION:4.11:DM:DM-3258:22/05/2023:[PATRIUS] Adaptation des detecteurs SolarTime et LocalTime pour l'interplanetaire
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
@@ -39,19 +44,24 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import java.net.URISyntaxException;
-
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.SolarTimeAngleDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
@@ -71,8 +81,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -135,6 +143,67 @@ public class SolarTimeAngleDetectorTest {
         orbit = new CircularOrbit(9000000, 0, 0, 0.3, 0, FastMath.PI / 2,
             PositionAngle.TRUE, FramesFactory.getGCRF(), iniDate, mu);
         state = new SpacecraftState(orbit);
+    }
+
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final CelestialPoint sun = new MeeusSun();
+        final SolarTimeAngleDetector eventDetector1 = new SolarTimeAngleDetector(0, sun, 100, 0.001, Action.CONTINUE,
+            false);
+        final SolarTimeAngleDetector eventDetector2 = (SolarTimeAngleDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final Propagator propagator = new KeplerianPropagator(orbit);
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(iniDate.shiftedBy(4 * 3600.));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2010-10-10T12:41:30.164"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2010-10-10T12:41:30.164"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2010-10-10T15:03:09.626"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2010-10-10T15:03:09.626"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2010-10-10T12:33:11.772"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2010-10-10T12:41:30.030"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2010-10-10T14:54:51.248"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2010-10-10T15:03:09.492"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(sun, eventDetector1.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
     }
 
     /**
@@ -247,7 +316,7 @@ public class SolarTimeAngleDetectorTest {
      */
     @Test
     public void testSolarTimeAngleDetectorCelestialBodyFrame() throws PatriusException {
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final CelestialBodyFrame frame = new CelestialBodyFrame(earth.getICRF(), Transform.IDENTITY, "Frame", earth);
         final SolarTimeAngleDetector detectorCelestialBody = new SolarTimeAngleDetector(-FastMath.PI, 
             600, 1.e-6, frame);
@@ -261,7 +330,7 @@ public class SolarTimeAngleDetectorTest {
      * 
      * @testedFeature {@link features#VALIDATE_SOLAR_TIME_ANGLE_DETECTOR}
      * 
-     * @testedMethod {@link SolarTimeAngleDetector#SolarTimeAngleDetector(double, fr.cnes.sirius.patrius.bodies.CelestialBody, double, double, Action, boolean) }
+     * @testedMethod {@link SolarTimeAngleDetector#SolarTimeAngleDetector(double, fr.cnes.sirius.patrius.bodies.CelestialPoint, double, double, Action, boolean) }
      * 
      * @description check user provided Sun model is properly taken into account by checking g function is exactly 0
      *              with sun aligned with spacecraft and Earth for an angle of 0
@@ -282,7 +351,7 @@ public class SolarTimeAngleDetectorTest {
         final Frame frame = FramesFactory.getGCRF();
 
         // Detector with Meeus model
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(0, sun, 100, 0.001, Action.STOP, false);
 
         // Test with Meeus model
@@ -294,7 +363,7 @@ public class SolarTimeAngleDetectorTest {
         Assert.assertEquals(0, detector.g(state), 1E-15);
 
         // Test with other model (JPL) - Difference expected
-        final CelestialBody sun2 = CelestialBodyFactory.getSun();
+        final CelestialPoint sun2 = CelestialBodyFactory.getSun();
         final PVCoordinates sunPV2 = sun2.getPVCoordinates(date, frame);
         final PVCoordinates orbitPV2 =
             new PVCoordinates(sunPV2.getPosition().scalarMultiply(0.5), new Vector3D(7000, 0, 0));
@@ -330,8 +399,8 @@ public class SolarTimeAngleDetectorTest {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
 
         // Detector with Meeus model
-        final CelestialBody sun = new MeeusSun();
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint sun = new MeeusSun();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final CelestialBodyFrame frame = new CelestialBodyFrame(earth.getICRF(), Transform.IDENTITY, "Frame", earth);
         final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(0, sun, 100, 0.001, frame, Action.STOP,
             false);
@@ -345,7 +414,7 @@ public class SolarTimeAngleDetectorTest {
         Assert.assertEquals(0, detector.g(state), 1E-15);
 
         // Test with other model (JPL) - Difference expected
-        final CelestialBody sun2 = CelestialBodyFactory.getSun();
+        final CelestialPoint sun2 = CelestialBodyFactory.getSun();
         final PVCoordinates sunPV2 = sun2.getPVCoordinates(date, frame);
         final PVCoordinates orbitPV2 =
             new PVCoordinates(sunPV2.getPosition().scalarMultiply(0.5), new Vector3D(7000, 0, 0));
@@ -423,9 +492,7 @@ public class SolarTimeAngleDetectorTest {
             private static final long serialVersionUID = 7773544228003299956L;
 
             @Override
-            public Action
-                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -435,9 +502,7 @@ public class SolarTimeAngleDetectorTest {
             private static final long serialVersionUID = 4129999659502008758L;
 
             @Override
-            public Action
-                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -447,9 +512,7 @@ public class SolarTimeAngleDetectorTest {
             private static final long serialVersionUID = 7858561671574682046L;
 
             @Override
-            public Action
-                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -459,9 +522,7 @@ public class SolarTimeAngleDetectorTest {
             private static final long serialVersionUID = -1255736652138424166L;
 
             @Override
-            public Action
-                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -599,8 +660,10 @@ public class SolarTimeAngleDetectorTest {
      * @testedMethod {@link SolarTimeAngleDetector#g(fr.cnes.sirius.patrius.propagation.SpacecraftState) }
      * 
      * @description When the central body is not the reference frame:
-     *              With Mars as central body, check that g function is exactly 0 with sun aligned with spacecraft and a moon of Mars for an angle of 0.
-     *              and check that g function is not close to 0 with sun aligned with spacecraft and Mars but not with a moon of Mars.
+     *              With Mars as central body, check that g function is exactly 0 with sun aligned with spacecraft and a
+     *              moon of Mars for an angle of 0.
+     *              and check that g function is not close to 0 with sun aligned with spacecraft and Mars but not with a
+     *              moon of Mars.
      * 
      * @input sun model
      * 
@@ -608,19 +671,19 @@ public class SolarTimeAngleDetectorTest {
      * 
      * @testPassCriteria 0 when moon, sun and spacecraft are aligned, not 0 otherwise.
      * 
-     * @throws PatriusException If an error occurs in the detector or the CelestialBody creation
-     * @throws 
+     * @throws PatriusException
+     *         if an error occurs in the detector or the CelestialBody creation
      * 
      * @referenceVersion 4.11
      * 
      * @nonRegressionVersion 4.11
      */
     @Test
-    public void testSolarTimeAngleDetectorMarsMoon() throws PatriusException, URISyntaxException {
+    public void testSolarTimeAngleDetectorMarsMoon() throws PatriusException {
         // Patrius data set
         Utils.setDataRoot("regular-dataPBASE");
         // Get sun
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
 
         // Initialize a date
         final AbsoluteDate date = new AbsoluteDate(2022, 12, 12, 0, 0, 0);

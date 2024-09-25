@@ -19,9 +19,6 @@
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * END-HISTORY
  */
-/*
- * 
- */
 package fr.cnes.sirius.patrius.forces.gravity.potential;
 
 import java.io.Serializable;
@@ -81,6 +78,38 @@ public interface PotentialCoefficientsProvider extends Serializable {
      *            available degree or order
      */
     double[][] getS(int n, int m, boolean normalized) throws PatriusException;
+
+    /**
+     * Get the sigma tesseral-sectorial and zonal coefficients.
+     * 
+     * @param n
+     *        the degree
+     * @param m
+     *        the order
+     * @param normalized
+     *        (true) or un-normalized (false)
+     * @return the sines coefficients matrix
+     * @exception PatriusException
+     *            if the requested maximal degree or order exceeds the
+     *            available degree or order
+     */
+    double[][] getSigmaC(int n, int m, boolean normalized) throws PatriusException;
+
+    /**
+     * Get tesseral-sectorial coefficients.
+     * 
+     * @param n
+     *        the degree
+     * @param m
+     *        the order
+     * @param normalized
+     *        (true) or un-normalized (false)
+     * @return the sines coefficients matrix
+     * @exception PatriusException
+     *            if the requested maximal degree or order exceeds the
+     *            available degree or order
+     */
+    double[][] getSigmaS(int n, int m, boolean normalized) throws PatriusException;
 
     /**
      * Get the central body attraction coefficient.

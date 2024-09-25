@@ -18,6 +18,10 @@
  * @history creation 04/04/2017
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.11.1:FA:FA-82:30/06/2023:[PATRIUS] Reliquat DM 3306
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -77,8 +81,8 @@ import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
@@ -177,7 +181,7 @@ public class VehicleTest {
     private static final String SOLAR_PANEL = "Solar panel";
 
     /** Sun. */
-    private static CelestialBody sun;
+    private static CelestialPoint sun;
 
     /** Earth. */
     private static EllipsoidBodyShape earth;
@@ -316,7 +320,7 @@ public class VehicleTest {
 
         final IParamDiffFunction[] aeroCoeff = vehicle.getAerodynamicsPropertiesFunction();
         final KeplerianParameters param = new KeplerianParameters(10000E3, 0.1, 0.2, 0.3, 0.4, 0.5, PositionAngle.TRUE,
-                Constants.EIGEN5C_EARTH_MU);
+            Constants.EIGEN5C_EARTH_MU);
         final KeplerianOrbit orbit = new KeplerianOrbit(param, FramesFactory.getEME2000(), AbsoluteDate.J2000_EPOCH);
         final SpacecraftState state = new SpacecraftState(orbit);
 
@@ -407,11 +411,11 @@ public class VehicleTest {
         // part or parts
         final MainPart mainPart = assembly.getMainPart();
         final PropertyType[] expectedMainProp = new PropertyType[] { PropertyType.MASS,
-                PropertyType.AERO_CROSS_SECTION, PropertyType.RADIATIVE_CROSS_SECTION, PropertyType.RADIATIVE,
-                PropertyType.RADIATIVEIR, PropertyType.AERO_GLOBAL };
+            PropertyType.AERO_CROSS_SECTION, PropertyType.RADIATIVE_CROSS_SECTION, PropertyType.RADIATIVE,
+            PropertyType.RADIATIVEIR, PropertyType.AERO_GLOBAL };
 
         final PropertyType[] expectedPartsProp = new PropertyType[] { PropertyType.PROPULSIVE, PropertyType.TANK,
-                PropertyType.AERO_FACET, PropertyType.RADIATIVE_FACET };
+            PropertyType.AERO_FACET, PropertyType.RADIATIVE_FACET };
 
         for (final PropertyType prop : expectedMainProp) {
             Assert.assertTrue(mainPart.hasProperty(prop));
@@ -462,10 +466,10 @@ public class VehicleTest {
         final Vehicle vehicle2 = new Vehicle();
         vehicle2.setMainShape(new Sphere(Vector3D.ZERO, 1.));
         vehicle2.setAerodynamicsProperties(new AeroCoeffConstant(new Parameter("coeff1", 1)), new AeroCoeffConstant(
-                new Parameter("coeff2", 2)));
+            new Parameter("coeff2", 2)));
 
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(),
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH.shiftedBy(1.), 0));
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH.shiftedBy(1.), 0));
         Assert.assertEquals(1., vehicle2.getAerodynamicsPropertiesFunction()[0].value(state), 0.);
         Assert.assertEquals(2., vehicle2.getAerodynamicsPropertiesFunction()[1].value(state), 0.);
     }
@@ -517,23 +521,23 @@ public class VehicleTest {
 
         // State
         final Orbit orbit = new KeplerianOrbit(6700000, 0.001, MathLib.toRadians(20.), 0., 0., 0., PositionAngle.MEAN,
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.EGM96_EARTH_MU);
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.EGM96_EARTH_MU);
         final Attitude attitude = new BodyCenterPointing().getAttitude(orbit);
         final SpacecraftState state = new SpacecraftState(orbit, attitude, new MassModel(assembly));
         final SpacecraftState stateMass = new SpacecraftState(orbit, attitude, new MassModel(assemblyMass));
 
         // Check drag acceleration is properly scaled-up
         final Atmosphere atmosphere = new US76(new OneAxisEllipsoid(Constants.EGM96_EARTH_EQUATORIAL_RADIUS,
-                Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getGCRF()));
+            Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getGCRF()));
 
         final DragForce dragForce = new DragForce(atmosphere, new AeroModel(assembly));
         final DragForce dragForceMass = new DragForce(atmosphere, new AeroModel(assemblyMass));
         final DragForce dragForceDrag = new DragForce(atmosphere, new AeroModel(assemblyDrag));
 
         Assert.assertEquals(
-                2,
-                dragForce.computeAcceleration(state).getNorm() / dragForceMass.computeAcceleration(stateMass).getNorm(),
-                0.);
+            2,
+            dragForce.computeAcceleration(state).getNorm() / dragForceMass.computeAcceleration(stateMass).getNorm(),
+            0.);
         Assert.assertEquals(3, dragForceDrag.computeAcceleration(state).getNorm()
                 / dragForce.computeAcceleration(state).getNorm(), 1E-14);
 
@@ -546,26 +550,26 @@ public class VehicleTest {
             new DirectRadiativeModel(assemblySRP));
 
         Assert.assertEquals(2,
-                srpForce.computeAcceleration(state).getNorm() / srpForceMass.computeAcceleration(stateMass).getNorm(),
-                0.);
+            srpForce.computeAcceleration(state).getNorm() / srpForceMass.computeAcceleration(stateMass).getNorm(),
+            0.);
         Assert.assertEquals(4, srpForceSRP.computeAcceleration(state).getNorm()
                 / srpForce.computeAcceleration(state).getNorm(), 0.);
 
         // Check rediffused SRP acceleration is properly scaled-up
         final RediffusedRadiationPressure rsrpForce = new RediffusedRadiationPressure(new MeeusSun(),
-                FramesFactory.getGCRF(), 5, 5, new KnockeRiesModel(), new RediffusedRadiativeModel(true, true, 0.5,
-                        0.5, assembly));
+            FramesFactory.getGCRF(), 5, 5, new KnockeRiesModel(), new RediffusedRadiativeModel(true, true, 0.5,
+                0.5, assembly));
         final RediffusedRadiationPressure rsrpForceMass = new RediffusedRadiationPressure(new MeeusSun(),
-                FramesFactory.getGCRF(), 5, 5, new KnockeRiesModel(), new RediffusedRadiativeModel(true, true, 0.5,
-                        0.5, assemblyMass));
+            FramesFactory.getGCRF(), 5, 5, new KnockeRiesModel(), new RediffusedRadiativeModel(true, true, 0.5,
+                0.5, assemblyMass));
         final RediffusedRadiationPressure rsrpForceSRP = new RediffusedRadiationPressure(new MeeusSun(),
-                FramesFactory.getGCRF(), 5, 5, new KnockeRiesModel(), new RediffusedRadiativeModel(true, true, 0.5,
-                        0.5, assemblySRP));
+            FramesFactory.getGCRF(), 5, 5, new KnockeRiesModel(), new RediffusedRadiativeModel(true, true, 0.5,
+                0.5, assemblySRP));
 
         Assert.assertEquals(
-                2,
-                rsrpForce.computeAcceleration(state).getNorm() / rsrpForceMass.computeAcceleration(stateMass).getNorm(),
-                0.);
+            2,
+            rsrpForce.computeAcceleration(state).getNorm() / rsrpForceMass.computeAcceleration(stateMass).getNorm(),
+            0.);
         Assert.assertEquals(4, rsrpForceSRP.computeAcceleration(state).getNorm()
                 / rsrpForce.computeAcceleration(state).getNorm(), 0.);
     }
@@ -592,7 +596,7 @@ public class VehicleTest {
      *
      * @referenceVersion 4.6
      *
-     * @nonRegressionVersion 4.11.1
+     * @nonRegressionVersion 4.13
      */
     @Test
     public void testPropagation() throws PatriusException {
@@ -653,9 +657,9 @@ public class VehicleTest {
         final SolarRadiationPressure srp = new SolarRadiationPressure(Constants.SEIDELMANN_UA,
             Constants.CONST_SOL_N_M2, sun, Constants.SUN_RADIUS, earth, radiativeModel, false);
         final RediffusedRadiativeModel rediffRadiativeModel = new RediffusedRadiativeModel(true, true, 0.5, 0.5,
-                assembly);
+            assembly);
         final RediffusedRadiationPressure rediffusedSRP = new RediffusedRadiationPressure(sun, FramesFactory.getITRF(),
-                4, 4, new KnockeRiesModel(), rediffRadiativeModel, false);
+            4, 4, new KnockeRiesModel(), rediffRadiativeModel, false);
 
         // Build the numerical propagator
 
@@ -693,10 +697,8 @@ public class VehicleTest {
         final AbsoluteDate manStart = date.shiftedBy(300.);
         final double manDuration = 100.;
         final ContinuousThrustManeuver maneuver = new ContinuousThrustManeuver(manStart, manDuration,
-                new PropulsiveProperty(thrust1, isp1), Vector3D.PLUS_I, massProvider, vehicle.getTanksList().get(0));
+            new PropulsiveProperty(thrust1, isp1), Vector3D.PLUS_I, massProvider, vehicle.getTanksList().get(0));
         propagator.addForceModel(maneuver);
-
-
 
         propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(state.getMu())));
 
@@ -708,20 +710,22 @@ public class VehicleTest {
         final double expectedTankMass = 468.13386834443986;
 
         // Comparisons on orbital elements and additional state (mass) -
-        // Reference PATRIUS V4.11.1
+        // Reference PATRIUS V4.13
         final CartesianOrbit finalOrbit = (CartesianOrbit) finalState.getOrbit();
+        final PVCoordinates pv = finalOrbit.getPVCoordinates();
 
-        Assert.assertEquals(-6132894.431732619, finalOrbit.getPVCoordinates().getPosition().getX(), 0.);
-        Assert.assertEquals(2967003.8570620404, finalOrbit.getPVCoordinates().getPosition().getY(), 0.);
-        Assert.assertEquals(1079892.9679845546, finalOrbit.getPVCoordinates().getPosition().getZ(), 0.);
-        Assert.assertEquals(-3552.8220610748253, finalOrbit.getPVCoordinates().getVelocity().getX(), 0.);
-        Assert.assertEquals(-6267.477704884197, finalOrbit.getPVCoordinates().getVelocity().getY(), 0.);
-        Assert.assertEquals(-2281.162952374187, finalOrbit.getPVCoordinates().getVelocity().getZ(), 0.);
+        Assert.assertEquals(-6132894.431654451, pv.getPosition().getX(), 0.);
+        Assert.assertEquals(2967003.857203159, pv.getPosition().getY(), 0.);
+        Assert.assertEquals(1079892.9680359596, pv.getPosition().getZ(), 0.);
+        Assert.assertEquals(-3552.822061241578, pv.getVelocity().getX(), 0.);
+        Assert.assertEquals(-6267.477704802792, pv.getVelocity().getY(), 0.);
+        Assert.assertEquals(-2281.1629523446177, pv.getVelocity().getZ(), 0.);
 
         // Check the mass in the SpacecraftState as well as in the Assembly
         Assert.assertEquals(expectedTankMass, finalState.getMass("Tank"), 0.);
         Assert.assertEquals(expectedTankMass, massProvider.getMass("Tank"), 0.);
-        Assert.assertEquals(expectedTankMass + dryMass, finalState.getMass("Tank") + finalState.getMass(MAIN_SHAPE), 0.);
+        Assert
+            .assertEquals(expectedTankMass + dryMass, finalState.getMass("Tank") + finalState.getMass(MAIN_SHAPE), 0.);
         Assert.assertEquals(expectedTankMass + dryMass, massProvider.getTotalMass(finalState), 0.);
     }
 
@@ -805,12 +809,12 @@ public class VehicleTest {
         final CartesianOrbit finalOrbit = (CartesianOrbit) finalState.getOrbit();
         final PVCoordinates pv = finalOrbit.getPVCoordinates();
 
-        Assert.assertEquals(-3579575.7086644927, pv.getPosition().getX(), 0.);
-        Assert.assertEquals(-5308963.758949568, pv.getPosition().getY(), 0.);
-        Assert.assertEquals(-1932236.8270395, pv.getPosition().getZ(), 0.);
-        Assert.assertEquals(6526.323735180116, pv.getVelocity().getX(), 0.);
-        Assert.assertEquals(-3873.6854655992797, pv.getVelocity().getY(), 0.);
-        Assert.assertEquals(-1409.827119061159, pv.getVelocity().getZ(), 0.);
+        Assert.assertEquals(-3579575.708651917, pv.getPosition().getX(), 0.);
+        Assert.assertEquals(-5308963.758953648, pv.getPosition().getY(), 0.);
+        Assert.assertEquals(-1932236.8270409629, pv.getPosition().getZ(), 0.);
+        Assert.assertEquals(6526.323735189411, pv.getVelocity().getX(), 0.);
+        Assert.assertEquals(-3873.6854655894394, pv.getVelocity().getY(), 0.);
+        Assert.assertEquals(-1409.8271190575606, pv.getVelocity().getZ(), 0.);
     }
 
     /**
@@ -898,13 +902,13 @@ public class VehicleTest {
 
         // Build a MSISE atmosphere model
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-                EphemerisType.SUN);
-        sun = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+            EphemerisType.SUN);
+        sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS, Constants.WGS84_EARTH_FLATTENING,
-                FramesFactory.getITRF(), "Earth");
+            FramesFactory.getITRF(), "Earth");
         SolarActivityDataFactory.addSolarActivityDataReader(new ACSOLFormatReader("ACSOL.act"));
         final MSISE2000InputParameters data = new ContinuousMSISE2000SolarData(
-                SolarActivityDataFactory.getSolarActivityDataProvider());
+            SolarActivityDataFactory.getSolarActivityDataProvider());
         atm = new MSISE2000(data, earth, sun);
     }
 
@@ -946,7 +950,7 @@ public class VehicleTest {
         Assert.assertEquals(1000, vehicle.getMassProperty().getMass(), 0);
         Assert.assertEquals(0.1, vehicle.getAerodynamicProperties().getConstantDragCoef(), 0);
         Assert.assertEquals(0.4, vehicle.getRadiativeProperties().getRadiativeProperty().getDiffuseReflectionRatio()
-                .getValue(), 0);
+            .getValue(), 0);
 
         // New vehicle
 
@@ -957,12 +961,12 @@ public class VehicleTest {
         final List<TankProperty> tankList = new ArrayList<>();
         tankList.add(new TankProperty(300));
         final Vehicle vehicle2 = new Vehicle(new Sphere(Vector3D.ZERO, 1.0), null, new MassProperty(200),
-                new AerodynamicProperties(new Sphere(3000), 0.3), new RadiativeProperties(new RadiativeProperty(0.2,
-                        0.3, 0.5), null, new VehicleSurfaceModel(new Sphere(300))), enginesList, tankList);
+            new AerodynamicProperties(new Sphere(3000), 0.3), new RadiativeProperties(new RadiativeProperty(0.2,
+                0.3, 0.5), null, new VehicleSurfaceModel(new Sphere(300))), enginesList, tankList);
 
         Assert.assertEquals(0.3, vehicle2.getAerodynamicProperties().getConstantDragCoef(), 0);
         Assert.assertEquals(0.2, vehicle2.getRadiativeProperties().getRadiativeProperty().getAbsorptionRatio()
-                .getValue(), 0);
+            .getValue(), 0);
     }
 
     /**
@@ -1001,8 +1005,8 @@ public class VehicleTest {
         // ORBIT
         final AbsoluteDate date = new AbsoluteDate("2010-01-01T12:00:00.000", TimeScalesFactory.getUTC());
         final KeplerianOrbit iniOrbit = new KeplerianOrbit(Constants.WGS84_EARTH_EQUATORIAL_RADIUS + 250.e3, 0,
-                FastMath.toRadians(51.6), 0, 0, 0, PositionAngle.MEAN, FramesFactory.getGCRF(), date,
-                Constants.WGS84_EARTH_MU);
+            FastMath.toRadians(51.6), 0, 0, 0, PositionAngle.MEAN, FramesFactory.getGCRF(), date,
+            Constants.WGS84_EARTH_MU);
 
         // VEHICLE
 
@@ -1025,7 +1029,7 @@ public class VehicleTest {
 
         // FORCES (aero)
         final OneAxisEllipsoid EARTH = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-                Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "EARTH");
+            Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "EARTH");
         final DragForce dragForce = new DragForce(1., new US76(EARTH), new AeroModel(assembly));
 
         // Mimick PSIMU behavior by copying drag force

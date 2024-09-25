@@ -63,7 +63,7 @@ public class PairTest {
         final Pair<Integer, Double> p2bis = new Pair<>(p2);
         Assert.assertTrue(p2bis.equals(p2));
         Assert.assertFalse(p2bis.equals(1));
-        Assert.assertEquals(0, p2bis.hashCode(), 0);
+        Assert.assertEquals(961, p2bis.hashCode(), 0);
 
         p1 = new Pair<>(new Integer(1), new Double(2));
         Assert.assertFalse(p1.equals(p2));
@@ -93,7 +93,7 @@ public class PairTest {
     @Test
     public void testToString() {
         // Test with native integer and Double
-        Pair<Integer, Double> p1 = new Pair<>(new Integer(1), new Double(2.6));
+        final Pair<Integer, Double> p1 = new Pair<>(new Integer(1), new Double(2.6));
         Assert.assertTrue(p1.toString().equalsIgnoreCase("{1, 2.6}"));
 
         // Test with created class with a toString method

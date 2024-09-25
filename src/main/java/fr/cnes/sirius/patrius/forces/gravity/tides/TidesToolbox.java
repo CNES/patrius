@@ -18,6 +18,10 @@
  * @history Created 19/07/2012
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
+ * juliens dans TidesToolbox.computeFundamentalArguments()
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -38,7 +42,6 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
-import fr.cnes.sirius.patrius.time.DateTimeComponents;
 import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -192,14 +195,8 @@ public final class TidesToolbox {
         // compute the mean sideral time
         final double meanSideralTime = computeSideralTime(date);
 
-        // J2000 date time components in TT scale
-        final DateTimeComponents j2000 = (AbsoluteDate.J2000_EPOCH).getComponents(TimeScalesFactory.getTT());
-
-        // date time components of the given date in TAI scale
-        final DateTimeComponents d = date.getComponents(TimeScalesFactory.getTAI());
-
-        // duration from the J2000 epoch to the given date in TT scale (julian days)
-        final double jd = (d.offsetFrom(j2000) + TimeScalesFactory.getTT().offsetFromTAI(date)) / Constants.JULIAN_DAY;
+        // Duration in days since J2000 epoch
+        final double jd = date.durationFromJ2000EpochInDays();
 
         // compute the fundamental arguments from the luni-solar nutation theory
         final double[][] nutationArguments = computeNutationArguments(jd, standard);
@@ -302,8 +299,8 @@ public final class TidesToolbox {
         final TimeScale ut1 = TimeScalesFactory.getUT1();
 
         // duration from the J2000 epoch to the given date with UT1 scale in julian days
-        final double jj = (date.durationFrom(AbsoluteDate.J2000_EPOCH) + ut1.offsetFromTAI(date) - TimeScalesFactory
-            .getTT().offsetFromTAI(date)) / Constants.JULIAN_DAY;
+        final double jj = (date.durationFromJ2000EpochInSeconds() + ut1.offsetFromTAI(date)
+                - TimeScalesFactory.getTT().offsetFromTAI(date)) / Constants.JULIAN_DAY;
 
         final double jj2 = jj * jj;
         final double jj3 = jj2 * jj;

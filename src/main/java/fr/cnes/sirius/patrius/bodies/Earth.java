@@ -13,6 +13,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
  */
@@ -92,8 +95,7 @@ public class Earth implements CelestialBody {
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date,
-            final Frame frame) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return getInertialFrame(IAUPoleModelType.CONSTANT);
     }
 
@@ -108,7 +110,11 @@ public class Earth implements CelestialBody {
     public CelestialBodyFrame getEME2000() {
         return FramesFactory.getEME2000();
     }
-
+    /** {@inheritDoc} */
+    @Override
+    public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+        return FramesFactory.getEclipticJ2000();
+    }
     /** {@inheritDoc} */
     @Override
     public CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPole) throws PatriusException {
@@ -215,13 +221,13 @@ public class Earth implements CelestialBody {
 
     /** {@inheritDoc} */
     @Override
-    public IAUPole getIAUPole() {
+    public CelestialBodyIAUOrientation getOrientation() {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setIAUPole(final IAUPole iauPoleIn) {
+    public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
         // Nothing to do, this method is not supposed to be called
     }
 }

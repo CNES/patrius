@@ -17,6 +17,8 @@
  */
 /*
  * HISTORY
+* VERSION:4.13:FA:FA-145:08/12/2023:[PATRIUS] Utilisation en dur du 
+ *          repere EME2000 dans la classe AbstractGroundPointing 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -42,17 +44,16 @@ package fr.cnes.sirius.patrius.attitudes;
 
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
@@ -152,16 +153,16 @@ public abstract class AbstractGroundPointing extends AbstractAttitudeLaw {
                                 final AbsoluteDate date, final Frame frame) throws PatriusException {
 
         // inertial frame
-        final Frame eme2000 = FramesFactory.getEME2000();
+        final Frame inertialFrame = bodyFrame.getFirstPseudoInertialAncestor();
 
         // satellite-target relative vector
-        PVCoordinates pv0 = pvProv.getPVCoordinates(date, eme2000);
+        PVCoordinates pv0 = pvProv.getPVCoordinates(date, inertialFrame);
         if (pv0.getAcceleration() == null) {
             // Set acceleration to zero in case it has not been provided
             pv0 = new PVCoordinates(pv0.getPosition(), pv0.getVelocity(), Vector3D.ZERO);
         }
         final TimeStampedPVCoordinates deltaP0 =
-            new TimeStampedPVCoordinates(date, pv0, this.getTargetPV(pvProv, date, eme2000));
+            new TimeStampedPVCoordinates(date, pv0, this.getTargetPV(pvProv, date, inertialFrame));
 
         // New orekit exception if null position.
         if (deltaP0.getPosition().getNorm() < Precision.EPSILON) {
@@ -195,7 +196,7 @@ public abstract class AbstractGroundPointing extends AbstractAttitudeLaw {
         }
 
         // Transform in new frame
-        return new Attitude(eme2000, ac).withReferenceFrame(frame, this.getSpinDerivativesComputation());
+        return new Attitude(inertialFrame, ac).withReferenceFrame(frame, this.getSpinDerivativesComputation());
     }
 
     /**

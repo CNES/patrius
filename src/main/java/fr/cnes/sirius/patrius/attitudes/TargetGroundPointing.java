@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-146:08/12/2023:[PATRIUS] Erreur dans la methode
+ * getTargetPosition de la classe TargetGroundPointing
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -174,15 +176,14 @@ public class TargetGroundPointing extends AbstractGroundPointing {
     @Override
     protected Vector3D getTargetPosition(final PVCoordinatesProvider pvProv, final AbsoluteDate date,
                                          final Frame frame) throws PatriusException {
-
         // Body frame - frame transform:
         final Transform transform = getBodyFrame().getTransformTo(frame, date, getSpinDerivativesComputation());
-        final Vector3D center = Vector3D.ZERO;
+        final Vector3D satPos = pvProv.getPVCoordinates(date, getBodyFrame()).getPosition();
         final Vector3D target = this.targetPoint.getPosition();
-        // Create the line joining the body center and the target:
-        final Line line = new Line(center, target);
-        // Compute the intersection between the body shape and the center-target direction:
-        final BodyPoint cTargetPoint = getBodyShape().getIntersectionPoint(line, target, getBodyFrame(), date);
+        // Create the line joining the body center and the target: 
+        final Line line = new Line(satPos, target); 
+        // Compute the intersection between the body shape and the center-target direction: 
+        final BodyPoint cTargetPoint = getBodyShape().getIntersectionPoint(line, satPos, getBodyFrame(), date); 
         return transform.transformPosition(cTargetPoint.getPosition());
     }
 

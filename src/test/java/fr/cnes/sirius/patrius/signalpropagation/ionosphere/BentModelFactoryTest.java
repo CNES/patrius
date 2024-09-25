@@ -1,8 +1,12 @@
 /**
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -30,6 +34,7 @@ import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataProvider;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -72,7 +77,7 @@ public class BentModelFactoryTest {
 
         final double frequency = 2.4e9;
 
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(Constants.GRS80_EARTH_EQUATORIAL_RADIUS,
             Constants.GRS80_EARTH_FLATTENING, itrf, "Earth");
         final EllipsoidPoint geodeticPoint = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),

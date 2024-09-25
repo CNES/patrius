@@ -15,6 +15,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-145:08/12/2023:[PATRIUS] Utilisation en dur du
+ * repere EME2000 dans la classe AbstractGroundPointing
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-53:30/06/2023:[PATRIUS] Error in class FieldData
  * VERSION:4.11.1:FA:FA-81:30/06/2023:[PATRIUS] Reliquat DM 3299
@@ -67,6 +71,9 @@ import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
 import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
+import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector.BodyDistanceType;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
 import fr.cnes.sirius.patrius.fieldsofview.PyramidalField;
@@ -85,7 +92,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -145,7 +151,7 @@ public class FacetBodyShapeValTest {
         celestialBody1 = new UserCelestialBody("", CelestialBodyFactory.getMoon(), 0, IAUPoleFactory.getIAUPole(null),
             FramesFactory.getGCRF(), null);
         body1 = new StarConvexFacetBodyShape("Phobos HD", celestialBody1.getRotatingFrame(IAUPoleModelType.TRUE),
-            EllipsoidType.INNER_SPHERE, new ObjMeshLoader(fullName1));
+            new ObjMeshLoader(fullName1));
         body1.setLLHCoordinatesSystem(LLHCoordinatesSystem.BODYCENTRIC_NORMAL);
         // Load geodetic mesh and validate .obj file writing
         final String modelFile2 = "mnt" + File.separator + "m1phobos.tab";
@@ -159,15 +165,14 @@ public class FacetBodyShapeValTest {
         celestialBody2 = new UserCelestialBody("", CelestialBodyFactory.getMoon(), 0, IAUPoleFactory.getIAUPole(null),
             FramesFactory.getGCRF(), null);
         body2 = new FacetBodyShape("Phobos m1", celestialBody2.getRotatingFrame(IAUPoleModelType.TRUE),
-            EllipsoidType.INNER_SPHERE, loader3);
+            loader3);
         Assert.assertEquals(loader2.getVertices().size(), loader3.getVertices().size());
         Assert.assertEquals(loader2.getTriangles().length, loader3.getTriangles().length);
 
         // Load .obj mesh for Tchouri
         final String modelFile67P = "mnt" + File.separator + "67P_Tchouri.obj";
         final String fullName67P = FacetBodyShape.class.getClassLoader().getResource(modelFile67P).toURI().getPath();
-        body67P = new FacetBodyShape("", FramesFactory.getGCRF(), EllipsoidType.INNER_SPHERE, new ObjMeshLoader(
-            fullName67P));
+        body67P = new FacetBodyShape("", FramesFactory.getGCRF(), new ObjMeshLoader(fullName67P));
     }
 
     /**
@@ -352,6 +357,39 @@ public class FacetBodyShapeValTest {
     /**
      * @testType VT
      *
+     * @description check that intersection between a line of sight and the body is properly computed:
+     *              <ul>
+     *              <li>Check triangle belongs to body</li>
+     *              <li>Check found intersection point belongs to triangle</li>
+     *              <li>Check intersection point lies on line of sight</li>
+     *              <li>Check intersection point is between satellite body center</li>
+     *              <li>Check intersection point is similar between .obj and geodetic files</li>
+     *              </ul>
+     *
+     * @testPassCriteria intersection between a line of sight and the body is properly computed for various
+     *                   configurations (reference: math, absolute threshold is limited due to large distance
+     *                   [300 000km] between point and body)
+     *
+     * @referenceVersion 4.13
+     *
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void surfaceDistanceDetectorTest() throws PatriusException {
+        final UserCelestialBody phobos = new UserCelestialBody("Phobos", body1.getBodyFrame(), 0, null,
+            body1.getBodyFrame(), body1);
+        final SurfaceDistanceDetector detector =
+            new SurfaceDistanceDetector(phobos, 1, BodyDistanceType.CLOSEST);
+        final Triangle triangle = body1.getTriangles()[123];
+        final Vector3D pos = triangle.getCenter().add(triangle.getNormal());
+        final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos, Vector3D.ZERO),
+            body1.getBodyFrame(), AbsoluteDate.J2000_EPOCH, Constants.EGM96_EARTH_MU));
+        Assert.assertEquals(0., detector.g(state), 1E-11);
+    }
+
+    /**
+     * @testType VT
+     *
      * @description check that neighbors are properly computed (Triangle, Geodetic and cartesian points case):
      *              <ul>
      *              <li>Check that neighbors respect the distance criterion</li>
@@ -424,7 +462,7 @@ public class FacetBodyShapeValTest {
 
         // Initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getEME2000();
+        final Frame frame = body1.getBodyFrame().getFirstPseudoInertialAncestor();
         final Transform transform = frame.getTransformTo(body1.getBodyFrame(), date);
 
         // Attitude law: body center pointing
@@ -721,7 +759,7 @@ public class FacetBodyShapeValTest {
         // Check the non-regression of the equatorial radius of the inner ellipsoid.
         Assert.assertEquals(0.,
             (body1.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius() - EXPECTED_INNER_RADIUS)
-                / EXPECTED_INNER_RADIUS, EPS);
+                    / EXPECTED_INNER_RADIUS, EPS);
         // Check that the flattening of the inner ellipsoid has the same flattening as the fitted ellipsoid
         Assert.assertEquals(0.,
             (body1.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening() - body1.getEllipsoid(
@@ -766,7 +804,7 @@ public class FacetBodyShapeValTest {
         // Check the non-regression of the equatorial radius of the outer ellipsoid.
         Assert.assertEquals(0.,
             (body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() - EXPECTED_OUTER_RADIUS)
-                / EXPECTED_OUTER_RADIUS, EPS);
+                    / EXPECTED_OUTER_RADIUS, EPS);
         // Check that the flattening of the outer ellipsoid has the same flattening as the fitted ellipsoid
         Assert.assertEquals(0.,
             (body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening() - body1.getEllipsoid(
@@ -872,7 +910,7 @@ public class FacetBodyShapeValTest {
         final String fullName67P = FacetBodyShape.class.getClassLoader().getResource(modelFile67P).toURI().getPath();
 
         try {
-            new StarConvexFacetBodyShape("tchouri", body67P.getBodyFrame(), EllipsoidType.FITTED_ELLIPSOID,
+            new StarConvexFacetBodyShape("tchouri", body67P.getBodyFrame(),
                 new ObjMeshLoader(fullName67P));
             Assert.fail();
         } catch (final IllegalArgumentException e) {

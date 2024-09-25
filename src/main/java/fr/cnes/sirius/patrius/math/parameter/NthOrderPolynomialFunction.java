@@ -16,10 +16,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -29,16 +30,17 @@
  */
 package fr.cnes.sirius.patrius.math.parameter;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.function.Function;
 
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableFunction;
 
 /**
  * This class is used to define parameterizable Nth order polynomial function: <i>f = a0 + a1 * (t -
@@ -46,7 +48,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
  * <p>
  * This function is serializable.
  * </p>
- * 
+ *
  * @author veuillezh, bonitt
  */
 public class NthOrderPolynomialFunction extends LinearCombinationFunction {
@@ -96,10 +98,10 @@ public class NthOrderPolynomialFunction extends LinearCombinationFunction {
      * <i>f = a0 + a1 * (t - t0) + a2 * (t - t0)^2 + ...</i>, with the first specified parameter
      * represents <i>a0</i>, the second represents <i>a1</i>, etc.
      * <p>
-     * The linear polynomial function order depends of how many parameters are given to the
-     * constructor (N parameters = polynomial of order N).
+     * The linear polynomial function order depends of how many parameters are given to the constructor (N parameters =
+     * polynomial of order N).
      * </p>
-     * 
+     *
      * @param t0
      *        Initial date
      * @param params
@@ -127,7 +129,7 @@ public class NthOrderPolynomialFunction extends LinearCombinationFunction {
      * @throws NullArgumentException if {@code t0} is {@code null}
      */
     private static final Map<Parameter, Function<SpacecraftState, Double>> constructSuperClassMap(
-            final AbsoluteDate t0, final int n) {
+                                   final AbsoluteDate t0, final int n) {
         return constructSuperClassMap(t0, new double[n + 1]);
     }
 
@@ -143,8 +145,9 @@ public class NthOrderPolynomialFunction extends LinearCombinationFunction {
      * @return the Nth order polynomial function
      * @throws NullArgumentException if {@code t0} is {@code null}
      */
-    private static final Map<Parameter, Function<SpacecraftState, Double>> constructSuperClassMap(
-            final AbsoluteDate t0, final double... values) {
+    private static final
+        Map<Parameter, Function<SpacecraftState, Double>>
+            constructSuperClassMap(final AbsoluteDate t0, final double... values) {
         final int size = values.length;
         final Parameter[] coefsAParam = new Parameter[size];
         for (int i = 0; i < size; i++) {
@@ -166,11 +169,12 @@ public class NthOrderPolynomialFunction extends LinearCombinationFunction {
      * @return the Nth order polynomial function
      * @throws NullArgumentException if {@code t0} or any {@code params} is {@code null}
      */
-    @SuppressWarnings({ "PMD.UseConcurrentHashMap", "unchecked" })
     // Reason: preserve insertion order
-            private static final
-            Map<Parameter, Function<SpacecraftState, Double>> constructSuperClassMap(
-                    final AbsoluteDate t0, final Parameter... params) {
+    @SuppressWarnings("PMD.UseConcurrentHashMap")
+    private static final
+        Map<Parameter, Function<SpacecraftState, Double>>
+            constructSuperClassMap(final AbsoluteDate t0,
+                                   final Parameter... params) {
         // Check for null attribute
         if (t0 == null) {
             throw new NullArgumentException();
@@ -187,8 +191,8 @@ public class NthOrderPolynomialFunction extends LinearCombinationFunction {
         final Map<Parameter, Function<SpacecraftState, Double>> map = new LinkedHashMap<>(size);
         for (int i = 0; i < size; i++) {
             final int pow = i;
-            map.put(params[i], (Serializable & Function<SpacecraftState, Double>) state -> MathLib
-                    .pow(state.getDate().durationFrom(t0), pow));
+            map.put(params[i], (SerializableFunction<SpacecraftState, Double>) state -> MathLib
+                .pow(state.getDate().durationFrom(t0), pow));
         }
         return map;
     }
@@ -205,7 +209,47 @@ public class NthOrderPolynomialFunction extends LinearCombinationFunction {
     @Override
     @SuppressWarnings("PMD.LooseCoupling")
     public ArrayList<Parameter> getParameters() {
-        // Implementation note: override in order to have a specific javadoc
-        return new ArrayList<>(this.functions.keySet());
+        // Implementation note: override in order to have a specific javadoc for this function
+        return super.getParameters();
+    }
+
+    /**
+     * Getter for a String representation of this function.
+     * 
+     * @return a String representation of this function
+     */
+    @Override
+    public String toString() {
+
+        final StringBuilder myStringBuilder = new StringBuilder();
+
+        // Initialize the string joiners for the values and for the parameter names
+        final StringJoiner strJoinerValues = new StringJoiner(" + ", "Value     : f = ", "\n");
+        final StringJoiner strJoinerNames = new StringJoiner("; ", "Parameters: [", "]\n");
+
+        // Build the format for the values: f = a0 + a1 * (t - t0) + a2 * (t - t0)^2 + ...
+        int indice = 0;
+        final String factor = " * (t - t0)";
+        for (final Parameter key : this.functions.keySet()) {
+            final String paramValue = Double.toString(key.getValue());
+            final String paramName = key.getName();
+
+            if (indice == 0) {
+                // Degree 0: "paramValue"
+                strJoinerValues.add(paramValue);
+            } else if (indice == 1) {
+                // Degree 1: "paramValue * (t - t0)"
+                strJoinerValues.add(paramValue + factor);
+            } else {
+                // Degree > 1: "paramValue * (t - t0)^N"
+                strJoinerValues.add(paramValue + factor + "^" + indice);
+            }
+            strJoinerNames.add(paramName);
+            indice++;
+        }
+        myStringBuilder.append(strJoinerValues);
+        myStringBuilder.append(strJoinerNames);
+
+        return myStringBuilder.toString();
     }
 }

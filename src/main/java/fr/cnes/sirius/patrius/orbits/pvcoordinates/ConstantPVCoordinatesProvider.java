@@ -19,6 +19,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9.1:DM:DM-3168:01/06/2022:[PATRIUS] Ajout de la classe ConstantPVCoordinatesProvider
  * VERSION:4.9:DM:DM-3168:10/05/2022:[PATRIUS] Ajout de la classe FixedPVCoordinatesProvider 
@@ -89,7 +91,7 @@ public class ConstantPVCoordinatesProvider implements PVCoordinatesProvider {
 
     /** @inheritDoc */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date, final Frame frameIn) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return this.frame;
     }
 }

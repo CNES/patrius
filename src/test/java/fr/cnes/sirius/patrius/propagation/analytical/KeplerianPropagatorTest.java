@@ -18,6 +18,12 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
+* VERSION:4.13:FA:FA-157:08/12/2023:[PATRIUS] Anomalie de la methode SpacecraftState#updateOrbit
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
  * VERSION:4.11:DM:DM-17:22/05/2023:[PATRIUS] Detecteur de distance a la surface d'un corps celeste
@@ -74,6 +80,14 @@ import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AltitudeDetector;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.ElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -96,13 +110,6 @@ import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.AltitudeDetector;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.ElevationDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandlerMultiplexer;
@@ -127,6 +134,45 @@ public class KeplerianPropagatorTest {
     public static void setUpBeforeClass() {
         Report.printClassHeader(KeplerianPropagatorTest.class.getSimpleName(),
             "Keplerian propagator");
+    }
+
+    /**
+     * FT-157.
+     * 
+     * @testType UT
+     * 
+     * @description
+     *              Test proper update of orbit when attitude frame is different from orbit frame
+     * 
+     * @testPassCriteria SpacecraftState updated properly without exception
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testUpdateOrbitDifferentFrames() throws PatriusException {
+
+        // Initialization
+        final AbsoluteDate initialDate = new AbsoluteDate(2014, 1, 1, TimeScalesFactory.getTAI());
+        final Orbit initialOrbit = new KeplerianOrbit(24400e3, 0.72, MathLib.toRadians(5), MathLib.toRadians(180),
+                MathLib.toRadians(2), MathLib.toRadians(180), PositionAngle.TRUE, FramesFactory.getGCRF(), initialDate,
+                Constants.WGS84_EARTH_MU);
+        final KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+        final AttitudeProvider attitudeProvider = new ConstantAttitudeLaw(FramesFactory.getGCRF(), Rotation.IDENTITY);
+        propagator.setAttitudeProvider(attitudeProvider);
+        propagator.resetInitialState(new SpacecraftState(initialOrbit, attitudeProvider.getAttitude(initialOrbit)));
+
+        // Change propagation frame to EME2000
+        propagator.setOrbitFrame(FramesFactory.getEME2000());
+
+        try {
+            // Propagation
+            propagator.propagate(initialDate.shiftedBy(1));
+            Assert.assertTrue(true);
+        } catch (final PatriusException e) {
+            Assert.fail();
+        }
     }
 
     /**
@@ -1062,8 +1108,8 @@ public class KeplerianPropagatorTest {
         final AbsoluteDate extrapDate = initDate.shiftedBy(delta_t);
 
         final SpacecraftState finalOrbit = extrapolator.propagate(extrapDate);
-        Assert.assertEquals(6092.3362422560844633, finalOrbit.getKeplerianPeriod(), 1.0e-12);
-        Assert.assertEquals(0.001031326088602888358, finalOrbit.getKeplerianMeanMotion(), 1.0e-16);
+        Assert.assertEquals(6092.336302524898, finalOrbit.getKeplerianPeriod(), 1.0e-12);
+        Assert.assertEquals(0.0010313260784004321, finalOrbit.getKeplerianMeanMotion(), 1.0e-16);
 
         // computation of (M final - M initial) with another method
         final double a = finalOrbit.getA();
@@ -1172,8 +1218,8 @@ public class KeplerianPropagatorTest {
     public void testSetEphemerisMode() throws PatriusException {
 
         // GCRF, ITRF frame
-        final Frame gcrf = FramesFactory.getGCRF();
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
 
         // Constants
         final double ae = Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS;
@@ -1239,7 +1285,7 @@ public class KeplerianPropagatorTest {
     public void testSetAttitudeProvider() throws PatriusException {
 
         // ITRF frame
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
 
         // Constants
         final double ae = Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS;
@@ -1318,7 +1364,7 @@ public class KeplerianPropagatorTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data");
         FramesFactory.clear();
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));

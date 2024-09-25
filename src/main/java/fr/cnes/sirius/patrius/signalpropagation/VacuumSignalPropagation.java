@@ -17,6 +17,10 @@
  * @history creation 23/04/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -28,7 +32,7 @@ package fr.cnes.sirius.patrius.signalpropagation;
 
 import java.io.Serializable;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -136,7 +140,7 @@ public class VacuumSignalPropagation implements Serializable {
 
     /**
      * Getter for the emission date.
-     * 
+     *
      * @return the emission date
      */
     public final AbsoluteDate getEmissionDate() {
@@ -145,7 +149,7 @@ public class VacuumSignalPropagation implements Serializable {
 
     /**
      * Getter for the reception date.
-     * 
+     *
      * @return the reception date
      */
     public final AbsoluteDate getReceptionDate() {
@@ -153,8 +157,26 @@ public class VacuumSignalPropagation implements Serializable {
     }
 
     /**
+     * Getter for PV coordinates of the emitter, in the {@link #getFrame() working frame}.
+     *
+     * @return the PV coordinates of the emitter
+     */
+    public PVCoordinates getEmitterPV() {
+        return this.emitterPV;
+    }
+
+    /**
+     * Getter for PV coordinates of the receiver, in the {@link #getFrame() working frame}.
+     *
+     * @return the PV coordinates of the receiver
+     */
+    public PVCoordinates getReceiverPV() {
+        return this.receiverPV;
+    }
+
+    /**
      * Getter for the reference frame.
-     * 
+     *
      * @return the reference frame
      */
     public final Frame getFrame() {
@@ -178,7 +200,9 @@ public class VacuumSignalPropagation implements Serializable {
      * @return the propagation vector in the given frame
      * @throws PatriusException
      *         if frame transformation problem occurs
+     * @deprecated as of 4.13, use {@link #getVector()} instead
      */
+    @Deprecated
     public final Vector3D getVector(final Frame expressionFrame) throws PatriusException {
         final Transform trans = this.frame.getTransformTo(expressionFrame, this.date);
         return trans.transformVector(this.propagation);
@@ -186,11 +210,33 @@ public class VacuumSignalPropagation implements Serializable {
 
     /**
      * Getter for the propagation vector in the reference frame.
+     * <p>
+     * The returned vector can be projected in any frame thanks to {@link Transform#transformVector(Vector3D)}.<br>
+     * But beware that it is only a projection and that the propagation process remains with respect to the
+     * {@link #getFrame() working frame}. Indeed, the result of a propagation process depends, in a more complex manner
+     * than just a vector projection, to the {@link #getFrame() working frame}.
+     * </p>
      *
      * @return the propagation vector
      */
     public final Vector3D getVector() {
         return this.propagation;
+    }
+
+    /**
+     * Getter for the propagation velocity vector (= propagation vector derivative wrt time) in the
+     * given frame.
+     *
+     * @param expressionFrame frame in which vector should be expressed
+     * @return the propagation velocity vector
+     * @throws PatriusException
+     *         if frame transformation problem occurs
+     * @deprecated as of 4.13, use {@link #getdPropdT()} instead
+     */
+    @Deprecated
+    public Vector3D getdPropdT(final Frame expressionFrame) throws PatriusException {
+        final Transform trans = this.frame.getTransformTo(expressionFrame, this.date);
+        return trans.transformPVCoordinates(getPVPropagation()).getVelocity();
     }
 
     /**
@@ -225,21 +271,6 @@ public class VacuumSignalPropagation implements Serializable {
     }
 
     /**
-     * Getter for the propagation velocity vector (= propagation vector derivative wrt time) in the
-     * given frame.
-     *
-     * @param expressionFrame frame in which vector should be expressed
-     * @return the propagation velocity vector
-     * @throws PatriusException
-     *         if frame transformation problem occurs
-     */
-    public Vector3D getdPropdT(final Frame expressionFrame) throws PatriusException {
-
-        final Transform trans = this.frame.getTransformTo(expressionFrame, this.date);
-        return trans.transformPVCoordinates(getPVPropagation()).getVelocity();
-    }
-
-    /**
      * Getter for the propagation position vector derivatives wrt the emitter position express in
      * the given frame.
      *
@@ -247,7 +278,9 @@ public class VacuumSignalPropagation implements Serializable {
      * @return the propagation position vector derivatives wrt the emitter position
      * @throws IllegalArgumentException if the provided frame is not pseudo-inertial
      * @throws PatriusException if some frame specific error occurs
+     * @deprecated as of 4.13
      */
+    @Deprecated
     public RealMatrix getdPropdPem(final Frame expressionFrame) throws PatriusException {
         // Compute the dTpropdPem vector in the expression frame
         final Transform trans = this.frame.getTransformTo(expressionFrame, this.date);
@@ -274,6 +307,37 @@ public class VacuumSignalPropagation implements Serializable {
     }
 
     /**
+     * Getter for the propagation position vector derivatives wrt the emitter position express in
+     * the reference frame.
+     *
+     * @return the propagation position vector derivatives wrt the emitter position
+     */
+    public RealMatrix getdPropdPem() {
+        // Compute the dTpropdPem vector in the reference frame
+        final Vector3D dTpropdPem = getdTpropdPem();
+
+        // Extract the appropriate velocity
+        final Vector3D vel;
+        if (this.inFixedDate == FixedDate.EMISSION) {
+            vel = this.receiverPV.getVelocity();
+        } else {
+            vel = this.emitterPV.getVelocity();
+        }
+
+        // outInRefFrame = -Id + vel * dTpropdPem.transpose()
+        final double[][] outInRefFrame = new double[][] {
+            { (vel.getX() * dTpropdPem.getX()) - 1., vel.getX() * dTpropdPem.getY(),
+                vel.getX() * dTpropdPem.getZ() },
+            { vel.getY() * dTpropdPem.getX(), (vel.getY() * dTpropdPem.getY()) - 1.,
+                vel.getY() * dTpropdPem.getZ() },
+            { vel.getZ() * dTpropdPem.getX(), vel.getZ() * dTpropdPem.getY(),
+                (vel.getZ() * dTpropdPem.getZ()) - 1. } };
+
+        // Return the dPropdPem matrix
+        return new Array2DRowRealMatrix(outInRefFrame, false);
+    }
+
+    /**
      * Getter for the propagation position vector derivatives wrt the receiver position express in
      * the given frame.
      *
@@ -281,7 +345,9 @@ public class VacuumSignalPropagation implements Serializable {
      * @return the propagation position vector derivatives wrt the receiver position
      * @throws IllegalArgumentException if the provided frame is not pseudo-inertial
      * @throws PatriusException if some frame specific error occurs
+     * @deprecated as of 4.13
      */
+    @Deprecated
     public RealMatrix getdPropdPrec(final Frame expressionFrame) throws PatriusException {
         // Compute the dTpropdPrec vector in the expression frame
         final Transform trans = this.frame.getTransformTo(expressionFrame, this.date);
@@ -307,7 +373,40 @@ public class VacuumSignalPropagation implements Serializable {
     }
 
     /**
-     * @return the inFixedDate
+     * Getter for the propagation position vector derivatives wrt the receiver position express in
+     * the reference frame.
+     *
+     * @return the propagation position vector derivatives wrt the receiver position
+     */
+    public RealMatrix getdPropdPrec() {
+        // Compute the dTpropdPrec vector in the reference frame
+        final Vector3D dTpropdPrec = getdTpropdPrec();
+
+        // Extract the appropriate velocity
+        final Vector3D vel;
+        if (this.inFixedDate == FixedDate.EMISSION) {
+            vel = this.receiverPV.getVelocity();
+        } else {
+            vel = this.emitterPV.getVelocity();
+        }
+
+        // outInRefFrame = +Id + vel * dTpropdPrec.transpose()
+        final double[][] outInRefFrame = new double[][] {
+            { (vel.getX() * dTpropdPrec.getX()) + 1., vel.getX() * dTpropdPrec.getY(),
+                vel.getX() * dTpropdPrec.getZ() },
+            { vel.getY() * dTpropdPrec.getX(), (vel.getY() * dTpropdPrec.getY()) + 1.,
+                vel.getY() * dTpropdPrec.getZ() },
+            { vel.getZ() * dTpropdPrec.getX(), vel.getZ() * dTpropdPrec.getY(),
+                (vel.getZ() * dTpropdPrec.getZ()) + 1. } };
+
+        // Return the dPropdPrec matrix
+        return new Array2DRowRealMatrix(outInRefFrame, false);
+    }
+
+    /**
+     * Getter for the fixed date : emission or reception.
+     * 
+     * @return the fixed date
      */
     public FixedDate getFixedDateType() {
         return this.inFixedDate;
@@ -331,7 +430,9 @@ public class VacuumSignalPropagation implements Serializable {
      *        the signal propagation partial derivatives vector frame expression
      * @return the signal propagation partial derivatives vector
      * @throws PatriusException if some frame specific error occurs
+     * @deprecated as of 4.13, use {@link #getdTpropdPrec()} instead
      */
+    @Deprecated
     public Vector3D getdTpropdPrec(final Frame expressionFrame) throws PatriusException {
         final Transform trans = this.frame.getTransformTo(expressionFrame, this.receptionDate);
         return trans.transformVector(getdTpropdPrec());
@@ -361,7 +462,9 @@ public class VacuumSignalPropagation implements Serializable {
      *        the signal propagation partial derivatives vector frame expression
      * @return the signal propagation partial derivatives vector
      * @throws PatriusException if some frame specific error occurs
+     * @deprecated as of 4.13, use {@link #getdTpropdPem()} instead
      */
+    @Deprecated
     public Vector3D getdTpropdPem(final Frame expressionFrame) throws PatriusException {
         return this.getdTpropdPrec(expressionFrame).negate();
     }
@@ -372,44 +475,40 @@ public class VacuumSignalPropagation implements Serializable {
      * @return the signal propagation partial derivatives
      */
     public double getdTpropdT() {
-        return this.propagation.dotProduct(this.receiverPV.getVelocity().subtract(
-            this.emitterPV.getVelocity()))
+        return this.propagation.dotProduct(this.receiverPV.getVelocity().subtract(this.emitterPV.getVelocity()))
                 * getK();
     }
 
     /**
      * Computes the Shapiro time dilation due to the gravitational attraction of the provided body.
      * 
-     * @param body
-     *        The body responsible for the time dilation
-     * @return
-     *         The Shapiro time dilation
+     * @param celestialPoint
+     *        The celestial point responsible for the time dilation
+     * @return the Shapiro time dilation
      * @throws PatriusException
      *         if position cannot be computed in given frame
      */
-    public double getShapiroTimeCorrection(final CelestialBody body) throws PatriusException {
+    public double getShapiroTimeCorrection(final CelestialPoint celestialPoint) throws PatriusException {
         // Extract the information from the body
-        final Vector3D bodyPosition = body.getPVCoordinates(this.date, this.frame).getPosition();
+        final Vector3D bodyPosition = celestialPoint.getPVCoordinates(this.date, this.frame).getPosition();
         final Vector3D emitterPosition = this.emitterPV.getPosition();
         final Vector3D receiverPosition = this.receiverPV.getPosition();
         // Compute the Shapiro time dilation
-        return getShapiroTimeCorrection(body.getGM(), bodyPosition.subtract(emitterPosition)
-            .getNorm(), bodyPosition.subtract(receiverPosition).getNorm(), emitterPosition
-            .subtract(receiverPosition).getNorm());
+        return getShapiroTimeCorrection(celestialPoint.getGM(), bodyPosition.subtract(emitterPosition).getNorm(),
+            bodyPosition.subtract(receiverPosition).getNorm(), emitterPosition.subtract(receiverPosition).getNorm());
     }
 
     /**
      * Computes the Shapiro time dilation due to the gravitational attraction of the body present at
-     * the center of the {@link VacuumSignalPropagation#getFrame()}.<br>
-     * 
-     * Optimized version of the {@link VacuumSignalPropagation#getShapiroTimeCorrection(CelestialBody)} method for the
-     * frame
-     * attractive body.
+     * the center of the {@link VacuumSignalPropagation#getFrame()}.
+     * <p>
+     * Optimized version of the {@link VacuumSignalPropagation#getShapiroTimeCorrection(CelestialPoint)} method for the
+     * frame attractive body.
+     * </p>
      * 
      * @param mu
      *        The gravitational constant of the body.
-     * @return
-     *         The Shapiro time dilation
+     * @return the Shapiro time dilation
      */
     public double getShapiroTimeCorrection(final double mu) {
         final Vector3D emitterPosition = this.emitterPV.getPosition();
@@ -420,8 +519,8 @@ public class VacuumSignalPropagation implements Serializable {
     }
 
     /**
-     * Internal method to compute the Shapiro time correction
-     * 
+     * Internal method to compute the Shapiro time correction.
+     *
      * @param mu
      *        The mass of the body responsible for the time dilation
      * @param emitterToBodyDist
@@ -430,9 +529,7 @@ public class VacuumSignalPropagation implements Serializable {
      *        The distance between the receiver and the body
      * @param emitterToReceiverDist
      *        The distance between the emitter and receiver
-     * @return
-     *         The Shapiro time correction
-     * @throws PatriusException
+     * @return the Shapiro time correction
      */
     private static double getShapiroTimeCorrection(final double mu, final double emitterToBodyDist,
                                                    final double receiverToBodyDist,
@@ -450,13 +547,90 @@ public class VacuumSignalPropagation implements Serializable {
     private double getK() {
         final double k;
         if (this.inFixedDate == FixedDate.EMISSION) {
-            k = 1 / ((Constants.SPEED_OF_LIGHT * this.propagation.getNorm()) - this.receiverPV
-                .getVelocity().dotProduct(this.propagation));
+            k = 1 / ((Constants.SPEED_OF_LIGHT * this.propagation.getNorm())
+                - this.receiverPV.getVelocity().dotProduct(this.propagation));
         } else {
-            k = 1 / ((Constants.SPEED_OF_LIGHT * this.propagation.getNorm()) - this.emitterPV
-                .getVelocity().dotProduct(this.propagation));
+            k = 1 / ((Constants.SPEED_OF_LIGHT * this.propagation.getNorm())
+                - this.emitterPV.getVelocity().dotProduct(this.propagation));
         }
-
         return k;
+    }
+
+    /** This enumerate represents the role of a protagonist in the signal propagation. */
+    public enum SignalPropagationRole {
+
+        /** Represent the transmission role in the signal propagation. */
+        TRANSMITTER {
+
+            /** {@inheritDoc} */
+            @Override
+            public AbsoluteDate getDate(final VacuumSignalPropagation signalPropagation) {
+                return signalPropagation.getEmissionDate();
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public Vector3D getdTPropDPos(final VacuumSignalPropagation signalPropagation) {
+                return signalPropagation.getdTpropdPem();
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public RealMatrix getdPropDPos(final VacuumSignalPropagation signalPropagation) {
+                return signalPropagation.getdPropdPem();
+            }
+        },
+
+        /** Represent the reception role in the signal propagation. */
+        RECEIVER {
+
+            /** {@inheritDoc} */
+            @Override
+            public AbsoluteDate getDate(final VacuumSignalPropagation signalPropagation) {
+                return signalPropagation.getReceptionDate();
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public Vector3D getdTPropDPos(final VacuumSignalPropagation signalPropagation) {
+                return signalPropagation.getdTpropdPrec();
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public RealMatrix getdPropDPos(final VacuumSignalPropagation signalPropagation) {
+                return signalPropagation.getdPropdPrec();
+            }
+        };
+
+        /**
+         * Getter for the date associated to this role (transmission or reception date).
+         *
+         * @param signalPropagation
+         *        Signal propagation data
+         * @return the space object date
+         */
+        public abstract AbsoluteDate getDate(VacuumSignalPropagation signalPropagation);
+
+        /**
+         * Getter for the propagation time partial derivatives vector wrt the space object position in the reference
+         * frame at the emission or reception date depending on the SignalDirection value.
+         *
+         * @param signalPropagation
+         *        Signal propagation data
+         * @return the propagation time partial derivatives vector wrt the space object position
+         */
+        public abstract Vector3D getdTPropDPos(VacuumSignalPropagation signalPropagation);
+
+        /**
+         * Getter for the propagation vector (from antenna to space object) partial derivatives matrix wrt the space
+         * object position in the reference frame at the emission or reception date depending on the SignalDirection
+         * value.
+         *
+         * @param signalPropagation
+         *        Signal propagation data
+         * @return the propagation vector partial derivatives matrix wrt the space object position
+         */
+        public abstract RealMatrix getdPropDPos(VacuumSignalPropagation signalPropagation);
     }
 }

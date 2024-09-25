@@ -1,26 +1,29 @@
 /**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ *
+ * Copyright 2011-2022 CNES
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright 2010-2011 Centre National d'Études Spatiales
+ *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * END-HISTORY
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
  */
 package fr.cnes.sirius.patrius.math.parameter;
 
@@ -29,12 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
@@ -43,6 +46,7 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.time.AbsoluteDateIntervalsList;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -106,36 +110,36 @@ public class IntervalsFunctionsTest {
 
         // Evaluate the derivatives
         Assert.assertEquals(1.,
-                this.piecewiseFct.derivativeValue(params.get(0), this.state.shiftedBy(-1e12)), 0.);
+            this.piecewiseFct.derivativeValue(params.get(0), this.state.shiftedBy(-1e12)), 0.);
         Assert.assertEquals(0.,
-                this.piecewiseFct.derivativeValue(params.get(1), this.state.shiftedBy(-1e12)), 0.);
+            this.piecewiseFct.derivativeValue(params.get(1), this.state.shiftedBy(-1e12)), 0.);
 
         Assert.assertEquals(0.,
-                this.piecewiseFct.derivativeValue(params.get(0), this.state.shiftedBy(this.duration)),
-                0.);
+            this.piecewiseFct.derivativeValue(params.get(0), this.state.shiftedBy(this.duration)),
+            0.);
         Assert.assertEquals(1.,
-                this.piecewiseFct.derivativeValue(params.get(1), this.state.shiftedBy(this.duration)),
-                0.);
+            this.piecewiseFct.derivativeValue(params.get(1), this.state.shiftedBy(this.duration)),
+            0.);
         Assert.assertEquals(
-                0.,
-                this.piecewiseFct.derivativeValue(params.get(0),
-                        this.state.shiftedBy(this.duration + 10.)), 0.);
+            0.,
+            this.piecewiseFct.derivativeValue(params.get(0),
+                this.state.shiftedBy(this.duration + 10.)), 0.);
         Assert.assertEquals(
-                1.,
-                this.piecewiseFct.derivativeValue(params.get(1),
-                        this.state.shiftedBy(this.duration + 10.)), 0.);
+            1.,
+            this.piecewiseFct.derivativeValue(params.get(1),
+                this.state.shiftedBy(this.duration + 10.)), 0.);
 
         Assert.assertEquals(0., this.piecewiseFct.derivativeValue(params.get(0),
-                this.state.shiftedBy(2 * this.duration)), 0.);
+            this.state.shiftedBy(2 * this.duration)), 0.);
         Assert.assertEquals(1., this.piecewiseFct.derivativeValue(params.get(2),
-                this.state.shiftedBy(2 * this.duration)), 0.);
+            this.state.shiftedBy(2 * this.duration)), 0.);
 
         Assert.assertEquals(0.,
-                this.piecewiseFct.derivativeValue(params.get(0), this.state.shiftedBy(1e12)), 0.);
+            this.piecewiseFct.derivativeValue(params.get(0), this.state.shiftedBy(1e12)), 0.);
         Assert.assertEquals(
-                1.,
-                this.piecewiseFct.derivativeValue(params.get(nbPieces - 1),
-                        this.state.shiftedBy(1e12)), 0.);
+            1.,
+            this.piecewiseFct.derivativeValue(params.get(nbPieces - 1),
+                this.state.shiftedBy(1e12)), 0.);
     }
 
     /**
@@ -290,54 +294,58 @@ public class IntervalsFunctionsTest {
         Assert.assertEquals(0., fct.derivativeValue(params[1], this.state.shiftedBy(10.)), 0.);
 
         Assert.assertEquals(0., fct.derivativeValue(params[0], this.state.shiftedBy(2 * this.duration)),
-                0.);
+            0.);
         Assert.assertEquals(1., fct.derivativeValue(params[1], this.state.shiftedBy(2 * this.duration)),
-                0.);
+            0.);
 
         Assert.assertEquals(0., fct.derivativeValue(params[0], this.state.shiftedBy(3 * this.duration)),
-                0.);
+            0.);
         Assert.assertEquals(1., fct.derivativeValue(params[2], this.state.shiftedBy(3 * this.duration)),
-                0.);
+            0.);
 
         Assert.assertEquals(0., fct.derivativeValue(params[0], this.state.shiftedBy(4 * this.duration)),
-                0.);
+            0.);
         Assert.assertEquals(1., fct.derivativeValue(params[2], this.state.shiftedBy(4 * this.duration)),
-                0.);
+            0.);
 
         Assert.assertEquals(0., fct.derivativeValue(params[0], this.state.shiftedBy(4 * this.duration)),
-                0.);
+            0.);
         Assert.assertEquals(1., fct.derivativeValue(params[3], this.state.shiftedBy(5 * this.duration)),
-                0.);
+            0.);
 
         Assert.assertEquals(1., fctBis.derivativeValue(params[0], this.state.shiftedBy(.1)), 0.);
         Assert.assertEquals(1., fctBis.derivativeValue(params[0], this.state.shiftedBy(10.)), 0.);
         Assert.assertEquals(0., fctBis.derivativeValue(params[1], this.state.shiftedBy(10.)), 0.);
 
         Assert.assertEquals(0.,
-                fctBis.derivativeValue(params[0], this.state.shiftedBy(2 * this.duration)), 0.);
+            fctBis.derivativeValue(params[0], this.state.shiftedBy(2 * this.duration)), 0.);
         Assert.assertEquals(1.,
-                fctBis.derivativeValue(params[1], this.state.shiftedBy(2 * this.duration)), 0.);
+            fctBis.derivativeValue(params[1], this.state.shiftedBy(2 * this.duration)), 0.);
 
         Assert.assertEquals(0.,
-                fctBis.derivativeValue(params[0], this.state.shiftedBy(3 * this.duration)), 0.);
+            fctBis.derivativeValue(params[0], this.state.shiftedBy(3 * this.duration)), 0.);
         Assert.assertEquals(1.,
-                fctBis.derivativeValue(params[2], this.state.shiftedBy(3 * this.duration)), 0.);
+            fctBis.derivativeValue(params[2], this.state.shiftedBy(3 * this.duration)), 0.);
 
         Assert.assertEquals(0.,
-                fctBis.derivativeValue(params[0], this.state.shiftedBy(4 * this.duration)), 0.);
+            fctBis.derivativeValue(params[0], this.state.shiftedBy(4 * this.duration)), 0.);
         Assert.assertEquals(1.,
-                fctBis.derivativeValue(params[2], this.state.shiftedBy(4 * this.duration)), 0.);
+            fctBis.derivativeValue(params[2], this.state.shiftedBy(4 * this.duration)), 0.);
 
         Assert.assertEquals(0.,
-                fctBis.derivativeValue(params[0], this.state.shiftedBy(4 * this.duration)), 0.);
+            fctBis.derivativeValue(params[0], this.state.shiftedBy(4 * this.duration)), 0.);
         Assert.assertEquals(1.,
-                fctBis.derivativeValue(params[3], this.state.shiftedBy(5 * this.duration)), 0.);
+            fctBis.derivativeValue(params[3], this.state.shiftedBy(5 * this.duration)), 0.);
     }
 
     /**
      * @description Evaluate the {@link IntervalsFunction} extra features.
      * 
      * @testedMethod {@link IntervalsFunction#isDifferentiableBy(Parameter)}
+     * @testedMethod {@link IntervalsFunction#getIntervals()}
+     * @testedMethod {@link IntervalsFunction#getFunctions()}
+     * @testedMethod {@link IntervalsFunction#getIntervalFunctionAssociation()}
+     * @testedMethod {@link IntervalsFunction#toString()}
      * 
      * @passCriteria The function behave as expected.
      */
@@ -348,9 +356,10 @@ public class IntervalsFunctionsTest {
         final List<IParamDiffFunction> cstFcts = new ArrayList<>();
         final Map<AbsoluteDateInterval, IParamDiffFunction> mapOfFunctions = new TreeMap<>();
 
-        final Parameter[] params = new Parameter[this.intervals.size()];
-        for (int i = 0; i < this.intervals.size(); i++) {
-            params[i] = new Parameter("cf " + i, i + 0.5);
+        final int size = this.intervals.size();
+        final Parameter[] params = new Parameter[size];
+        for (int i = 0; i < size; i++) {
+            params[i] = new Parameter("cf_" + i, i + 0.5);
             final ConstantFunction cstFunc = new ConstantFunction(params[i]);
             cstFcts.add(cstFunc);
             mapOfFunctions.put(this.intervals.get(i), cstFunc);
@@ -367,6 +376,86 @@ public class IntervalsFunctionsTest {
         }
         Assert.assertFalse(fct.isDifferentiableBy(new Parameter("newParam", 1.)));
         Assert.assertFalse(fctBis.isDifferentiableBy(new Parameter("newParam", 1.)));
+
+        // Evaluate the getters
+        final AbsoluteDateIntervalsList intervalsFct = fct.getIntervals();
+        final List<IParamDiffFunction> functionsFct = fct.getFunctions();
+        final Map<AbsoluteDateInterval, IParamDiffFunction> intervalFunctionAssociationFct =
+            fct.getIntervalFunctionAssociation();
+
+        Assert.assertEquals(size, intervalsFct.size());
+        Assert.assertEquals(size, functionsFct.size());
+        Assert.assertEquals(size, intervalFunctionAssociationFct.size());
+
+        for (int i = 0; i < size; i++) {
+            Assert.assertTrue(intervalsFct.contains(this.intervals.get(i)));
+            Assert.assertEquals(cstFcts.get(i), functionsFct.get(i));
+            Assert.assertEquals(cstFcts.get(i), intervalFunctionAssociationFct.get(this.intervals.get(i)));
+        }
+
+        // Evaluate the toString() method
+        final String expectedTxt = "IntervalsFunction:\n" +
+                "] 2000-01-01T11:59:27.816 ; 2000-01-01T15:59:27.816 [: Value    : f = 0.5\n" +
+                "Parameter: [2000-01-01T11:59:27.816@2000-01-01T15:59:27.816_cf_0]\n" +
+                "[ 2000-01-01T19:59:27.816 ; 2000-01-01T23:59:27.816 [: Value    : f = 1.5\n" +
+                "Parameter: [2000-01-01T19:59:27.816@2000-01-01T23:59:27.816_cf_1]\n" +
+                "[ 2000-01-01T23:59:27.816 ; 2000-01-02T03:59:27.816 ]: Value    : f = 2.5\n" +
+                "Parameter: [2000-01-01T23:59:27.816@2000-01-02T03:59:27.816_cf_2]\n" +
+                "] 2000-01-02T03:59:27.816 ; 2000-01-02T07:59:27.816 ]: Value    : f = 3.5\n" +
+                "Parameter: [2000-01-02T03:59:27.816@2000-01-02T07:59:27.816_cf_3]\n";
+        Assert.assertEquals(expectedTxt, fct.toString());
+    }
+
+    /**
+     * @throws PatriusException
+     * @description Evaluate the interval function serialization / deserialization process (as well as the
+     *              IntervalMapSearcher and the CacheEntry).
+     *
+     * @testPassCriteria The interval function can be serialized with all its parameters and deserialized.
+     */
+    @Test
+    public void testSerialization() throws PatriusException {
+
+        final List<IParamDiffFunction> cstFcts = new ArrayList<>();
+        final Map<AbsoluteDateInterval, IParamDiffFunction> mapOfFunctions = new TreeMap<>();
+
+        final Parameter[] params = new Parameter[this.intervals.size()];
+        for (int i = 0; i < this.intervals.size(); i++) {
+            params[i] = new Parameter("cf " + i, i + 0.5);
+            final ConstantFunction cstFunc = new ConstantFunction(params[i]);
+            cstFcts.add(cstFunc);
+            mapOfFunctions.put(this.intervals.get(i), cstFunc);
+        }
+        final IntervalsFunction fct = new IntervalsFunction(cstFcts, this.intervals);
+
+        final IntervalsFunction fctDeserialize = TestUtils.serializeAndRecover(fct);
+
+        // Evaluate the toString representation
+        Assert.assertEquals(fct.toString(), fctDeserialize.toString());
+
+        // Evaluate the intervals
+        Assert.assertEquals(fct.getIntervals(), fctDeserialize.getIntervals());
+
+        // Evaluate the values
+        Assert.assertEquals(fct.value(this.state.shiftedBy(10.)), fctDeserialize.value(this.state.shiftedBy(10.)), 0.);
+        Assert.assertEquals(fct.value(this.state.shiftedBy(2 * this.duration)),
+            fctDeserialize.value(this.state.shiftedBy(2 * this.duration)), 0.);
+        Assert.assertEquals(fct.value(this.state.shiftedBy(3 * this.duration)),
+            fctDeserialize.value(this.state.shiftedBy(3 * this.duration)), 0.);
+
+        // Evaluate the derivatives
+        Assert.assertEquals(fct.derivativeValue(fct.getParameters().get(0), this.state.shiftedBy(10.)),
+            fctDeserialize.derivativeValue(fctDeserialize.getParameters().get(0), this.state.shiftedBy(10.)), 0.);
+        Assert.assertEquals(fct.derivativeValue(fct.getParameters().get(1), this.state.shiftedBy(10.)),
+            fctDeserialize.derivativeValue(fctDeserialize.getParameters().get(1), this.state.shiftedBy(10.)), 0.);
+        Assert.assertEquals(
+            fct.derivativeValue(fct.getParameters().get(0), this.state.shiftedBy(2 * this.duration)),
+            fctDeserialize.derivativeValue(fctDeserialize.getParameters().get(0),
+                this.state.shiftedBy(2 * this.duration)), 0.);
+        Assert.assertEquals(
+            fct.derivativeValue(fct.getParameters().get(1), this.state.shiftedBy(2 * this.duration)),
+            fctDeserialize.derivativeValue(fctDeserialize.getParameters().get(1),
+                this.state.shiftedBy(2 * this.duration)), 0.);
     }
 
     /**
@@ -431,7 +520,7 @@ public class IntervalsFunctionsTest {
 
         // When the intervals list isn't the same size as the sub-functions list
         this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(this.duration * 5), date
-                .shiftedBy(this.duration * 6)));
+            .shiftedBy(this.duration * 6)));
         try {
             new IntervalsFunction(cstFcts, this.intervals);
             Assert.fail();
@@ -445,9 +534,9 @@ public class IntervalsFunctionsTest {
         this.intervals = new ArrayList<>();
         this.intervals.add(new AbsoluteDateInterval(date, date.shiftedBy(this.duration)));
         this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(this.duration), date
-                .shiftedBy(this.duration * 2)));
+            .shiftedBy(this.duration * 2)));
         this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(this.duration * 2), date
-                .shiftedBy(this.duration * 3)));
+            .shiftedBy(this.duration * 3)));
         try {
             new IntervalsFunction(cstFcts, this.intervals);
             Assert.fail();
@@ -460,9 +549,9 @@ public class IntervalsFunctionsTest {
         this.intervals = new ArrayList<>();
         this.intervals.add(new AbsoluteDateInterval(date, date.shiftedBy(this.duration)));
         this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(this.duration * 2), date
-                .shiftedBy(this.duration * 3)));
+            .shiftedBy(this.duration * 3)));
         this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(this.duration * 4), date
-                .shiftedBy(this.duration * 5)));
+            .shiftedBy(this.duration * 5)));
 
         final Parameter param1 = new Parameter("param1", 1.);
         final Parameter param2 = new Parameter("param2", 1.);
@@ -487,9 +576,9 @@ public class IntervalsFunctionsTest {
 
         // Try to use overlapping intervals
         this.intervals
-                .add(new AbsoluteDateInterval(IntervalEndpointType.CLOSED, date
-                        .shiftedBy(this.duration * 5), date.shiftedBy(this.duration * 6),
-                        IntervalEndpointType.CLOSED));
+            .add(new AbsoluteDateInterval(IntervalEndpointType.CLOSED, date
+                .shiftedBy(this.duration * 5), date.shiftedBy(this.duration * 6),
+                IntervalEndpointType.CLOSED));
 
         params = new Parameter[this.intervals.size()];
         for (int i = 0; i < this.intervals.size(); i++) {
@@ -518,6 +607,7 @@ public class IntervalsFunctionsTest {
 
     /**
      * Global parameters initialization.
+     * 
      * @throws PatriusException
      */
     @Before
@@ -528,7 +618,7 @@ public class IntervalsFunctionsTest {
         // Initial state initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Orbit orbit = new KeplerianOrbit(7000000, 0.01, 0, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.GRIM5C1_EARTH_MU);
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.GRIM5C1_EARTH_MU);
         this.state = new SpacecraftState(orbit);
 
         // Piecewise function initialization
@@ -550,15 +640,12 @@ public class IntervalsFunctionsTest {
         // Describe the followings intervals (duration = d):
         // ]date; date+d[ [date+2d; d+3d[ [date+3d; date+4d] ]date+4d; date+5d]
         this.intervals = new ArrayList<>();
-        this.intervals.add(new AbsoluteDateInterval(IntervalEndpointType.OPEN, date, date
-                .shiftedBy(duration), IntervalEndpointType.OPEN));
-        this.intervals.add(new AbsoluteDateInterval(IntervalEndpointType.CLOSED, date
-                .shiftedBy(duration * 2), date.shiftedBy(duration * 3), IntervalEndpointType.OPEN));
-        this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(duration * 3), date
-                .shiftedBy(duration * 4)));
-        this.intervals
-                .add(new AbsoluteDateInterval(IntervalEndpointType.OPEN, date
-                        .shiftedBy(duration * 4), date.shiftedBy(duration * 5),
-                        IntervalEndpointType.CLOSED));
+        this.intervals.add(new AbsoluteDateInterval(IntervalEndpointType.OPEN, date, date.shiftedBy(duration),
+            IntervalEndpointType.OPEN));
+        this.intervals.add(new AbsoluteDateInterval(IntervalEndpointType.CLOSED, date.shiftedBy(duration * 2), date
+            .shiftedBy(duration * 3), IntervalEndpointType.OPEN));
+        this.intervals.add(new AbsoluteDateInterval(date.shiftedBy(duration * 3), date.shiftedBy(duration * 4)));
+        this.intervals.add(new AbsoluteDateInterval(IntervalEndpointType.OPEN, date.shiftedBy(duration * 4), date
+            .shiftedBy(duration * 5), IntervalEndpointType.CLOSED));
     }
 }

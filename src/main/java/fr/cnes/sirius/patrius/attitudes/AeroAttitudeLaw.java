@@ -37,8 +37,8 @@ package fr.cnes.sirius.patrius.attitudes;
 
 import fr.cnes.sirius.patrius.attitudes.kinematics.AbstractOrientationFunction;
 import fr.cnes.sirius.patrius.attitudes.kinematics.OrientationFunction;
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.math.Comparators;
@@ -95,7 +95,7 @@ public class AeroAttitudeLaw extends AbstractAttitudeLaw {
     private final IParameterizableFunction rollVelocity;
 
     /** Earth shape. */
-    private final EllipsoidBodyShape earthBodyShape;
+    private final OneAxisEllipsoid earthBodyShape;
 
     /** Step for finite differences spin computation. */
     private final double stepSpin;
@@ -118,9 +118,8 @@ public class AeroAttitudeLaw extends AbstractAttitudeLaw {
      *         if some specific error occurs
      */
     public AeroAttitudeLaw(final double angleofattack, final double sideslip, final double rollVel,
-                           final EllipsoidBodyShape earthShape)
+                           final OneAxisEllipsoid earthShape)
         throws PatriusException {
-
         this(angleofattack, sideslip, rollVel, earthShape, DEFAULT_STEP_VEL, DEFAULT_STEP_ACC);
     }
 
@@ -137,8 +136,7 @@ public class AeroAttitudeLaw extends AbstractAttitudeLaw {
      *        Earth shape
      */
     public AeroAttitudeLaw(final IParameterizableFunction angleofattack, final IParameterizableFunction sideslip,
-                           final IParameterizableFunction rollVel, final EllipsoidBodyShape earthShape) {
-
+                           final IParameterizableFunction rollVel, final OneAxisEllipsoid earthShape) {
         this(angleofattack, sideslip, rollVel, earthShape, DEFAULT_STEP_VEL, DEFAULT_STEP_ACC);
     }
 
@@ -159,7 +157,7 @@ public class AeroAttitudeLaw extends AbstractAttitudeLaw {
      *        step for finite differences spin derivative computation
      */
     public AeroAttitudeLaw(final double angleofattack, final double sideslip, final double rollVel,
-                           final EllipsoidBodyShape earthShape, final double dtSpin, final double dtAcc) {
+                           final OneAxisEllipsoid earthShape, final double dtSpin, final double dtAcc) {
         this(new ConstantFunction(angleofattack), new ConstantFunction(sideslip), new ConstantFunction(rollVel),
                 earthShape, dtSpin, dtAcc);
     }
@@ -181,9 +179,8 @@ public class AeroAttitudeLaw extends AbstractAttitudeLaw {
      *        step for finite differences spin derivative computation
      */
     public AeroAttitudeLaw(final IParameterizableFunction angleofattack, final IParameterizableFunction sideslip,
-                           final IParameterizableFunction rollVel, final EllipsoidBodyShape earthShape,
+                           final IParameterizableFunction rollVel, final OneAxisEllipsoid earthShape,
                            final double dtSpin, final double dtAcc) {
-
         super();
         this.angleOfAttack = angleofattack;
         this.sideSlip = sideslip;

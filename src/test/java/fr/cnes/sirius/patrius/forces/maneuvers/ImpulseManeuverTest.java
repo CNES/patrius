@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3217:22/05/2023:[PATRIUS] Modeles broadcast et almanach GNSS
@@ -64,6 +65,10 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.AltitudeDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.forces.ForceModelsDataTest;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
@@ -93,10 +98,6 @@ import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.EcksteinHechlerPropagator;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.AltitudeDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -284,7 +285,7 @@ public class ImpulseManeuverTest {
      * @throws IOException
      * @throws PatriusException
      * @testType UT
-     * @testedMethod {@link ImpulseManeuver#ImpulseManeuver(fr.cnes.sirius.patrius.propagation.events.EventDetector, Vector3D, double, MassProvider, String, LOFType)}
+     * @testedMethod {@link ImpulseManeuver#ImpulseManeuver(fr.cnes.sirius.patrius.events.EventDetector, Vector3D, double, MassProvider, String, LOFType)}
      * @description Test propagation with impulse maneuver in TNW frame following velocity in spacecraft frame is equal
      *              to propagation with impulse maneuver in TNW.
      * @referenceVersion 2.3.1

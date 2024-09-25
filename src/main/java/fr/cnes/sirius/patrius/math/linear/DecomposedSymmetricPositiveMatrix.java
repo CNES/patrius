@@ -14,12 +14,13 @@
  * limitations under the License.
  *
  */
-/* 
+/*
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
-* VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
+ * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
  * VERSION:4.7:DM:DM-2872:18/05/2021:Calcul de l'accélération dans la classe QuaternionPolynomialProfile 
  * VERSION:4.7:DM:DM-2767:18/05/2021:Evolutions et corrections diverses 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -505,11 +506,11 @@ public class DecomposedSymmetricPositiveMatrix extends AbstractRealMatrix implem
      *
      * <p>
      * <b>Important:</b><br>
-     * This method systematically throws a {@link MathUnsupportedOperationException} since this
-     * operation is not safe when dealing with symmetric positive definite matrices (the properties
-     * of the matrix are not guaranteed to be preserved).
+     * This method systematically throws a {@link MathUnsupportedOperationException} since this operation is not safe
+     * when dealing with symmetric positive definite matrices (the properties of the matrix are not guaranteed to be
+     * preserved).
      * </p>
-     * 
+     *
      * @throws MathUnsupportedOperationException
      *         systematically, since this operation is not supported
      */
@@ -1307,5 +1308,30 @@ public class DecomposedSymmetricPositiveMatrix extends AbstractRealMatrix implem
     public double walkInOptimizedOrder(final RealMatrixChangingVisitor visitor, final int startRow,
             final int endRow, final int startColumn, final int endColumn) {
         throw new MathUnsupportedOperationException();
+    }
+
+    /**
+     * Cast or transform the provided matrix into a {@link DecomposedSymmetricPositiveMatrix}.
+     *
+     * <p>
+     * The transformation is performed thanks to a {@link CholeskyDecomposition}. In this case, the input matrix must be
+     * positive definite otherwise an exception is thrown).
+     * </p>
+     *
+     * @param matrix
+     *        The symmetric positive matrix to cast or transform
+     * @return the decomposed symmetric matrix (might be the same instance as the input if only a cast was performed)
+     * @throws NonPositiveDefiniteMatrixException
+     *         if a transformation is necessary and the matrix is not positive definite
+     */
+    public static final DecomposedSymmetricPositiveMatrix castOrTransform(final SymmetricPositiveMatrix matrix) {
+        final DecomposedSymmetricPositiveMatrix outputMatrix;
+        if (matrix instanceof DecomposedSymmetricPositiveMatrix) {
+            outputMatrix = ((DecomposedSymmetricPositiveMatrix) matrix);
+        } else {
+            final CholeskyDecomposition chol = new CholeskyDecomposition(matrix);
+            outputMatrix = new DecomposedSymmetricPositiveMatrix(chol.getLT(), false);
+        }
+        return outputMatrix;
     }
 }

@@ -17,6 +17,7 @@
  */
 /*
  * HISTORY
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-95:30/06/2023:[PATRIUS] Utilisation de types gen. dans les classes internes d'interp. de 
  * AbstractEOPHistory
@@ -52,6 +53,7 @@ import fr.cnes.sirius.patrius.time.interpolation.TimeStampedInterpolationFunctio
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableToDoubleFunction;
 
 /**
  * This class loads any kind of Earth Orientation Parameter data throughout a large time range.
@@ -299,16 +301,18 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
 
     /**
      * Cache interpolable function builder used to generate {@link Double} values.
-     * @param <T> EOPEntry
+     * 
+     * @param <T>
+     *        The EOPEntry type with a generic representation
      */
     protected static class DoubleInterpolationFunctionBuilder<T extends EOPEntry>
         implements TimeStampedInterpolationFunctionBuilder<T, Double> {
 
         /** Serializable UID. */
         private static final long serialVersionUID = 5100897572222997590L;
-      
+
         /** Function linking the EOP entries to {@link Double} values. */
-        private final ToDoubleFunction<T> func;
+        private final SerializableToDoubleFunction<T> func;
 
         /**
          * Constructor.
@@ -316,7 +320,7 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
          * @param func
          *        Function linking the EOP entries to {@link Double} values
          */
-        public DoubleInterpolationFunctionBuilder(final ToDoubleFunction<T> func) {
+        public DoubleInterpolationFunctionBuilder(final SerializableToDoubleFunction<T> func) {
             this.func = func;
         }
 
@@ -325,14 +329,15 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
         public Function<AbsoluteDate, ? extends Double> buildInterpolationFunction(final T[] samples,
                                                                                    final int indexInf,
                                                                                    final int indexSup) {
-            return new LagrangeDoubleInterpolationFunction<T>(samples, indexInf, indexSup, this.func);
+            return new LagrangeDoubleInterpolationFunction<>(samples, indexInf, indexSup, this.func);
         }
-        
     }
 
     /**
      * Cache interpolable function used to generate the {@link Double} values.
-     * @param <T> EOPEntry
+     * 
+     * @param <T>
+     *        The EOPEntry type with a generic representation
      */
     private static class LagrangeDoubleInterpolationFunction<T extends EOPEntry>
         implements Function<AbsoluteDate, Double> {
@@ -355,8 +360,11 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
          * @param func
          *        Function linking the EOP entries to {@link Double} values
          */
-        public LagrangeDoubleInterpolationFunction(final T[] samples, final int indexInf,
-                final int indexSup, final ToDoubleFunction<T> func) {
+        public LagrangeDoubleInterpolationFunction(final T[] samples, 
+                                                   final int indexInf,
+                                                   final int indexSup, 
+                                                   final SerializableToDoubleFunction<T> func) {
+          
             final int valuesLength = indexSup - indexInf;
             final double[] dvals = new double[valuesLength];
             final double[] dutvals = new double[valuesLength];
@@ -394,10 +402,10 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
         private static final long serialVersionUID = -1004127630281484292L;
 
         /** Interpolation function of the X component of the correction. */
-        private final ToDoubleFunction<EOPEntry> funcx;
+        private final SerializableToDoubleFunction<EOPEntry> funcx;
 
         /** Interpolation function of the Y component of the correction. */
-        private final ToDoubleFunction<EOPEntry> funcy;
+        private final SerializableToDoubleFunction<EOPEntry> funcy;
 
         /** Correction builder. */
         private final CorrectionBuilder<T> correctionBuilder;
@@ -412,8 +420,8 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
          * @param correctionBuilder
          *        Correction builder
          */
-        public CorrectionInterpolationFunctionBuilder(final ToDoubleFunction<EOPEntry> funcx,
-                                                      final ToDoubleFunction<EOPEntry> funcy,
+        public CorrectionInterpolationFunctionBuilder(final SerializableToDoubleFunction<EOPEntry> funcx,
+                                                      final SerializableToDoubleFunction<EOPEntry> funcy,
                                                       final CorrectionBuilder<T> correctionBuilder) {
             this.funcx = funcx;
             this.funcy = funcy;
@@ -422,7 +430,8 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
 
         /** {@inheritDoc} */
         @Override
-        public Function<AbsoluteDate, T> buildInterpolationFunction(final EOPEntry[] samples, final int indexInf,
+        public Function<AbsoluteDate, T> buildInterpolationFunction(final EOPEntry[] samples,
+                                                                    final int indexInf,
                                                                     final int indexSup) {
             return new LagrangeCorrectionInterpolationFunction<>(samples, indexInf, indexSup, this.funcx, this.funcy,
                 this.correctionBuilder);
@@ -466,8 +475,10 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
          *        Correction builder
          */
         public LagrangeCorrectionInterpolationFunction(final EOPEntry[] samples, final int indexInf,
-                final int indexSup, final ToDoubleFunction<EOPEntry> funcx, final ToDoubleFunction<EOPEntry> funcy,
-                final CorrectionBuilder<T> correctionBuilder) {
+                                                       final int indexSup,
+                                                       final SerializableToDoubleFunction<EOPEntry> funcx,
+                                                       final SerializableToDoubleFunction<EOPEntry> funcy,
+                                                       final CorrectionBuilder<T> correctionBuilder) {
             final int valuesLength = indexSup - indexInf;
             final double[] dvals = new double[valuesLength];
             final double[] xvals = new double[valuesLength];
@@ -517,29 +528,5 @@ public abstract class AbstractEOPHistory implements Serializable, EOPHistory {
          * @return the result
          */
         T apply(final double a, final double b);
-    }
-
-    /**
-     * Represents a function that produces a double-valued result.  This is the
-     * {@code double}-producing primitive specialization for {@link Function}.
-     *
-     * <p>This is a <a href="package-summary.html">functional interface</a>
-     * whose functional method is {@link #applyAsDouble(Object)}.
-     *
-     * This interface is identical to its JDK counterpart, but is Serializable.
-     * @param <T> the type of the input to the function
-     *
-     * @since 4.10
-     */
-    @FunctionalInterface
-    public interface ToDoubleFunction<T> extends Serializable {
-
-        /**
-         * Applies this function to the given argument.
-         *
-         * @param value the function argument
-         * @return the function result
-         */
-        double applyAsDouble(final T value);
     }
 }

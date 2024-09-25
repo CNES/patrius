@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3315:22/05/2023:[PATRIUS] Rendre la classe TabulatedAttitude compatible
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -55,6 +57,7 @@ import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.AngularDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * This class handles attitude definition at a given date.
@@ -83,7 +86,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * @see AttitudeProvider
  * @author V&eacute;ronique Pommier-Maurussane
  */
-public class Attitude implements TimeStamped, TimeShiftable<Attitude>, TimeInterpolable<Attitude>, Serializable {
+public class Attitude implements TimeStamped, TimeShiftable<Attitude>, TimeInterpolable<Attitude>,
+    Comparable<Attitude>, Serializable {
 
     /** Serializable UID. */
     private static final long serialVersionUID = -947817502698754209L;
@@ -350,6 +354,76 @@ public class Attitude implements TimeStamped, TimeShiftable<Attitude>, TimeInter
     }
 
     /**
+     * Compare this attitude with another attitude.
+     * <p>
+     * The attitudes are compared with respect to their dates, by chronological order.<br>
+     * If they are defined at the same date, they are then compared with respect to their hashCode.<br>
+     * This hashCode comparison is arbitrary but allows to be compliant with the equals method, i.e. this method returns
+     * 0 only if the attitudes are equal.
+     * </p>
+     *
+     * @param attitude
+     *        other attitude to compare the instance to
+     * @return
+     *         <ul>
+     *         <li>a negative integer: when this attitude is before, or simultaneous with a lower hashCode</li>
+     *         <li>zero: when this attitude is simultaneous and with the same hashCode</li>
+     *         <li>a positive integer: when this attitude is after, or simultaneous with a higher hashCode</li>
+     *         </ul>
+     * @throws IllegalStateException
+     *         if the two compared attitudes have the same date, the same hashCode, but aren't equal (very unlikely
+     *         situation)
+     */
+    @Override
+    public int compareTo(final Attitude attitude) {
+        final int finalComp;
+        final int dateComp = this.getDate().compareTo(attitude.getDate());
+        if (dateComp == 0) {
+            // The two attitudes are defined at the same date, compare their hashCodes
+            final int hashComp = Integer.compare(this.hashCode(), attitude.hashCode());
+            if (hashComp == 0) {
+                if (!this.equals(attitude)) {
+                    // Very unlikely situation but needs to be handled
+                    throw PatriusException.createIllegalStateException(PatriusMessages.SAME_HASHCODE_BUT_NOT_EQUALS);
+                }
+                finalComp = 0;
+            } else {
+                finalComp = hashComp;
+            }
+        } else {
+            // The two attitudes are defined at different dates, return the comparison value
+            finalComp = dateComp;
+        }
+        return finalComp;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == this.getClass())) {
+            // Same object type: check all attributes
+            final Attitude other = (Attitude) object;
+
+            // Evaluate the attitudes components
+            isEqual = Objects.equals(this.orientation, other.orientation)
+                    && Objects.equals(this.referenceFrame, other.referenceFrame);
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.orientation, this.referenceFrame);
+    }
+
+    /**
      * {@inheritDoc}
      * <p>
      * The interpolated instance is created by polynomial Hermite interpolation on Rodrigues vector ensuring rotation
@@ -523,8 +597,7 @@ public class Attitude implements TimeStamped, TimeShiftable<Attitude>, TimeInter
      *         if conversion between reference frames fails
      */
     public static Attitude slerp(final AbsoluteDate date, final Attitude attitude1, final Attitude attitude2,
-            final Frame frame,
-            final boolean computeSpinDerivative) throws PatriusException {
+                                 final Frame frame, final boolean computeSpinDerivative) throws PatriusException {
         // transformations of the attitudes in the expression frame
         final Attitude init = attitude1.withReferenceFrame(frame, computeSpinDerivative);
         final Attitude end = attitude2.withReferenceFrame(frame, computeSpinDerivative);

@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -32,7 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -119,9 +120,6 @@ public class EmpiricalDistribution extends AbstractRealDistribution {
 
     /** Default bin count */
     public static final int DEFAULT_BIN_COUNT = 1000;
-
-    /** Character set for file input */
-    private static final String FILE_CHARSET = "US-ASCII";
 
      /** Serializable UID. */
     private static final long serialVersionUID = 5729073523949762654L;
@@ -259,9 +257,7 @@ public class EmpiricalDistribution extends AbstractRealDistribution {
         MathUtils.checkNotNull(url);
         
         // Initialization
-        final Charset charset = Charset.forName(FILE_CHARSET);
-        BufferedReader in =
-            new BufferedReader(new InputStreamReader(url.openStream(), charset));
+        BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.US_ASCII));
         try {
             final AbstractDataAdapter da = new StreamDataAdapter(in);
             da.computeStats();
@@ -269,7 +265,7 @@ public class EmpiricalDistribution extends AbstractRealDistribution {
                 throw new ZeroException(PatriusMessages.URL_CONTAINS_NO_DATA, url);
             }
             // new adapter for the second pass
-            in = new BufferedReader(new InputStreamReader(url.openStream(), charset));
+            in = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.US_ASCII));
             this.fillBinStats(new StreamDataAdapter(in));
             this.loaded = true;
         } finally {
@@ -300,15 +296,14 @@ public class EmpiricalDistribution extends AbstractRealDistribution {
         // CHeck not null
         MathUtils.checkNotNull(file);
         // Initialization
-        final Charset charset = Charset.forName(FILE_CHARSET);
         InputStream is = new FileInputStream(file);
-        BufferedReader in = new BufferedReader(new InputStreamReader(is, charset));
+        BufferedReader in = new BufferedReader(new InputStreamReader(is, StandardCharsets.US_ASCII));
         try {
             final AbstractDataAdapter da = new StreamDataAdapter(in);
             da.computeStats();
             // new adapter for second pass
             is = new FileInputStream(file);
-            in = new BufferedReader(new InputStreamReader(is, charset));
+            in = new BufferedReader(new InputStreamReader(is, StandardCharsets.US_ASCII));
             this.fillBinStats(new StreamDataAdapter(in));
             this.loaded = true;
         } finally {

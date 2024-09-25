@@ -18,12 +18,17 @@
 /*
  *
  * HISTORY
-* VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
-* VERSION:4.11.1:DM:DM-95:30/06/2023:[PATRIUS] Utilisation de types gen. dans les classes internes d'interp. de AbstractEOPHistory
-* VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
-* VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
-* VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+* VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
+ * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
+ * VERSION:4.11.1:DM:DM-95:30/06/2023:[PATRIUS] Utilisation de types gen. dans les classes internes d'interp. de AbstractEOPHistory
+ * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
+ * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
+ * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -47,6 +52,7 @@
 package fr.cnes.sirius.patrius.forces.gravity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -57,7 +63,8 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
@@ -87,6 +94,8 @@ import fr.cnes.sirius.patrius.time.DateComponents;
 import fr.cnes.sirius.patrius.time.TimeComponents;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -251,7 +260,8 @@ public class ThirdBodyAttractionTest {
         // with respect to spacecraft position
 
         // compute nominal acceleration
-        final Vector3D nominalAcc = thirdBody.computeAcceleration(createSpacecraftState(pv.getPosition(), referenceFrame, date));
+        final Vector3D nominalAcc = thirdBody.computeAcceleration(createSpacecraftState(pv.getPosition(),
+            referenceFrame, date));
 
         // step
         final double hPos = MathLib.sqrt(Precision.EPSILON) * pos.getNorm();
@@ -260,7 +270,8 @@ public class ThirdBodyAttractionTest {
         final PVCoordinates shiftedPVdX = new PVCoordinates(new Vector3D(pos.getX() + hPos, pos.getY(), pos.getZ()),
             pv.getVelocity());
         // compute shifted acceleration
-        Vector3D shiftedAcc = thirdBody.computeAcceleration(createSpacecraftState(shiftedPVdX.getPosition(), referenceFrame, date));
+        Vector3D shiftedAcc = thirdBody.computeAcceleration(createSpacecraftState(shiftedPVdX.getPosition(),
+            referenceFrame, date));
 
         expDAccdPos[0][0] = (shiftedAcc.getX() - nominalAcc.getX()) / hPos;
         expDAccdPos[1][0] = (shiftedAcc.getY() - nominalAcc.getY()) / hPos;
@@ -270,7 +281,8 @@ public class ThirdBodyAttractionTest {
         final PVCoordinates shiftedPVdY = new PVCoordinates(new Vector3D(pos.getX(), pos.getY() + hPos, pos.getZ()),
             pv.getVelocity());
         // compute shifted acceleration
-        shiftedAcc = thirdBody.computeAcceleration(createSpacecraftState(shiftedPVdY.getPosition(), referenceFrame, date));
+        shiftedAcc = thirdBody.computeAcceleration(createSpacecraftState(shiftedPVdY.getPosition(), referenceFrame,
+            date));
 
         expDAccdPos[0][1] = (shiftedAcc.getX() - nominalAcc.getX()) / hPos;
         expDAccdPos[1][1] = (shiftedAcc.getY() - nominalAcc.getY()) / hPos;
@@ -280,7 +292,8 @@ public class ThirdBodyAttractionTest {
         final PVCoordinates shiftedPVdZ = new PVCoordinates(new Vector3D(pos.getX(), pos.getY(), pos.getZ() + hPos),
             pv.getVelocity());
         // compute shifted acceleration
-        shiftedAcc = thirdBody.computeAcceleration(createSpacecraftState(shiftedPVdZ.getPosition(), referenceFrame, date));
+        shiftedAcc = thirdBody.computeAcceleration(createSpacecraftState(shiftedPVdZ.getPosition(), referenceFrame,
+            date));
 
         expDAccdPos[0][2] = (shiftedAcc.getX() - nominalAcc.getX()) / hPos;
         expDAccdPos[1][2] = (shiftedAcc.getY() - nominalAcc.getY()) / hPos;
@@ -297,12 +310,45 @@ public class ThirdBodyAttractionTest {
                 Assert.assertEquals(expDAccdPos[i][j], dAccdPos[i][j], 2e-13);
             }
         }
+
+        /** Test no-regression of the compatibility modes. */
+
+        // Test default mode (backward compatible)
+        PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.OLD_MODELS);
+        double[][] dAccDPPosOldModels = new double[3][3];
+        thirdBody.addDAccDState(pos, referenceFrame, date.shiftedBy(86400.), dAccDPPosOldModels);
+
+        // Test mixed models mode
+        PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.MIXED_MODELS);
+        double[][] dAccDPPosMixedModels = new double[3][3];
+        thirdBody.addDAccDState(pos, referenceFrame, date, dAccDPPosMixedModels);
+
+        // Test new models mode
+        PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.NEW_MODELS);
+        double[][] dAccDPPosNewModels = new double[3][3];
+        thirdBody.addDAccDState(pos, referenceFrame, date, dAccDPPosNewModels);
+
+        final double[][] expectedOldModelsAcc =
+            new double[][] { { 8.94211305859775E-14, -1.4505769393859904E-13, -7.289352428869E-14 },
+                { -1.4505769393859904E-13, -5.39280629171066E-15, 5.2864916370842237E-14 },
+                { -7.289352428869E-14, 5.2864916370842237E-14, -8.402832429426683E-14 } };
+        final double[][] expectedNewMixedModelsAcc =
+            new double[][] { { 2.5720692871039785E-15, -1.3677916354268827E-13, -7.109731199909889E-14 },
+                { -1.3677916354268827E-13, 6.024530085679825E-14, 8.764935614560584E-14 },
+                { -7.109731199909889E-14, 8.764935614560584E-14, -6.281737014390222E-14 } };
+
+
+        // compare with expected acceleration
+        Assert.assertTrue(Arrays.deepEquals(expectedOldModelsAcc, dAccDPPosOldModels));
+        Assert.assertTrue(Arrays.deepEquals(expectedNewMixedModelsAcc, dAccDPPosMixedModels));
+        Assert.assertTrue(Arrays.deepEquals(expectedNewMixedModelsAcc, dAccDPPosNewModels));
     }
 
     private SpacecraftState createSpacecraftState(final Vector3D position, final Frame frame, final AbsoluteDate date) {
-        return new SpacecraftState(new CartesianOrbit(new PVCoordinates(position, Vector3D.ZERO), frame, date, Constants.WGS84_EARTH_MU));
+        return new SpacecraftState(new CartesianOrbit(new PVCoordinates(position, Vector3D.ZERO), frame, date,
+            Constants.WGS84_EARTH_MU));
     }
-    
+
     /**
      * Test the partial derivatives computation.
      * 
@@ -327,7 +373,7 @@ public class ThirdBodyAttractionTest {
     /**
      * @testType UT
      * 
-     * @testedMethod {@link ThirdBodyAttraction #ThirdBodyAttraction(CelestialBody, boolean)}
+     * @testedMethod {@link ThirdBodyAttraction #ThirdBodyAttraction(CelestialPoint, boolean)}
      * 
      * @description compute acceleration partial derivatives wrt position
      * 
@@ -575,7 +621,7 @@ public class ThirdBodyAttractionTest {
             public CelestialBodyEphemeris getEphemeris() {
                 return null;
             }
-            
+
             @Override
             public void setEphemeris(final CelestialBodyEphemeris ephemerisIn) {
                 // nothing to do
@@ -628,7 +674,7 @@ public class ThirdBodyAttractionTest {
             public double getGM() {
                 return 4.90280012616E12;
             }
-            
+
             /**
              * {@inheritDoc}
              */
@@ -704,24 +750,29 @@ public class ThirdBodyAttractionTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
 
             @Override
-            public IAUPole getIAUPole() {
+            public CelestialBodyIAUOrientation getOrientation() {
                 return null;
             }
 
             @Override
-            public void setIAUPole(final IAUPole iauPoleIn) {
+            public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
                 // nothing to do
             }
 
             @Override
             public void setGM(final double gmIn) {
                 // nothing to do
+            }
+
+            @Override
+            public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+                // nothing to do
+                return null;
             }
         };
 
@@ -764,29 +815,29 @@ public class ThirdBodyAttractionTest {
      * @nonRegressionVersion 4.8.1
      */
     @Test
-     public void testMultiplicativeFactor() throws PatriusException {
-     final double mu = Constants.WGS84_EARTH_MU;
-     final SpacecraftState state = new SpacecraftState(new KeplerianOrbit(7000000, 0, 0, 0, 0, 0,
-     PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, mu));
-     final double[][] c = {
-     { 1.0, 0.0, 0.0 },
-     { 0.0, 0.0, 0.0 },
-     { -2.032132919428845E-4, 6.203045246423681E-12, 2.238040265574716E-5 } };
-     final double[][] s = {
-     { 0.0, 0.0, 0.0 },
-     { 0.0, 0.0, 0.0 },
-     { 0.0, 1.0741043061033635E-9, -1.3432186078773792E-10 } };
-     final MeeusSun sunActual = new MeeusSun();
+    public void testMultiplicativeFactor() throws PatriusException {
+        final double mu = Constants.WGS84_EARTH_MU;
+        final SpacecraftState state = new SpacecraftState(new KeplerianOrbit(7000000, 0, 0, 0, 0, 0,
+            PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, mu));
+        final double[][] c = {
+            { 1.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0 },
+            { -2.032132919428845E-4, 6.203045246423681E-12, 2.238040265574716E-5 } };
+        final double[][] s = {
+            { 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0 },
+            { 0.0, 1.0741043061033635E-9, -1.3432186078773792E-10 } };
+        final MeeusSun sunActual = new MeeusSun();
         sunActual.setGravityModel(new CunninghamGravityModel(sunActual.getShape().getBodyFrame(), 3500000.,
             sunActual.getGM(), c, s));
-     final MeeusSun sunExpected = new MeeusSun(){
-         /** Serializable UID. */
-         private static final long serialVersionUID = -3506441751244405864L;
-        
-         @Override
-         public double getGM() {
+        final MeeusSun sunExpected = new MeeusSun(){
+            /** Serializable UID. */
+            private static final long serialVersionUID = -3506441751244405864L;
+
+            @Override
+            public double getGM() {
                 return 1.32712440017987E20 * 10.;
-         }
+            }
         };
         sunExpected.setGravityModel(new CunninghamGravityModel(sunExpected.getShape().getBodyFrame(), 3500000.,
             1.32712440017987E20 * 10., c, s));
@@ -795,26 +846,28 @@ public class ThirdBodyAttractionTest {
         actualModel.setMultiplicativeFactor(10.);
         ((AbstractHarmonicGravityModel) sunExpected.getGravityModel()).setCentralTermContribution(false);
         final ThirdBodyAttraction expectedModel = new ThirdBodyAttraction(sunExpected.getGravityModel());
-    
-     // Acceleration
-     final Vector3D actual = actualModel.computeAcceleration(state);
-     final Vector3D expected = expectedModel.computeAcceleration(state);
+
+        // Acceleration
+        final Vector3D actual = actualModel.computeAcceleration(state);
+        final Vector3D expected = expectedModel.computeAcceleration(state);
         Assert.assertEquals(expected.getX(), actual.getX(), Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(expected.getY(), actual.getY(), Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(expected.getZ(), actual.getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
-     // Partial derivatives
-     final double[][] dAccdPosActual = new double[3][3];
-     actualModel.addDAccDState(state.getPVCoordinates().getPosition(), state.getFrame(), state.getDate(), dAccdPosActual);
-     final double[][] dAccdPosExpected = new double[3][3];
-     expectedModel.addDAccDState(state.getPVCoordinates().getPosition(), state.getFrame(), state.getDate(), dAccdPosExpected);
+        // Partial derivatives
+        final double[][] dAccdPosActual = new double[3][3];
+        actualModel.addDAccDState(state.getPVCoordinates().getPosition(), state.getFrame(), state.getDate(),
+            dAccdPosActual);
+        final double[][] dAccdPosExpected = new double[3][3];
+        expectedModel.addDAccDState(state.getPVCoordinates().getPosition(), state.getFrame(), state.getDate(),
+            dAccdPosExpected);
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 Assert.assertEquals(dAccdPosActual[i][j], dAccdPosExpected[i][j], 1E-24);
             }
         }
-     // K value
+        // K value
         Assert.assertEquals(10., actualModel.getMultiplicativeFactor(), 0.);
-     }
+    }
 
     /**
      * @throws PatriusException if the celestial body cannot be built

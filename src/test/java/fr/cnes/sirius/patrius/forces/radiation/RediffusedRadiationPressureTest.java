@@ -18,6 +18,9 @@
  * @history creation 12/03/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:DM:DM-3228:03/11/2022:[PATRIUS] Integration des evolutions de la branche patrius-for-lotus 
@@ -46,11 +49,12 @@ import fr.cnes.sirius.patrius.assembly.properties.MassProperty;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.forces.drag.DragForce;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.tides.TerrestrialTides;
-import fr.cnes.sirius.patrius.frames.FactoryManagedFrame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -142,8 +146,8 @@ public class RediffusedRadiationPressureTest {
 
         // radiative model
         final IEmissivityModel model = new KnockeRiesModel();
-        final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final RediffusedRadiativeTestModel radiativeModel = new RediffusedRadiativeTestModel(
             true, true, 1, 1);
         final RediffusedRadiationPressure prs = new RediffusedRadiationPressure(
@@ -183,7 +187,7 @@ public class RediffusedRadiationPressureTest {
         try {
             // radiative model
             final IEmissivityModel model = new KnockeRiesModel();
-            final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
+            final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
             final CelestialBody sun = CelestialBodyFactory.getSun();
             final RediffusedRadiativeTestModel radiativeModel = new RediffusedRadiativeTestModel(
                 true, true, 1, 1);
@@ -291,8 +295,8 @@ public class RediffusedRadiationPressureTest {
 
         // radiative model
         final IEmissivityModel model = new KnockeRiesModel();
-        final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final RediffusedRadiativeTestModel radiativeModelAlb = new RediffusedRadiativeTestModel(
             true, false, 1, 1);
         final RediffusedRadiativeTestModel radiativeModelIR = new RediffusedRadiativeTestModel(
@@ -367,8 +371,8 @@ public class RediffusedRadiationPressureTest {
 
         // radiative model
         final IEmissivityModel model = new KnockeRiesModel();
-        final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final RediffusedRadiativeTestModel radiativeModelIR = new RediffusedRadiativeTestModel(
             false, true, 1, 1);
         final RediffusedRadiationPressure rIR = new RediffusedRadiationPressure(
@@ -391,7 +395,7 @@ public class RediffusedRadiationPressureTest {
      * @throws PatriusException
      * @testType UT
      * 
-     * @testedMethod {@link RediffusedRadiationPressure#RediffusedRadiationPressure(CelestialBody, Frame, int, int, IEmissivityModel, RediffusedRadiationSensitive, boolean)}
+     * @testedMethod {@link RediffusedRadiationPressure#RediffusedRadiationPressure(CelestialPoint, Frame, int, int, IEmissivityModel, RediffusedRadiationSensitive, boolean)}
      * @testedMethod {@link SolarRadiationPressure#computeGradientPosition()}
      * @testedMethod {@link SolarRadiationPressure#computeGradientVelocity()}
      * 
@@ -413,8 +417,8 @@ public class RediffusedRadiationPressureTest {
 
         // Instance
         final IEmissivityModel model = new KnockeRiesModel();
-        final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final RediffusedRadiativeTestModel radiativeModel = new RediffusedRadiativeTestModel(
             true, true, 1, 1);
         final RediffusedRadiationPressure prs = new RediffusedRadiationPressure(
@@ -512,8 +516,8 @@ public class RediffusedRadiationPressureTest {
     @Test
     public void testEnrichParameterDescriptors() throws PatriusException {
         final IEmissivityModel model = new KnockeRiesModel();
-        final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
-        final CelestialBody sun = CelestialBodyFactory.getSun();
+        final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
+        final CelestialPoint sun = CelestialBodyFactory.getSun();
         final RediffusedRadiativeTestModel radiativeModel = new RediffusedRadiativeTestModel(true,
                 true, 1, 1);
         final RediffusedRadiationPressure forceModel = new RediffusedRadiationPressure(sun,

@@ -37,7 +37,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 /**
  * Defines a tropospheric model, used to calculate the signal delay for the signal path
  * imposed to electro-magnetic signals between an orbital satellite and a ground station.
- * 
+ *
  * @author Thomas Neidhart
  */
 public interface TroposphericCorrection extends IParameterizable {
@@ -45,7 +45,7 @@ public interface TroposphericCorrection extends IParameterizable {
     /**
      * Calculates the tropospheric signal delay for the signal path from a ground station to a
      * satellite at a given date.
-     * 
+     *
      * @param date
      *        date of meteo conditions
      * @param elevation
@@ -55,8 +55,8 @@ public interface TroposphericCorrection extends IParameterizable {
     double computeSignalDelay(final AbsoluteDate date, final double elevation);
 
     /**
-     * Compute the derivative value with respect to the input parameter.
-     * 
+     * Compute the signal delay derivative value with respect to the input parameter.
+     *
      * @param p
      *        parameter
      * @param elevation
@@ -67,7 +67,7 @@ public interface TroposphericCorrection extends IParameterizable {
 
     /**
      * Tell if the function is differentiable by the given parameter.
-     * 
+     *
      * @param p
      *        function parameter
      * @return true if the function is differentiable by the given parameter.

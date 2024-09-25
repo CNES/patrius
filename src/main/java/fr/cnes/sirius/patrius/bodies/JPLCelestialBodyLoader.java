@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.11:FA:FA-3278:22/05/2023:[PATRIUS] Doublon de classes pour le corps celeste Earth
@@ -48,16 +51,17 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
+import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader.SpiceJ2000ConventionEnum;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
-import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Loader for JPL ephemerides binary files (DE 4xx and BSP) and similar formats (INPOP 06/08/10).
- * It loads the whole {@link CelestialBody}. For {@link CelestialBodyEphemeris} loader only,
+ * It loads the whole {@link CelestialPoint}. For {@link CelestialBodyEphemeris} loader only,
  * see dedicated class.
  * <p>
  * JPL ephemerides binary files contain ephemerides for all solar system planets.
@@ -122,11 +126,9 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
      *        regular expression for supported files names
      * @param generateTypeIn
      *        ephemeris type to generate
-     * @exception PatriusException
-     *            if the header constants cannot be read
      */
     public JPLCelestialBodyLoader(final String supportedNamesIn,
-            final EphemerisType generateTypeIn) throws PatriusException {
+            final EphemerisType generateTypeIn) {
         this(supportedNamesIn, generateTypeIn, null);
     }
 
@@ -139,26 +141,44 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
      *        ephemeris type to generate
      * @param gravityModelIn
      *        gravitational attraction model
-     * @exception PatriusException
-     *            if the header constants cannot be read
      */
     public JPLCelestialBodyLoader(final String supportedNamesIn,
             final EphemerisType generateTypeIn,
-            final GravityModel gravityModelIn) throws PatriusException {
+            final GravityModel gravityModelIn) {
         super(supportedNamesIn, new JPLHistoricEphemerisLoader(supportedNamesIn, generateTypeIn));
         this.gravityModel = gravityModelIn;
         this.ephemerisType = generateTypeIn;
     }
 
-    /**
-     * Load celestial body.
-     *
-     * @param name
-     *        name of the celestial body
-     * @return loaded celestial body
-     * @throws PatriusException
-     *         if the body cannot be loaded
-     */
+    /** {@inheritDoc} */
+    @Override
+    public CelestialPoint loadCelestialPoint(final String name) throws PatriusException {
+
+        // Initialization
+        final CelestialPoint res;
+
+        switch (this.ephemerisType) {
+            case SOLAR_SYSTEM_BARYCENTER:
+                final double gmSSB = getLoadedGravitationalCoefficient(this.ephemerisType);
+                final CelestialBodyEphemeris ephemerisSSB = getEphemerisLoader().loadCelestialBodyEphemeris(name);
+                res = new BasicCelestialPoint(FramesFactory.getICRF(), name, gmSSB, ephemerisSSB);
+                break;
+            case EARTH_MOON:
+                final double gmEMB = getLoadedGravitationalCoefficient(this.ephemerisType);
+                final CelestialBodyEphemeris ephemerisEMB = getEphemerisLoader().loadCelestialBodyEphemeris(name);
+                res = new BasicCelestialPoint(FramesFactory.getEMB(), name, gmEMB, ephemerisEMB);
+                break;
+            default:
+                // General case: CelestialBody
+                res = loadCelestialBody(name);
+                break;
+        }
+
+        // Return result
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override
     public CelestialBody loadCelestialBody(final String name) throws PatriusException {
 
@@ -167,11 +187,11 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
 
         switch (ephemerisType) {
             case SOLAR_SYSTEM_BARYCENTER:
-                res = new JPLCelestialBody(name, null, FramesFactory.getICRF());
-                break;
+                // CelestialBody cannot be built
+                throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, ephemerisType);
             case EARTH_MOON:
-                res = new JPLCelestialBody(name, null, FramesFactory.getEMB());
-                break;
+                // CelestialBody cannot be built
+                throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, ephemerisType);
             case EARTH:
                 res = new Earth(name, getLoadedGravitationalCoefficient(EphemerisType.EARTH));
                 break;
@@ -186,6 +206,13 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
 
         // Return result
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String getName(final String patriusName) {
+        // Body name is exactly PATRIUS body name
+        return patriusName;
     }
 
     /** Local celestial body class. */
@@ -206,35 +233,16 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
          */
         public JPLCelestialBody(final String name,
                 final Frame parentFrame) throws PatriusException {
-            super(name, gravityModel, IAUPoleFactory.getIAUPole(ephemerisType), parentFrame);
+            super(name, JPLCelestialBodyLoader.this.gravityModel, IAUPoleFactory
+                .getIAUPole(JPLCelestialBodyLoader.this.ephemerisType), parentFrame,
+                    SpiceJ2000ConventionEnum.ICRF, getEphemerisLoader().loadCelestialBodyEphemeris(name));
             // ellipsoid default shape
-            setShape(buildDefaultBodyShape(name, getRotatingFrame(IAUPoleModelType.TRUE), ephemerisType));
-            setEphemeris(getEphemerisLoader().loadCelestialBodyEphemeris(name));
-            this.setGravityModel(new NewtonianGravityModel(getICRF(),
-                    getLoadedGravitationalCoefficient(ephemerisType)));
-        }
-
-        /**
-         * Simple constructor.
-         *
-         * @param name
-         *        name of the body
-         * @param parentFrame
-         *        unused
-         * @param icrf
-         *        ICRF frame
-         * @exception PatriusException
-         *            if gravitational coefficient cannot be retrieved
-         */
-        public JPLCelestialBody(final String name,
-                final Frame parentFrame,
-                final CelestialBodyFrame icrf) throws PatriusException {
-            super(icrf, name, gravityModel == null ? new NewtonianGravityModel(icrf,
-                    getLoadedGravitationalCoefficient(ephemerisType)) : gravityModel, IAUPoleFactory
-                    .getIAUPole(ephemerisType));
-            // ellipsoid default shape
-            setShape(buildDefaultBodyShape(name, getRotatingFrame(IAUPoleModelType.TRUE), ephemerisType));
-            setEphemeris(getEphemerisLoader().loadCelestialBodyEphemeris(name));
+            if (JPLCelestialBodyLoader.this.ephemerisType != null) {
+                setShape(buildDefaultBodyShape(name, getRotatingFrame(IAUPoleModelType.TRUE),
+                    JPLCelestialBodyLoader.this.ephemerisType));
+                setGravityModel(new NewtonianGravityModel(getICRF(),
+                    getLoadedGravitationalCoefficient(JPLCelestialBodyLoader.this.ephemerisType)));
+            }
         }
 
         /** {@inheritDoc} */

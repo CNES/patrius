@@ -18,6 +18,7 @@
  * @history creation 18/11/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3154:10/05/2022:[PATRIUS] Amelioration des methodes permettant l'extraction d'une sous-sequence 
  * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
@@ -84,28 +85,28 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
     /** Nature. */
     private final String nature;
 
-    /** Reference date */
+    /** Reference date. */
     private final AbsoluteDate refDate;
 
-    /** Array of chronologically ordered angular coordinates */
+    /** Array of chronologically ordered angular coordinates. */
     private final AngularCoordinates[] attitudes;
 
     /**
      * Array (same size of attitudes array) containing for each attitude time elapsed since
-     * reference date
+     * reference date.
      */
     private final double[] durations;
 
-    /** reference frame from which angular coordinates are computed */
+    /** Reference frame from which angular coordinates are computed. */
     private final Frame refFrame;
 
-    /** validity interval of the law (with closed endpoints). */
+    /** Validity interval of the law (with closed endpoints). */
     private AbsoluteDateInterval validityInterval;
 
-    /** Filter to use for Hermite interpolation */
+    /** Filter to use for Hermite interpolation. */
     private final AngularDerivativesFilter filter;
 
-    /** Number of points used for interpolation */
+    /** Number of points used for interpolation. */
     private final int interpOrder;
 
     /** Flag to indicate if spin derivation computation is activated. */
@@ -113,11 +114,12 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
 
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of Rotations
-     * associated with a double representing the time elapsed since the reference date.
-     * The number of points used for interpolation is the default one (defined in
-     * {@link TabulatedAttitude})
+     * associated with a double representing the time elapsed since the reference date.<br>
      * Rotations rates (set to 0's) will not be used for interpolation.
-     *
+     * <p>
+     * The number of points used for interpolation is the default one (defined in {@link TabulatedAttitude}).
+     * </p>
+     * 
      * @param referenceDate
      *        reference date
      * @param orientations
@@ -125,8 +127,8 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
      * @param frame
      *        reference frame from which attitude is computed
      * @throws PatriusException
-     *         thrown if there is not enough data for Hermite interpolation
-     *
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -139,9 +141,9 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of Rotations
      * associated with a double representing the time elapsed since the reference date
-     * and a number of points used for interpolation.
+     * and a number of points used for interpolation.<br>
      * The List of angular coordinates is built with rotations rates set to 0's
-     * and rotations rates (set to 0's) will not be used for interpolation
+     * and rotations rates (set to 0's) will not be used for interpolation.
      *
      * @param referenceDate
      *        reference date
@@ -150,10 +152,11 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
      * @param frame
      *        reference frame from which attitude is computed
      * @param nbInterpolationPoints
-     *        nbInterpolationPoints number of points used for interpolation
+     *        number of points used for interpolation
      * @throws PatriusException
-     *         thrown if there is not enough data for Hermite interpolation
-     *
+     *         if the number of points used for interpolation is {@code < 1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -165,10 +168,11 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
 
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of angular coordinates
-     * associated with a double representing the time elapsed since the reference date.
+     * associated with a double representing the time elapsed since the reference date.<br>
      * The rotation rates will be used for interpolation.
-     * The number of points used for interpolation is the default one (defined in
-     * {@link TabulatedAttitude})
+     * <p>
+     * The number of points used for interpolation is the default one (defined in {@link TabulatedAttitude}).
+     * </p>
      *
      * @param referenceDate
      *        reference date
@@ -177,8 +181,8 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
      * @param frame
      *        reference frame from which attitude is computed
      * @throws PatriusException
-     *         thrown if there is not enough data for Hermite interpolation
-     *
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate, final Frame frame,
@@ -191,8 +195,8 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of angular coordinates
      * associated with a double representing the time elapsed since the reference date
-     * and a number of points used for interpolation. The rotation rates will be used for
-     * interpolation.
+     * and a number of points used for interpolation.<br>
+     * The rotation rates will be used for interpolation.
      *
      * @param referenceDate
      *        reference date
@@ -201,10 +205,11 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
      * @param frame
      *        reference frame from which attitude is computed
      * @param nbInterpolationPoints
-     *        nbInterpolationPoints number of points used for interpolation
+     *        number of points used for interpolation
      * @throws PatriusException
-     *         thrown if there is not enough data for Hermite interpolation
-     *
+     *         if the number of points used for interpolation is {@code < 1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -215,16 +220,23 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
 
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of Rotations associated
-     * with a double representing the time elapsed since the reference date. The number of points
-     * used for interpolation is the default one (defined in {@link TabulatedAttitude}) Rotations
-     * rates (set to 0's) will not be used for interpolation.
+     * with a double representing the time elapsed since the reference date.<br>
+     * Rotation rates (set to 0's) will not be used for interpolation.
+     * <p>
+     * The number of points used for interpolation is the default one (defined in {@link TabulatedAttitude}).
+     * </p>
      *
-     * @param referenceDate reference date
-     * @param orientations rotations. WARNING : these must be chronologically ordered.
-     * @param frame reference frame from which attitude is computed
-     * @param natureIn leg nature
-     * @throws PatriusException thrown if there is not enough data for Hermite interpolation
-     *
+     * @param referenceDate
+     *        reference date
+     * @param orientations
+     *        rotations. WARNING : these must be chronologically ordered.
+     * @param frame
+     *        reference frame from which attitude is computed
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -236,16 +248,23 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of Rotations associated
      * with a double representing the time elapsed since the reference date and a number of points
-     * used for interpolation. The List of angular coordinates is built with rotations rates set to
-     * 0's and rotations rates (set to 0's) will not be used for interpolation
+     * used for interpolation.<br>
+     * The List of angular coordinates is built with rotations rates set to 0's and rotations rates (set to 0's) will
+     * not be used for interpolation.
      *
-     * @param referenceDate reference date
-     * @param orientations rotations. WARNING : these must be chronologically ordered.
+     * @param referenceDate
+     *        reference date
+     * @param orientations
+     *        rotations. WARNING : these must be chronologically ordered.
      * @param frame reference frame from which attitude is computed
-     * @param nbInterpolationPoints nbInterpolationPoints number of points used for interpolation
-     * @param natureIn leg nature
-     * @throws PatriusException thrown if there is not enough data for Hermite interpolation
-     *
+     * @param nbInterpolationPoints
+     *        number of points used for interpolation
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if the number of points used for interpolation is {@code < 1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -257,17 +276,23 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
 
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of angular coordinates
-     * associated with a double representing the time elapsed since the reference date. The rotation
-     * rates will be used for interpolation. The number of points used for interpolation is the
-     * default one (defined in {@link TabulatedAttitude})
+     * associated with a double representing the time elapsed since the reference date.<br>
+     * The rotation rates will be used for interpolation.
+     * <p>
+     * The number of points used for interpolation is the default one (defined in {@link TabulatedAttitude}).
+     * </p>
      *
-     * @param referenceDate reference date
-     * @param angularCoordinates angular coordinates. WARNING : these must be chronologically
-     *        ordered.
-     * @param frame reference frame from which attitude is computed
-     * @param natureIn leg nature
-     * @throws PatriusException thrown if there is not enough data for Hermite interpolation
-     *
+     * @param referenceDate
+     *        reference date
+     * @param angularCoordinates
+     *        angular coordinates. WARNING : these must be chronologically ordered.
+     * @param frame
+     *        reference frame from which attitude is computed
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate, final Frame frame,
@@ -280,16 +305,23 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
     /**
      * Build a RelativeTabulatedAttitudeLeg with a reference date, a list of angular coordinates
      * associated with a double representing the time elapsed since the reference date and a number
-     * of points used for interpolation. The rotation rates will be used for interpolation.
+     * of points used for interpolation.<br>
+     * The rotation rates will be used for interpolation.
      *
-     * @param referenceDate reference date
-     * @param angularCoordinates angular coordinates WARNING : these must be chronologically
-     *        ordered.
-     * @param frame reference frame from which attitude is computed
-     * @param nbInterpolationPoints nbInterpolationPoints number of points used for interpolation
-     * @param natureIn leg nature
-     * @throws PatriusException thrown if there is not enough data for Hermite interpolation
-     *
+     * @param referenceDate
+     *        reference date
+     * @param angularCoordinates
+     *        angular coordinates WARNING : these must be chronologically ordered.
+     * @param frame
+     *        reference frame from which attitude is computed
+     * @param nbInterpolationPoints
+     *        number of points used for interpolation
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if the number of points used for interpolation is {@code < 1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     public RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -304,15 +336,22 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
      * associated with a double representing the time elapsed since the reference date and a number
      * of points used for interpolation.
      *
-     * @param referenceDate reference date
-     * @param angularCoordinates angular coordinates. WARNING : these must be chronologically
-     *        ordered.
-     * @param frame reference frame from which attitude is computed
-     * @param useR flag to indicate if rotation rates should be used for Hermite interpolation
-     * @param nbInterpolationPoints nbInterpolationPoints number of points used for interpolation
-     * @param natureIn leg nature
-     * @throws PatriusException thrown if there is not enough data for Hermite interpolation
-     *
+     * @param referenceDate
+     *        reference date
+     * @param angularCoordinates
+     *        angular coordinates. WARNING : these must be chronologically ordered.
+     * @param frame
+     *        reference frame from which attitude is computed
+     * @param useR
+     *        flag to indicate if rotation rates should be used for Hermite interpolation
+     * @param nbInterpolationPoints
+     *        number of points used for interpolation
+     * @param natureIn
+     *        leg nature
+     * @throws PatriusException
+     *         if the number of points used for interpolation is {@code < 1}<br>
+     *         if there is not enough data for Hermite interpolation<br>
+     *         if the angular coordinates aren't in chronological order
      * @since 3.1
      */
     private RelativeTabulatedAttitudeLeg(final AbsoluteDate referenceDate,
@@ -320,11 +359,15 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
             final boolean useR, final int nbInterpolationPoints, final String natureIn)
             throws PatriusException {
 
-        // The array's size must be at least 2 to interpolate and create a date interval
+        // Check the number of points used for interpolation is valid
+        if (nbInterpolationPoints < 1) {
+            throw new PatriusException(PatriusMessages.INVALID_NB_INTERPOLATION_POINTS);
+        }
+
+        // Check that there is enough data for Hermite interpolation
         final int arraySize = angularCoordinates.size();
-        if (arraySize < 2) {
-            throw PatriusException
-                    .createIllegalArgumentException(PatriusMessages.AT_LEAST_TWO_ATTITUDES_NEEDED);
+        if (arraySize < nbInterpolationPoints) {
+            throw new PatriusException(PatriusMessages.NOT_ENOUGH_DATA_FOR_INTERPOLATION);
         }
 
         // Initialize attitudes and durations
@@ -335,7 +378,16 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
             this.attitudes[i] = angularCoordinates.get(i).getSecond();
         }
 
-        // dates interval creation and initialization of refDate, refFrame, useRotationRates and
+        // Check that the durations are in chronological order
+        double duration = this.durations[0];
+        for (int i = 1; i < arraySize; i++) {
+            if (duration > this.durations[i]) {
+                throw new PatriusException(PatriusMessages.NON_CHRONOLOGICAL_DATA);
+            }
+            duration = this.durations[i];
+        }
+
+        // Dates interval creation and initialization of refDate, refFrame, useRotationRates and
         // interpOrder
         this.refDate = referenceDate;
         this.validityInterval = new AbsoluteDateInterval(IntervalEndpointType.CLOSED,
@@ -347,16 +399,11 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
         // Use rotation rates, or not
         this.filter = useR ? AngularDerivativesFilter.USE_RR : AngularDerivativesFilter.USE_R;
 
-        // check that there is enough data for Hermite interpolation
-        if (arraySize < this.interpOrder) {
-            throw new PatriusException(PatriusMessages.NOT_ENOUGH_DATA_FOR_INTERPOLATION);
-        }
-
         this.nature = natureIn;
     }
 
     /**
-     * build a list of angular coordinates with list of rotations and rotation rates set to 0.
+     * Build a list of angular coordinates with list of rotations and rotation rates set to 0.
      *
      * @param orientations
      *        the list of rotations
@@ -465,7 +512,7 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
     }
 
     /**
-     * Private method to compute interpolation
+     * Private method to compute interpolation.
      *
      * @param frame
      *        interpolation frame

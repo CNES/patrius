@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -47,8 +48,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
-import fr.cnes.sirius.patrius.bodies.MeeusMoon;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.forces.gravity.GravityToolbox;
@@ -315,8 +315,6 @@ public class OrbitNatureConverterTest {
 
         Report.printMethodHeader("testToOsculatingSeveralForces", "Mean to osculating conversion (all forces)",
             "STELA", IHMREL, ComparisonType.RELATIVE);
-        MeeusSun.resetTransform();
-        MeeusMoonStela.resetTransform();
 
         // forceModel
         // Zonaux
@@ -324,11 +322,11 @@ public class OrbitNatureConverterTest {
         final ArrayList<StelaForceModel> forceModel = new ArrayList<>();
         forceModel.add(zonal);
         // Sun
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
         final StelaThirdBodyAttraction sunPerturbation = new StelaThirdBodyAttraction(sun, 4, 2, 2);
         forceModel.add(sunPerturbation);
         // Moon
-        final CelestialBody moon = new MeeusMoonStela(6378136.46);
+        final CelestialPoint moon = new MeeusMoonStela(6378136.46);
         final StelaThirdBodyAttraction moonPerturbation = new StelaThirdBodyAttraction(moon, 4, 2, 2);
         forceModel.add(moonPerturbation);
 
@@ -407,20 +405,17 @@ public class OrbitNatureConverterTest {
      */
     @Test
     public void testReturnNatureConversions() throws PatriusException {
-        MeeusSun.resetTransform();
-        MeeusMoonStela.resetTransform();
-
         // forceModel
         // Zonaux
         final StelaZonalAttraction zonal = new StelaZonalAttraction(this.provider, 2, false, 2, 0, false);
         final ArrayList<StelaForceModel> forceModel = new ArrayList<>();
         forceModel.add(zonal);
         // Sun
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
         final StelaThirdBodyAttraction sunPerturbation = new StelaThirdBodyAttraction(sun, 4, 2, 2);
         forceModel.add(sunPerturbation);
         // Moon
-        final CelestialBody moon = new MeeusMoonStela(6378136.46);
+        final CelestialPoint moon = new MeeusMoonStela(6378136.46);
         final StelaThirdBodyAttraction moonPerturbation = new StelaThirdBodyAttraction(moon, 4, 2, 2);
         forceModel.add(moonPerturbation);
 
@@ -605,20 +600,17 @@ public class OrbitNatureConverterTest {
 
         Report.printMethodHeader("testToMeanOtherFrame", "Mean to osculating conversion (J2 only, different frame)",
             "STELA", 2E-7, ComparisonType.RELATIVE);
-        MeeusSun.resetTransform();
-        MeeusMoonStela.resetTransform();
-
         // forceModel
         // Zonaux
         final StelaZonalAttraction zonal = new StelaZonalAttraction(this.provider, 2, false, 2, 0, false);
         final ArrayList<StelaForceModel> forceModel = new ArrayList<>();
         forceModel.add(zonal);
         // Sun
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
         final StelaThirdBodyAttraction sunPerturbation = new StelaThirdBodyAttraction(sun, 4, 2, 2);
         forceModel.add(sunPerturbation);
         // Moon
-        final CelestialBody moon = new MeeusMoonStela(6378136.46);
+        final CelestialPoint moon = new MeeusMoonStela(6378136.46);
         final StelaThirdBodyAttraction moonPerturbation = new StelaThirdBodyAttraction(moon, 4, 2, 2);
         forceModel.add(moonPerturbation);
 
@@ -835,6 +827,35 @@ public class OrbitNatureConverterTest {
             return submatrix.getData();
         }
 
+        /**
+         * @see fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider#getSigmaC(int,
+         *      int, boolean)
+         */
+        @Override
+        public double[][] getSigmaC(final int n, final int m, final boolean normalized) throws PatriusException {
+            final BlockRealMatrix submatrix;
+            if (normalized) {
+                submatrix = this.normC.getSubMatrix(0, n, 0, m);
+            } else {
+                submatrix = this.denormC.getSubMatrix(0, n, 0, m);
+            }
+            return submatrix.getData(false);
+        }
+
+        /**
+         * @see fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider#getSigmaS(int,
+         *      int, boolean)
+         */
+        @Override
+        public double[][] getSigmaS(final int n, final int m, final boolean normalized) throws PatriusException {
+            final BlockRealMatrix submatrix;
+            if (normalized) {
+                submatrix = this.normS.getSubMatrix(0, n, 0, m);
+            } else {
+                submatrix = this.denormS.getSubMatrix(0, n, 0, m);
+            }
+            return submatrix.getData();
+        }   
         /**
          * @see fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider#getMu()
          */

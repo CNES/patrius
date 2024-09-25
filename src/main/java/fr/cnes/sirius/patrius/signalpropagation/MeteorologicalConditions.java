@@ -1,5 +1,21 @@
 /**
+ *
+ * Copyright 2011-2022 CNES
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les
@@ -7,16 +23,6 @@
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Conditions meteorologiques variables dans modeles troposphere
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] Attitude spacecraft state lazy
  * END-HISTORY
- */
-/*
- */
-/*
- */
-/*
- */
-/*
- */
-/*
  */
 package fr.cnes.sirius.patrius.signalpropagation;
 
@@ -39,23 +45,26 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
  */
 public class MeteorologicalConditions implements Serializable {
 
-    /** Serializable UID. */
-    private static final long serialVersionUID = -2648794555757149644L;
+    /** Standard reference pressure [Pa]. */
+    public static final double P0 = 101325.;
 
-    /** Standard reference pressure (Pascal). */
-    private static final double P0 = 101325;
+    /** Standard reference temperature [°C]. */
+    public static final double T0 = 18.;
 
-    /** Standard reference temperature (Celsuis). */
-    private static final double T0 = 18;
+    /** Standard reference relative humidity [%]. */
+    public static final double RH0 = 50.;
 
-    /** Standard reference humidity percentage. */
-    private static final double RH0 = 50.0;
-
-    /** Standard reference altitude. */
-    private static final double H0 = 0;
+    /** Standard reference altitude [m]. */
+    public static final double H0 = 0.;
 
     /** Absolute zero for temperatures. */
-    private static final double ABSOLUTE_ZERO = 273.15;
+    public static final double ABSOLUTE_ZERO = 273.15;
+
+    /** Standard meteorological conditions: {@link #P0}, {@link #T0} (in [°K]) and {@link #RH0}. */
+    public static final MeteorologicalConditions STANDARD = new MeteorologicalConditions(P0, T0 + ABSOLUTE_ZERO, RH0);
+
+    /** Serializable UID. */
+    private static final long serialVersionUID = -2648794555757149644L;
 
     /** One hundred. */
     private static final double HUNDRED = 100.;
@@ -63,7 +72,7 @@ public class MeteorologicalConditions implements Serializable {
     /** Pressure [Pa]. */
     private final double pressure;
 
-    /** Temperature [K]. */
+    /** Temperature [°K]. */
     private final double temperature;
 
     /** Relative humidity [%]. */
@@ -71,15 +80,15 @@ public class MeteorologicalConditions implements Serializable {
 
     /**
      * Standard meteorological conditions constructor with all the variables set at once.
-     * 
+     *
      * @param pressure
      *        Pressure [Pa]
      * @param temperature
-     *        Temperature [K]
+     *        Temperature [°K]
      * @param humidity
      *        Relative humidity [%]
      * @throws NotPositiveException
-     *         if {@code pressure <= 0}
+     *         if {@code pressure < 0}
      * @throws NotStrictlyPositiveException
      *         if {@code temperature <= 0}
      * @throws OutOfRangeException
@@ -88,7 +97,7 @@ public class MeteorologicalConditions implements Serializable {
     public MeteorologicalConditions(final double pressure, final double temperature,
                                     final double humidity) {
         if (pressure < 0.) {
-            throw new NotPositiveException(temperature);
+            throw new NotPositiveException(pressure);
         }
         if (temperature <= 0.) {
             throw new NotStrictlyPositiveException(temperature);
@@ -111,7 +120,7 @@ public class MeteorologicalConditions implements Serializable {
     }
 
     /**
-     * Getter for the temperature [K].
+     * Getter for the temperature [°K].
      *
      * @return the temperature
      */
@@ -139,14 +148,14 @@ public class MeteorologicalConditions implements Serializable {
         final int nbValues = meteoConditionsCollection.size();
         double pressureSum = 0;
         double temperatureSum = 0;
-        double relativeHumiditySum = 0;
+        double humiditySum = 0;
         for (final MeteorologicalConditions meteorologicalCondition : meteoConditionsCollection) {
             pressureSum += meteorologicalCondition.getPressure();
             temperatureSum += meteorologicalCondition.getTemperature();
-            relativeHumiditySum += meteorologicalCondition.getHumidity();
+            humiditySum += meteorologicalCondition.getHumidity();
         }
         return new MeteorologicalConditions(pressureSum / nbValues, temperatureSum / nbValues,
-            relativeHumiditySum / nbValues);
+            humiditySum / nbValues);
     }
 
     /**
@@ -155,11 +164,11 @@ public class MeteorologicalConditions implements Serializable {
      * <ul>
      * <li>P = pressure [Pa]</li>
      * <li>T = temperature [K]</li>
-     * <li>RH = humidity rate [%]</li>
+     * <li>RH = relative humidity [%]</li>
      * </ul>
      * 
      * @param referenceMeteoConditions
-     *        reference temperature, pressure and humidity
+     *        reference temperature, pressure and relative humidity
      * @param referenceAltitude
      *        reference altitude
      * @param altitude
@@ -184,11 +193,11 @@ public class MeteorologicalConditions implements Serializable {
      * Computes standard model values [P, T, R] for provided altitude with standard reference values
      * [P0, T0, RH0] provided by tropospheric models :
      * <ul>
-     * <li>P = pressure [Pa] - P0 = 101325 Pa</li>
-     * <li>T = temperature [K] - T0 = 18 degree Celsius</li>
-     * <li>RH = humidity rate [%] - RH0 = 50%</li>
+     * <li>P = pressure [Pa] - P0 = 101325 [Pa]</li>
+     * <li>T = temperature [K] - T0 = 18 [°C]</li>
+     * <li>RH = humidity rate [%] - RH0 = 50 [%]</li>
      * </ul>
-     * 
+     *
      * @param altitude
      *        altitude for which values [P, T, RH] should be returned
      * @return standard model values [P, T, RH]
@@ -208,7 +217,7 @@ public class MeteorologicalConditions implements Serializable {
 
     /**
      * Get a String representation of this meteorological conditions.
-     * 
+     *
      * @return a String representation of this meteorological conditions
      */
     @Override

@@ -14,6 +14,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.attitudes;
 
 import fr.cnes.sirius.patrius.attitudes.directions.IDirection;

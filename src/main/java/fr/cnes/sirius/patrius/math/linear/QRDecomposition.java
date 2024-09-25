@@ -268,7 +268,7 @@ public class QRDecomposition implements Decomposition {
                 ra[row][col] = this.qrt[col][row];
             }
         }
-        this.cachedR = MatrixUtils.createRealMatrix(ra, false);
+        this.cachedR = new Array2DRowRealMatrix(ra, false);
 
         // return the cached matrix
         return this.cachedR;

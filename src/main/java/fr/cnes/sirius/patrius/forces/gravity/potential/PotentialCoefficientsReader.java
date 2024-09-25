@@ -49,17 +49,20 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @see GravityFieldFactory
  * @author Fabien Maussion
  */
-//CHECKSTYLE: stop AbstractClassName check
+// CHECKSTYLE: stop AbstractClassName check
 @SuppressWarnings({"PMD.AbstractNaming", "PMD.NullAssignment"})
 public abstract class PotentialCoefficientsReader
     implements DataLoader, PotentialCoefficientsProvider {
     // CHECKSTYLE: resume AbstractClassName check
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -4966936658950728369L;
 
     /** Indicator for completed read. */
     protected boolean readCompleted;
+
+    /** Sigmas reader indicator */
+    protected boolean readSigmas;
 
     /** Central body reference radius. */
     protected double ae;
@@ -76,6 +79,12 @@ public abstract class PotentialCoefficientsReader
     /** fully normalized tesseral-sectorial coefficients matrix. */
     protected double[][] normalizedS;
 
+    /** fully normalized tesseral-sectorial sigma coefficients matrix. */
+    protected double[][] normalizedSigmasC;
+
+    /** fully normalized tesseral-sectorial sigma coefficients matrix. */
+    protected double[][] normalizedSigmasS;
+
     /** un-normalized zonal coefficients array. */
     private double[] unNormalizedJ;
 
@@ -85,11 +94,33 @@ public abstract class PotentialCoefficientsReader
     /** un-normalized tesseral-sectorial coefficients matrix. */
     private double[][] unNormalizedS;
 
+    /** un-normalized tesseral-sectorial sigma coefficients matrix. */
+    private double[][] unNormalizedSigmasC;
+
+    /** un-normalized tesseral-sectorial sigma coefficients matrix. */
+    private double[][] unNormalizedSigmasS;
+
     /** Regular expression for supported files names. */
     private final String supportedNames;
 
     /** Allow missing coefficients in the input data. */
     private final boolean missingCoefficientsAllowedFlag;
+
+    /**
+     * Simple constructor.
+     * <p>
+     * Build an uninitialized reader with a default "false" value for reading sigmas coefficient.
+     * </p>
+     * 
+     * @param supportedNamesIn
+     *        regular expression for supported files names
+     * @param missingCoefficientsAllowedIn
+     *        allow missing coefficients in the input data
+     */
+    protected PotentialCoefficientsReader(final String supportedNamesIn,
+                                          final boolean missingCoefficientsAllowedIn) {
+        this(supportedNamesIn, missingCoefficientsAllowedIn, false);
+    }
 
     /**
      * Simple constructor.
@@ -101,9 +132,11 @@ public abstract class PotentialCoefficientsReader
      *        regular expression for supported files names
      * @param missingCoefficientsAllowedIn
      *        allow missing coefficients in the input data
+     * @param readSigmasIn
+     *        if true, will read sigmas coefficient (sigma C & sigma S)
      */
-    protected PotentialCoefficientsReader(final String supportedNamesIn,
-        final boolean missingCoefficientsAllowedIn) {
+    public PotentialCoefficientsReader(final String supportedNamesIn, final boolean missingCoefficientsAllowedIn,
+                                       final boolean readSigmasIn) {
         this.supportedNames = supportedNamesIn;
         this.missingCoefficientsAllowedFlag = missingCoefficientsAllowedIn;
         this.readCompleted = false;
@@ -115,6 +148,7 @@ public abstract class PotentialCoefficientsReader
         this.unNormalizedJ = null;
         this.unNormalizedC = null;
         this.unNormalizedS = null;
+        this.readSigmas = readSigmasIn;
     }
 
     /**
@@ -173,6 +207,18 @@ public abstract class PotentialCoefficientsReader
     @Override
     public double[][] getS(final int n, final int m, final boolean normalized) throws PatriusException {
         return truncateArray(n, m, normalized ? this.getNormalizedS() : this.getUnNormalizedS());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double[][] getSigmaC(final int n, final int m, final boolean normalized) throws PatriusException {
+        return truncateArray(n, m, normalized ? this.getNormalizedSigmasC() : this.getUnNormalizedSigmasC());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double[][] getSigmaS(final int n, final int m, final boolean normalized) throws PatriusException {
+        return truncateArray(n, m, normalized ? this.getNormalizedSigmasS() : this.getUnNormalizedSigmasS());
     }
 
     /** {@inheritDoc} */
@@ -300,6 +346,48 @@ public abstract class PotentialCoefficientsReader
             this.unNormalizedS = unNormalize(this.normalizedS);
         }
         return this.unNormalizedS;
+    }
+
+    /**
+     * Get the fully normalized sigmas tesseral-sectorial and zonal coefficients.
+     * 
+     * @return S the coefficients matrix
+     */
+    private double[][] getNormalizedSigmasC() {
+        return this.normalizedSigmasC;
+    }
+
+    /**
+     * Get the fully normalized sigmas tesseral-sectorial coefficients.
+     * 
+     * @return S the coefficients matrix
+     */
+    private double[][] getNormalizedSigmasS() {
+        return this.normalizedSigmasS;
+    }
+
+    /**
+     * Get the un-normalized sigmas tesseral-sectorial and zonal coefficients.
+     * 
+     * @return S the coefficients matrix
+     */
+    private double[][] getUnNormalizedSigmasC() {
+        if (this.unNormalizedSigmasC == null) {
+            this.unNormalizedSigmasC = unNormalize(this.normalizedSigmasC);
+        }
+        return this.unNormalizedSigmasC;
+    }
+
+    /**
+     * Get the un-normalized sigmas tesseral-sectorial coefficients.
+     * 
+     * @return S the coefficients matrix
+     */
+    private double[][] getUnNormalizedSigmasS() {
+        if (this.unNormalizedSigmasS == null) {
+            this.unNormalizedSigmasS = unNormalize(this.normalizedSigmasS);
+        }
+        return this.unNormalizedSigmasS;
     }
 
     /**

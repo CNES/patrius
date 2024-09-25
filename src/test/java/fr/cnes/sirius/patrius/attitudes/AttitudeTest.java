@@ -18,6 +18,7 @@
 /*
  * 
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -40,6 +41,7 @@
 package fr.cnes.sirius.patrius.attitudes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
@@ -283,7 +285,7 @@ public class AttitudeTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }
@@ -404,6 +406,74 @@ public class AttitudeTest {
     }
 
     @Test
+    public void testEqualsAndHashCode() {
+
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final Frame referenceFrame = FramesFactory.getEME2000();
+        final Rotation attitude = new Rotation(Vector3D.PLUS_I, 0.1);
+        final Vector3D spin = Vector3D.PLUS_J;
+        final Vector3D acceleration = Vector3D.PLUS_K;
+
+        // New instance
+        final Attitude instance = new Attitude(date, referenceFrame, attitude, spin, acceleration);
+
+        // Check the hashCode consistency between calls
+        final int hashCode = instance.hashCode();
+        Assert.assertEquals(hashCode, instance.hashCode());
+
+        // Compared object is null
+        Assert.assertFalse(instance.equals(null));
+
+        // Compared object is a different class
+        Assert.assertFalse(instance.equals(new Object()));
+
+        // Same instance
+        Assert.assertEquals(instance, instance);
+
+        // Same data, but different instances
+        Attitude other = new Attitude(date, referenceFrame, attitude, spin, acceleration);
+
+        Assert.assertEquals(other, instance);
+        Assert.assertEquals(instance, other);
+        Assert.assertEquals(other.hashCode(), instance.hashCode());
+
+        // Different date
+        other = new Attitude(AbsoluteDate.FIFTIES_EPOCH_TAI, referenceFrame, attitude, spin, acceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different frame
+        other = new Attitude(date, FramesFactory.getGCRF(), attitude, spin, acceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different attitude
+        other = new Attitude(date, referenceFrame, new Rotation(Vector3D.PLUS_I, 0.2), spin, acceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different spin
+        other = new Attitude(date, referenceFrame, attitude, Vector3D.ZERO, acceleration);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different acceleration
+        other = new Attitude(date, referenceFrame, attitude, spin, Vector3D.ZERO);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+    }
+
+    @Test
     public void testSerialisation() {
         final double rate = 2 * FastMath.PI / (12 * 60);
         final double dt = 10.0;
@@ -423,6 +493,36 @@ public class AttitudeTest {
             final Attitude attitudeBis = TestUtils.serializeAndRecover(attitude);
             assertEqualsAttitude(attitudeBis, attitude);
         }
+    }
+
+    @Test
+    public void testComparison() {
+
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final Frame frame = FramesFactory.getEME2000();
+        final AngularCoordinates orientation = new AngularCoordinates(new Rotation(false, 0.48, 0.64, 0.36, 0.48),
+            Vector3D.ZERO, Vector3D.ZERO);
+
+        final Attitude att1 = new Attitude(date, frame, orientation);
+        final Attitude att2 = new Attitude(date.shiftedBy(-1), frame, orientation);
+        final Attitude att3 = new Attitude(date.shiftedBy(2), frame, orientation);
+        final Attitude att4 = new Attitude(date.shiftedBy(1), frame, orientation);
+        final Attitude att5 = new Attitude(date, frame, orientation);
+
+        Assert.assertEquals(1, att1.compareTo(att2)); // att1 is after att2
+        Assert.assertEquals(-1, att2.compareTo(att3)); // att2 is before att3
+        Assert.assertEquals(1, att3.compareTo(att4)); // att3 is after att4
+        Assert.assertEquals(0, att1.compareTo(att5)); // att1 is at the same date as att5
+
+        // Evaluate the attitude ordering
+        final Attitude[] atts = new Attitude[] { att1, att2, att3, att4, att5 };
+        Arrays.sort(atts);
+
+        Assert.assertEquals(att2, atts[0]);
+        Assert.assertEquals(att1, atts[1]);
+        Assert.assertEquals(att5, atts[2]);
+        Assert.assertEquals(att4, atts[3]);
+        Assert.assertEquals(att3, atts[4]);
     }
 
     private static void assertEqualsAttitude(final Attitude attitudeBis, final Attitude attitude) {

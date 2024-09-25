@@ -36,6 +36,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.attitudes;
 
 import java.util.SortedSet;

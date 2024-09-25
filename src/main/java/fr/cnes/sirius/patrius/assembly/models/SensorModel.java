@@ -18,6 +18,13 @@
  * @history creation 19/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-133:08/12/2023:[PATRIUS] Conversion en trop dans OneAxisEllipsoid#getIntersectionPoints
+ * VERSION:4.13:DM:DM-139:08/12/2023:[PATRIUS] Suppression de l'argument frame
+ * dans PVCoordinatesProvider#getNativeFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3303:22/05/2023:[PATRIUS] Modifications mineures dans UserCelestialBody 
  * VERSION:4.10.2:FA:FA-3289:31/01/2023:[PATRIUS] Problemes sur le masquage d une visi avec LIGHT_TIME
@@ -57,10 +64,11 @@ import fr.cnes.sirius.patrius.assembly.IPart;
 import fr.cnes.sirius.patrius.assembly.PropertyType;
 import fr.cnes.sirius.patrius.assembly.properties.GeometricProperty;
 import fr.cnes.sirius.patrius.assembly.properties.SensorProperty;
+import fr.cnes.sirius.patrius.bodies.ApparentRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.events.sensor.SecondarySpacecraft;
-import fr.cnes.sirius.patrius.events.sensor.VisibilityFromStationDetector.LinkType;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -76,8 +84,6 @@ import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.ApparentRadiusProvider;
 import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -711,8 +717,8 @@ public final class SensorModel implements PVCoordinatesProvider {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
-                return SensorModel.this.inhibitionTargets[inhibitionFieldNumber - 1].getNativeFrame(date, frame);
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+                return SensorModel.this.inhibitionTargets[inhibitionFieldNumber - 1].getNativeFrame(date);
             }
         };
 
@@ -752,7 +758,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+    public Frame getNativeFrame(final AbsoluteDate date) {
         return this.inAssembly.getPart(this.inPartName).getFrame();
     }
 
@@ -782,8 +788,7 @@ public final class SensorModel implements PVCoordinatesProvider {
         // Updates of all the orbits and attitudes
         for (int i = 0; i < this.maskingAssemblies.size(); i++) {
             final AbsoluteDate assemblyDate = getPartDate(spacecraftDate, propagationDelayType, linkType,
-                this.maskingAssemblies.get(i).getPropagator(),
-                this.maskingAssemblies.get(i).getPropagator().getFrame());
+                this.maskingAssemblies.get(i).getPropagator());
             this.maskingAssemblies.get(i).updateSpacecraftState(assemblyDate);
         }
 
@@ -810,7 +815,7 @@ public final class SensorModel implements PVCoordinatesProvider {
                     final Frame partFrame = part.getFrame();
                     // Compute maskingPart date
                     final AbsoluteDate maskingPartDate = getPartDate(spacecraftDate, propagationDelayType,
-                        linkType, part.getFrame(), part.getFrame());
+                        linkType, part.getFrame());
 
                     final Transform trans = sensorFrame.getTransformTo(partFrame, maskingPartDate);
 
@@ -843,7 +848,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
                             /** {@inheritDoc} */
                             @Override
-                            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+                            public Frame getNativeFrame(final AbsoluteDate date) {
                                 return part.getFrame();
                             }
                         };
@@ -872,22 +877,20 @@ public final class SensorModel implements PVCoordinatesProvider {
      *        link type
      * @param pvProvider
      *        PV coordinates provider
-     * @param pvProviderFrame
-     *        PV coordinates provider reference frame
      * @return part date
      * @throws PatriusException thrown if computation failed
      */
     private AbsoluteDate getPartDate(final AbsoluteDate spacecraftDate,
                                      final PropagationDelayType propagationDelayType, final LinkType linkType,
-                                     final PVCoordinatesProvider pvProvider, final Frame pvProviderFrame)
+                                     final PVCoordinatesProvider pvProvider)
         throws PatriusException {
         AbsoluteDate maskingPartDate = spacecraftDate;
         // Light speed case is treated separately for computation times optimization
         if (propagationDelayType.equals(PropagationDelayType.LIGHT_SPEED)) {
             // LIGHT_SPEED case
             // Signal propagation frame
-            final Frame nativeFrameAssembly = pvProvider.getNativeFrame(spacecraftDate, pvProviderFrame);
-            final Frame nativeFrameSensor = getNativeFrame(spacecraftDate, null);
+            final Frame nativeFrameAssembly = pvProvider.getNativeFrame(spacecraftDate);
+            final Frame nativeFrameSensor = getNativeFrame(spacecraftDate);
             final Frame assemblyInertialFrame = nativeFrameAssembly
                 .getFirstCommonPseudoInertialAncestor(nativeFrameSensor);
             // Handle link type
@@ -944,9 +947,8 @@ public final class SensorModel implements PVCoordinatesProvider {
                 // Light speed case is treated separately only for computation times optimization
                 if (propagationDelayType.equals(PropagationDelayType.LIGHT_SPEED)) {
                     // Signal propagation frame
-                    final Frame nativeFrameBody = this.maskingBodies.get(i).getNativeFrame(spacecraftDate,
-                        this.maskingBodies.get(i).getBodyFrame());
-                    final Frame nativeFrameSensor = getNativeFrame(spacecraftDate, null);
+                    final Frame nativeFrameBody = this.maskingBodies.get(i).getNativeFrame(spacecraftDate);
+                    final Frame nativeFrameSensor = getNativeFrame(spacecraftDate);
                     final Frame bodyInertialFrame = nativeFrameBody
                         .getFirstCommonPseudoInertialAncestor(nativeFrameSensor);
                     // Handle link type
@@ -1122,10 +1124,15 @@ public final class SensorModel implements PVCoordinatesProvider {
 
         // intersection points
         final BodyPoint[] points = body.getIntersectionPoints(line, sensorFrame, date);
+        final Vector3D[] pointsSensorFrame = new Vector3D[points.length];
+        final Transform t = body.getBodyFrame().getTransformTo(sensorFrame, date);
+        for (int i = 0; i < pointsSensorFrame.length; i++) {
+            pointsSensorFrame[i] = t.transformPosition(points[i].getPosition());
+        }
 
         if (points.length == 0) {
             distLineToBody = body.distanceTo(line, sensorFrame, date);
-        } else if (Vector3D.dotProduct(points[0].getPosition(), targetInSensorFrame) > 0.) {
+        } else if (Vector3D.dotProduct(pointsSensorFrame[0], targetInSensorFrame) > 0.) {
 
             // if the line intersects the body, the returned distance is negative, and
             // equal to minus the distance between the closest intersection points
@@ -1135,13 +1142,13 @@ public final class SensorModel implements PVCoordinatesProvider {
                 double distToMask = Double.POSITIVE_INFINITY;
                 int index = 0;
                 for (int i = 0; i < points.length; i++) {
-                    if (points[i].getPosition().getNorm() < distToMask) {
-                        distToMask = points[i].getPosition().getNorm();
+                    if (pointsSensorFrame[i].getNorm() < distToMask) {
+                        distToMask = pointsSensorFrame[i].getNorm();
                         index = i;
                     }
                 }
                 if (distToMask < targetDistance) {
-                    distLineToBody = -points[index].getPosition().distance(targetInSensorFrame);
+                    distLineToBody = -pointsSensorFrame[index].distance(targetInSensorFrame);
                 } else {
                     // if the masking body is behind the target : no masking !
                     distLineToBody = 1.;
@@ -1289,7 +1296,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date, final Frame frameIn) {
+        public Frame getNativeFrame(final AbsoluteDate date) {
             return this.frame;
         }
     }

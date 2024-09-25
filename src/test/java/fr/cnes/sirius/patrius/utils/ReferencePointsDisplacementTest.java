@@ -18,6 +18,8 @@
  * @history creation 27/07/2012
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
@@ -39,7 +41,7 @@ import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.gravity.tides.ReferencePointsDisplacement;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -61,7 +63,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 public class ReferencePointsDisplacementTest {
 
     /** itrf */
-    private static Frame itrf;
+    private static CelestialBodyFrame itrf;
 
     /** Smallest positive number such that 1 - EPSILON is not numerically equal to 1. */
     private final double nonRegEps = Precision.DOUBLE_COMPARISON_EPSILON;

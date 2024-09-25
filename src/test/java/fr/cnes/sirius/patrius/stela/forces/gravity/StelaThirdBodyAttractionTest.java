@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -45,8 +47,8 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -569,7 +571,7 @@ public class StelaThirdBodyAttractionTest {
      * 
      * @testedFeature {@link features#STELA_THIRD_BODY_ATTRACTION}
      * 
-     * @testedMethod {@link StelaThirdBodyAttraction#StelaThirdBodyAttraction(CelestialBody, int, int, int)}
+     * @testedMethod {@link StelaThirdBodyAttraction#StelaThirdBodyAttraction(CelestialPoint, int, int, int)}
      * 
      * @description tests the exceptions at the creation of the third body force model
      * 
@@ -587,7 +589,7 @@ public class StelaThirdBodyAttractionTest {
     public void testException() throws PatriusException {
 
         // The user celestial body:
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
 
         boolean rez = false;
         // short periods, degree 8:
@@ -767,7 +769,7 @@ public class StelaThirdBodyAttractionTest {
     private class EphemerisBodyForTest implements IEphemerisBody {
 
         @Override
-        public IAUPole getIAUPole() {
+        public CelestialBodyIAUOrientation getIAUPole() {
             return null;
         }
 

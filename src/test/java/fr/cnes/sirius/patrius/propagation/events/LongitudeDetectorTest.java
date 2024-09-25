@@ -19,6 +19,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-126:08/12/2023:[PATRIUS] Distinction increasing/decreasing dans LongitudeDetector
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -47,6 +49,10 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.LongitudeDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -62,8 +68,6 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -311,7 +315,8 @@ public class LongitudeDetectorTest {
 
         final EllipsoidPoint propagationGeoPoint = this.earth.buildPoint(sstate.getPVCoordinates().getPosition(),
             sstate.getFrame(), propagationDate, "");
-        Assert.assertEquals(MathLib.toRadians(40.0), propagationGeoPoint.getLLHCoordinates().getLongitude(), EPSILON_LONGITUDE);
+        Assert.assertEquals(MathLib.toRadians(40.0), propagationGeoPoint.getLLHCoordinates().getLongitude(),
+            EPSILON_LONGITUDE);
     }
 
     /**
@@ -349,6 +354,151 @@ public class LongitudeDetectorTest {
     }
 
     /**
+     * @throws PatriusException
+     *         if error occurs in the propagation or in the detector creation
+     * @testType UT
+     * 
+     * @testedFeature {@link features#VALIDATE_LONGITUDE_DETECTOR}
+     * 
+     * @testedMethod {@link LongitudeDetector#LongitudeDetector(double, Frame, double, double, Action, boolean, int)}
+     * 
+     * @description test of the slopeSelection parameter
+     * 
+     * @input constructor parameters: the longitude angle, the max check
+     *        value, the threshold value, the celestial body frame, the action,
+     *        the remove boolean, the sun body and the slopeSelection.
+     * 
+     * @output a {@link LongitudeDetector}
+     * 
+     * @testPassCriteria the {@link LongitudeDetector} when initiated with increasing parameter only detect increasing
+     *                   event.
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testLongitudeDetectorIncreasingDecreasing() throws PatriusException {
+        // Detector in increasing mode
+        final LongitudeDetector detectorIncrease = new LongitudeDetector(FastMath.PI * 0, this.earth.getBodyFrame(),
+            600, 1e-6, Action.CONTINUE, false, 0);
+        // Detector in decreasing mode
+        final LongitudeDetector detectorDecrease = new LongitudeDetector(FastMath.PI * 0, this.earth.getBodyFrame(),
+            600, 1e-6, Action.CONTINUE, false, 1);
+        // Detector in increasing & decreasing mode
+        final LongitudeDetector detector = new LongitudeDetector(FastMath.PI * 0, this.earth.getBodyFrame(), 600, 1e-6,
+            Action.CONTINUE, false);
+
+        final AbsoluteDate iniDate = new AbsoluteDate("2011-11-09T12:00:00Z", TimeScalesFactory.getTT());
+
+        final KeplerianOrbit orbit = new KeplerianOrbit(30000e3, 0.657, MathLib.toRadians(10.0),
+            MathLib.toRadians(199.0), 0.0, 0.0, PositionAngle.TRUE, FramesFactory.getGCRF(), iniDate,
+            Constants.EGM96_EARTH_MU);
+
+        final double period = orbit.getKeplerianPeriod();
+        final Propagator propagator = new KeplerianPropagator(orbit);
+
+        // Step handler to track longitude evolution during propagation
+        final MyStepHandler angleTracking = new MyStepHandler(iniDate, orbit.getFrame());
+        propagator.setMasterMode(10, angleTracking);
+
+        // Create one logger for each detector
+        final EventsLogger loggerIncrease = new EventsLogger();
+        final EventsLogger loggerDecrease = new EventsLogger();
+        final EventsLogger logger = new EventsLogger();
+
+        // Add the three different loggers to the propagator
+        propagator.addEventDetector(loggerIncrease.monitorDetector(detectorIncrease));
+        propagator.addEventDetector(loggerDecrease.monitorDetector(detectorDecrease));
+        propagator.addEventDetector(logger.monitorDetector(detector));
+
+        // Propagate
+        propagator.propagate(iniDate.shiftedBy(5 * period));
+        // Asserts
+        for (int i = 0; i < loggerIncrease.getLoggedEvents().size(); i++) {
+            Assert.assertTrue(loggerIncrease.getLoggedEvents().get(i).isIncreasing());
+        }
+        for (int j = 0; j < loggerDecrease.getLoggedEvents().size(); j++) {
+            Assert.assertFalse(loggerDecrease.getLoggedEvents().get(j).isIncreasing());
+        }
+        Assert.assertEquals(loggerIncrease.getLoggedEvents().size() + loggerDecrease.getLoggedEvents().size(),
+            logger.getLoggedEvents().size());
+        Assert.assertEquals(2, loggerIncrease.getLoggedEvents().size());
+        Assert.assertEquals(0, loggerDecrease.getLoggedEvents().size());
+        Assert.assertEquals(2, logger.getLoggedEvents().size());
+    }
+
+    /**
+     * @throws PatriusException
+     *         if error occurs in the propagation or in the detector creation
+     * @testType UT
+     * 
+     * @testedFeature {@link features#VALIDATE_LONGITUDE_DETECTOR}
+     * 
+     * @testedMethod {@link LongitudeDetector#LongitudeDetector(double, Frame, double, double, Action, boolean, int)}
+     * 
+     * @description test of the slopeSelection parameter
+     * 
+     * @input constructor parameters: the longitude angle, the max check
+     *        value, the threshold value, the celestial body frame, the action,
+     *        the remove boolean, the sun body and the slopeSelection.
+     * 
+     * @output a {@link LongitudeDetector}
+     * 
+     * @testPassCriteria the {@link LongitudeDetector} when initiated with increasing parameter only detect increasing
+     *                   event.
+     * 
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testLongitudeDetectorIncreasingDecreasingBackward() throws PatriusException {
+        // Detector in increasing mode
+        final LongitudeDetector detectorIncrease = new LongitudeDetector(FastMath.PI * 0, this.earth.getBodyFrame(),
+            600, 1e-6, Action.CONTINUE, false, 0);
+        // Detector in decreasing mode
+        final LongitudeDetector detectorDecrease = new LongitudeDetector(FastMath.PI * 0, this.earth.getBodyFrame(),
+            600, 1e-6, Action.CONTINUE, false, 1);
+        // Detector in increasing & decreasing mode
+        final LongitudeDetector detector = new LongitudeDetector(FastMath.PI * 0, this.earth.getBodyFrame(), 600, 1e-6,
+            Action.CONTINUE, false);
+
+        final AbsoluteDate iniDate = new AbsoluteDate("2011-11-09T12:00:00Z", TimeScalesFactory.getTT());
+
+        final KeplerianOrbit orbit = new KeplerianOrbit(30000e3, 0.657, MathLib.toRadians(10.0),
+            MathLib.toRadians(199.0), 0.0, 0.0, PositionAngle.TRUE, FramesFactory.getGCRF(), iniDate,
+            Constants.EGM96_EARTH_MU);
+
+        final double period = orbit.getKeplerianPeriod();
+        final Propagator propagator = new KeplerianPropagator(orbit);
+        propagator.propagate(iniDate.shiftedBy(5 * period));
+
+        // Step handler to track longitude evolution during propagation
+        final MyStepHandler angleTracking = new MyStepHandler(iniDate, orbit.getFrame());
+        propagator.setMasterMode(10, angleTracking);
+
+        // Create one logger for each detector
+        final EventsLogger loggerIncrease = new EventsLogger();
+        final EventsLogger loggerDecrease = new EventsLogger();
+        final EventsLogger logger = new EventsLogger();
+
+        // Add the three different loggers to the propagator
+        propagator.addEventDetector(loggerIncrease.monitorDetector(detectorIncrease));
+        propagator.addEventDetector(loggerDecrease.monitorDetector(detectorDecrease));
+        propagator.addEventDetector(logger.monitorDetector(detector));
+
+        // Propagate backward
+        propagator.propagate(iniDate);
+
+        // Asserts
+        Assert.assertEquals(2, loggerIncrease.getLoggedEvents().size());
+        Assert.assertEquals(0, loggerDecrease.getLoggedEvents().size());
+        Assert.assertEquals(2, logger.getLoggedEvents().size());
+    }
+
+    /**
      * 
      * Main method to valid the detection :
      * creates detector for each longitude, add the detectors to the propagator,
@@ -367,7 +517,7 @@ public class LongitudeDetectorTest {
      * 
      */
     public void computeVerification(final Propagator propagator, final AbsoluteDate end,
-                                          final double[] longitudes, final String testCase)
+                                    final double[] longitudes, final String testCase)
         throws PatriusException {
 
         // Step handler to track longitude evolution during propagation

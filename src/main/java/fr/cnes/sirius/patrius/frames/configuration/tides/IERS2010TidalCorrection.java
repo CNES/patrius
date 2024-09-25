@@ -17,6 +17,7 @@
  * @history creation 11/10/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:FA:FA-2964:15/11/2021:[PATRIUS] Javadoc incoherente pour TidalCorrection (UT1 correction) 
@@ -50,7 +51,7 @@ import fr.cnes.sirius.patrius.utils.Constants;
  * <p>
  * This class is adapted for the fortran routine <a href="http://hpiers.obspm.fr/iers/models/interp.f">PMUT1_OCEANS</a>.
  * </p>
- * 
+ *
  * @see TidalCorrectionModel
  * @see TidalCorrectionCache
  * @author Rami Houdroge
@@ -59,7 +60,7 @@ import fr.cnes.sirius.patrius.utils.Constants;
  */
 public class IERS2010TidalCorrection implements TidalCorrectionModel {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 1023921197160912494L;
 
     /** Arcsecond to radians. */
@@ -173,7 +174,7 @@ public class IERS2010TidalCorrection implements TidalCorrectionModel {
 
     /**
      * Private method to compute the corrections according to the IERS2000 model at a given date.
-     * 
+     *
      * @param date
      *        date
      * @return the pole, UT1-TAI and length of day corrections
@@ -185,7 +186,7 @@ public class IERS2010TidalCorrection implements TidalCorrectionModel {
 
         // Julian centuries elapsed since 1950-01-01T12:00:00.000 TT
         final double t = date.offsetFrom(AbsoluteDate.J2000_EPOCH, TimeScalesFactory.getTT())
-            / Constants.JULIAN_CENTURY;
+                / Constants.JULIAN_CENTURY;
         final double t2 = t * t;
         final double t3 = t * t2;
         final double t4 = t2 * t2;
@@ -193,41 +194,44 @@ public class IERS2010TidalCorrection implements TidalCorrectionModel {
         final double[] arg = new double[6];
         final double[] darg = new double[6];
 
-        arg[0] = (67310.54841 + (876600. * 3600. + 8640184.812866) * t + 0.093104 * t2 - 6.2e-6 * t3) * 15.0 + 648000.0;
-        arg[0] = dmod(arg[0], 12960000.) * SEC_RAD;
+        double intermediateVar;
 
-        darg[0] = (876600. * 3600. + 8640184.812866 + 2. * 0.093104 * t - 3 * 6.2e-6 * t2) * 15.;
-        darg[0] = darg[0] * SEC_RAD / 36525.0;
+        intermediateVar = (67310.54841 + (876600. * 3600. + 8640184.812866) * t + 0.093104 * t2 - 6.2e-6 * t3) * 15.0
+            + 648000.0;
+        arg[0] = dmod(intermediateVar, 12960000.) * SEC_RAD;
 
-        arg[1] = -0.00024470 * t4 + 0.051635 * t3 + 31.8792 * t2 + 1717915923.2178 * t + 485868.249036;
-        arg[1] = dmod(arg[1], 1296000.) * SEC_RAD;
+        intermediateVar = (876600. * 3600. + 8640184.812866 + 2. * 0.093104 * t - 3 * 6.2e-6 * t2) * 15.;
+        darg[0] = intermediateVar * SEC_RAD / 36525.0;
 
-        darg[1] = -4. * 0.00024470 * t3 + 3. * 0.051635 * t2 + 2. * 31.8792 * t + 1717915923.2178;
-        darg[1] = darg[1] * SEC_RAD / 36525.0;
+        intermediateVar = -0.00024470 * t4 + 0.051635 * t3 + 31.8792 * t2 + 1717915923.2178 * t + 485868.249036;
+        arg[1] = dmod(intermediateVar, 1296000.) * SEC_RAD;
 
-        arg[2] = -0.00001149 * t4 - 0.000136 * t3 - 0.5532 * t2 + 129596581.0481 * t + 1287104.79305;
-        arg[2] = dmod(arg[2], 1296000.) * SEC_RAD;
+        intermediateVar = -4. * 0.00024470 * t3 + 3. * 0.051635 * t2 + 2. * 31.8792 * t + 1717915923.2178;
+        darg[1] = intermediateVar * SEC_RAD / 36525.0;
 
-        darg[2] = -4. * 0.00001149 * t3 - 3. * 0.000136 * t2 - 2. * 0.5532 * t + 129596581.0481;
-        darg[2] = darg[2] * SEC_RAD / 36525.0;
+        intermediateVar = -0.00001149 * t4 - 0.000136 * t3 - 0.5532 * t2 + 129596581.0481 * t + 1287104.79305;
+        arg[2] = dmod(intermediateVar, 1296000.) * SEC_RAD;
 
-        arg[3] = 0.00000417 * t4 - 0.001037 * t3 - 12.7512 * t2 + 1739527262.8478 * t + 335779.526232;
-        arg[3] = dmod(arg[3], 1296000.) * SEC_RAD;
+        intermediateVar = -4. * 0.00001149 * t3 - 3. * 0.000136 * t2 - 2. * 0.5532 * t + 129596581.0481;
+        darg[2] = intermediateVar * SEC_RAD / 36525.0;
 
-        darg[3] = 4. * 0.00000417 * t3 - 3. * 0.001037 * t2 - 2. * 12.7512 * t + 1739527262.8478;
-        darg[3] = darg[3] * SEC_RAD / 36525.0;
+        intermediateVar = 0.00000417 * t4 - 0.001037 * t3 - 12.7512 * t2 + 1739527262.8478 * t + 335779.526232;
+        arg[3] = dmod(intermediateVar, 1296000.) * SEC_RAD;
 
-        arg[4] = -0.00003169 * t4 + 0.006593 * t3 - 6.3706 * t2 + 1602961601.2090 * t + 1072260.70369;
-        arg[4] = dmod(arg[4], 1296000.) * SEC_RAD;
+        intermediateVar = 4. * 0.00000417 * t3 - 3. * 0.001037 * t2 - 2. * 12.7512 * t + 1739527262.8478;
+        darg[3] = intermediateVar * SEC_RAD / 36525.0;
 
-        darg[4] = -4. * 0.00003169 * t3 + 3. * 0.006593 * t2 - 2. * 6.3706 * t + 1602961601.2090;
-        darg[4] = darg[4] * SEC_RAD / 36525.0;
+        intermediateVar = -0.00003169 * t4 + 0.006593 * t3 - 6.3706 * t2 + 1602961601.2090 * t + 1072260.70369;
+        arg[4] = dmod(intermediateVar, 1296000.) * SEC_RAD;
 
-        arg[5] = -0.00005939 * t4 + 0.007702 * t3 + 7.4722 * t2 - 6962890.2665 * t + 450160.398036;
-        arg[5] = dmod(arg[5], 1296000.) * SEC_RAD;
+        intermediateVar = -4. * 0.00003169 * t3 + 3. * 0.006593 * t2 - 2. * 6.3706 * t + 1602961601.2090;
+        darg[4] = intermediateVar * SEC_RAD / 36525.0;
 
-        darg[5] = -4. * 0.00005939 * t3 + 3. * 0.007702 * t2 + 2. * 7.4722 * t - 6962890.2665;
-        darg[5] = darg[5] * SEC_RAD / 36525.0;
+        intermediateVar = -0.00005939 * t4 + 0.007702 * t3 + 7.4722 * t2 - 6962890.2665 * t + 450160.398036;
+        arg[5] = dmod(intermediateVar, 1296000.) * SEC_RAD;
+
+        intermediateVar = -4. * 0.00005939 * t3 + 3. * 0.007702 * t2 + 2. * 7.4722 * t - 6962890.2665;
+        darg[5] = intermediateVar * SEC_RAD / 36525.0;
 
         double corX = 0.;
         double corY = 0.;
@@ -256,26 +260,27 @@ public class IERS2010TidalCorrection implements TidalCorrectionModel {
             s = sincos[0];
             c = sincos[1];
 
-            corX = corX + TIDAL_TERMS[line][1] * c + TIDAL_TERMS[line][0] * s;
-            corY = corY + TIDAL_TERMS[line][3] * c + TIDAL_TERMS[line][2] * s;
-            corUT1 = corUT1 + TIDAL_TERMS[line][5] * c + TIDAL_TERMS[line][4] * s;
-            corLOD = corLOD - (-TIDAL_TERMS[line][5] * s + TIDAL_TERMS[line][4] * c) * dag;
+            final double[] tidalTermsLine = TIDAL_TERMS[line];
+            corX += tidalTermsLine[1] * c + tidalTermsLine[0] * s;
+            corY += tidalTermsLine[3] * c + tidalTermsLine[2] * s;
+            corUT1 += tidalTermsLine[5] * c + tidalTermsLine[4] * s;
+            corLOD -= (-tidalTermsLine[5] * s + tidalTermsLine[4] * c) * dag;
 
         }
 
         // arcsecs to radians
-        corX = corX * UNIT * SEC_RAD;
-        corY = corY * UNIT * SEC_RAD;
+        corX *= UNIT * SEC_RAD;
+        corY *= UNIT * SEC_RAD;
         // seconds
-        corUT1 = corUT1 * UNIT;
-        corLOD = corLOD * UNIT;
+        corUT1 *= UNIT;
+        corLOD *= UNIT;
 
         return new TidalCorrection(date, new PoleCorrection(corX, corY), corUT1, corLOD);
     }
 
     /**
      * Remainder.
-     * 
+     *
      * @param d
      *        number
      * @param i

@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-109:08/12/2023:[PATRIUS] IsisSpinBiasSlew - Renvoi du
+ * profil de ralliement lorsque le nombre max d'iterations est atteint
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2465:27/05/2020:Refactoring calculs de ralliements
@@ -126,6 +129,9 @@ public class IsisSpinBiasSlewComputer {
 
     /** Duration of the deceleration phase. */
     private double decelDuration;
+    
+    /** Decision to raise an Exception if the maximum of iterations arrive */
+    private boolean throwExceptionOnMaxIterations;
 
     /**
      * Constructor with default maximum number of iterations allowed for slew duration computation's convergence.
@@ -286,6 +292,7 @@ public class IsisSpinBiasSlewComputer {
         this.tranquillisationTime = tranquillisationTimeIn;
         this.maxIterationsNumber = maxIterationsNumberIn;
         this.nature = natureIn;
+        this.throwExceptionOnMaxIterations = true;
 
         // Class variables (computed after slew computation)
         this.slewAngle = Double.NaN;
@@ -295,6 +302,15 @@ public class IsisSpinBiasSlewComputer {
         this.decelMax = Double.NaN;
         this.accelDuration = Double.NaN;
         this.decelDuration = Double.NaN;
+    }
+    
+    /**
+     * Set the boolean to decide if an exception is thrown when the max number of iterations arrive
+     * @param throwExceptionOnMaxIterations boolean indicating if an exception is thrown or the duration
+     *        is returned when the computation loop arrives to the maxIterations 
+     */
+    public void setThrowExceptionOnMaxIterations(final boolean throwExceptionOnMaxIterations) {
+        this.throwExceptionOnMaxIterations = throwExceptionOnMaxIterations;
     }
 
     /**
@@ -601,9 +617,13 @@ public class IsisSpinBiasSlewComputer {
         // Loop until convergence is reached
         while (MathLib.abs(durationPrevious - duration) > this.dtConvergenceThreshold) {
             iLoop++;
-            if (iLoop > this.maxIterationsNumber) {
-                throw new PatriusException(PatriusMessages.CONVERGENCE_FAILED_AFTER_N_ITERATIONS,
-                    this.maxIterationsNumber);
+            if (iLoop > this.maxIterationsNumber) {                
+                if (this.throwExceptionOnMaxIterations) {
+                    throw new PatriusException(PatriusMessages.CONVERGENCE_FAILED_AFTER_N_ITERATIONS,
+                        this.maxIterationsNumber);
+                } else {
+                    return duration;
+                } 
             }
             durationPrevious = duration;
 

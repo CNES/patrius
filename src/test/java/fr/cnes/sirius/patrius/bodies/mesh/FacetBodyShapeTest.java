@@ -15,6 +15,12 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-137:08/12/2023:[PATRIUS] Exception asin dans FacetBodyShape.getApparentRadius
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-53:30/06/2023:[PATRIUS] Error in class FieldData
  * VERSION:4.11.1:FA:FA-81:30/06/2023:[PATRIUS] Reliquat DM 3299
@@ -62,8 +68,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,6 +84,7 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape.MarginType;
+import fr.cnes.sirius.patrius.bodies.ConstantRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
@@ -88,7 +94,10 @@ import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
 import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
-import fr.cnes.sirius.patrius.events.sensor.SensorVisibilityDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.SensorVisibilityDetector;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
 import fr.cnes.sirius.patrius.fieldsofview.OmnidirectionalField;
@@ -97,7 +106,6 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.math.stat.descriptive.SummaryStatistics;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
@@ -109,10 +117,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.ConstantRadiusProvider;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -175,7 +179,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -184,7 +188,7 @@ public class FacetBodyShapeTest {
             FramesFactory.getGCRF(), null);
         this.meshProv = new ObjMeshLoader(modelFile);
         this.body = new StarConvexFacetBodyShape("My body", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-            EllipsoidType.INNER_SPHERE, new ObjMeshLoader(modelFile));
+            new ObjMeshLoader(modelFile));
     }
 
     /**
@@ -596,7 +600,7 @@ public class FacetBodyShapeTest {
         for (final Map.Entry<EllipsoidType, EllipsoidBodyShape> entry : map.entrySet()) {
             // tests for each enumerate, get a copy of the original FacetBodyShape
             final FacetBodyShape bodyShape = new FacetBodyShape(this.body.getName(), this.body.getBodyFrame(),
-                entry.getKey(), this.meshProv);
+                this.meshProv);
 
             // reference ellipsoid
             final EllipsoidBodyShape ellipsoid = entry.getValue();
@@ -609,7 +613,7 @@ public class FacetBodyShapeTest {
             Assert.assertEquals(expected1.getLLHCoordinates().getLongitude(), actual1.getLLHCoordinates()
                 .getLongitude(), 0.013);
             Assert.assertEquals(0., (expected1.getLLHCoordinates().getHeight() - actual1.getLLHCoordinates()
-                    .getHeight()) / expected1.getLLHCoordinates().getHeight(), 1e-3);
+                .getHeight()) / expected1.getLLHCoordinates().getHeight(), 1e-3);
 
             // Check geodetic coordinates => cartesian
             final Vector3D actual2 = actual1.getPosition();
@@ -632,37 +636,17 @@ public class FacetBodyShapeTest {
 
         this.meshProv = new ObjMeshLoader(modelFile);
         this.body = new StarConvexFacetBodyShape("My body", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-            EllipsoidType.INNER_SPHERE, new ObjMeshLoader(modelFile));
-
-        System.out.println("Nb vertices = " + this.body.getMeshProvider().getVertices().size());
-
-        for (final EllipsoidType ellipsoidType : EllipsoidType.values()) {
-            System.out.println(String.format("%-20s %s", ellipsoidType.name(), this.body.getEllipsoid(ellipsoidType)
-                .getEllipsoid()));
-        }
-
-        System.out.println();
-        System.out.println(String
-            .format("EllipdoidType              Delta Min        Delta Max           Mean            StdDev"));
-        for (final EllipsoidType ellipsoidType : EllipsoidType.values()) {
-            final FacetBodyShapeStatistics bodyStats = new FacetBodyShapeStatistics(this.body);
-            final SummaryStatistics stats = bodyStats.computeStatisticsForRadialDistance(this.body
-                .getEllipsoid(ellipsoidType));
-
-            System.out.println(String.format("%-20s %16.6f %16.6f %16.6f %16.6f", ellipsoidType.name(), stats.getMin(),
-                stats.getMax(), stats.getMean(), stats.getStandardDeviation()));
-
-        }
+            new ObjMeshLoader(modelFile));
 
         final double eps = 1E-6;
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getEquatorialRadius(), eps);
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getConjugateRadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius(), eps);
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getConjugateRadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius(), eps);
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getConjugateRadius(), eps);
+        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getARadius(), eps);
+        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getARadius(), eps);
+        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getARadius(), eps);
+        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getCRadius(), eps);
+        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getARadius(), eps);
+        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getCRadius(), eps);
+        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getARadius(), eps);
+        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getCRadius(), eps);
     }
 
     /**
@@ -815,18 +799,18 @@ public class FacetBodyShapeTest {
             -FastMath.PI / 2., 0, 10, "");
         final List<Triangle> actual12 = this.body.getNeighbors(point12, 0);
         Assert.assertEquals(1, actual12.size());
-         checkTriangles(actual12, triangle, 0);
+        checkTriangles(actual12, triangle, 0);
 
         // Max distance = 1 order: only initial triangle and first neighbors are included
         final List<Triangle> actual13 = this.body.getNeighbors(point12, 1);
         Assert.assertEquals(4, actual13.size());
-         checkTriangles(actual13, triangle, 500.);
+        checkTriangles(actual13, triangle, 500.);
 
         // Max distance = 2 orders: only initial triangle and first neighbors and their neightbors
         // are included
         final List<Triangle> actual14 = this.body.getNeighbors(point12, 2);
         Assert.assertEquals(10, actual14.size());
-         checkTriangles(actual14, triangle, 1000.);
+        checkTriangles(actual14, triangle, 1000.);
 
         // Max distance = 1 000 000 orders: all triangles are included
         final List<Triangle> actual15 = this.body.getNeighbors(point12, 1000000);
@@ -852,7 +836,7 @@ public class FacetBodyShapeTest {
         // are included
         final Vector3D point18 = new Vector3D(0, 0, 10100);
         final List<Triangle> actual18 = this.body.getNeighbors(point18, 600.);
-         Assert.assertEquals(100, actual18.size());
+        Assert.assertEquals(100, actual18.size());
         checkTriangles(actual18, point18, 600);
 
         // getNeighbors(Vector3D, order)
@@ -863,7 +847,7 @@ public class FacetBodyShapeTest {
         final Vector3D point19 = new Vector3D(6.1293572297325E-13, 0, -10009.999999999996);
         final List<Triangle> actual19 = this.body.getNeighbors(point19, 0);
         Assert.assertEquals(1, actual19.size());
-         checkTriangles(actual19, triangle, 0);
+        checkTriangles(actual19, triangle, 0);
 
         // Max distance = 1 order: only initial triangle and first neighbors are included
         final List<Triangle> actual20 = this.body.getNeighbors(point19, 1);
@@ -1065,6 +1049,63 @@ public class FacetBodyShapeTest {
     /**
      * @testType UT
      *
+     * @description Build a FieldData with four vertices / two triangles.
+     *              Then check the contour is well built with a continuous chain.
+     * 
+     * @testPassCriteria returned the expected contour
+     *
+     * @referenceVersion 4.13
+     *
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void contourSpecialCaseTest() {
+
+        // Build 4 vertices such as: v0[-0.1 ; 0], v1[0 ; -0.5], v2[0.1 ; 0], v3[0 ; 0.4]
+        // Note: some vertices are closer on purpose to check the contour continuity is well managed
+        final Vertex v0 = new Vertex(0, this.body.buildPoint(LLHCoordinatesSystem.BODYCENTRIC_NORMAL,
+            MathLib.toRadians(-0.1), MathLib.toRadians(0.), 0., "").getPosition());
+        final Vertex v1 = new Vertex(1, this.body.buildPoint(LLHCoordinatesSystem.BODYCENTRIC_NORMAL,
+            MathLib.toRadians(0.), MathLib.toRadians(-0.5), 0., "").getPosition());
+        final Vertex v2 = new Vertex(2, this.body.buildPoint(LLHCoordinatesSystem.BODYCENTRIC_NORMAL,
+            MathLib.toRadians(0.1), MathLib.toRadians(0.), 0., "").getPosition());
+        final Vertex v3 = new Vertex(3, this.body.buildPoint(LLHCoordinatesSystem.BODYCENTRIC_NORMAL,
+            MathLib.toRadians(0.), MathLib.toRadians(0.4), 0., "").getPosition());
+
+        // Case #1: horizontal separation between the two triangles
+        Triangle t1 = new Triangle(11, v1, v2, v3); // Top triangle
+        Triangle t2 = new Triangle(22, v1, v0, v3); // Below triangle
+        List<Triangle> visibleTriangles = Arrays.asList(t1, t2);
+
+        // Build the field data
+        FieldData fieldData = new FieldData(null, visibleTriangles, this.body);
+
+        // Extract the contour and check it is continuous (expected vertices order: 1-2-3-0)
+        List<FacetPoint> contour = fieldData.getContour();
+        Assert.assertEquals("point_1", contour.get(0).getName());
+        Assert.assertEquals("point_2", contour.get(1).getName());
+        Assert.assertEquals("point_3", contour.get(2).getName());
+        Assert.assertEquals("point_0", contour.get(3).getName());
+
+        // Case #2: vertical separation between the two triangles
+        t1 = new Triangle(11, v0, v1, v2); // Left triangle
+        t2 = new Triangle(22, v0, v2, v3); // Right triangle
+        visibleTriangles = Arrays.asList(t1, t2);
+
+        // Build the field data
+        fieldData = new FieldData(null, visibleTriangles, this.body);
+
+        // Extract the contour and check it is continuous (expected vertices order: 0-1-2-3)
+        contour = fieldData.getContour();
+        Assert.assertEquals("point_0", contour.get(0).getName());
+        Assert.assertEquals("point_1", contour.get(1).getName());
+        Assert.assertEquals("point_2", contour.get(2).getName());
+        Assert.assertEquals("point_3", contour.get(3).getName());
+    }
+
+    /**
+     * @testType UT
+     *
      * @description check that list of never visible triangles is properly computed in some various
      *              cases:
      *              <ul>
@@ -1198,7 +1239,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -1234,7 +1275,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -1317,7 +1358,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -1363,7 +1404,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -1398,7 +1439,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -1425,7 +1466,6 @@ public class FacetBodyShapeTest {
     public void exceptionsTest() {
         try {
             new StarConvexFacetBodyShape("", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-                EllipsoidType.INNER_SPHERE,
                 new ObjMeshLoader("Dummy.obj"));
             Assert.fail();
         } catch (final PatriusException e) {
@@ -1433,7 +1473,6 @@ public class FacetBodyShapeTest {
         }
         try {
             new StarConvexFacetBodyShape("", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-                EllipsoidType.INNER_SPHERE,
                 new GeodeticMeshLoader("Dummy.tab"));
             Assert.fail();
         } catch (final PatriusException e) {
@@ -1789,7 +1828,7 @@ public class FacetBodyShapeTest {
         Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening(),
             body6.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening(), EPS);
         Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() * marginValue6,
-            body6.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius());
+            body6.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius(), EPS);
         Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening(),
             body6.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening(), EPS);
         // Case with a positive margin scale factor larger than 1
@@ -1827,7 +1866,8 @@ public class FacetBodyShapeTest {
      *
      * @description check that the returned apparent radius is as expected.
      *
-     * @testPassCriteria returned apparent radius coincides with the radius of the outer sphere (reference math)
+     * @testPassCriteria returned apparent radius coincides with the radius of the outer sphere (reference math),
+     *                   no exception thrown in case of spacecrat below body surface 
      *
      * @referenceVersion 4.9
      *
@@ -1864,7 +1904,7 @@ public class FacetBodyShapeTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return FacetBodyShapeTest.this.body.getBodyFrame();
             }
         };
@@ -1883,6 +1923,17 @@ public class FacetBodyShapeTest {
             PropagationDelayType.LIGHT_SPEED);
         // Check that the apparent radius coincides with the radius of the outer sphere
         Assert.assertEquals(0., (apparentRadius2 - expectedRadius) / expectedRadius, EPS);
+        
+        // Test case of spacecraft below body surface (no exception thrown)
+        try {
+        this.body.getApparentRadius(
+                new ConstantPVCoordinatesProvider(Vector3D.PLUS_I, frame), date, pvCoordinatesCel,
+                PropagationDelayType.LIGHT_SPEED);
+        Assert.assertTrue(true);
+        } catch (ArithmeticException e) {
+            Assert.fail();
+        }
+        
     }
 
     /**
@@ -1912,7 +1963,8 @@ public class FacetBodyShapeTest {
      * @param maxDistance
      *        max distance
      */
-    private void checkTriangles(final List<Triangle> triangles, final EllipsoidPoint point, final double maxDistance) {
+    private static void checkTriangles(final List<Triangle> triangles, final EllipsoidPoint point,
+                                       final double maxDistance) {
         final Vector3D position = point.getPosition();
         for (final Triangle t : triangles) {
             Assert.assertTrue(t.getCenter().distance(position) <= maxDistance);
@@ -2023,41 +2075,37 @@ public class FacetBodyShapeTest {
         final UserCelestialBody celestialBodyBis = new UserCelestialBody("My body", sunPV, 0,
             IAUPoleFactory.getIAUPole(null), frame, null);
 
-        // Loop over each ellipsoid types
-        for (final EllipsoidType ellipsoidType : EllipsoidType.values()) {
+        final StarConvexFacetBodyShape bodyBis = new StarConvexFacetBodyShape("My body",
+            celestialBodyBis.getRotatingFrame(IAUPoleModelType.TRUE),
+            new ObjMeshLoader(modelFile));
+        final StarConvexFacetBodyShape deserializedBody = TestUtils.serializeAndRecover(bodyBis);
 
-            final StarConvexFacetBodyShape bodyBis = new StarConvexFacetBodyShape("My body",
-                celestialBodyBis.getRotatingFrame(IAUPoleModelType.TRUE),
-                ellipsoidType, new ObjMeshLoader(modelFile));
-            final StarConvexFacetBodyShape deserializedBody = TestUtils.serializeAndRecover(bodyBis);
+        final OneAxisEllipsoid fittedEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
+        final OneAxisEllipsoid fittedEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
+        checkEllipsoid(fittedEllipsoid1, fittedEllipsoid2);
 
-            final OneAxisEllipsoid fittedEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
-            final OneAxisEllipsoid fittedEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
-            checkEllipsoid(fittedEllipsoid1, fittedEllipsoid2);
+        final OneAxisEllipsoid innerEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
+        final OneAxisEllipsoid innerEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
+        checkEllipsoid(innerEllipsoid1, innerEllipsoid2);
 
-            final OneAxisEllipsoid innerEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
-            final OneAxisEllipsoid innerEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
-            checkEllipsoid(innerEllipsoid1, innerEllipsoid2);
+        final OneAxisEllipsoid outerEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
+        final OneAxisEllipsoid outerEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
+        checkEllipsoid(outerEllipsoid1, outerEllipsoid2);
 
-            final OneAxisEllipsoid outerEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
-            final OneAxisEllipsoid outerEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
-            checkEllipsoid(outerEllipsoid1, outerEllipsoid2);
+        final OneAxisEllipsoid innerSphere1 = bodyBis.getEllipsoid(EllipsoidType.INNER_SPHERE);
+        final OneAxisEllipsoid innerSphere2 = deserializedBody.getEllipsoid(EllipsoidType.INNER_SPHERE);
+        checkEllipsoid(innerSphere1, innerSphere2);
 
-            final OneAxisEllipsoid innerSphere1 = bodyBis.getEllipsoid(EllipsoidType.INNER_SPHERE);
-            final OneAxisEllipsoid innerSphere2 = deserializedBody.getEllipsoid(EllipsoidType.INNER_SPHERE);
-            checkEllipsoid(innerSphere1, innerSphere2);
+        final OneAxisEllipsoid outerSphere1 = bodyBis.getEllipsoid(EllipsoidType.OUTER_SPHERE);
+        final OneAxisEllipsoid outerSphere2 = deserializedBody.getEllipsoid(EllipsoidType.OUTER_SPHERE);
+        checkEllipsoid(outerSphere1, outerSphere2);
 
-            final OneAxisEllipsoid outerSphere1 = bodyBis.getEllipsoid(EllipsoidType.OUTER_SPHERE);
-            final OneAxisEllipsoid outerSphere2 = deserializedBody.getEllipsoid(EllipsoidType.OUTER_SPHERE);
-            checkEllipsoid(outerSphere1, outerSphere2);
+        Assert.assertEquals(bodyBis.getPVCoordinates(date, frame), deserializedBody.getPVCoordinates(date, frame));
 
-            Assert.assertEquals(bodyBis.getPVCoordinates(date, frame), deserializedBody.getPVCoordinates(date, frame));
-
-            Assert.assertEquals(bodyBis.getName(), deserializedBody.getName());
-            Assert.assertEquals(bodyBis.getMinNorm(), deserializedBody.getMinNorm(), 0.);
-            Assert.assertEquals(bodyBis.getMaxNorm(), deserializedBody.getMaxNorm(), 0.);
-            Assert.assertEquals(bodyBis.getThreshold(), deserializedBody.getThreshold(), 0.);
-        }
+        Assert.assertEquals(bodyBis.getName(), deserializedBody.getName());
+        Assert.assertEquals(bodyBis.getMinNorm(), deserializedBody.getMinNorm(), 0.);
+        Assert.assertEquals(bodyBis.getMaxNorm(), deserializedBody.getMaxNorm(), 0.);
+        Assert.assertEquals(bodyBis.getThreshold(), deserializedBody.getThreshold(), 0.);
     }
 
     /**

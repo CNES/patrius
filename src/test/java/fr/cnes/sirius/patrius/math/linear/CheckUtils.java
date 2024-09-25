@@ -1148,6 +1148,26 @@ public final class CheckUtils {
     }
 
     /**
+     * Tests the method that computes the corresponding absolute values matrix.
+     *
+     * @param matrix
+     *        the matrix to be tested
+     * @param absTol
+     *        the absolute tolerance to take into account when comparing the absolute values
+     * @param relTol
+     *        the relative tolerance to take into account when comparing the absolute values
+     */
+    public static void checkAbsMatrix(final RealMatrix matrix, final double absTol,
+                                      final double relTol) {
+        // Copy the matrix as a standard real matrix
+        final RealMatrix referenceMatrix = new Array2DRowRealMatrix(matrix.getData(), false);
+
+        final RealMatrix result = matrix.getAbs();
+        final RealMatrix expected = referenceMatrix.getAbs();
+        checkEquality(expected, result, absTol, relTol);
+    }
+
+    /**
      * Tests the method that copies the matrix.
      *
      * <p>
@@ -6357,6 +6377,7 @@ public final class CheckUtils {
         formats.add(MatrixUtils.SCILAB_FORMAT);
         formats.add(MatrixUtils.SUMMARY_FORMAT);
         formats.add(MatrixUtils.VISUAL_FORMAT);
+        formats.add(MatrixUtils.NUMPY_FORMAT);
 
         for (final RealMatrixFormat format : formats) {
             result = matrix.toString(format);

@@ -1,13 +1,13 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Conditions meteorologiques variables dans modeles troposphere
@@ -30,6 +31,8 @@
  */
 package fr.cnes.sirius.patrius.signalpropagation;
 
+import fr.cnes.sirius.patrius.math.parameter.IParameterizable;
+import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.signalpropagation.ionosphere.IonosphericCorrection;
 import fr.cnes.sirius.patrius.signalpropagation.troposphere.TroposphericCorrection;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -37,27 +40,79 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 /**
  * This interface is an angular correction model enabling the computation of the satellite
  * elevation angular correction.
- * 
+ *
  * @see TroposphericCorrection
  * @see IonosphericCorrection
- * 
+ *
  * @author Tiziana Sabatini
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 2.1
- * 
+ *
  */
-public interface AngularCorrection {
+public interface AngularCorrection extends IParameterizable {
 
     /**
-     * Computes the correction for the signal elevation at a given date.
-     * 
-     * @param date
-     *        date of meteo conditions
-     * @param elevation
-     *        the elevation of the satellite [rad]
-     * @return the angular correction of the signal elevation [rad]
+     * Getter for the minimal tolerated apparent elevation for this model (some models cannot compute correction for too
+     * low elevations).
+     *
+     * @return the minimal tolerated apparent elevation [rad]
      */
-    double computeElevationCorrection(final AbsoluteDate date, final double elevation);
+    double getMinimalToleratedApparentElevation();
+
+    /**
+     * Compute the angular correction from the apparent elevation.
+     *
+     * @param date
+     *        The date at which we want to compute the angular correction
+     * @param apparentElevation
+     *        The apparent elevation (with atmosphere) [rad]
+     * @return the elevation correction [rad] so that
+     *         {@code apparent_elevation = geometric_elevation + elevation_correction}
+     */
+    double computeElevationCorrectionFromApparentElevation(final AbsoluteDate date, final double apparentElevation);
+
+    /**
+     * Compute the angular correction from the geometric elevation.
+     *
+     * @param date
+     *        The date at which we want to compute the angular correction
+     * @param geometricElevation
+     *        The geometric elevation (without atmosphere) [rad]
+     * @return the elevation correction [rad] so that
+     *         {@code apparent_elevation = geometric_elevation + elevation_correction}
+     */
+    double computeElevationCorrectionFromGeometricElevation(final AbsoluteDate date, final double geometricElevation);
+
+    /**
+     * Compute the elevation correction derivative value with respect to the input parameter.
+     *
+     * @param p
+     *        Parameter
+     * @param apparentElevation
+     *        The apparent elevation (with atmosphere) of the satellite [rad]
+     * @return the elevation derivative value
+     */
+    double derivativeValueFromApparentElevation(final Parameter p, final double apparentElevation);
+
+    /**
+     * Compute the elevation correction derivative value with respect to the input parameter.
+     *
+     * @param p
+     *        Parameter
+     * @param geometricElevation
+     *        The geometric elevation (without atmosphere) of the satellite [rad]
+     * @return the elevation derivative value
+     */
+    double derivativeValueFromGeometricElevation(final Parameter p, final double geometricElevation);
+
+    /**
+     * Tell if the function is differentiable by the given parameter.
+     *
+     * @param p
+     *        Parameter
+     * @return {@code true} if the function is differentiable by the given parameter
+     */
+    boolean isDifferentiableBy(final Parameter p);
 }

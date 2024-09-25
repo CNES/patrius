@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2682:18/05/2021: Echelle de temps TDB (diff. PATRIUS - SPICE) 
@@ -42,11 +43,14 @@ package fr.cnes.sirius.patrius.time;
  * @author Aude Privat
  */
 public class TDBScale implements TimeScale {
-    
+
     static {
         // Default model
         setModel(new TDBDefaultModel());
     };
+    
+    /** Serial UID. */
+    private static final long serialVersionUID = -3747555023256129129L;
 
     /** TDB underlying model. */
     private static TDBModel model;

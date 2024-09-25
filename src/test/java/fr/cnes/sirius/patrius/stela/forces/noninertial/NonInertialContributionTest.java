@@ -20,7 +20,6 @@
  * HISTORY
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
- * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * VERSION::DM:317:02/03/2015: STELA integration in CIRF with referential choice (ICRF, CIRF or MOD)
@@ -39,13 +38,11 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationFactory;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepInterpolator;
-import fr.cnes.sirius.patrius.stela.bodies.MeeusMoonStela;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
 import fr.cnes.sirius.patrius.stela.propagation.ForcesStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -220,9 +217,6 @@ public class NonInertialContributionTest {
         } catch (final PropagationException e) {
             Assert.assertTrue(true);
         }
-
-        MeeusMoonStela.resetTransform();
-        MeeusSun.resetTransform();
     }
 
     /**

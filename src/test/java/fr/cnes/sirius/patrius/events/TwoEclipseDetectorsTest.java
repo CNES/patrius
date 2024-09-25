@@ -18,6 +18,10 @@
  * @history creation 23/03/2017
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3306:22/05/2023:[PATRIUS] Rayon du soleil dans le calcul de la PRS
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -71,6 +75,11 @@ import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.GroundMaskElevationDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.forces.atmospheres.SimpleExponentialAtmosphere;
 import fr.cnes.sirius.patrius.forces.drag.DragForce;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractHarmonicGravityModel;
@@ -101,12 +110,6 @@ import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.GroundMaskElevationDetector;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -212,7 +215,7 @@ public class TwoEclipseDetectorsTest {
         // L'entrée à 02:01:53.976 n'est pas détectée.
 
         final EventDetector eclipseDet = new EclipseDetector(CelestialBodyFactory.getSun(), Constants.SUN_RADIUS,
-            CelestialBodyFactory.getEarth(), Constants.WGS84_EARTH_EQUATORIAL_RADIUS, 1.0, 100, 1){
+            CelestialBodyFactory.getEarth(), Constants.WGS84_EARTH_EQUATORIAL_RADIUS, 1.0, 50, 1){
             /** Serializable UID. */
             private static final long serialVersionUID = 7099427340560085860L;
             boolean inEclipse = false;
@@ -550,6 +553,15 @@ public class TwoEclipseDetectorsTest {
             public EventDetector copy() {
                 return null;
             }
+
+            /** {@inheritDoc} */
+            @Override
+            public boolean filterEvent(final SpacecraftState state,
+                    final boolean increasing,
+                    final boolean forward) throws PatriusException {
+                // Do nothing by default, event is not filtered
+                return false;
+            }
         };
 
         // Add another detector to check it is properly handled
@@ -633,8 +645,8 @@ public class TwoEclipseDetectorsTest {
                 EphemerisType.SOLAR_SYSTEM_BARYCENTER);
             CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
             CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
-            final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
-            final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+            final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
+            final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
             final GravityModel sunGravityModel = sun.getGravityModel();
             ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
             this.addForceModel(new ThirdBodyAttraction(sunGravityModel));

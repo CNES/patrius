@@ -12,6 +12,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.utils.legs;
 
 import org.junit.Assert;

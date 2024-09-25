@@ -18,6 +18,10 @@
  * @history created 02/08/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3149:10/05/2022:[PATRIUS] Optimisation des reperes interplanetaires 
@@ -64,7 +68,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  * @concurrency immutable
  * 
- * @see CelestialBody
+ * @see CelestialPoint
  * 
  * @author Julie Anton
  * 
@@ -103,7 +107,7 @@ public class MeeusMoon extends AbstractCelestialBody {
     public MeeusMoon(final int numberOfLongitudeTerms, final int numberOfLatitudeTerms, final int numberOfDistanceTerms)
         throws PatriusException {
         super("Meeus Moon", Constants.JPL_SSD_MOON_GM, IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory
-            .getEODFrame(true));
+            .getEclipticMOD(true));
         this.setShape(new OneAxisEllipsoid(MOON_RADIUS, 0., this.getRotatingFrame(IAUPoleModelType.TRUE), "Moon"));
         setEphemeris(new MeeusMoonEphemeris(numberOfLongitudeTerms, numberOfLatitudeTerms, numberOfDistanceTerms,
             getICRF()));
@@ -423,15 +427,15 @@ public class MeeusMoon extends AbstractCelestialBody {
             final PVCoordinates pv = new PVCoordinates(position, Vector3D.ZERO, Vector3D.ZERO);
 
             // transformation from EOD to frame
-            final Transform transform = icrf.getParent().getTransformTo(frame, date);
+            final Transform transform = this.icrf.getParent().getTransformTo(frame, date);
 
             return transform.transformPVCoordinates(pv);
         }
 
         /** {@inheritDoc} */
         @Override
-        public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
-            return icrf.getParent();
+        public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+            return this.icrf.getParent();
         }
 
         /**

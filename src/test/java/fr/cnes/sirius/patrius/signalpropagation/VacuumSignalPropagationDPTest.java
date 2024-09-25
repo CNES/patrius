@@ -16,6 +16,11 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-14:22/05/2023:[PATRIUS] Nombre max d'iterations dans le calcul de la propagation du signal 
  * VERSION:4.11:DM:DM-3318:22/05/2023:[PATRIUS] Besoin de forcer la normalisation dans la classe QuaternionPolynomialSegment
@@ -53,8 +58,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
- * This test validate the {@link VacuumSignalPropagationModel} partial derivatives computation by finite
- * difference.
+ * This test validate the {@link VacuumSignalPropagationModel} partial derivatives computation by finite difference.
  *
  * @author bonitt
  */
@@ -67,8 +71,7 @@ public class VacuumSignalPropagationDPTest {
     private static double validityThreshold;
 
     /**
-     * This test validate the {@link VacuumSignalPropagationModel} partial derivatives computation by
-     * finite difference.
+     * This test validate the {@link VacuumSignalPropagationModel} partial derivatives computation by finite difference.
      *
      * <p>
      * The following partial derivatives are evaluated (for both EMISSION/RECEPTION cases):
@@ -95,17 +98,16 @@ public class VacuumSignalPropagationDPTest {
                 + "SignalPropagationDPTest report:" + "\n");
 
         // Define an inertial frame different from the standard GCRF to observe any frame conversion eventual errors
-        final Frame inertialFrame = FramesFactory.getCIRF();
-        final Frame nonInertialFrame = FramesFactory.getITRF();
+        final Frame frame = FramesFactory.getCIRF();
 
         // "spacecraft" initialization
         final double mu = Constants.EGM96_EARTH_MU;
         final CircularOrbit pvSat = new CircularOrbit(7000.0e3, 0.0, 0.0, MathLib.toRadians(45),
-            0.0, MathLib.toRadians(45), PositionAngle.TRUE, inertialFrame, VacuumSignalPropagationDPTest.date, mu);
+            0.0, MathLib.toRadians(45), PositionAngle.TRUE, frame, VacuumSignalPropagationDPTest.date, mu);
 
         // "station" initialization
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.GRS80_EARTH_EQUATORIAL_RADIUS,
-            Constants.GRS80_EARTH_FLATTENING, nonInertialFrame, "Earth");
+            Constants.GRS80_EARTH_FLATTENING, FramesFactory.getITRF(), "Earth");
         final EllipsoidPoint coordinates = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),
             MathLib.toRadians(0.), MathLib.toRadians(0.), 0., "");
         final TopocentricFrame pvSta = new TopocentricFrame(coordinates, "topo");
@@ -123,167 +125,114 @@ public class VacuumSignalPropagationDPTest {
         final PVCoordinates hStaY = new PVCoordinates(new Vector3D(0., hPos, 0.), Vector3D.ZERO);
         final PVCoordinates hStaZ = new PVCoordinates(new Vector3D(0., 0., hPos), Vector3D.ZERO);
 
-        // ---- Check the propagation position vector derivatives wrt the emitter position (inertial frame) ----
+        // ---- Check the propagation position vector derivatives wrt the emitter position ----
         System.out.println("\n" + "Validating the dPropdPem method (inertial frame):");
 
         // Emitter = spacecraft
         System.out.println("\n" + "fixedDate: " + FixedDate.RECEPTION);
-        dPropdPemValidation(pvSat, pvSta, hSatX, FixedDate.RECEPTION, inertialFrame,
-            new double[] { -1.0000061458708251, 4.346132787893681E-6, 4.346132787892572E-6 },
-            new double[] { -1.0000061448663473, 4.344619810581207E-6, 4.346249625086784E-6 });
-        dPropdPemValidation(pvSat, pvSta, hSatY, FixedDate.RECEPTION, inertialFrame,
-            new double[] { -1.5725711329839455E-5, -0.9999888793579352, 1.1120642064720949E-5 },
-            new double[] { -1.5725381672382355E-5, -0.9999888781458139, 1.1120922863483429E-5 });
-        dPropdPemValidation(pvSat, pvSta, hSatZ, FixedDate.RECEPTION, inertialFrame,
-            new double[] { -5.629130339368746E-6, 3.980713007303818E-6, -0.9999960192869927 },
-            new double[] { -5.627982318401337E-6, 3.97954136133194E-6, -0.9999960195273161 });
+        dPropdPemValidation(pvSat, pvSta, hSatX, FixedDate.RECEPTION, frame,
+            new double[] { -1.0000061458708251, 4.3461327878940215E-6, 4.3461327878940215E-6 },
+            new double[] { -1.0000061457976699, 4.346482455730438E-6, 4.346249625086784E-6 });
+        dPropdPemValidation(pvSat, pvSta, hSatY, FixedDate.RECEPTION, frame,
+            new double[] { -1.5725711329838063E-5, -0.9999888793579352, 1.1120642064723264E-5 },
+            new double[] { -1.5725381672382355E-5, -0.9999888790771365, 1.1120922863483429E-5 });
+        dPropdPemValidation(pvSat, pvSta, hSatZ, FixedDate.RECEPTION, frame,
+            new double[] { -5.6291303393676225E-6, 3.98071300730319E-6, -0.9999960192869927 },
+            new double[] { -5.628913640975952E-6, 3.981404006481171E-6, -0.9999960190616548 });
 
         // Emitter = station
         System.out.println("\n" + "fixedDate: " + FixedDate.EMISSION);
-        dPropdPemValidation(pvSta, pvSat, hStaX, FixedDate.EMISSION, inertialFrame,
-            new double[] { -0.9999938542736637, -4.345338946070969E-6, -4.345338946072071E-6 },
-            new double[] { -0.9999938539694995, -4.342757165431976E-6, -4.344386979937553E-6 });
-        dPropdPemValidation(pvSta, pvSat, hStaY, FixedDate.EMISSION, inertialFrame,
-            new double[] { 1.5727410864745292E-5, -1.0000111200738875, -1.1120073887498655E-5 },
-            new double[] { 1.572864130139351E-5, -1.0000111209228635, -1.1120224371552467E-5 });
-        dPropdPemValidation(pvSta, pvSat, hStaZ, FixedDate.EMISSION, inertialFrame,
-            new double[] { 5.6300263501649355E-6, -3.980713007423329E-6, -1.0000039807130074 },
-            new double[] { 5.630310624837875E-6, -3.978610038757324E-6, -1.000003979774192 });
+        dPropdPemValidation(pvSta, pvSat, hStaX, FixedDate.EMISSION, frame,
+            new double[] { -0.9999938542736637, -4.345338946070621E-6, -4.345338946070621E-6 },
+            new double[] { -0.9999938546679914, -4.345551133155823E-6, -4.345318302512169E-6 });
+        dPropdPemValidation(pvSta, pvSat, hStaY, FixedDate.EMISSION, frame,
+            new double[] { 1.5727410864746675E-5, -1.0000111200738875, -1.112007388749634E-5 },
+            new double[] { 1.5727709978818893E-5, -1.000011119991541, -1.1119991540908813E-5 });
+        dPropdPemValidation(pvSta, pvSat, hStaZ, FixedDate.EMISSION, frame,
+            new double[] { 5.630026350166057E-6, -3.980713007423954E-6, -1.0000039807130074 },
+            new double[] { 5.62937930226326E-6, -3.980472683906555E-6, -1.000003980472684 });
 
-        // ---- Check the propagation position vector derivatives wrt the emitter position (non inertial frame) ----
-        System.out.println("\n" + "Validating the dPropdPem method (non inertial frame):");
-
-        // Emitter = spacecraft
-        System.out.println("\n" + "fixedDate: " + FixedDate.RECEPTION);
-        dPropdPemValidation(pvSat, pvSta, hSatX, FixedDate.RECEPTION, nonInertialFrame, // TODO
-            new double[] { -1.0000061458708251, 4.346132787893681E-6, 4.346132787892572E-6 },
-            new double[] { -1.0000061448663473, 4.344619810581207E-6, 4.346249625086784E-6 });
-        dPropdPemValidation(pvSat, pvSta, hSatY, FixedDate.RECEPTION, nonInertialFrame,
-            new double[] { -1.5725711329839455E-5, -0.9999888793579352, 1.1120642064720949E-5 },
-            new double[] { -1.5725381672382355E-5, -0.9999888781458139, 1.1120922863483429E-5 });
-        dPropdPemValidation(pvSat, pvSta, hSatZ, FixedDate.RECEPTION, nonInertialFrame,
-            new double[] { -5.629130339368746E-6, 3.980713007303818E-6, -0.9999960192869927 },
-            new double[] { -5.627982318401337E-6, 3.97954136133194E-6, -0.9999960195273161 });
-
-        // Emitter = station
-        System.out.println("\n" + "fixedDate: " + FixedDate.EMISSION);
-        dPropdPemValidation(pvSta, pvSat, hStaX, FixedDate.EMISSION, nonInertialFrame, // TODO
-            new double[] { -0.9999938542736637, -4.345338946070969E-6, -4.345338946072071E-6 },
-            new double[] { -0.9999938539694995, -4.342757165431976E-6, -4.344386979937553E-6 });
-        dPropdPemValidation(pvSta, pvSat, hStaY, FixedDate.EMISSION, nonInertialFrame,
-            new double[] { 1.5727410864745292E-5, -1.0000111200738875, -1.1120073887498655E-5 },
-            new double[] { 1.572864130139351E-5, -1.0000111209228635, -1.1120224371552467E-5 });
-        dPropdPemValidation(pvSta, pvSat, hStaZ, FixedDate.EMISSION, nonInertialFrame,
-            new double[] { 5.6300263501649355E-6, -3.980713007423329E-6, -1.0000039807130074 },
-            new double[] { 5.630310624837875E-6, -3.978610038757324E-6, -1.000003979774192 });
-
-        // ---- Check the propagation position vector derivatives wrt the receiver position (inertial frame) ----
+        // ---- Check the propagation position vector derivatives wrt the receiver position ----
         System.out.println("\n\n" + "Validating the dPropdPrec method (inertial frame):");
         // Receiver = station
         System.out.println("\n" + "fixedDate: " + FixedDate.RECEPTION);
-        dPropdPrecValidation(pvSat, pvSta, hStaX, FixedDate.RECEPTION, inertialFrame,
-            new double[] { 1.0000061458708251, -4.346132787893681E-6, -4.346132787892572E-6 },
-            new double[] { 1.0000061446335167, -4.345551133155823E-6, -4.346249625086784E-6 });
-        dPropdPrecValidation(pvSat, pvSta, hStaY, FixedDate.RECEPTION, inertialFrame,
-            new double[] { 1.5725711329839455E-5, 0.9999888793579352, -1.1120642064720949E-5 },
-            new double[] { 1.5724916011095047E-5, 0.9999888809397817, -1.1121155694127083E-5 });
-        dPropdPrecValidation(pvSat, pvSta, hStaZ, FixedDate.RECEPTION, inertialFrame,
-            new double[] { 5.629130339368746E-6, -3.980713007303818E-6, 0.9999960192869927 },
-            new double[] { 5.627516657114029E-6, -3.97954136133194E-6, 0.9999960197601467 });
+        dPropdPrecValidation(pvSat, pvSta, hStaX, FixedDate.RECEPTION, frame,
+            new double[] { 1.0000061458708251, -4.3461327878940215E-6, -4.3461327878940215E-6 },
+            new double[] { 1.0000061457976699, -4.346482455730438E-6, -4.346249625086784E-6 });
+        dPropdPrecValidation(pvSat, pvSta, hStaY, FixedDate.RECEPTION, frame,
+            new double[] { 1.5725711329838063E-5, 0.9999888793579352, -1.1120642064723264E-5 },
+            new double[] { 1.5725381672382355E-5, 0.9999888790771365, -1.1120922863483429E-5 });
+        dPropdPrecValidation(pvSat, pvSta, hStaZ, FixedDate.RECEPTION, frame,
+            new double[] { 5.6291303393676225E-6, -3.98071300730319E-6, 0.9999960192869927 },
+            new double[] { 5.628913640975952E-6, -3.981404006481171E-6, 0.9999960190616548 });
 
         // Receiver = spacecraft
         System.out.println("\n" + "fixedDate: " + FixedDate.EMISSION);
-        dPropdPrecValidation(pvSta, pvSat, hSatX, FixedDate.EMISSION, inertialFrame,
-            new double[] { 0.9999938542736637, 4.345338946070969E-6, 4.345338946072071E-6 },
-            new double[] { 0.9999938551336527, 4.343688488006592E-6, 4.344386979937553E-6 });
-        dPropdPrecValidation(pvSta, pvSat, hSatY, FixedDate.EMISSION, inertialFrame,
-            new double[] { -1.5727410864745292E-5, 1.0000111200738875, 1.1120073887498655E-5 },
-            new double[] { -1.57281756401062E-5, 1.000011119991541, 1.1120457202196121E-5 });
-        dPropdPrecValidation(pvSta, pvSat, hSatZ, FixedDate.EMISSION, inertialFrame,
-            new double[] { -5.6300263501649355E-6, 3.980713007423329E-6, 1.0000039807130074 },
-            new double[] { -5.630776286125183E-6, 3.978610038757324E-6, 1.0000039795413613 });
-
-        // ---- Check the propagation position vector derivatives wrt the receiver position (non-inertial frame) ----
-        System.out.println("\n\n" + "Validating the dPropdPrec method (non inertial frame):");
-        // Receiver = station
-        System.out.println("\n" + "fixedDate: " + FixedDate.RECEPTION);
-        dPropdPrecValidation(pvSat, pvSta, hStaX, FixedDate.RECEPTION, nonInertialFrame, // TODO
-            new double[] { 0.9999885179236686, -1.1856558005609531E-5, 1.017589413835859E-5 },
-            new double[] { 0.9999874392524362, -1.2361444532871246E-5, 1.0175863280892372E-5 });
-        dPropdPrecValidation(pvSat, pvSta, hStaY, FixedDate.RECEPTION, nonInertialFrame,
-            new double[] { 7.047338536900246E-6, 1.0000072771836501, -6.24564485020366E-6 },
-            new double[] { 7.709488272666931E-6, 1.0000075902789831 - 6.244983524084091E-6 });
-        dPropdPrecValidation(pvSat, pvSta, hStaZ, FixedDate.RECEPTION, nonInertialFrame,
-            new double[] { 4.491685857156725E-6, 4.638179748278709E-6, 0.9999960192809675 },
-            new double[] { 4.913657903671265E-6, 4.8335641622543335E-6, 0.9999960188288242 });
-
-        // Receiver = spacecraft
-        System.out.println("\n" + "fixedDate: " + FixedDate.EMISSION);
-        dPropdPrecValidation(pvSta, pvSat, hSatX, FixedDate.EMISSION, nonInertialFrame, // TODO
-            new double[] { 0.9999938542736637, 4.345338946070969E-6, 4.345338946072071E-6 },
-            new double[] { 0.9999938551336527, 4.343688488006592E-6, 4.344386979937553E-6 });
-        dPropdPrecValidation(pvSta, pvSat, hSatY, FixedDate.EMISSION, nonInertialFrame,
-            new double[] { -1.5727410864745292E-5, 1.0000111200738875, 1.1120073887498655E-5 },
-            new double[] { -1.57281756401062E-5, 1.000011119991541, 1.1120457202196121E-5 });
-        dPropdPrecValidation(pvSta, pvSat, hSatZ, FixedDate.EMISSION, nonInertialFrame,
-            new double[] { -5.6300263501649355E-6, 3.980713007423329E-6, 1.0000039807130074 },
-            new double[] { -5.630776286125183E-6, 3.978610038757324E-6, 1.0000039795413613 });
+        dPropdPrecValidation(pvSta, pvSat, hSatX, FixedDate.EMISSION, frame,
+            new double[] { 0.9999938542736637, 4.345338946070621E-6, 4.345338946070621E-6 },
+            new double[] { 0.9999938546679914, 4.345551133155823E-6, 4.345318302512169E-6 });
+        dPropdPrecValidation(pvSta, pvSat, hSatY, FixedDate.EMISSION, frame,
+            new double[] { -1.5727410864746675E-5, 1.0000111200738875, 1.112007388749634E-5 },
+            new double[] { -1.5727709978818893E-5, 1.000011119991541, 1.1119991540908813E-5 });
+        dPropdPrecValidation(pvSta, pvSat, hSatZ, FixedDate.EMISSION, frame,
+            new double[] { -5.630026350166057E-6, 3.980713007423954E-6, 1.0000039807130074 },
+            new double[] { -5.62937930226326E-6, 3.980472683906555E-6, 1.000003980472684 });
 
         // ---- Check the propagation time/duration derivatives wrt the emitter position ----
         System.out.println("\n\n" + "Validating the dTpropdPem method:");
         // Emitter = spacecraft
         System.out.println("\n" + "fixedDate: " + FixedDate.RECEPTION);
-        dTpropdPemValidation(pvSat, pvSta, hSatX, FixedDate.RECEPTION, inertialFrame,
-            1.1518497684433155E-9, 1.1518497822216034E-9);
-        dTpropdPemValidation(pvSat, pvSta, hSatY, FixedDate.RECEPTION, inertialFrame,
-            2.947288914612528E-9, 2.947288912924506E-9);
-        dTpropdPemValidation(pvSat, pvSta, hSatZ, FixedDate.RECEPTION, inertialFrame,
-            1.0550030520177389E-9, 1.0550030848932579E-9);
+        dTpropdPemValidation(pvSat, pvSta, hSatX, FixedDate.RECEPTION, frame,
+            1.1518497684434553E-9, 1.1518497822216034E-9);
+        dTpropdPemValidation(pvSat, pvSta, hSatY, FixedDate.RECEPTION, frame,
+            2.9472889146125162E-9, 2.947288912924506E-9);
+        dTpropdPemValidation(pvSat, pvSta, hSatZ, FixedDate.RECEPTION, frame,
+            1.0550030520176175E-9, 1.0550030848932579E-9);
 
         // Emitter = station
         System.out.println("\n" + "fixedDate: " + FixedDate.EMISSION);
-        dTpropdPemValidation(pvSta, pvSat, hStaX, FixedDate.EMISSION, inertialFrame,
-            -1.1517310294236166E-9, -1.1517310438691197E-9);
-        dTpropdPemValidation(pvSta, pvSat, hStaY, FixedDate.EMISSION, inertialFrame,
-            -2.947372875778584E-9, -2.947372901296319E-9);
-        dTpropdPemValidation(pvSta, pvSat, hStaZ, FixedDate.EMISSION, inertialFrame,
-            -1.0550870131835593E-9, -1.0550870177539196E-9);
+        dTpropdPemValidation(pvSta, pvSat, hStaX, FixedDate.EMISSION, frame,
+            -1.151731029423604E-9, -1.1517310438691197E-9);
+        dTpropdPemValidation(pvSta, pvSat, hStaY, FixedDate.EMISSION, frame,
+            -2.9473728757785494E-9, -2.947372901296319E-9);
+        dTpropdPemValidation(pvSta, pvSat, hStaZ, FixedDate.EMISSION, frame,
+            -1.0550870131836683E-9, -1.0550870177539196E-9);
 
         // ---- Check the propagation time/duration derivatives wrt the receiver position ----
         System.out.println("\n\n" + "Validating the dTpropdPrec method:");
         // Receiver = station
         System.out.println("\n" + "fixedDate: " + FixedDate.RECEPTION);
-        dTpropdPrecValidation(pvSat, pvSta, hStaX, FixedDate.RECEPTION, inertialFrame,
+        dTpropdPrecValidation(pvSat, pvSta, hStaX, FixedDate.RECEPTION, frame,
             -1.1518497684433155E-9, -1.1518497267104522E-9);
-        dTpropdPrecValidation(pvSat, pvSta, hStaY, FixedDate.RECEPTION, inertialFrame,
+        dTpropdPrecValidation(pvSat, pvSta, hStaY, FixedDate.RECEPTION, frame,
             -2.947288914612528E-9, -2.947288912924506E-9);
-        dTpropdPrecValidation(pvSat, pvSta, hStaZ, FixedDate.RECEPTION, inertialFrame,
+        dTpropdPrecValidation(pvSat, pvSta, hStaZ, FixedDate.RECEPTION, frame,
             -1.0550030520177389E-9, -1.0550030848932579E-9);
 
         // Receiver = spacecraft
         System.out.println("\n" + "fixedDate: " + FixedDate.EMISSION);
-        dTpropdPrecValidation(pvSta, pvSat, hSatX, FixedDate.EMISSION, inertialFrame,
+        dTpropdPrecValidation(pvSta, pvSat, hSatX, FixedDate.EMISSION, frame,
             1.1517310294236166E-9, 1.1517310438691197E-9);
-        dTpropdPrecValidation(pvSta, pvSat, hSatY, FixedDate.EMISSION, inertialFrame,
+        dTpropdPrecValidation(pvSta, pvSat, hSatY, FixedDate.EMISSION, frame,
             2.947372875778584E-9, 2.947372901296319E-9);
-        dTpropdPrecValidation(pvSta, pvSat, hSatZ, FixedDate.EMISSION, inertialFrame,
+        dTpropdPrecValidation(pvSta, pvSat, hSatZ, FixedDate.EMISSION, frame,
             1.0550870131835593E-9, 1.0550870177539196E-9);
 
         // ---- Check the propagation time/duration derivatives wrt time ----
         System.out.println("\n\n" + "Validating the dTpropdT method:");
-        dTpropdTValidation(pvSat, pvSta, hT, FixedDate.RECEPTION,
+        dTpropdTValidation(pvSat, pvSta, hT, FixedDate.RECEPTION, frame,
             8.185611713789217E-6, 8.185611108713076E-6);
-        dTpropdTValidation(pvSat, pvSta, hT, FixedDate.EMISSION,
+        dTpropdTValidation(pvSat, pvSta, hT, FixedDate.EMISSION, frame,
             8.185446352397563E-6, 8.18544574737734E-6);
 
         // ---- Check the propagation vector derivatives wrt time ----
         System.out.println("\n\n" + "Validating the dPropdT method:");
-        dPropdTValidation(pvSat, pvSta, hT, FixedDate.RECEPTION,
-            new double[] { 5793.470333881316, -3690.726294572097, -3773.0931309969556 },
-            new double[] { 5793.469284391031, -3690.725560626015, -3773.092398968991 });
-        dPropdTValidation(pvSat, pvSta, hT, FixedDate.EMISSION,
-            new double[] { 5793.729849708948, -3690.6051522223465, -3772.9738808105617 },
-            new double[] { 5793.728800130077, -3690.6044182954356, -3772.973148805322 });
+        dPropdTValidation(pvSat, pvSta, hT, FixedDate.RECEPTION, frame,
+            new double[] { 5793.36862456802, -3690.832018443726, -3773.1458834355053 },
+            new double[] { 5793.367586450186, -3690.8312885025516, -3773.1451525241137 });
+        dPropdTValidation(pvSat, pvSta, hT, FixedDate.EMISSION, frame,
+            new double[] { 5793.628143610548, -3690.7108727573423, -3773.026643633918 },
+            new double[] { 5793.62710540439, -3690.7101428359747, -3773.025912744226 });
 
         System.out.println("\n" + "---------------------------------------------" + "\n");
     }
@@ -307,24 +256,23 @@ public class VacuumSignalPropagationDPTest {
      * @param fixedDate
      *        Fixed date of computation
      * @param analysisFrame
-     *        Working frame for the analysis
+     *        Working frame for the analysis (must be inertial)
      * @param expectedVal
      *        Expected analytic (derivative) values (for non-regression evaluation)
      * @param expectedRefVal
      *        Expected numeric (finite difference) values (for non-regression evaluation)
-     * @throws PatriusException if a problem occurs during PVCoodinates providers manipulations
+     * @throws PatriusException
+     *         if a problem occurs during PVCoodinates providers manipulations
      */
-    private static void dPropdPemValidation(final PVCoordinatesProvider pvEm,
-                                            final PVCoordinatesProvider pvRec, final PVCoordinates hEm,
-                                            final FixedDate fixedDate,
+    private static void dPropdPemValidation(final PVCoordinatesProvider pvEm, final PVCoordinatesProvider pvRec,
+                                            final PVCoordinates hEm, final FixedDate fixedDate,
                                             final Frame analysisFrame, final double[] expectedVal,
                                             final double[] expectedRefVal)
         throws PatriusException {
 
-        final double threshold = 1.0e-13;
-        final Frame refFrame = FramesFactory.getGCRF();
-        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, threshold,
-            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+        final double threshold = 1e-13;
+        final VacuumSignalPropagationModel model =
+            new VacuumSignalPropagationModel(analysisFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
 
         // Apply the PV shift on the emitter to generate pvEmPlusHEm & pvEmMinusHEm
         final PVCoordinatesProvider pvEmPlusHEm = new PVCoordinatesProvider(){
@@ -334,16 +282,14 @@ public class VacuumSignalPropagationDPTest {
             @Override
             public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
                 throws PatriusException {
-                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date,
-                    analysisFrame), 1., hEm);
+                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date, analysisFrame), 1., hEm);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvEmRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -355,36 +301,34 @@ public class VacuumSignalPropagationDPTest {
             @Override
             public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
                 throws PatriusException {
-                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date,
-                    analysisFrame), -1., hEm);
+                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date, analysisFrame), -1.,
+                    hEm);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvEmRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
 
         // Compute the signal and the shifted signals
         final VacuumSignalPropagation signal = model.computeSignalPropagation(pvEm, pvRec,
-            VacuumSignalPropagationDPTest.date,
-            fixedDate);
+            VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalPlusHEm = model.computeSignalPropagation(pvEmPlusHEm, pvRec,
             VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalMinusHEm = model.computeSignalPropagation(pvEmMinusHEm,
             pvRec, VacuumSignalPropagationDPTest.date, fixedDate);
 
         // Extract the shifted signals propagation vector and compute the finite difference
-        final Vector3D propPlusHEm = signalPlusHEm.getVector(analysisFrame);
-        final Vector3D propMinusHEm = signalMinusHEm.getVector(analysisFrame);
+        final Vector3D propPlusHEm = signalPlusHEm.getVector();
+        final Vector3D propMinusHEm = signalMinusHEm.getVector();
         final Vector3D valTheo = propPlusHEm.subtract(propMinusHEm);
 
         // Extract the signal's propagation position vector derivatives wrt the emitter position
-        final RealMatrix dPropdPem = signal.getdPropdPem(analysisFrame);
+        final RealMatrix dPropdPem = signal.getdPropdPem();
 
         // Evaluate the results (reporting & validation) for each axis
         final Vector3D hEmPos = hEm.getPosition();
@@ -402,12 +346,12 @@ public class VacuumSignalPropagationDPTest {
             System.out.println("dPropYdPemX: " + compUtils(analValY, numValY));
             System.out.println("dPropZdPemX: " + compUtils(analValZ, numValZ));
 
-            // Assert.assertEquals(expectedVal[0], analValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[0], numValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[1], analValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[1], numValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[2], analValZ, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[2], numValZ, SignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[0], analValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[0], numValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[1], analValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[1], numValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[2], analValZ, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[2], numValZ, VacuumSignalPropagationDPTest.validityThreshold);
         }
         if (hEmPos.getY() != 0.) {
             final double hEmPosY = hEmPos.getY();
@@ -423,12 +367,12 @@ public class VacuumSignalPropagationDPTest {
             System.out.println("dPropYdPemY: " + compUtils(analValY, numValY));
             System.out.println("dPropZdPemY: " + compUtils(analValZ, numValZ));
 
-            // Assert.assertEquals(expectedVal[0], analValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[0], numValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[1], analValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[1], numValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[2], analValZ, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[2], numValZ, SignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[0], analValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[0], numValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[1], analValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[1], numValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[2], analValZ, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[2], numValZ, VacuumSignalPropagationDPTest.validityThreshold);
         }
         if (hEmPos.getZ() != 0.) {
             final double hEmPosZ = hEmPos.getZ();
@@ -444,12 +388,12 @@ public class VacuumSignalPropagationDPTest {
             System.out.println("dPropYdPemZ: " + compUtils(analValY, numValY));
             System.out.println("dPropZdPemZ: " + compUtils(analValZ, numValZ));
 
-            // Assert.assertEquals(expectedVal[0], analValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[0], numValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[1], analValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[1], numValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[2], analValZ, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[2], numValZ, SignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[0], analValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[0], numValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[1], analValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[1], numValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[2], analValZ, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[2], numValZ, VacuumSignalPropagationDPTest.validityThreshold);
         }
     }
 
@@ -472,24 +416,23 @@ public class VacuumSignalPropagationDPTest {
      * @param fixedDate
      *        Fixed date of computation
      * @param analysisFrame
-     *        Working frame for the analysis
+     *        Working frame for the analysis (must be inertial)
      * @param expectedVal
      *        Expected analytic (derivative) values (for non-regression evaluation)
      * @param expectedRefVal
      *        Expected numeric (finite difference) values (for non-regression evaluation)
-     * @throws PatriusException if a problem occurs during PVCoodinates providers manipulations
+     * @throws PatriusException
+     *         if a problem occurs during PVCoodinates providers manipulations
      */
     private static void dPropdPrecValidation(final PVCoordinatesProvider pvEm,
                                              final PVCoordinatesProvider pvRec, final PVCoordinates hRec,
                                              final FixedDate fixedDate,
                                              final Frame analysisFrame, final double[] expectedVal,
-                                             final double[] expectedRefVal)
-        throws PatriusException {
+                                             final double[] expectedRefVal) throws PatriusException {
 
-        final double threshold = 1.0e-13;
-        final Frame refFrame = FramesFactory.getGCRF();
-        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, threshold,
-            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+        final double threshold = 1e-13;
+        final VacuumSignalPropagationModel model =
+            new VacuumSignalPropagationModel(analysisFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
 
         // Apply the PV shift on the receiver to generate pvRecPlusHRec & pvRecMinusHRec
         final PVCoordinatesProvider pvRecPlusHRec = new PVCoordinatesProvider(){
@@ -497,18 +440,16 @@ public class VacuumSignalPropagationDPTest {
             private static final long serialVersionUID = -3797726685731001748L;
 
             @Override
-            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                throws PatriusException {
-                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date,
-                    analysisFrame), 1., hRec);
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
+                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date, analysisFrame), 1.,
+                    hRec);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvRecRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -518,38 +459,35 @@ public class VacuumSignalPropagationDPTest {
             private static final long serialVersionUID = 4890557515299898028L;
 
             @Override
-            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                throws PatriusException {
-                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date,
-                    analysisFrame), -1., hRec);
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
+                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date, analysisFrame), -1.,
+                    hRec);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvRecRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
 
         // Compute the signal and the shifted signals
         final VacuumSignalPropagation signal = model.computeSignalPropagation(pvEm, pvRec,
-            VacuumSignalPropagationDPTest.date,
-            fixedDate);
+            VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalPlusHRec = model.computeSignalPropagation(pvEm,
             pvRecPlusHRec, VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalMinusHRec = model.computeSignalPropagation(pvEm,
             pvRecMinusHRec, VacuumSignalPropagationDPTest.date, fixedDate);
 
         // Extract the shifted signals propagation vector and compute the finite difference
-        final Vector3D propPlusHRec = signalPlusHRec.getVector(analysisFrame);
-        final Vector3D propMinusHRec = signalMinusHRec.getVector(analysisFrame);
+        final Vector3D propPlusHRec = signalPlusHRec.getVector();
+        final Vector3D propMinusHRec = signalMinusHRec.getVector();
         final Vector3D valTheo = propPlusHRec.subtract(propMinusHRec);
 
         // Extract the propagation position vector derivatives wrt the receiver position
-        final RealMatrix dPropdPrec = signal.getdPropdPrec(analysisFrame);
+        final RealMatrix dPropdPrec = signal.getdPropdPrec();
 
         // Evaluate the results (reporting & validation) for each axis
         final Vector3D hRecPos = hRec.getPosition();
@@ -567,12 +505,12 @@ public class VacuumSignalPropagationDPTest {
             System.out.println("dPropYdPrecX: " + compUtils(analValY, numValY));
             System.out.println("dPropZdPrecX: " + compUtils(analValZ, numValZ));
 
-            // Assert.assertEquals(expectedVal[0], analValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[0], numValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[1], analValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[1], numValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[2], analValZ, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[2], numValZ, SignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[0], analValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[0], numValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[1], analValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[1], numValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[2], analValZ, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[2], numValZ, VacuumSignalPropagationDPTest.validityThreshold);
         }
         if (hRecPos.getY() != 0.) {
             final double hRecPosY = hRecPos.getY();
@@ -588,12 +526,12 @@ public class VacuumSignalPropagationDPTest {
             System.out.println("dPropYdPrecY: " + compUtils(analValY, numValY));
             System.out.println("dPropZdPrecY: " + compUtils(analValZ, numValZ));
 
-            // Assert.assertEquals(expectedVal[0], analValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[0], numValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[1], analValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[1], numValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[2], analValZ, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[2], numValZ, SignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[0], analValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[0], numValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[1], analValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[1], numValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[2], analValZ, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[2], numValZ, VacuumSignalPropagationDPTest.validityThreshold);
         }
         if (hRecPos.getZ() != 0.) {
             final double hRecPosZ = hRecPos.getZ();
@@ -609,12 +547,12 @@ public class VacuumSignalPropagationDPTest {
             System.out.println("dPropYdPrecZ: " + compUtils(analValY, numValY));
             System.out.println("dPropZdPrecZ: " + compUtils(analValZ, numValZ));
 
-            // Assert.assertEquals(expectedVal[0], analValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[0], numValX, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[1], analValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[1], numValY, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedVal[2], analValZ, SignalPropagationDPTest.validityThreshold);
-            // Assert.assertEquals(expectedRefVal[2], numValZ, SignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[0], analValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[0], numValX, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[1], analValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[1], numValY, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedVal[2], analValZ, VacuumSignalPropagationDPTest.validityThreshold);
+            Assert.assertEquals(expectedRefVal[2], numValZ, VacuumSignalPropagationDPTest.validityThreshold);
         }
     }
 
@@ -637,12 +575,13 @@ public class VacuumSignalPropagationDPTest {
      * @param fixedDate
      *        Fixed date of computation
      * @param analysisFrame
-     *        Working frame for the analysis
+     *        Working frame for the analysis (must be inertial)
      * @param expectedVal
      *        Expected analytic (derivative) value (for non-regression evaluation)
      * @param expectedRefVal
      *        Expected numeric (finite difference) value (for non-regression evaluation)
-     * @throws PatriusException if a problem occurs during PVCoodinates providers manipulations
+     * @throws PatriusException
+     *         if a problem occurs during PVCoodinates providers manipulations
      */
     private static void dTpropdPemValidation(final PVCoordinatesProvider pvEm,
                                              final PVCoordinatesProvider pvRec, final PVCoordinates hEm,
@@ -651,10 +590,9 @@ public class VacuumSignalPropagationDPTest {
                                              final double expectedRefVal)
         throws PatriusException {
 
-        final double threshold = 1.0e-13;
-        final Frame refFrame = FramesFactory.getGCRF();
-        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, threshold,
-            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+        final double threshold = 1e-13;
+        final VacuumSignalPropagationModel model =
+            new VacuumSignalPropagationModel(analysisFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
 
         // Apply the PV shift on the emitter to generate pvEmPlusHEm & pvEmMinusHEm
         final PVCoordinatesProvider pvEmPlusHEm = new PVCoordinatesProvider(){
@@ -662,18 +600,15 @@ public class VacuumSignalPropagationDPTest {
             private static final long serialVersionUID = -1618681345604951082L;
 
             @Override
-            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                throws PatriusException {
-                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date,
-                    analysisFrame), 1., hEm);
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
+                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date, analysisFrame), 1., hEm);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvEmRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -683,26 +618,23 @@ public class VacuumSignalPropagationDPTest {
             private static final long serialVersionUID = 2151902112412385160L;
 
             @Override
-            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                throws PatriusException {
-                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date,
-                    analysisFrame), -1., hEm);
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
+                final PVCoordinates pvEmRef = new PVCoordinates(1., pvEm.getPVCoordinates(date, analysisFrame), -1.,
+                    hEm);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvEmRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
 
         // Compute the signal and the shifted signals
         final VacuumSignalPropagation signal = model.computeSignalPropagation(pvEm, pvRec,
-            VacuumSignalPropagationDPTest.date,
-            fixedDate);
+            VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalPlusHEm = model.computeSignalPropagation(pvEmPlusHEm, pvRec,
             VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalMinusHEm = model.computeSignalPropagation(pvEmMinusHEm,
@@ -714,7 +646,7 @@ public class VacuumSignalPropagationDPTest {
         final double valTheo = propDurationPlusHEm - propDurationMinusHEm;
 
         // Extract the signal's propagation time/duration derivatives wrt the emitter position
-        final Vector3D dTpropdPem = signal.getdTpropdPem(analysisFrame);
+        final Vector3D dTpropdPem = signal.getdTpropdPem();
 
         // Evaluate the results (reporting & validation) for each axis
         final Vector3D hEmPos = hEm.getPosition();
@@ -763,24 +695,23 @@ public class VacuumSignalPropagationDPTest {
      * @param fixedDate
      *        Fixed date of computation
      * @param analysisFrame
-     *        Working frame for the analysis
+     *        Working frame for the analysis (must be inertial)
      * @param expectedVal
      *        Expected analytic (derivative) value (for non-regression evaluation)
      * @param expectedRefVal
      *        Expected numeric (finite difference) value (for non-regression evaluation)
-     * @throws PatriusException if a problem occurs during PVCoodinates providers manipulations
+     * @throws PatriusException
+     *         if a problem occurs during PVCoodinates providers manipulations
      */
     private static void dTpropdPrecValidation(final PVCoordinatesProvider pvEm,
                                               final PVCoordinatesProvider pvRec, final PVCoordinates hRec,
-                                              final FixedDate fixedDate,
-                                              final Frame analysisFrame, final double expectedVal,
-                                              final double expectedRefVal)
+                                              final FixedDate fixedDate, final Frame analysisFrame,
+                                              final double expectedVal, final double expectedRefVal)
         throws PatriusException {
 
-        final double threshold = 1.0e-13;
-        final Frame refFrame = FramesFactory.getGCRF();
-        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, threshold,
-            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+        final double threshold = 1e-13;
+        final VacuumSignalPropagationModel model =
+            new VacuumSignalPropagationModel(analysisFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
 
         // Apply the PV shift on the receiver to generate pvRecPlusHRec & pvRecMinusHRec
         final PVCoordinatesProvider pvRecPlusHRec = new PVCoordinatesProvider(){
@@ -788,18 +719,16 @@ public class VacuumSignalPropagationDPTest {
             private static final long serialVersionUID = 3949297937228642023L;
 
             @Override
-            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                throws PatriusException {
-                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date,
-                    analysisFrame), 1., hRec);
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
+                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date, analysisFrame), 1.,
+                    hRec);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvRecRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
@@ -809,26 +738,23 @@ public class VacuumSignalPropagationDPTest {
             private static final long serialVersionUID = 7812092265618574590L;
 
             @Override
-            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                throws PatriusException {
-                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date,
-                    analysisFrame), -1., hRec);
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
+                final PVCoordinates pvRecRef = new PVCoordinates(1., pvRec.getPVCoordinates(date, analysisFrame), -1.,
+                    hRec);
                 final Transform t = analysisFrame.getTransformTo(frame, date);
                 return t.transformPVCoordinates(pvRecRef);
             }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
 
         // Compute the signal and the shifted signals
         final VacuumSignalPropagation signal = model.computeSignalPropagation(pvEm, pvRec,
-            VacuumSignalPropagationDPTest.date,
-            fixedDate);
+            VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalPlusHRec = model.computeSignalPropagation(pvEm,
             pvRecPlusHRec, VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalMinusHRec = model.computeSignalPropagation(pvEm,
@@ -840,7 +766,7 @@ public class VacuumSignalPropagationDPTest {
         final double valTheo = propDurationPlusHRec - propDurationMinusHRec;
 
         // Extract the signal's propagation time/duration derivatives wrt the receiver position
-        final Vector3D dTpropdPrec = signal.getdTpropdPrec(analysisFrame);
+        final Vector3D dTpropdPrec = signal.getdTpropdPrec();
 
         // Evaluate the results (reporting & validation) for each axis
         final Vector3D hRecPos = hRec.getPosition();
@@ -871,8 +797,7 @@ public class VacuumSignalPropagationDPTest {
     }
 
     /**
-     * Evaluate the propagation time/duration derivatives wrt time computation: finite difference
-     * method.
+     * Evaluate the propagation time/duration derivatives wrt time computation: finite difference method.
      * <p>
      * <ul>
      * <li>Display the results: absolute and relative differences</li>
@@ -888,27 +813,28 @@ public class VacuumSignalPropagationDPTest {
      *        Time duration shift
      * @param fixedDate
      *        Fixed date of computation
+     * @param analysisFrame
+     *        Working frame for the analysis (must be inertial)
      * @param expectedVal
      *        Expected analytic (derivative) value (for non-regression evaluation)
      * @param expectedRefVal
      *        Expected numeric (finite difference) value (for non-regression evaluation)
-     * @throws PatriusException if a problem occurs during PVCoodinates providers manipulations
+     * @throws PatriusException
+     *         if a problem occurs during PVCoodinates providers manipulations
      */
     private static void dTpropdTValidation(final PVCoordinatesProvider pvEm,
                                            final PVCoordinatesProvider pvRec, final double hT,
-                                           final FixedDate fixedDate,
+                                           final FixedDate fixedDate, final Frame analysisFrame,
                                            final double expectedVal, final double expectedRefVal)
         throws PatriusException {
 
-        final double threshold = 1.0e-13;
-        final Frame refFrame = FramesFactory.getGCRF();
-        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, threshold,
-            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+        final double threshold = 1e-13;
+        final VacuumSignalPropagationModel model =
+            new VacuumSignalPropagationModel(analysisFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
 
         // Compute the signal and the shifted signals
         final VacuumSignalPropagation signal = model.computeSignalPropagation(pvEm, pvRec,
-            VacuumSignalPropagationDPTest.date,
-            fixedDate);
+            VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalPlusHT = model.computeSignalPropagation(pvEm, pvRec,
             VacuumSignalPropagationDPTest.date.shiftedBy(hT), fixedDate);
         final VacuumSignalPropagation signalMinusHT = model.computeSignalPropagation(pvEm, pvRec,
@@ -948,35 +874,31 @@ public class VacuumSignalPropagationDPTest {
      *        Time duration shift
      * @param fixedDate
      *        Fixed date of computation
+     * @param analysisFrame
+     *        Working frame for the analysis (must be inertial)
      * @param expectedVal
      *        Expected analytic (derivative) values (for non-regression evaluation)
      * @param expectedRefVal
      *        Expected numeric (finite difference) values (for non-regression evaluation)
-     * @throws PatriusException if a problem occurs during PVCoodinates providers manipulations
+     * @throws PatriusException
+     *         if a problem occurs during PVCoodinates providers manipulations
      */
-    private static void dPropdTValidation(final PVCoordinatesProvider pvEm,
-                                          final PVCoordinatesProvider pvRec, final double hT,
-                                          final FixedDate fixedDate,
+    private static void dPropdTValidation(final PVCoordinatesProvider pvEm, final PVCoordinatesProvider pvRec,
+                                          final double hT, final FixedDate fixedDate, final Frame analysisFrame,
                                           final double[] expectedVal, final double[] expectedRefVal)
         throws PatriusException {
 
-        final double threshold = 1.0e-13;
-        final Frame refFrame = FramesFactory.getGCRF();
-        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, threshold,
-            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+        final double threshold = 1e-13;
+        final VacuumSignalPropagationModel model =
+            new VacuumSignalPropagationModel(analysisFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
 
         // Compute the signal and the shifted signals
         final VacuumSignalPropagation signal = model.computeSignalPropagation(pvEm, pvRec,
-            VacuumSignalPropagationDPTest.date,
-            fixedDate);
+            VacuumSignalPropagationDPTest.date, fixedDate);
         final VacuumSignalPropagation signalPlusHT = model.computeSignalPropagation(pvEm, pvRec,
             VacuumSignalPropagationDPTest.date.shiftedBy(hT), fixedDate);
         final VacuumSignalPropagation signalMinusHT = model.computeSignalPropagation(pvEm, pvRec,
             VacuumSignalPropagationDPTest.date.shiftedBy(-hT), fixedDate);
-
-        //
-        // Case without conversion
-        //
 
         // Extract the shifted signals propagation vector and compute the finite difference
         final Vector3D propPlusHT = signalPlusHT.getVector();
@@ -1001,38 +923,6 @@ public class VacuumSignalPropagationDPTest {
 
         Assert.assertEquals(expectedVal[2], analValVector.getZ(), VacuumSignalPropagationDPTest.validityThreshold);
         Assert.assertEquals(expectedRefVal[2], numValVector.getZ(), VacuumSignalPropagationDPTest.validityThreshold);
-
-        //
-        // Case with conversion in non inertial frame
-        //
-
-        // Extract the shifted signals propagation vector and compute the finite difference
-        final Frame itrf = FramesFactory.getITRF();
-        final Vector3D propPlusHTItrf = signalPlusHT.getVector(itrf);
-        final Vector3D propMinusHTItrf = signalMinusHT.getVector(itrf);
-        final Vector3D numValVectorItrf = propPlusHTItrf.add(-1, propMinusHTItrf).scalarMultiply(
-            1 / (2 * hT));
-
-        // Extract the signal's propagation vector derivatives wrt time
-        final Vector3D analValVectorItrf = signal.getdPropdT(itrf);
-
-        // Evaluate the results (reporting & validation) for each axis
-        System.out.println("\n" + "fixedDate: " + fixedDate);
-
-        System.out.println("dPpropXdT_itrf: "
-                + compUtils(analValVectorItrf.getX(), numValVectorItrf.getX()));
-        System.out.println("dPpropYdT_itrf: "
-                + compUtils(analValVectorItrf.getY(), numValVectorItrf.getY()));
-        System.out.println("dPpropZdT_itrf: "
-                + compUtils(analValVectorItrf.getZ(), numValVectorItrf.getZ()));
-
-        Assert.assertEquals(expectedVal[0], analValVector.getX(), VacuumSignalPropagationDPTest.validityThreshold);
-        Assert.assertEquals(expectedRefVal[0], numValVector.getX(), VacuumSignalPropagationDPTest.validityThreshold);
-        Assert.assertEquals(expectedVal[1], analValVector.getY(), VacuumSignalPropagationDPTest.validityThreshold);
-        Assert.assertEquals(expectedRefVal[1], numValVector.getY(), VacuumSignalPropagationDPTest.validityThreshold);
-        Assert.assertEquals(expectedVal[2], analValVector.getZ(), VacuumSignalPropagationDPTest.validityThreshold);
-        Assert.assertEquals(expectedRefVal[2], numValVector.getZ(), VacuumSignalPropagationDPTest.validityThreshold);
-
     }
 
     /** Before the tests. */
@@ -1040,8 +930,7 @@ public class VacuumSignalPropagationDPTest {
     public static void setUpBeforeClass() {
         try {
             Utils.setDataRoot("regular-dataCNES-2003");
-            FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils
-                .getIERS2003Configuration(true));
+            FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
         } catch (final PatriusException oe) {
             Assert.fail(oe.getMessage());
         }
@@ -1050,8 +939,8 @@ public class VacuumSignalPropagationDPTest {
     }
 
     /**
-     * Return a String formated text with the "val", "refVal", "absolute difference" and
-     * "relative difference" information.
+     * Return a String formated text with the "val", "refVal", "absolute difference" and "relative difference"
+     * information.
      *
      * @param val
      *        evaluated value

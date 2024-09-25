@@ -15,6 +15,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.11:FA:FA-3312:22/05/2023:[PATRIUS] TrueInertialFrame pas vraiment pseudo-inertiel
@@ -32,6 +36,8 @@
  */
 package fr.cnes.sirius.patrius.frames;
 
+import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.frames.transformations.FixedTransformProvider;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -601,7 +607,7 @@ public class Frame implements PVCoordinatesProvider {
 	
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return this;
     }
 
@@ -668,6 +674,21 @@ public class Frame implements PVCoordinatesProvider {
                 return getRoot();
             }
 
+            /**
+             * Returns the celestial point centered on this frame (ICRF).
+             * Built on the fly (lazy initialization).
+             * 
+             * @return the celestial point centered on this frame (ICRF)
+             * @throws PatriusException thrown if celestial point could not be built
+             */
+            @Override
+            public CelestialPoint getCelestialPoint() throws PatriusException {
+                if (this.celestialPoint == null) {
+                    // Celestial point has not be built yet, build it
+                    this.celestialPoint = CelestialBodyFactory.getSolarSystemBarycenter();
+                }
+                return this.celestialPoint;
+            }
         };
 
         /**
@@ -679,6 +700,5 @@ public class Frame implements PVCoordinatesProvider {
          */
         private LazyRootHolder() {
         }
-
     }
 }

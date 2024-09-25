@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3144:10/05/2022:[PATRIUS] Classe TempDirectory en double 
@@ -49,7 +50,7 @@ import java.util.TreeMap;
 import junit.framework.Assert;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.assembly.Assembly;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
@@ -975,7 +976,7 @@ public class GenericTransitionMatrixTest {
                 this.startDate, this.mu, this.isOsculating);
 
         // drag
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
         this.solarActivity = new double[] { 140, 15, 15, 15, 15, 15, 15, 15, 15 };
         this.dragSetUp(sun, this.solarActivity);
 
@@ -1102,7 +1103,7 @@ public class GenericTransitionMatrixTest {
 
         // MOON
 
-        final CelestialBody moon = new MeeusMoonStela(6378136.46);
+        final CelestialPoint moon = new MeeusMoonStela(6378136.46);
         final StelaThirdBodyAttraction moonPerturbation = new StelaThirdBodyAttraction(moon, 4, 2, 4);
         this.propagator.addForceModel(moonPerturbation);
 
@@ -1188,7 +1189,7 @@ public class GenericTransitionMatrixTest {
      * @throws PatriusException
      *         an Orekit exception
      */
-    public final void dragSetUp(final CelestialBody sun, final double[] solarActivityIn) throws PatriusException {
+    public final void dragSetUp(final CelestialPoint sun, final double[] solarActivityIn) throws PatriusException {
 
         // UTC-TAI leap seconds:
         TimeScalesFactory.clearUTCTAILoaders();

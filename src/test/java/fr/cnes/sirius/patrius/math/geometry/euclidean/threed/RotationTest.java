@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -785,6 +787,126 @@ public class RotationTest {
     @Test(expected = MathIllegalArgumentException.class)
     public void testNullQuaternion() throws MathIllegalArgumentException {
         new Rotation(true, 0, 0, 0, 0);
+    }
+
+    @Test
+    public void testEqualsAndHashCode() {
+
+        final double q0 = 0.32;
+        final double q1 = 0.2;
+        final double q2 = 0.12;
+        final double q3 = 0.3;
+
+        // New instance
+        final Rotation instance = new Rotation(false, q0, q1, q2, q3);
+
+        // Check the hashCode consistency between calls
+        final int hashCode = instance.hashCode();
+        Assert.assertEquals(hashCode, instance.hashCode());
+
+        // Compared object is null
+        Assert.assertFalse(instance.equals(null));
+
+        // Compared object is a different class
+        Assert.assertFalse(instance.equals(new Object()));
+
+        // Same instance
+        Assert.assertEquals(instance, instance);
+
+        // Same data, but different instances
+        Rotation other = new Rotation(false, q0, q1, q2, q3);
+
+        Assert.assertEquals(other, instance);
+        Assert.assertEquals(instance, other);
+        Assert.assertEquals(other.hashCode(), instance.hashCode());
+
+        // Different q0
+        other = new Rotation(false, 0.01, q1, q2, q3);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different q1
+        other = new Rotation(false, q0, 0.01, q2, q3);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different q2
+        other = new Rotation(false, q0, q1, 0.01, q3);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different q3
+        other = new Rotation(false, q0, q1, q2, 0.01);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+    }
+
+    @Test
+    public void testEulerRotationEqualsAndHashCode() {
+
+        final RotationOrder order = RotationOrder.XYZ;
+        final double alpha1 = 0.32;
+        final double alpha2 = 0.2;
+        final double alpha3 = 0.12;
+
+        // New instance
+        final EulerRotation instance = new EulerRotation(order, alpha1, alpha2, alpha3);
+
+        // Check the hashCode consistency between calls
+        final int hashCode = instance.hashCode();
+        Assert.assertEquals(hashCode, instance.hashCode());
+
+        // Compared object is null
+        Assert.assertFalse(instance.equals(null));
+
+        // Compared object is a different class
+        Assert.assertFalse(instance.equals(new Object()));
+
+        // Same instance
+        Assert.assertEquals(instance, instance);
+
+        // Same data, but different instances
+        EulerRotation other = new EulerRotation(order, alpha1, alpha2, alpha3);
+
+        Assert.assertEquals(other, instance);
+        Assert.assertEquals(instance, other);
+        Assert.assertEquals(other.hashCode(), instance.hashCode());
+
+        // Different order
+        other = new EulerRotation(RotationOrder.YXZ, alpha1, alpha2, alpha3);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different alpha1
+        other = new EulerRotation(order, 0.01, alpha2, alpha3);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different alpha2
+        other = new EulerRotation(order, alpha1, 0.01, alpha3);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
+
+        // Different alpha3
+        other = new EulerRotation(order, alpha1, alpha2, 0.01);
+
+        Assert.assertFalse(instance.equals(other));
+        Assert.assertFalse(other.equals(instance));
+        Assert.assertFalse(instance.hashCode() == other.hashCode());
     }
 
     @Test

@@ -71,8 +71,7 @@ public class FacetPointTest {
         final String modelFile = System.getProperty("user.dir") + File.separator + spherBodyObjPath;
         writeBodyFile(modelFile, 51, 100, this.bodyRadius / 1E3, 0.);
 
-        this.body = new FacetBodyShape("My body", FramesFactory.getGCRF(), EllipsoidType.INNER_SPHERE,
-            new ObjMeshLoader(modelFile));
+        this.body = new FacetBodyShape("My body", FramesFactory.getGCRF(), new ObjMeshLoader(modelFile));
     }
 
     /**
@@ -88,11 +87,11 @@ public class FacetPointTest {
      *        body radius (km)
      */
     private static void writeBodyFile(final String modelFile, final int latitudeNumber, final int longitudeNumber,
-            final double radius, final double flattening) throws IOException {
+                                      final double radius, final double flattening) throws IOException {
         // Initialization, open resources
         final FileOutputStream fileOutputStream = new FileOutputStream(modelFile);
         final OutputStreamWriter fileWriter = new OutputStreamWriter(fileOutputStream, Charset.forName("UTF-8")
-                .newEncoder());
+            .newEncoder());
         final PrintWriter printWriter = new PrintWriter(fileWriter);
 
         // Build body
@@ -114,9 +113,9 @@ public class FacetPointTest {
                 final double coslon = MathLib.cos(longitude);
                 final double sinlon = MathLib.sin(longitude);
                 final Vector3D pv = new Vector3D(coslat * coslon, coslat * sinlon, sinlat * (1 - flattening))
-                        .scalarMultiply(radius);
+                    .scalarMultiply(radius);
                 printWriter
-                        .println(String.format(Locale.US, "v %20.15f%20.15f%20.15f", pv.getX(), pv.getY(), pv.getZ()));
+                    .println(String.format(Locale.US, "v %20.15f%20.15f%20.15f", pv.getX(), pv.getY(), pv.getZ()));
             }
         }
 
@@ -150,7 +149,7 @@ public class FacetPointTest {
         // North pole
         for (int j = 0; j < longitudeNumber - 1; j++) {
             printWriter.println(String.format(Locale.US, "f %10d%10d%10d", numberPoints, numberPoints - j - 2,
-                    numberPoints - j - 1));
+                numberPoints - j - 1));
         }
         printWriter.println(String.format(Locale.US, "f %10d%10d%10d", numberPoints, numberPoints - 1, numberPoints
                 - longitudeNumber));
@@ -182,10 +181,12 @@ public class FacetPointTest {
         final Vector3D posGCRF = new Vector3D(10000, 20000, 30000);
         final Vector3D posOnShape = this.body.closestPointTo(posGCRF, body.getBodyFrame(), date).getPosition();
 
-        final Vector3D posOnShapeEME2000 = FramesFactory.getGCRF().getTransformTo(FramesFactory.getEME2000(), date).transformPosition(posOnShape);
-        
+        final Vector3D posOnShapeEME2000 = FramesFactory.getGCRF().getTransformTo(FramesFactory.getEME2000(), date)
+            .transformPosition(posOnShape);
+
         final FacetPoint point = new FacetPoint(this.body, posGCRF, "OverSurface");
-        final FacetPoint point2 = new FacetPoint(this.body, posOnShapeEME2000, FramesFactory.getEME2000(), date, "OnSurface");
+        final FacetPoint point2 = new FacetPoint(this.body, posOnShapeEME2000, FramesFactory.getEME2000(), date,
+            "OnSurface");
         final FacetPoint point3 = new FacetPoint(this.body, posOnShape.scalarMultiply(1. / 10.), "UnderSurface");
 
         // Method from BodyPoint
@@ -231,7 +232,7 @@ public class FacetPointTest {
      * @nonRegressionVersion 4.12
      */
     @Test
-    public void testClosestTriangles()  {
+    public void testClosestTriangles() {
         // Regular
         final Triangle t = this.body.getTriangles()[1234];
         final FacetPoint point1 = new FacetPoint(this.body, t.getCenter().add(t.getNormal()), "");

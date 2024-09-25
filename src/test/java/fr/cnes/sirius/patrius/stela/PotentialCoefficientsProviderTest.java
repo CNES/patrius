@@ -91,4 +91,16 @@ public class PotentialCoefficientsProviderTest implements PotentialCoefficientsP
     public double getAe() {
         return 6378136.46;
     }
+
+    @Override
+    public double[][] getSigmaC(int n, int m, boolean normalized) throws PatriusException {
+        // This method is not called: return null
+        return null;
+    }
+
+    @Override
+    public double[][] getSigmaS(int n, int m, boolean normalized) throws PatriusException {
+        // This method is not called: return null
+        return null;
+    }
 }

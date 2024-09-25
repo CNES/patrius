@@ -17,6 +17,8 @@
  * Copyright 2011-2012 Space Applications Services
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Conditions meteorologiques variables dans modeles troposphere
@@ -50,7 +52,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 /**
  * A static tropospheric model that interpolates the actual tropospheric delay based on values read
  * from a configuration file (tropospheric-delay.txt) via the {@link DataProvidersManager}.
- * 
+ *
  * @author Thomas Neidhart
  */
 public class FixedDelayModel implements TroposphericCorrection {
@@ -65,45 +67,41 @@ public class FixedDelayModel implements TroposphericCorrection {
     @SuppressWarnings("PMD.AvoidUsingVolatile")
     private static volatile FixedDelayModel defaultModel;
 
-    /** Abscissa grid for the bi-variate interpolation function read from the file. */
-    private final double[] xArr;
-
-    /** Ordinate grid for the bi-variate interpolation function read from the file. */
-    private final double[] yArr;
-
-    /** Values samples for the bi-variate interpolation function read from the file. */
-    private final double[][] fArr;
+    /** Interpolation function for the tropospheric delays. */
+    private final BivariateFunction delayFunction;
 
     /** The height of the station in m above sea level [m]. */
     private final double height;
-
-    /** Interpolation function for the tropospheric delays. */
-    private final transient BivariateFunction delayFunction;
-
+    
     /**
      * Creates a new {@link FixedDelayModel} instance.
-     * 
-     * @param xArrIn abscissa grid for the interpolation function
-     * @param yArrIn ordinate grid for the interpolation function
-     * @param fArrIn values samples for the interpolation function
-     * @param heightIn the height of the station in m above sea level [m]
+     *
+     * @param xArrIn
+     *        Abscissa grid for the interpolation function
+     * @param yArrIn
+     *        Ordinate grid for the interpolation function
+     * @param fArrIn
+     *        Values samples for the interpolation function
+     * @param heightIn
+     *        The height of the station in m above sea level [m]
      */
-    public FixedDelayModel(final double[] xArrIn, final double[] yArrIn, final double[][] fArrIn,
-                           final double heightIn) {
-        this.xArr = xArrIn.clone();
-        this.yArr = yArrIn.clone();
-        this.fArr = fArrIn.clone();
-        this.delayFunction = new BicubicSplineInterpolator().interpolate(xArrIn, yArrIn, fArrIn);
+    public FixedDelayModel(final double[] xArrIn, final double[] yArrIn,
+                           final double[][] fArrIn, final double heightIn) {
+        this.delayFunction = new BicubicSplineInterpolator()
+            .interpolate(xArrIn.clone(), yArrIn.clone(), fArrIn.clone());
         this.height = heightIn;
     }
 
     /**
      * Creates a new {@link FixedDelayModel} instance, and loads the delay values from the given
      * resource via the {@link DataProvidersManager}.
-     * 
-     * @param supportedName a regular expression for supported resource names
-     * @param heightIn the height of the station in m above sea level [m]
-     * @throws PatriusException if the resource could not be loaded
+     *
+     * @param supportedName
+     *        A regular expression for supported resource names
+     * @param heightIn
+     *        The height of the station in m above sea level [m]
+     * @throws PatriusException
+     *         if the resource could not be loaded
      */
     public FixedDelayModel(final String supportedName, final double heightIn)
         throws PatriusException {
@@ -115,11 +113,10 @@ public class FixedDelayModel implements TroposphericCorrection {
             throw new PatriusException(PatriusMessages.UNABLE_TO_FIND_RESOURCE, supportedName);
         }
 
-        this.xArr = loader.getAbscissaGrid();
-        this.yArr = loader.getOrdinateGrid();
-        this.fArr = loader.getValuesSamples();
-        this.delayFunction = new BicubicSplineInterpolator().interpolate(this.xArr, this.yArr,
-            this.fArr);
+        final double[] xArr = loader.getAbscissaGrid();
+        final double[] yArr = loader.getOrdinateGrid();
+        final double[][] fArr = loader.getValuesSamples();
+        this.delayFunction = new BicubicSplineInterpolator().interpolate(xArr, yArr, fArr);
         this.height = heightIn;
     }
 
@@ -148,30 +145,26 @@ public class FixedDelayModel implements TroposphericCorrection {
     }
 
     /**
-     * Returns the default model, loading delay values from the file "tropospheric-delay.txt".
-     * 
-     * @param height the height of the station in m above sea level [m]
+     * Returns the default model, loading delay values from the file <i>"tropospheric-delay.txt"</i>.
+     *
+     * @param height
+     *        The height of the station in m above sea level [m]
      * @return the default model
-     * @throws PatriusException if the file could not be loaded
+     * @throws PatriusException
+     *         if the file could not be loaded
      */
-    @SuppressWarnings("PMD.NonThreadSafeSingleton")
-    public static FixedDelayModel getDefaultModel(final double height) throws PatriusException {
-        /** Use of Double-Check locking because of thrown exception */
+    public static synchronized FixedDelayModel getDefaultModel(final double height) throws PatriusException {
         if (defaultModel == null) {
-            synchronized (FixedDelayModel.class) {
-                if (defaultModel == null) {
-                    defaultModel = new FixedDelayModel("^tropospheric-delay\\.txt$", height);
-                }
-            }
+            defaultModel = new FixedDelayModel("^tropospheric-delay\\.txt$", height);
         }
         return defaultModel;
     }
 
     /**
-     * Calculates the tropospheric path delay for the signal path from a ground station to a
-     * satellite.
-     * 
-     * @param elevation the elevation of the satellite [rad]
+     * Calculates the tropospheric path delay for the signal path from a ground station to a satellite.
+     *
+     * @param elevation
+     *        The elevation of the satellite [rad]
      * @return the path delay due to the troposphere [m]
      */
     public double computePathDelay(final double elevation) {
@@ -186,31 +179,19 @@ public class FixedDelayModel implements TroposphericCorrection {
     }
 
     /**
-     * Calculates the tropospheric path delay for the signal path from a ground station to a
-     * satellite at a given date.
-     * 
-     * @param date
-     *        date for meteo conditions
+     * Calculates the tropospheric signal delay for the signal path from a ground station to a satellite.
+     *
      * @param elevation
-     *        the elevation of the satellite [rad]
-     * @return the path delay due to the troposphere [m]
+     *        The elevation of the satellite [rad]
+     * @return the signal delay due to the troposphere [s]
      */
-    public double computePathDelay(final AbsoluteDate date, final double elevation) {
-        return this.computePathDelay(elevation);
+    public double computeSignalDelay(final double elevation) {
+        return computePathDelay(elevation) / Constants.SPEED_OF_LIGHT;
     }
 
     /** {@inheritDoc} */
     @Override
     public double computeSignalDelay(final AbsoluteDate date, final double elevation) {
-        return this.computePathDelay(elevation) / Constants.SPEED_OF_LIGHT;
-    }
-
-    /**
-     * Make sure the unserializable bivariate interpolation function is properly rebuilt.
-     * 
-     * @return replacement object, with bivariate function properly set up
-     */
-    private Object readResolve() {
-        return new FixedDelayModel(this.xArr, this.yArr, this.fArr, this.height);
+        return computePathDelay(elevation) / Constants.SPEED_OF_LIGHT;
     }
 }

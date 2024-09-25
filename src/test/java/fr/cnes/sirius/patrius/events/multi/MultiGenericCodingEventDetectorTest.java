@@ -18,6 +18,9 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -40,8 +43,13 @@ import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.events.CodedEvent;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.MultiEventDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEvent;
+import fr.cnes.sirius.patrius.events.postprocessing.MultiGenericCodingEventDetector;
+import fr.cnes.sirius.patrius.events.utils.OneSatEventDetectorWrapper;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -52,10 +60,6 @@ import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.multi.MultiEventDetector;
-import fr.cnes.sirius.patrius.propagation.events.multi.OneSatEventDetectorWrapper;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -120,7 +124,7 @@ public class MultiGenericCodingEventDetectorTest {
 
         // Set up the visibility event:
         // Circular field of view detector
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final OneAxisEllipsoid body = new OneAxisEllipsoid(6378136.460, 1 / 298.257222101, frame);
         final EllipsoidPoint coord = new EllipsoidPoint(body, body.getLLHCoordinatesSystem(),
             MathLib.toRadians(5), MathLib.toRadians(120), 0, "");

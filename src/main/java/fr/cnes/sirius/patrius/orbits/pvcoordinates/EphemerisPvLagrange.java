@@ -18,6 +18,8 @@
  * @history created 25/09/2015
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-199:17/01/2024:[PATRIUS] Utilisation du dernier point utilisable dans EphemerisPvHermite
+ * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -128,12 +130,13 @@ public class EphemerisPvLagrange extends AbstractBoundedPVProvider {
     @Override
     public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
 
-        // Duration from reference to search index
-        final double duration = date.durationFrom(this.getDateRef());
-
-        // Check if date is exactly on validity interval bounds, in that case returns boundary state
+        // Check if date is exactly on validity interval bounds, in that case (!= null) returns boundary state
         PVCoordinates interpolPV = this.checkBounds(date);
+
         if (interpolPV == null) {
+            // Duration from reference to search index
+            final double duration = date.durationFrom(this.getDateRef());
+
             // get the nearest index for this duration
             final int index = this.getSearchIndex().getIndex(duration);
             // the interpolation is valid only if 0<= index +1 -interpoOrder/2 or index + order/2 <= maximalIndex
@@ -150,7 +153,7 @@ public class EphemerisPvLagrange extends AbstractBoundedPVProvider {
 
                 // gets the PV coordinates and the delta t from startDate
                 for (int i = 0; i < this.polyOrder; i++) {
-                    tDateExtract[i] = this.tDate[i0 + i].durationFrom(this.getDateRef());
+                    tDateExtract[i] = this.tDate[i0 + i].durationFrom(this.tDate[i0]);
                     final PVCoordinates currentPV = this.tPVCoord[i0 + i];
                     tPVExtract[0][i] = currentPV.getPosition().getX();
                     tPVExtract[1][i] = currentPV.getPosition().getY();
@@ -166,10 +169,10 @@ public class EphemerisPvLagrange extends AbstractBoundedPVProvider {
             final double[] y = new double[SpacecraftState.ORBIT_DIMENSION];
 
             for (int i = 0; i < SpacecraftState.ORBIT_DIMENSION; i++) {
-                y[i] = this.interpolatorPV.valueIndex(i, date.durationFrom(this.getDateRef()));
+                y[i] = this.interpolatorPV.valueIndex(i, date.durationFrom(this.tDate[i0]));
             }
 
-            // Get the lagrange interpolation results
+            // Get the Lagrange interpolation results
             final Vector3D p = new Vector3D(y[0], y[1], y[2]);
             final Vector3D v = new Vector3D(y[3], y[4], y[5]);
 

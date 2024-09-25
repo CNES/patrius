@@ -18,6 +18,8 @@
  * @history Created 08/01/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:DM:DM-3244:03/11/2022:[PATRIUS] Ajout propagation du signal dans ExtremaElevationDetector
@@ -58,10 +60,15 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractHarmonicGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
@@ -92,10 +99,6 @@ import fr.cnes.sirius.patrius.propagation.AbstractPropagator;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -140,7 +143,7 @@ public class MainSingleGpsVisisTest {
      * 
      * @testedFeature {@link features#SINGLE_GPS_VISIS}
      * 
-     * @testedMethod {@link NumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.propagation.events.EventDetector)}
+     * @testedMethod {@link NumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.events.EventDetector)}
      * @testedMethod {@link NumericalPropagator#propagate(AbsoluteDate)}
      * 
      * @description Propagation with eclipse detection. Particular case.
@@ -247,10 +250,10 @@ public class MainSingleGpsVisisTest {
         CelestialBodyFactory.addCelestialBodyLoader(
             CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        final CelestialBody sun = loader
-            .loadCelestialBody(CelestialBodyFactory.SUN);
-        final CelestialBody moon = loader
-            .loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialBody sun = (CelestialBody) loader
+            .loadCelestialPoint(CelestialBodyFactory.SUN);
+        final CelestialBody moon = (CelestialBody) loader
+            .loadCelestialPoint(CelestialBodyFactory.MOON);
 
         final GravityModel sunGravityModel = sun.getGravityModel();
         ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
@@ -282,7 +285,7 @@ public class MainSingleGpsVisisTest {
         final RadiationSensitive SRPmodel = new DirectRadiativeModel(
             sphericalSpacecraft);
 
-        final ForceModel srp = new SolarRadiationPressure(sun, earth.getEquatorialRadius(), SRPmodel);
+        final ForceModel srp = new SolarRadiationPressure(sun, earth.getARadius(), SRPmodel);
 
         final ForceModel newtonianAttraction = new DirectBodyAttraction(new NewtonianGravityModel(prop.getMu()));
 
@@ -446,7 +449,7 @@ public class MainSingleGpsVisisTest {
         final KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit, lofPointingAtt);
 
         // Detecteur visi centre terre
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final EventDetector visiCentreTerre = new CircularFieldOfViewDetector(earth, Vector3D.PLUS_J,
             MathLib.toRadians(3), 60.){
 

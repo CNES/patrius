@@ -17,6 +17,8 @@
  * @history creation 15/04/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2369:27/05/2020:ajout d'elements dans l'interface de MathLib 
@@ -36,7 +38,8 @@ import fr.cnes.sirius.patrius.utils.Constants;
 
 /**
  * STELA specific precession/nutation model.
- * 
+ * This class is to be used for GCRF to CIRF transformation.
+ *
  * @author Emmanuel Bignon
  * @concurrency thread-safe
  * @version $Id: StelaPrecessionNutationModel.java 18073 2017-10-02 16:48:07Z bignon $
@@ -121,17 +124,12 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
     /** Cached date. */
     private static AbsoluteDate cachedDate = AbsoluteDate.PAST_INFINITY;
 
-    /** Cached CIP parameters. */
-    private static double[] cachedCIP = null;
-
-    /** Cached CIP derivatives. */
-    private static double[] cachedCIPDerivative = null;
+    /** Cached CIP coordinates. */
+    private static CIPCoordinates cachedCIP = null;
 
     /** {@inheritDoc} */
     @Override
-    @SuppressWarnings("PMD.MethodReturnsInternalArray")
-    public double[] getCIPMotion(final AbsoluteDate date) {
-
+    public CIPCoordinates getCIPCoordinates(final AbsoluteDate date) {
         if (date.durationFrom(cachedDate) != 0) {
             computeCIPMotion(date);
         }
@@ -139,21 +137,9 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
         return cachedCIP;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    @SuppressWarnings("PMD.MethodReturnsInternalArray")
-    public double[] getCIPMotionTimeDerivative(final AbsoluteDate date) {
-
-        if (date.durationFrom(cachedDate) != 0) {
-            computeCIPMotion(date);
-        }
-
-        return cachedCIPDerivative;
-    }
-
     /**
      * Compute CIP motion [x, y, s] and its time derivatives.
-     * 
+     *
      * @param date
      *        a date
      */
@@ -258,8 +244,7 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
 
         // Store data
         cachedDate = date;
-        cachedCIP = new double[] { x, y, s };
-        cachedCIPDerivative = new double[] { xdot, ydot, sdot };
+        cachedCIP = new CIPCoordinates(date, x, xdot, y, ydot, s, sdot);
     }
 
     /** {@inheritDoc} */
@@ -272,11 +257,5 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
     @Override
     public FrameConvention getOrigin() {
         return FrameConvention.STELA;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean isConstant() {
-        return false;
     }
 }

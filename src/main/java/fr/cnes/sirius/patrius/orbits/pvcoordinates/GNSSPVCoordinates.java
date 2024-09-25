@@ -18,6 +18,8 @@
  * @history Created on 09/11/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector
  * VERSION:4.11:DM:DM-3217:22/05/2023:[PATRIUS] Modeles broadcast et almanach GNSS
@@ -148,7 +150,7 @@ public class GNSSPVCoordinates implements PVCoordinatesProvider {
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return FramesFactory.getITRF();
     }
 

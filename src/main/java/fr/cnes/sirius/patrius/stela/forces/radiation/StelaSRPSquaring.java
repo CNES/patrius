@@ -18,6 +18,7 @@
  * @history Created 25/02/2013
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,7 +34,7 @@ package fr.cnes.sirius.patrius.stela.forces.radiation;
 
 import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.models.DirectRadiativeModel;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.stela.StelaSpacecraftFactory;
 import fr.cnes.sirius.patrius.stela.forces.AbstractStelaGaussContribution;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
@@ -81,18 +82,18 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *        reflection coefficient of spacecraft
      * @param quadraturePoints
      *        number of quadrature points
-     * @param sunBody
-     *        sun as a celestialbody
+     * @param sun
+     *        Sun
      * @throws PatriusException
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
     public StelaSRPSquaring(final double mass, final double surface, final double reflectionCoef,
-        final int quadraturePoints, final CelestialBody sunBody) throws PatriusException {
+        final int quadraturePoints, final CelestialPoint sun) throws PatriusException {
         super();
         final Assembly radiativeSpacecraft = getSpacecraft(mass, surface, reflectionCoef);
-        this.squaring = new SRPSquaring(new DirectRadiativeModel(radiativeSpacecraft), quadraturePoints, sunBody,
+        this.squaring = new SRPSquaring(new DirectRadiativeModel(radiativeSpacecraft), quadraturePoints, sun,
             Constants.CNES_STELA_AE);
-        this.potential = new SRPPotential(sunBody, mass, surface, reflectionCoef);
+        this.potential = new SRPPotential(sun, mass, surface, reflectionCoef);
     }
 
     /**
@@ -105,8 +106,8 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *        radiative surface of spacecraft
      * @param reflectionCoef
      *        reflection coefficient of spacecraft
-     * @param sunBody
-     *        sun as a celestialbody
+     * @param sun
+     *        Sun
      * @param quadraturePoints
      *        number of quadrature points
      * @param earthRadius
@@ -119,13 +120,13 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
     public StelaSRPSquaring(final double mass, final double surface, final double reflectionCoef,
-        final int quadraturePoints, final CelestialBody sunBody, final double earthRadius, final double dRef,
+        final int quadraturePoints, final CelestialPoint sun, final double earthRadius, final double dRef,
         final double pRef) throws PatriusException {
         super();
         final Assembly radiativeSpacecraft = getSpacecraft(mass, surface, reflectionCoef);
         this.squaring = new SRPSquaring(new DirectRadiativeModel(radiativeSpacecraft),
-            quadraturePoints, sunBody, earthRadius, dRef, pRef);
-        this.potential = new SRPPotential(sunBody, mass, surface, reflectionCoef);
+            quadraturePoints, sun, earthRadius, dRef, pRef);
+        this.potential = new SRPPotential(sun, mass, surface, reflectionCoef);
     }
 
     /**
@@ -137,8 +138,8 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *        radiative surface of spacecraft
      * @param reflectionCoef
      *        reflection coefficient of spacecraft
-     * @param sunBody
-     *        sun as a celestialbody
+     * @param sun
+     *        Sun
      * @param quadraturePoints
      *        number of quadrature points
      * @param earthRadius
@@ -152,14 +153,14 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
     public StelaSRPSquaring(final double mass, final double surface, final double reflectionCoef,
-        final int quadraturePoints, final CelestialBody sunBody, final double earthRadius, final double dRef,
+        final int quadraturePoints, final CelestialPoint sun, final double earthRadius, final double dRef,
         final double pRef,
         final int orderFS) throws PatriusException {
         super();
         final Assembly radiativeSpacecraft = getSpacecraft(mass, surface, reflectionCoef);
         this.squaring = new SRPSquaring(new DirectRadiativeModel(radiativeSpacecraft),
-            quadraturePoints, sunBody, earthRadius, dRef, pRef, orderFS);
-        this.potential = new SRPPotential(sunBody, mass, surface, reflectionCoef);
+            quadraturePoints, sun, earthRadius, dRef, pRef, orderFS);
+        this.potential = new SRPPotential(sun, mass, surface, reflectionCoef);
     }
 
     /**

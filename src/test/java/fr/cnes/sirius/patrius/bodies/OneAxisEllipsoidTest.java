@@ -18,6 +18,15 @@
  * @history creation 19/06/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-133:08/12/2023:[PATRIUS] Conversion en trop dans OneAxisEllipsoid#getIntersectionPoints
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:FA:FA-3322:22/05/2023:[PATRIUS] Erreur dans le calcul de normale autour d’un OneAxisEllipsoid
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -57,13 +66,19 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BodyShape.MarginType;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationFactory;
+import fr.cnes.sirius.patrius.frames.transformations.TIRFProvider;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Ellipsoid;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Sphere;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Spheroid;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -72,7 +87,7 @@ import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -107,16 +122,157 @@ public class OneAxisEllipsoidTest {
 
     @BeforeClass
     public static void setUpBeforeClass() {
-        Report.printClassHeader(OneAxisEllipsoidTest.class.getSimpleName(), "Extended one axis ellipsoid");
+        Report.printClassHeader(OneAxisEllipsoidTest.class.getSimpleName(), "One axis ellipsoid");
+    }
+
+    /**
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     * @description Builds a new instance and tests the basic getters.
+     *
+     * @testedMethod {@link OneAxisEllipsoid#OneAxisEllipsoid(double, double, Frame)}
+     * @testedMethod {@link OneAxisEllipsoid#OneAxisEllipsoid(double, double, Frame, String)}
+     * @testedMethod {@link AbstractBodyShape#getName()}
+     * @testedMethod {@link AbstractBodyShape#getBodyFrame()}
+     * @testedMethod {@link AbstractBodyShape#getNativeFrame(AbsoluteDate)}
+     * @testedMethod {@link AbstractBodyShape#getEpsilonSignalPropagation()}
+     * @testedMethod {@link AbstractBodyShape#setEpsilonSignalPropagation(double)}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getARadius()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getBRadius()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getCRadius()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getEncompassingSphereRadius()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getEllipsoid()}
+     * @testedMethod {@link EllipsoidBodyShape#isSpherical()}
+     * @testedMethod {@link OneAxisEllipsoid#getEquatorialRadius()}
+     * @testedMethod {@link OneAxisEllipsoid#getFlattening()}
+     * @testedMethod {@link OneAxisEllipsoid#getE2()}
+     * @testedMethod {@link OneAxisEllipsoid#getG2()}
+     * @testedMethod {@link OneAxisEllipsoid#computePositionFromEllipsodeticCoordinates(double, double, double)}
+     * @testedMethod {@link BodyShape#getDistanceEpsilon()}
+     * @testedMethod {@link BodyShape#setDistanceEpsilon(double)}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getLLHCoordinatesSystem()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#setLLHCoordinatesSystem(LLHCoordinatesSystem)}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#isDefaultLLHCoordinatesSystem()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#setConvergenceThreshold(double)}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getMaxIterSignalPropagation()}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#setMaxIterSignalPropagation(int)}
+     * @testedMethod {@link OneAxisEllipsoid#DEFAULT_ONE_AXIS_ELLIPSOID_NAME}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#DEFAULT_LLH_COORD_SYSTEM}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#CLOSE_APPROACH_THRESHOLD}
+     * @testedMethod {@link AbstractBodyShape#DEFAULT_EPSILON_SIGNAL_PROPAGATION}
+     * @testedMethod {@link BodyShape#DEFAULT_DISTANCE_EPSILON}
+     * @testedMethod {@link BodyShape#DIRECTION_FACTOR}
+     * 
+     * @testPassCriteria The instance is build without error and the basic getters return the expected data.
+     */
+    @Test
+    public void testConstructor() throws PatriusException {
+
+        // Initialization
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
+        final String name = "elName";
+        final double aRadius = Constants.WGS84_EARTH_EQUATORIAL_RADIUS;
+        final double f = 1.0 / 298.257222101;
+        final double cRadius = aRadius * (1. - f); // Expected polar radius
+
+        // Build an ellipsoid as a sphere
+        OneAxisEllipsoid model = new OneAxisEllipsoid(aRadius, 0., frame);
+
+        Assert.assertEquals(OneAxisEllipsoid.DEFAULT_ONE_AXIS_ELLIPSOID_NAME, model.getName());
+        Assert.assertTrue(model.isSpherical());
+        Assert.assertTrue(model.getEllipsoid() instanceof Sphere);
+        Assert.assertEquals(aRadius, model.getARadius(), 0.);
+        Assert.assertEquals(aRadius, model.getBRadius(), 0.);
+        Assert.assertEquals(aRadius, model.getCRadius(), 0.);
+
+        // Build an ellipsoid as a spheroid
+        model = new OneAxisEllipsoid(aRadius, f, frame, name);
+
+        Assert.assertEquals(name, model.getName());
+        Assert.assertFalse(model.isSpherical());
+        Assert.assertEquals(frame, model.getBodyFrame());
+        Assert.assertEquals(frame, model.getNativeFrame(date));
+
+        Assert.assertEquals(AbstractBodyShape.DEFAULT_EPSILON_SIGNAL_PROPAGATION, model.getEpsilonSignalPropagation(),
+            0.);
+        model.setEpsilonSignalPropagation(1e-12);
+        Assert.assertEquals(1e-12, model.getEpsilonSignalPropagation(), 0.);
+
+        Assert.assertTrue(model.getEllipsoid() instanceof Spheroid);
+        Assert.assertEquals(aRadius, model.getARadius(), 0.);
+        Assert.assertEquals(aRadius, model.getBRadius(), 0.);
+        Assert.assertEquals(cRadius, model.getCRadius(), 0.);
+        Assert.assertEquals(aRadius, model.getEncompassingSphereRadius(), 0.); // Largest radius
+
+        Assert.assertEquals(aRadius, model.getEquatorialRadius(), 0.);
+        Assert.assertEquals(f, model.getFlattening(), 0.);
+        Assert.assertEquals(f * (2.0 - f), model.getE2(), 0.);
+        Assert.assertEquals((1.0 - f) * (1.0 - f), model.getG2(), 0.);
+
+        Assert.assertEquals(new Vector3D(6219987.396833661, 1260853.8660756466, 632510.6734573197),
+            model.computePositionFromEllipsodeticCoordinates(0.1, 0.2, 10.2)); // Non regression (ref: 4.13)
+
+        Assert.assertEquals(BodyShape.DEFAULT_DISTANCE_EPSILON, model.getDistanceEpsilon(), 0.);
+        model.setDistanceEpsilon(1.2e-10);
+        Assert.assertEquals(1.2e-10, model.getDistanceEpsilon(), 0.);
+
+        Assert.assertEquals(LLHCoordinatesSystem.ELLIPSODETIC, model.getLLHCoordinatesSystem());
+        Assert.assertTrue(model.isDefaultLLHCoordinatesSystem());
+        model.setLLHCoordinatesSystem(LLHCoordinatesSystem.BODYCENTRIC_NORMAL);
+        Assert.assertEquals(LLHCoordinatesSystem.BODYCENTRIC_NORMAL, model.getLLHCoordinatesSystem());
+        Assert.assertFalse(model.isDefaultLLHCoordinatesSystem());
+
+        model.setConvergenceThreshold(1e-12); // For coverage, we can't access the value in Ellipsoid to check
+
+        Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER, model.getMaxIterSignalPropagation(), 0.);
+        model.setMaxIterSignalPropagation(12);
+        Assert.assertEquals(12, model.getMaxIterSignalPropagation(), 0.);
+
+        // Evaluate the static parameters values by non regression
+        Assert.assertEquals("ONE_AXIS_ELLIPSOID", OneAxisEllipsoid.DEFAULT_ONE_AXIS_ELLIPSOID_NAME);
+        Assert.assertEquals(LLHCoordinatesSystem.ELLIPSODETIC, AbstractEllipsoidBodyShape.DEFAULT_LLH_COORD_SYSTEM);
+        Assert.assertEquals(1e-10, AbstractEllipsoidBodyShape.CLOSE_APPROACH_THRESHOLD, 0.);
+        Assert.assertEquals(1e-14, AbstractBodyShape.DEFAULT_EPSILON_SIGNAL_PROPAGATION, 0.);
+        Assert.assertEquals(1e-8, BodyShape.DEFAULT_DISTANCE_EPSILON, 0.);
+        Assert.assertEquals(1e14, BodyShape.DIRECTION_FACTOR, 0.);
+
+        // case : the flatness is above 1 (an error should be thrown)
+        try {
+            new OneAxisEllipsoid(6378137.0, 1.1, FramesFactory.getITRF());
+            // model2.transformAndComputeJacobian(nsp, computedJacobian);
+            Assert.fail("an exception should have been thrown");
+        } catch (final IllegalArgumentException e) {
+            // expected
+            Assert.assertEquals(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN.getLocalizedString(Locale.getDefault()),
+                e.getLocalizedMessage());
+        }
+    }
+
+    /**
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     * @description Cover the deprecated methods.
+     *
+     * @testedMethod {@link OneAxisEllipsoid#getTransverseRadius()}
+     * @testedMethod {@link OneAxisEllipsoid#getConjugateRadius()}
+     * 
+     * @testPassCriteria The deprecated methods return the expected data.
+     * @deprecated since 4.13
+     */
+    @Test
+    @Deprecated
+    public void testDeprecated() throws PatriusException {
+        final OneAxisEllipsoid model = new OneAxisEllipsoid(6378137.0, 1.0 / 298.257222101, FramesFactory.getITRF());
+
+        Assert.assertEquals(model.getARadius(), model.getTransverseRadius(), 0.);
+        Assert.assertEquals(model.getCRadius(), model.getConjugateRadius(), 0.);
     }
 
     /**
      * @testType UT
      * 
      * @testedFeature {@link features#SPHEROID_BODY_SHAPE}
-     * 
-     * @testedMethod {@link OneAxisEllipsoid#transform(EllipsoidPoint)}
-     * @testedMethod {@link OneAxisEllipsoid#transform(Vector3D, Frame, AbsoluteDate)}
      * 
      * @description Test of the cartesian / ellipsoidic transformations.
      * 
@@ -178,7 +334,7 @@ public class OneAxisEllipsoidTest {
         Assert.assertTrue(Precision.equalsWithRelativeTolerance(4779203.64408617, p.getZ()));
 
         // Test getNativeFrame
-        Assert.assertEquals(FramesFactory.getITRF(), model.getNativeFrame(null, null));
+        Assert.assertEquals(FramesFactory.getITRF(), model.getNativeFrame(null));
     }
 
     /**
@@ -205,7 +361,7 @@ public class OneAxisEllipsoidTest {
     @Test
     public void testLineIntersection() throws PatriusException {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
 
         OneAxisEllipsoid model = new OneAxisEllipsoid(100.0, 0.9, frame, "spheroid");
         Vector3D point = new Vector3D(0.0, 93.7139699, 3.5930796);
@@ -260,7 +416,7 @@ public class OneAxisEllipsoidTest {
     public void testGetIntersectionPoint() throws PatriusException {
         // Set data common to all cases
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final OneAxisEllipsoid model = new OneAxisEllipsoid(100.0, 0.9, frame, "spheroid");
 
         // Case with no intersection points at all
@@ -350,7 +506,7 @@ public class OneAxisEllipsoidTest {
     public void intersectionPointsAltitudeTest() throws PatriusException {
         // Initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final OneAxisEllipsoid model = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, frame, "");
 
@@ -384,8 +540,6 @@ public class OneAxisEllipsoidTest {
         final EllipsoidPoint ep4 = model.getIntersectionPoint(line4, point4, frame, date, 1E-15);
         Assert.assertEquals(ep4.getLLHCoordinates().getHeight(), 0.0, 1E-9);
         Assert.assertTrue(line4.distance(ep4.getPosition()) < 1E-8);
-
-        Assert.assertTrue(model.isDefaultLLHCoordinatesSystem()); // Quick test to cover FA-125
     }
 
     /**
@@ -393,7 +547,7 @@ public class OneAxisEllipsoidTest {
      * 
      * @testedFeature {@link features#SPHEROID_BODY_SHAPE}
      * 
-     * @testedMethod {@link OneAxisEllipsoid#getApparentRadius(PVCoordinatesProvider, Frame, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getApparentRadius(PVCoordinatesProvider, Frame, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
      * 
      * @description Check computation does not throw any exception with an acos(x > 1)
      * 
@@ -410,8 +564,8 @@ public class OneAxisEllipsoidTest {
     @Test
     public void testOutOfBoundAcosApparentRadius() throws PatriusException {
         final OneAxisEllipsoid ellipsoidInertial = new OneAxisEllipsoid(6378137.0,
-            (6378137.0 - 6356752.314245179) / 6378137.0, new Frame(FramesFactory.getITRF(), Transform.IDENTITY,
-                "inertialFrame", true), "");
+            (6378137.0 - 6356752.314245179) / 6378137.0, new CelestialBodyFrame(FramesFactory.getITRF(), Transform.IDENTITY,
+                "inertialFrame", null), "");
         final Vector3D pos = new Vector3D(-264144.8224132271, 1472993.560163555, -6179291.330687755);
         final AbsoluteDate date = new AbsoluteDate(366803769, 0.5980079787259456);
         final PVCoordinatesProvider occultedBody = new PVCoordinatesProvider(){
@@ -424,7 +578,7 @@ public class OneAxisEllipsoidTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return FramesFactory.getGCRF();
             }
         };
@@ -534,11 +688,37 @@ public class OneAxisEllipsoidTest {
     }
 
     /**
+     * @testedMethod {@link OneAxisEllipsoid#getIntersectionPoints(Line, Frame, AbsoluteDate)}
+     */
+    @Test
+    public void testGetIntersectionPoints() throws PatriusException {
+        FramesFactory.setConfiguration(FramesConfigurationFactory.getSimpleConfiguration(false));
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        // Line in CIRF frame
+        final Line line = Line.createLine(Vector3D.ZERO, Vector3D.PLUS_I);
+        // Ellipsoid defined in TIRF frame
+        final double r = Constants.WGS84_EARTH_EQUATORIAL_RADIUS;
+        final OneAxisEllipsoid body = new OneAxisEllipsoid(r, 0., FramesFactory.getTIRF(), "");
+        // Get intersection points in CIRF frame
+        final EllipsoidPoint[] points = body.getIntersectionPoints(line, FramesFactory.getCIRF(), date);
+        // Expected points in CIRF frame (analytical computation)
+        final Vector3D expectedCIRF1 = Vector3D.PLUS_I.scalarMultiply(r);
+        final Vector3D expectedCIRF2 = Vector3D.MINUS_I.scalarMultiply(r);
+        // Expected points in TIRF frame (analytical computation)
+        final Rotation rotCIRFTIRF = new Rotation(Vector3D.PLUS_K, TIRFProvider.getEarthRotationAngle(date));
+        final Vector3D expectedTIRF1 = rotCIRFTIRF.applyInverseTo(expectedCIRF1);
+        final Vector3D expectedTIRF2 = rotCIRFTIRF.applyInverseTo(expectedCIRF2);
+        // Checks intersection points in TIRF frame are as expected (relative comparison)
+        Assert.assertEquals(0., points[0].getPosition().distance(expectedTIRF1) / points[0].getPosition().getNorm(), 1E-15);
+        Assert.assertEquals(0., points[1].getPosition().distance(expectedTIRF2) / points[0].getPosition().getNorm(), 1E-15);
+    }
+
+    /**
      * @testType UT
      * 
      * @testedFeature {@link features#SPHEROID_BODY_SHAPE}
      * 
-     * @testedMethod {@link OneAxisEllipsoid#getApparentRadius(PVCoordinatesProvider, Frame, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
+     * @testedMethod {@link AbstractEllipsoidBodyShape#getApparentRadius(PVCoordinatesProvider, Frame, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
      * 
      * @description Check computation of apparent radius is correct depending on signal propagation. This test
      *              considers a nearly flat bodyshape with far observer and close occulted body. Occulted body is behind
@@ -554,7 +734,7 @@ public class OneAxisEllipsoidTest {
     @Test
     public void testGetApparentRadius() throws PatriusException {
         // Initialization
-        final Frame frame = FramesFactory.getICRF();
+        final CelestialBodyFrame frame = FramesFactory.getICRF();
         // Reception date
         final AbsoluteDate origin = AbsoluteDate.J2000_EPOCH;
         final double equatorialRadius = 1000;
@@ -565,13 +745,13 @@ public class OneAxisEllipsoidTest {
         final OneAxisEllipsoid ellipsoid = new OneAxisEllipsoid(1000, f, frame, "");
         // Occulted body is behind (along J) occulting body
         final PVCoordinatesProvider occultedBody = new ConstantPVCoordinatesProvider(
-                Vector3D.PLUS_J.scalarMultiply(deltaxyz), frame);
+            Vector3D.PLUS_J.scalarMultiply(deltaxyz), frame);
         final PVCoordinatesProvider occultedBody2 = new ConstantPVCoordinatesProvider(
-                Vector3D.PLUS_J.scalarMultiply(transfertDuration * Constants.SPEED_OF_LIGHT), frame);
+            Vector3D.PLUS_J.scalarMultiply(transfertDuration * Constants.SPEED_OF_LIGHT), frame);
 
         // Observer is moving from equatorial to polar plane such that transfert time (10s) between this two planes is
         // equal to signal propagation duration between source and observer
-        final PVCoordinatesProvider observer = new PVCoordinatesProvider() {
+        final PVCoordinatesProvider observer = new PVCoordinatesProvider(){
             /** Serializable UID. */
             private static final long serialVersionUID = 3675470733301070434L;
 
@@ -584,12 +764,12 @@ public class OneAxisEllipsoidTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return FramesFactory.getGCRF();
             }
         };
 
-        final PVCoordinatesProvider observer2 = new PVCoordinatesProvider() {
+        final PVCoordinatesProvider observer2 = new PVCoordinatesProvider(){
             /** Serializable UID. */
             private static final long serialVersionUID = 2653776250918773014L;
 
@@ -602,7 +782,7 @@ public class OneAxisEllipsoidTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return FramesFactory.getGCRF();
             }
         };
@@ -610,9 +790,9 @@ public class OneAxisEllipsoidTest {
         // No light speed taken into account (PropagationDelayType.INSTANTANEOUS)
         // At t = 0s, observer is along X axis of body, at t = 10s, observer is along Z axis of body
         final double radiusEquatorialInst = ellipsoid.getApparentRadius(observer, origin.shiftedBy(-transfertDuration),
-                occultedBody, PropagationDelayType.INSTANTANEOUS);
+            occultedBody, PropagationDelayType.INSTANTANEOUS);
         final double radiusPolarInst = ellipsoid.getApparentRadius(observer, origin, occultedBody,
-                PropagationDelayType.INSTANTANEOUS);
+            PropagationDelayType.INSTANTANEOUS);
         Assert.assertEquals(0., (equatorialRadius - radiusEquatorialInst) / equatorialRadius, 1E-10);
         Assert.assertEquals(0., (polarRadius - radiusPolarInst) / polarRadius, 1E-10);
 
@@ -623,7 +803,7 @@ public class OneAxisEllipsoidTest {
         // At signal reception, observer is along Z axis of body (polar radius = 500m)
         ellipsoid.setEpsilonSignalPropagation(1E-14);
         final double radiusLS1 = ellipsoid.getApparentRadius(observer, origin, occultedBody,
-                PropagationDelayType.LIGHT_SPEED);
+            PropagationDelayType.LIGHT_SPEED);
         Assert.assertEquals(0., (polarRadius - radiusLS1) / polarRadius, 1E-10);
 
         // Light speed is taken into account (PropagationDelayType.LIGHT_SPEED)
@@ -632,7 +812,7 @@ public class OneAxisEllipsoidTest {
         // Received light passes over polar radius of occulting body
         // At signal reception, observer is along Z axis of body (polar radius = 500m)
         final double radiusLS2 = ellipsoid.getApparentRadius(observer2, origin, occultedBody2,
-                PropagationDelayType.LIGHT_SPEED);
+            PropagationDelayType.LIGHT_SPEED);
         Assert.assertEquals(0., (polarRadius - radiusLS2) / polarRadius, 1E-10);
     }
 
@@ -647,7 +827,7 @@ public class OneAxisEllipsoidTest {
     private static List<Double> recordDistanceToEllipsoid(final double requa) throws PatriusException {
 
         // Reference Frame
-        final Frame gcrf = FramesFactory.getGCRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
 
         final List<Double> listRes = new ArrayList<>();
 
@@ -833,7 +1013,7 @@ public class OneAxisEllipsoidTest {
         throws PatriusException {
 
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final OneAxisEllipsoid model = new OneAxisEllipsoid(ae, f, frame, "spheroid");
         final EllipsoidPoint point = model.buildPoint(new Vector3D(x, y, z), frame, date, "");
         Assert.assertEquals(longitude, MathUtils.normalizeAngle(point.getLLHCoordinates().getLongitude(), longitude),
@@ -845,7 +1025,7 @@ public class OneAxisEllipsoidTest {
             Report.printToReport("Longitude", longitude,
                 MathUtils.normalizeAngle(point.getLLHCoordinates().getLongitude(), longitude));
             Report.printToReport("Latitude", latitude, point.getLLHCoordinates().getLatitude());
-            Report.printToReport("Altitude", altitude, point.getLLHCoordinates()                .getHeight());
+            Report.printToReport("Altitude", altitude, point.getLLHCoordinates().getHeight());
         }
     }
 
@@ -856,7 +1036,10 @@ public class OneAxisEllipsoidTest {
      * References for the resutls : MSLIB
      * 
      * @throws PatriusException
+     * @deprecated since 4.13, see
+     *             {@link OneAxisEllipsoid#transformAndComputeJacobian(Vector3D, Frame, AbsoluteDate, double[][])}
      */
+    @Deprecated
     @Test
     public void testJacobianCartesianToGeodeticMSLIB() throws PatriusException {
 
@@ -907,7 +1090,7 @@ public class OneAxisEllipsoidTest {
                                                             final double[][] jacobian)
         throws PatriusException {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final OneAxisEllipsoid model = new OneAxisEllipsoid(ae, f, frame);
         final double[][] computedJacobian = new double[3][3];
         model.transformAndComputeJacobian(new Vector3D(x, y, z), frame, date, computedJacobian);
@@ -946,29 +1129,29 @@ public class OneAxisEllipsoidTest {
     @Test
     public void testSerialization() throws PatriusException {
 
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Vector3D point = new Vector3D(0.0, -93.7139699, -3.5930796);
         final Vector3D direction = new Vector3D(0.0, -1.0, -1.0);
         final Line line = new Line(point, point.add(direction)).revert();
 
         final OneAxisEllipsoid elipsoid = new OneAxisEllipsoid(6378137.0, 1.0 / 298.257222101,
-                frame, "spheroid");
+            frame, "spheroid");
         final OneAxisEllipsoid deserializedElipsoid = TestUtils.serializeAndRecover(elipsoid);
 
         final EllipsoidPoint point1 = elipsoid.getIntersectionPoint(line, point, frame, date);
         final EllipsoidPoint point2 = deserializedElipsoid.getIntersectionPoint(line, point, frame,
-                date);
+            date);
         Assert.assertEquals(point1.getLLHCoordinates().getLatitude(), point2.getLLHCoordinates().getLatitude(), 0.);
         Assert.assertEquals(point1.getLLHCoordinates().getLongitude(), point2.getLLHCoordinates().getLongitude(), 0.);
         Assert.assertEquals(point1.getLLHCoordinates().getHeight(), point2.getLLHCoordinates().getHeight(), 0.);
 
         Assert.assertEquals(elipsoid.getPVCoordinates(date, frame),
-                deserializedElipsoid.getPVCoordinates(date, frame));
+            deserializedElipsoid.getPVCoordinates(date, frame));
 
         Assert.assertEquals(elipsoid.getName(), deserializedElipsoid.getName());
         Assert.assertEquals(elipsoid.getEquatorialRadius(),
-                deserializedElipsoid.getEquatorialRadius(), 0.);
+            deserializedElipsoid.getEquatorialRadius(), 0.);
         Assert.assertEquals(elipsoid.getFlattening(), deserializedElipsoid.getFlattening(), 0.);
         Assert.assertEquals(elipsoid.getName(), deserializedElipsoid.getName());
         Assert.assertEquals(elipsoid.getName(), deserializedElipsoid.getName());
@@ -986,7 +1169,9 @@ public class OneAxisEllipsoidTest {
      * References for the resutls : MSLIB
      * 
      * @throws PatriusException
+     * @deprecated since 4.13, see {@link OneAxisEllipsoid#transformAndComputeJacobian(EllipsoidPoint, double[][])}
      */
+    @Deprecated
     @Test
     public void testJacobianGeodeticToCartesianMSLIB() throws PatriusException {
         // nominal case
@@ -1007,19 +1192,8 @@ public class OneAxisEllipsoidTest {
 
         // checks if the computed matrix and the expected one are the same
         checkMatrix(computedJacobian, jacobian);
-
-        // case : the flatness is above 1 (an error should be thrown)
-        try {
-            new OneAxisEllipsoid(6378137.0, 1.1, FramesFactory.getITRF());
-            // model2.transformAndComputeJacobian(nsp, computedJacobian);
-            Assert.fail("an exception should have been thrown");
-        } catch (final IllegalArgumentException e) {
-            // expected
-            Assert.assertEquals(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN.getLocalizedString(Locale.getDefault()),
-                e.getLocalizedMessage());
-        }
     }
-    
+
     /**
      * @testType UT
      * 
@@ -1038,7 +1212,7 @@ public class OneAxisEllipsoidTest {
     public void closestPointToTest() throws PatriusException {
         // Initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame frame = FramesFactory.getITRF();
+        final CelestialBodyFrame frame = FramesFactory.getITRF();
         final double radius = 10E3;
         final OneAxisEllipsoid body = new OneAxisEllipsoid(radius, 0., frame);
 
@@ -1049,7 +1223,7 @@ public class OneAxisEllipsoidTest {
         final Vector3D reference1 = position1.normalize().scalarMultiply(body.getEquatorialRadius());
         Assert.assertEquals(0., Vector3D.distance(reference1, actual1[0].getPosition()) / reference1.getNorm(), 1E-3);
         Assert.assertEquals(0., Vector3D.distance(reference1, actual1[1].getPosition()) / reference1.getNorm(), 1E-3);
-        
+
         // Case 2: same as case 1 with semi-finite line, min abscissa before intersection (points shall be the same)
         final Line lineOfSight2 = new Line(position1, Vector3D.ZERO, position1);
         final EllipsoidPoint[] actual2 = body.closestPointTo(lineOfSight2, frame, date);
@@ -1110,36 +1284,5 @@ public class OneAxisEllipsoidTest {
         Assert.assertEquals(0., Vector3D.distance(projOfMinAbs, actual9[1].getPosition()) / projOfMinAbs.getNorm(),
             1E-3);
         Assert.assertEquals(0., Vector3D.distance(position3, actual9[0].getPosition()) / position3.getNorm(), 1E-3);
-    }
-    
-    /**
-     * Test useful to validate the computation of the normal.
-     * 
-     * @testedMethod {@link OneAxisEllipsoid#getNormal(Vector3D)}
-     * 
-     * @throws PatriusException if the frame cannot be retrieved
-     * @deprecated this test will be deleted when the deprecated method getNormal will be deleted
-     */
-    @Test
-    @Deprecated
-    public void testGetNormal() throws PatriusException {
-        // Define the Earth shape
-        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS,
-            Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getITRF());
-        // Define two targets with same lat/long and different altitudes
-        final EllipsoidPoint target0 = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
-            MathLib.toRadians(15), MathLib.toRadians(30), 0., "");
-        final EllipsoidPoint target1000 = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
-            MathLib.toRadians(15), MathLib.toRadians(30), 1000., "");
-        // Compute the normal direction on both targets
-        final Vector3D normal0 = earthShape.getNormal(target0.getPosition());
-        final Vector3D normal1000 = earthShape.getNormal(target1000.getPosition());
-        // Check the results
-        Assert.assertEquals(normal0.getX(), target0.getNormal().getX(), Precision.DOUBLE_COMPARISON_EPSILON);
-        Assert.assertEquals(normal0.getY(), target0.getNormal().getY(), Precision.DOUBLE_COMPARISON_EPSILON);
-        Assert.assertEquals(normal0.getZ(), target0.getNormal().getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
-        Assert.assertEquals(normal1000.getX(), target1000.getNormal().getX(), Precision.DOUBLE_COMPARISON_EPSILON);
-        Assert.assertEquals(normal1000.getY(), target1000.getNormal().getY(), Precision.DOUBLE_COMPARISON_EPSILON);
-        Assert.assertEquals(normal1000.getZ(), target1000.getNormal().getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
     }
 }

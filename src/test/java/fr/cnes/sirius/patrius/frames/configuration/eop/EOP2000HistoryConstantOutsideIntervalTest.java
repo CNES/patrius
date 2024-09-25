@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -354,7 +355,7 @@ public class EOP2000HistoryConstantOutsideIntervalTest {
         builder.setDiurnalRotation(new DiurnalRotation(TidalCorrectionModelFactory.NO_TIDE,
             LibrationCorrectionModelFactory.NO_LIBRATION));
         builder.setPolarMotion(config2010.getPolarMotionModel());
-        builder.setPrecessionNutation(config2010.getPrecessionNutationModel());
+        builder.setCIRFPrecessionNutation(config2010.getCIRFPrecessionNutationModel());
 
         // EOP2000 configuration
         builder.setEOPHistory(EOPHistoryFactory.getEOP2000HistoryConstant());

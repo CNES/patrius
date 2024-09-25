@@ -18,6 +18,10 @@
  * @history creation 01/12/2011
  *
  * HISTORY
+ * VERSION:4.13.4:DM:DM-339:10/06/2024:[PATRIUS] Complément OPENFD-99 sur MomentumDirection
+ * pour débloquer le FDS STD 2.10
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-99:08/12/2023:[PATRIUS] Ajout du repere de calcul dans MomentumDirection
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
@@ -35,8 +39,7 @@
 
 package fr.cnes.sirius.patrius.attitudes.directions;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -107,31 +110,69 @@ public class MomentumDirectionTest {
     /** Epsilon for double comparison. */
     private final double comparisonEpsilon = Precision.DOUBLE_COMPARISON_EPSILON;
 
+    
     /**
-     * @testType UT
+     * This test is based on the existing one testGetVector() but by providing a {@link PVCoordinatesProvider} only for
+     * the
+     * {@link MomentumDirection} (cfr. dedicated constructor in the class
+     * {@link MomentumDirection#MomentumDirection(PVCoordinatesProvider)}.
+     * <p>
+     * The verification done in the test is the same : we define a momentum direction with the given constructor (actual
+     * result) and a momentum direction via the cross product between position and velocity vectors. Actual and expected
+     * results must be the same taking into account the machine accuracy.
      * 
-     * @testedFeature {@link features#MOMENTUM_DIRECTION}
-     * 
-     * @testedMethod {@link MomentumDirection#getVector(PVCoordinatesProvider, AbsoluteDate, Frame)}
-     * 
-     * @description Instantiation of a direction described by a celestial body
-     *              only, and getting of the vector normal to the trajectory
-     *              plane of a PVCoordinates provider around this body,
-     *              expressed in a frame, at a date.
-     * 
-     * @input the origin created as basic PVCoordinatesProvider
-     * 
-     * @output Vector3D
-     * 
-     * @testPassCriteria the returned vector is the correct one, orthogonal to both position and
-     *                   velocity. If the position and velocity are parallel, an exception is thrown.
-     *                   The 1.0e-14 epsilon is the simple double comparison epsilon, used because
-     *                   the computations involve here no mechanics algorithms.
-     * 
-     * @referenceVersion 1.1
-     * 
-     * @nonRegressionVersion 1.1
+     * @throws PatriusException if problems when creating the MomentumDirection
      */
+    @Test
+    public void testGetVectorPVCoordOnlyConstructor() throws PatriusException {
+
+        Report.printMethodHeader("testGetVector", "Get direction vector", "Math", this.comparisonEpsilon,
+            ComparisonType.ABSOLUTE);
+
+        // frames creation
+        // creation of the earth as CelestialBody
+        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final Frame earthFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
+
+        // another one
+        final Vector3D translationVect = new Vector3D(10.0, 10.0, 10.0);
+        final Transform outTransform = new Transform(AbsoluteDate.J2000_EPOCH, translationVect);
+        final Frame outputFrame = new Frame(earthFrame, outTransform, "outputFrame");
+
+        // origin creation from the earth frame
+        final Vector3D originPos = new Vector3D(1.635732, -8.654534, 5.6721);
+        Vector3D originVel = new Vector3D(7.6874231, 654.687534, -17.721);
+        PVCoordinates originPV = new PVCoordinates(originPos, originVel);
+        BasicPVCoordinatesProvider inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
+
+        // direction creation
+        MomentumDirection direction = new MomentumDirection(inOrigin);
+
+        // test
+        // the date has no meaning here
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+
+        final Vector3D result = direction.getVector(inOrigin, date, outputFrame);
+
+        // the transformation doesn't change this vector
+        final Vector3D expected = Vector3D.crossProduct(originPos, originVel).normalize();
+
+        Assert.assertEquals(expected.getX(), result.getX(), this.comparisonEpsilon);
+        Assert.assertEquals(expected.getY(), result.getY(), this.comparisonEpsilon);
+        Assert.assertEquals(expected.getZ(), result.getZ(), this.comparisonEpsilon);
+
+        Report.printToReport("Direction", expected, result);
+
+        // test with a velocity parallel to the position vector
+        originVel = originPos;
+        originPV = new PVCoordinates(originPos, originVel);
+        inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
+
+        // direction creation
+        direction = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
+
+    }
+    
     @Test
     public void testGetVector() {
 
@@ -148,7 +189,6 @@ public class MomentumDirectionTest {
             final Vector3D translationVect = new Vector3D(10.0, 10.0, 10.0);
             final Transform outTransform = new Transform(AbsoluteDate.J2000_EPOCH, translationVect);
             final Frame outputFrame = new Frame(earthFrame, outTransform, "outputFrame");
-            ;
 
             // origin creation from the earth frame
             final Vector3D originPos = new Vector3D(1.635732, -8.654534, 5.6721);
@@ -157,7 +197,7 @@ public class MomentumDirectionTest {
             BasicPVCoordinatesProvider inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
 
             // direction creation
-            MomentumDirection direction = new MomentumDirection(earth);
+            MomentumDirection direction = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
 
             // test
             // the date has no meaning here
@@ -180,7 +220,7 @@ public class MomentumDirectionTest {
             inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
 
             // direction creation
-            direction = new MomentumDirection(earth);
+            direction = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
 
             try {
                 direction.getVector(inOrigin, date, outputFrame);
@@ -195,7 +235,60 @@ public class MomentumDirectionTest {
         } catch (final PatriusException e) {
             Assert.fail();
         }
+    }
 
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#MOMENTUM_DIRECTION}
+     * 
+     * @testedMethod {@link MomentumDirection#getVector(PVCoordinatesProvider, AbsoluteDate, Frame)}
+     * 
+     * @description Instantiation of a direction described by a celestial body
+     *              only, and getting of the vector normal to the trajectory
+     *              plane of a PVCoordinates provider around this body,
+     *              expressed in a frame, at a date.
+     *              frame is chosen by user
+     * 
+     * @testPassCriteria the returned vector is the correct one, orthogonal to both position and
+     *                   velocity. If the position and velocity are parallel, an exception is thrown.
+     *                   The 1.0e-14 epsilon is the simple double comparison epsilon, used because
+     *                   the computations involve here no mechanics algorithms.
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testGetVectorNewOutputFrame() throws PatriusException {
+        // frames creation
+        // creation of the earth as CelestialBody
+        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final Frame earthFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
+
+        // origin creation from the earth frame
+        final Vector3D originPos = new Vector3D(1.635732, -8.654534, 5.6721);
+        final Vector3D originVel = new Vector3D(7.6874231, 654.687534, -17.721);
+        final PVCoordinates originPV = new PVCoordinates(originPos, originVel);
+        final BasicPVCoordinatesProvider inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
+
+        // Output frame not centered on Earth
+        final Frame outputFrame = earthFrame;
+
+        // direction creation
+        final MomentumDirection direction = new MomentumDirection(outputFrame);
+
+        // test
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+
+        final Vector3D result = direction.getVector(inOrigin, date, outputFrame);
+
+        // Expected result
+        final Vector3D expected = Vector3D.crossProduct(originPos, originVel).normalize();
+
+        Assert.assertEquals(expected.getX(), result.getX(), this.comparisonEpsilon);
+        Assert.assertEquals(expected.getY(), result.getY(), this.comparisonEpsilon);
+        Assert.assertEquals(expected.getZ(), result.getZ(), this.comparisonEpsilon);
     }
 
     /**
@@ -207,33 +300,37 @@ public class MomentumDirectionTest {
      * @testedMethod {@link MomentumDirection#getVector(PVCoordinatesProvider, AbsoluteDate, Frame)}
      * 
      * @description Instantiation of a direction described by a {@link PVCoordinatesProvider} only, and getting of the
-     *              vector normal to the trajectory
-     *              plane
+     *              vector normal to the trajectory plane
+     *              frame is chosen by user
      * 
      * @testPassCriteria the returned vector is the correct one, orthogonal to both position and
-     *                   velocity in input frame.
+     *                   velocity in output frame.
      * 
-     * @referenceVersion 4.6
+     * @referenceVersion 4.13
      * 
-     * @nonRegressionVersion 4.6
+     * @nonRegressionVersion 4.13
      */
     @Test
-    public void testGetVectorPVCoordinateProvider() throws PatriusException {
+    public void testGetVectorPVCoordinateProviderNewOutputFrame() throws PatriusException {
 
         // An orbit
         final Orbit orbit = new KeplerianOrbit(7000000, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getGCRF(),
             AbsoluteDate.J2000_EPOCH, Constants.EGM96_EARTH_MU);
-
+        
+        final Frame bodyCenteredFrame = FramesFactory.getGCRF();
+        
         // Direction creation
-        final MomentumDirection direction = new MomentumDirection(orbit);
+        final MomentumDirection direction = new MomentumDirection(bodyCenteredFrame, orbit);
 
         // Compute direction
         final Frame outputFrame = FramesFactory.getEME2000();
         final Vector3D dir = direction.getVector(null, orbit.getDate(), outputFrame);
 
         // Check
-        final PVCoordinates pv = orbit.getPVCoordinates(outputFrame);
-        Assert.assertEquals(0., dir.distance(pv.getMomentum().normalize()), 0.);
+        final PVCoordinates pv = orbit.getPVCoordinates(bodyCenteredFrame);
+        final Transform t = bodyCenteredFrame.getTransformTo(outputFrame, orbit.getDate());
+        final Vector3D expected = t.transformVector(pv.getMomentum().normalize());
+        Assert.assertEquals(0., dir.distance(expected), 0.);
     }
 
     /**
@@ -274,7 +371,6 @@ public class MomentumDirectionTest {
             final Vector3D translationVect = new Vector3D(10.0, 10.0, 10.0);
             final Transform outTransform = new Transform(AbsoluteDate.J2000_EPOCH, translationVect);
             final Frame outputFrame = new Frame(earthFrame, outTransform, "outFram");
-            ;
 
             // origin creation from the earth frame
             Vector3D originPos = new Vector3D(1.635732, -8.654534, 5.6721);
@@ -283,7 +379,7 @@ public class MomentumDirectionTest {
             BasicPVCoordinatesProvider inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
 
             // direction creation
-            MomentumDirection direction = new MomentumDirection(earth);
+            MomentumDirection direction = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
 
             // test
             // the date has no meaning here
@@ -304,7 +400,7 @@ public class MomentumDirectionTest {
             inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
 
             // direction creation
-            direction = new MomentumDirection(earth);
+            direction = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
 
             try {
                 direction.getLine(inOrigin, date, outputFrame);
@@ -361,7 +457,7 @@ public class MomentumDirectionTest {
         final Frame satellite = new LocalOrbitalFrame(FramesFactory.getEME2000(), LOFType.TNW, propagator, "LOF");
 
         // momentum direction with respect to eme2000 projected on the satellite frame
-        final IDirection dir = new MomentumDirection(CelestialBodyFactory.getEarth());
+        final IDirection dir = new MomentumDirection(CelestialBodyFactory.getEarth().getInertialFrame(IAUPoleModelType.CONSTANT));
         final AbsoluteDate targetDate = date.shiftedBy(84600.);
         final Vector3D m1 = dir.getVector(null, targetDate, satellite);
 

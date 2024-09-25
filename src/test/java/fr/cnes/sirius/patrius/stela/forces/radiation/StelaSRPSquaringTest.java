@@ -19,6 +19,8 @@
  * VERSION::DM:596:12/04/2016:Improve test coherence
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -42,6 +44,7 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.assembly.models.DirectRadiativeModel;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -255,7 +258,7 @@ public class StelaSRPSquaringTest {
                 PositionAngle.MEAN, FramesFactory.getCIRF(), date, Constants.CNES_STELA_MU);
 
         // Sun
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
 
         // Force
         final StelaSRPSquaring srp = new StelaSRPSquaring(50., 10., 0.8, 33, sun, Constants.CNES_STELA_AE,
@@ -333,7 +336,7 @@ public class StelaSRPSquaringTest {
                 FramesFactory.getCIRF(), date, Constants.CNES_STELA_MU);
 
         // Sun
-        final CelestialBody sun = new MeeusSun(MODEL.STELA);
+        final CelestialPoint sun = new MeeusSun(MODEL.STELA);
 
         // Force
         final StelaSRPSquaring srp = new StelaSRPSquaring(50., 10., 0.8, 33, sun, Constants.CNES_STELA_AE,
@@ -371,7 +374,6 @@ public class StelaSRPSquaringTest {
 
         this.orbit = new StelaEquinoctialOrbit(2.43505E+7, 0.3644381018870251, 0.6312253086822904, 0.09052430460833645,
                 0.05226423163382672, 1.919862177193762, FramesFactory.getMOD(false), date, Constants.CNES_STELA_MU);
-
     }
 
     /**

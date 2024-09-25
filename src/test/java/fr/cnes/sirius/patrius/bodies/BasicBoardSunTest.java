@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
  * VERSION:4.9:DM:DM-3165:10/05/2022:[PATRIUS] Amelioration de la propagation du signal 
@@ -156,7 +159,7 @@ public class BasicBoardSunTest {
 
         final BasicBoardSun sun = new BasicBoardSun(DEFAULT_REF_DATE, MEAN_LONGITUDE_0, MEAN_LONGITUDE_1,
             MEAN_ANOMALY_0, MEAN_ANOMALY_1, LONGITUDE_AMPLITUDE, EQUAT_ECLIPT_INCLINATION);
-        final CelestialBody sunMeeus = CelestialBodyFactory.getSun();
+        final CelestialPoint sunMeeus = CelestialBodyFactory.getSun();
 
         for (int i = -1000; i < 1000; i++) {
             // test data
@@ -323,8 +326,7 @@ public class BasicBoardSunTest {
 
                 /** {@inheritDoc} */
                 @Override
-                public Frame getNativeFrame(final AbsoluteDate date,
-                        final Frame frame) throws PatriusException {
+                public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                     throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
                 }
             }, dates.get(i), FramesFactory.getGCRF());

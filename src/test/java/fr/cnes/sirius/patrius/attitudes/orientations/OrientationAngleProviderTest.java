@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-6:08/12/2023:[PATRIUS] Suppression de l'attribut "nature" dans OrientationAngleLegsSequence
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3152:10/05/2022:[PATRIUS] Suppression de l'attribut "nature" dans OrientationAngleLegsSequence  
@@ -32,8 +33,7 @@
  */
 package fr.cnes.sirius.patrius.attitudes.orientations;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -168,9 +168,6 @@ public class OrientationAngleProviderTest {
         Assert.assertEquals(0,
                 provider.getTimeInterval().getUpperData().durationFrom(AbsoluteDate.J2000_EPOCH), 0);
 
-        // Check nature
-        Assert.assertEquals("CONSTANT", provider.getNature());
-
         // Check exception (date outside interval)
         try {
             provider.getOrientationAngle(null, AbsoluteDate.JAVA_EPOCH.shiftedBy(-1));
@@ -227,8 +224,6 @@ public class OrientationAngleProviderTest {
         Assert.assertEquals(0,
                 provider.getTimeInterval().getUpperData().durationFrom(AbsoluteDate.J2000_EPOCH), 0);
 
-        // Check nature
-        Assert.assertEquals("ATTITUDE_ORIENTATION_ANGLE_LAW_LEG", provider.getNature());
 
         // Check exception (date outside interval)
         try {
@@ -392,8 +387,6 @@ public class OrientationAngleProviderTest {
         Assert.assertEquals(0, provider.getTimeInterval().getLowerData().durationFrom(date1), 0);
         Assert.assertEquals(0, provider.getTimeInterval().getUpperData().durationFrom(date4), 0);
 
-        // Check nature
-        Assert.assertEquals("Nature", provider.getNature());
 
         // Check exception (date outside interval)
         Assert.assertNull(provider.getOrientationAngle(null, date1.shiftedBy(-1)));
@@ -794,7 +787,6 @@ public class OrientationAngleProviderTest {
         final OrientationAngleLeg orientationAngleLeg = OrientationAngleLeg.build(function, timeInterval, nature);
 
         Assert.assertEquals(timeInterval, orientationAngleLeg.getTimeInterval());
-        Assert.assertEquals(nature, orientationAngleLeg.getNature());
 
         // Note: the PVCoordinatesProvider parameter isn't used (can be null)
         Assert.assertEquals(function.value(date1), orientationAngleLeg.getOrientationAngle(null, date1), 1E-14);
@@ -806,7 +798,6 @@ public class OrientationAngleProviderTest {
         final OrientationAngleLeg orientationAngleLegCopy = orientationAngleLeg.copy(newInterval);
 
         Assert.assertEquals(newInterval, orientationAngleLegCopy.getTimeInterval());
-        Assert.assertEquals(nature, orientationAngleLegCopy.getNature());
 
         Assert.assertEquals(function.value(date1), orientationAngleLegCopy.getOrientationAngle(null, date1), 1E-14);
         Assert.assertEquals(function.value(date2), orientationAngleLegCopy.getOrientationAngle(null, date2), 1E-14);
@@ -1047,13 +1038,9 @@ public class OrientationAngleProviderTest {
         final AbsoluteDateInterval interval2 = new AbsoluteDateInterval(endDate, endDate2);
 
         // Intervals creation
-        final double offset = 5;
         final AbsoluteDateInterval newIntervalOfValidity = new AbsoluteDateInterval(
                 IntervalEndpointType.CLOSED, startDate.shiftedBy(55), startDate.shiftedBy(70),
                 IntervalEndpointType.CLOSED);
-        final AbsoluteDateInterval newIntervalOfValidityNotIncluded = new AbsoluteDateInterval(
-                IntervalEndpointType.CLOSED, startDate.shiftedBy(offset),
-                startDate.shiftedBy(+1000), IntervalEndpointType.CLOSED);
 
         // AbstractOrientationAngleLeg creation
         OrientationAngleProfileSequence provider1 = new OrientationAngleProfileSequence();
@@ -1083,7 +1070,15 @@ public class OrientationAngleProviderTest {
             Assert.assertTrue(true);
         }
 
+        // Quick test for coverage: OrientationAngleLegsSequence constructor and nature getter
+        OrientationAngleLegsSequence<LinearLeg> provider = new OrientationAngleLegsSequence<>();
+        Assert.assertEquals(OrientationAngleLegsSequence.DEFAULT_ORIENTATION_SEQUENCE_NATURE, provider.getNature());
 
+        provider = new OrientationAngleLegsSequence<>("customNature");
+        Assert.assertEquals("customNature", provider.getNature());
+
+        Assert.assertEquals("ORIENTATION_ANGLE_LEGS_SEQUENCE",
+            OrientationAngleLegsSequence.DEFAULT_ORIENTATION_SEQUENCE_NATURE);
     }
 
     /**

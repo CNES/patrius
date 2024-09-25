@@ -20,6 +20,7 @@
  */
 /* 
  * HISTORY
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -31,7 +32,17 @@
  */
 package fr.cnes.sirius.patrius.math.linear;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.Assert;
@@ -691,6 +702,143 @@ public final class MatrixUtilsTest {
         } catch (final OutOfRangeException e) {
             final String expectedMessage = "column index (5)";
             Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+    }
+
+    /**
+     * Tests the method that writes a file with the matrix structure.
+     * 
+     * <p>
+     * Tested method:<br>
+     * {@linkplain MatrixUtils#writeMatrixStructure(RealMatrix, String))}
+     * </p>
+     * 
+     * @throws IOException
+     *         if an I/O exception occurs
+     */
+    @Test
+    public void testWriteMatrixStructure() throws IOException {
+        // Tested matrix
+        final double[][] data = { { 0.97900, -1.10616, 0. },
+            { 0., 163728819.73891395, -1.8820193993901e-8 },
+            { -567.45351595, 0., 12825.957862586648e-6 } };
+        final RealMatrix matrix = new Array2DRowRealMatrix(data);
+
+        // Write the matrix structure
+        final String outputFileName = "target/MatrixStructure";
+        final File file = new File(outputFileName);
+        MatrixUtils.writeMatrixStructure(matrix, outputFileName);
+
+        // Read the matrix structure
+        final InputStream input = new FileInputStream(outputFileName);
+        final BufferedReader r = new BufferedReader(new InputStreamReader(input, Charset.forName("UTF-8")));
+        final List<String> readMatrixStructure = new ArrayList<>(3);
+        for (String line = r.readLine(); line != null; line = r.readLine()) {
+            readMatrixStructure.add(line);
+        }
+        r.close();
+        file.delete(); // Clear the temporary file
+
+        // Evaluate the matrix structure
+        Assert.assertEquals(3, readMatrixStructure.size());
+        Assert.assertEquals("110", readMatrixStructure.get(0));
+        Assert.assertEquals("011", readMatrixStructure.get(1));
+        Assert.assertEquals("101", readMatrixStructure.get(2));
+    }
+
+    /**
+     * Tests the method that writes a file with the matrix.
+     * 
+     * <p>
+     * Tested method:<br>
+     * {@linkplain MatrixUtils#writeMatrix(RealMatrix, String))}
+     * {@linkplain MatrixUtils#writeMatrix(RealMatrix, String, String))}
+     * </p>
+     * 
+     * @throws IOException
+     *         if an I/O exception occurs
+     */
+    @Test
+    public void testWriteMatrix() throws IOException {
+        // Tested matrix
+        final double[][] data = { { 0.97900, -1.10616, 0. },
+            { 0., 163728819.73891395, -1.8820193993901e-8 },
+            { -567.45351595, 0., 12825.957862586648e-6 } };
+        final RealMatrix matrix = new Array2DRowRealMatrix(data);
+
+        // Write the matrix
+        final String outputFileName = "target/Matrix";
+        final File file = new File(outputFileName);
+        MatrixUtils.writeMatrix(matrix, outputFileName);
+
+        // Read the matrix
+        final InputStream input = new FileInputStream(outputFileName);
+        final BufferedReader r = new BufferedReader(new InputStreamReader(input, Charset.forName("UTF-8")));
+        final List<String> readMatrixStructure = new ArrayList<>(3);
+        for (String line = r.readLine(); line != null; line = r.readLine()) {
+            readMatrixStructure.add(line);
+        }
+        r.close();
+        file.delete(); // Clear the temporary file
+
+        // Evaluate the matrix
+        Assert.assertEquals(3, readMatrixStructure.size());
+        Assert.assertEquals(" 9.79000000000000000E-01 -1.10616000000000000E+00  0.00000000000000000E+00 ",
+            readMatrixStructure.get(0));
+        Assert.assertEquals(" 0.00000000000000000E+00  1.63728819738913950E+08 -1.88201939939010000E-08 ",
+            readMatrixStructure.get(1));
+        Assert.assertEquals("-5.67453515950000000E+02  0.00000000000000000E+00  1.28259578625866490E-02 ",
+            readMatrixStructure.get(2));
+    }
+
+    /**
+     * @throws FileNotFoundException
+     *         if the file does not exist, is a directory rather than a regular file, or for some other reason cannot be
+     *         opened for reading
+     * @throws IOException
+     *         if an I/O error occurs
+     * @throws ClassNotFoundException
+     *         Class of a serialized object cannot be found
+     *         Tests the matrix serialization / deserialization process.
+     * 
+     *         <p>
+     *         Tested methods:<br>
+     *         {@linkplain MatrixUtils#serializeRealMatrix(RealMatrix, java.io.ObjectOutputStream)}
+     *         {@linkplain MatrixUtils#serializeRealMatrix(RealMatrix, String)}
+     *         {@linkplain MatrixUtils#deserializeRealMatrix(String)}
+     *         {@linkplain MatrixUtils#deserializeRealMatrix(java.io.ObjectInputStream)}
+     *         </p>
+     */
+    @Test
+    public void testSerialization() throws FileNotFoundException, IOException, ClassNotFoundException {
+
+        // Initialize data
+        final double[][] data1 = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+        final Array2DRowRealMatrix matrix1 = new Array2DRowRealMatrix(data1);
+
+        final double[] data2 = { 9.76533, -7.61515, 0.86068, 2.65402 };
+        final DiagonalMatrix matrix2 = new DiagonalMatrix(data2);
+
+        final File file = File.createTempFile("matrixTest", ".temp"); // creating a .temp file
+        final String fileName = file.getAbsolutePath();
+
+        // Evaluate the first matrix serialization / deserialization
+        MatrixUtils.serializeRealMatrix(matrix1, fileName);
+        final RealMatrix deserializedMatrix1 = MatrixUtils.deserializeRealMatrix(fileName);
+
+        Assert.assertEquals(matrix1.getClass(), deserializedMatrix1.getClass());
+        CheckUtils.checkEquality(matrix1, deserializedMatrix1, 0., 0.);
+
+        // Evaluate the second matrix serialization / deserialization
+        MatrixUtils.serializeRealMatrix(matrix2, fileName);
+        final RealMatrix deserializedMatrix2 = MatrixUtils.deserializeRealMatrix(fileName);
+
+        Assert.assertEquals(matrix2.getClass(), deserializedMatrix2.getClass());
+        CheckUtils.checkEquality(matrix2, deserializedMatrix2, 0., 0.);
+
+        // At the end of the test, clean the temporary file (print an error message if it fails)
+        if (!file.delete()) {
+            System.err.println("MatrixUtilsTest#testSerialization: Failed to delete the temporary file");
         }
     }
 }

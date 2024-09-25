@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
+ * juliens dans TidesToolbox.computeFundamentalArguments()
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.7:DM:DM-2682:18/05/2021: Echelle de temps TDB (diff. PATRIUS - SPICE) 
  * END-HISTORY
@@ -21,7 +23,6 @@
 package fr.cnes.sirius.patrius.time;
 
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.utils.Constants;
 
 /**
  * Barycentric Dynamic Time default model.
@@ -51,7 +52,8 @@ public class TDBDefaultModel implements TDBModel {
     /** {@inheritDoc} */
     @Override
     public double offsetFromTAI(final AbsoluteDate date) {
-        final double dtDays = date.durationFrom(AbsoluteDate.J2000_EPOCH) / Constants.JULIAN_DAY;
+        // Duration in days since J2000 epoch
+        final double dtDays = date.durationFromJ2000EpochInDays();
         final double g = MathLib.toRadians(C1 + C2 * dtDays);
         return TimeScalesFactory.getTT().offsetFromTAI(date)
             + (COEF_SIN * MathLib.sin(g) + COEF_SIN2 * MathLib.sin(2 * g));

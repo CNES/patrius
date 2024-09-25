@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -45,7 +47,7 @@ import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
 import fr.cnes.sirius.patrius.forces.atmospheres.SimpleExponentialAtmosphere;
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.ClassicalRungeKuttaIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.RungeKutta6Integrator;
@@ -206,7 +208,7 @@ public class StelaDifferentialEquationsTest {
         };
         propDrag.setInitialState(new SpacecraftState(equorbit), 1000, false);
         propDrag2.setInitialState(new SpacecraftState(equorbit), 1000, false);
-        final Frame mod = FramesFactory.getMOD(false);
+        final CelestialBodyFrame mod = FramesFactory.getMOD(false);
         final Atmosphere atmosphere = new SimpleExponentialAtmosphere(
             new OneAxisEllipsoid(Utils.ae, 1.0 / 298.257222101, mod),
             0.0004, 42000.0, 7500.0);

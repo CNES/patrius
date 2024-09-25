@@ -29,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -36,7 +37,6 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.signalpropagation.ConstantMeteorologicalConditionsProvider;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditions;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditionsProvider;
-import fr.cnes.sirius.patrius.signalpropagation.troposphere.AbstractTroposphericCorrectionFactory.TroposphericCorrectionKey;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -53,8 +53,7 @@ public class SaastamoinenModelFactoryTest {
      *         if the precession-nutation model data embedded in the library cannot be read
      * @description Builds a new instance of the factory and use it.
      *
-     * @testedMethod {@link AbstractTroposphericCorrectionFactory#AbstractTroposphericCorrectionFactory()}
-     * @testedMethod {@link AbstractTroposphericCorrectionFactory#getTropoCorrection(MeteorologicalConditionsProvider, EllipsoidPoint)}
+     * @testedMethod {@link AbstractMeteoBasedCorrectionFactory#getCorrectionModel(MeteorologicalConditionsProvider, BodyPoint)}
      * @testedMethod {@link SaastamoinenModelFactory#SaastamoinenModelFactory()}
      * 
      * @testPassCriteria The instance is build without error and the factory achieves to build the expected models.
@@ -71,41 +70,30 @@ public class SaastamoinenModelFactoryTest {
         final double pressure = 102000.;
         final double temperature = 20 + 273.16;
         final double humidity = 0.2;
-        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.GRS80_EARTH_EQUATORIAL_RADIUS,
-            Constants.GRS80_EARTH_FLATTENING, FramesFactory.getITRF(), "Earth");
-        final EllipsoidPoint ellipsoidPoint = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),
-            MathLib.toRadians(67.8805741), MathLib.toRadians(21.0310484), 150., "");
-        final MeteorologicalConditions meteoConditions = new MeteorologicalConditions(pressure, temperature,
-            humidity);
+        final MeteorologicalConditions meteoConditions = new MeteorologicalConditions(pressure, temperature, humidity);
         final MeteorologicalConditionsProvider meteoConditionsProvider = new ConstantMeteorologicalConditionsProvider(
             meteoConditions);
-
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.GRS80_EARTH_EQUATORIAL_RADIUS,
+            Constants.GRS80_EARTH_FLATTENING, FramesFactory.getITRF(), "Earth");
+        final BodyPoint ellipsoidPoint = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),
+            MathLib.toRadians(67.8805741), MathLib.toRadians(21.0310484), 150., "");
         final double elevation = MathLib.PI / 12.;
 
         // Tropospheric factory and model initialization
-        final AbstractTroposphericCorrectionFactory tropoFactory = new SaastamoinenModelFactory();
+        final AbstractMeteoBasedCorrectionFactory<SaastamoinenModel> tropoFactory = new SaastamoinenModelFactory();
 
         // Initialize reference tropospheric correction model and compute the reference signal delay
-        final TroposphericCorrection refTropoCorr = new SaastamoinenModel(meteoConditionsProvider,
-            ellipsoidPoint.getLLHCoordinates().getHeight());
+        final SaastamoinenModel refTropoCorr =
+            new SaastamoinenModel(meteoConditionsProvider, ellipsoidPoint.getLLHCoordinates().getHeight());
         final double expectedTropoDelay = refTropoCorr.computeSignalDelay(defaultDate, elevation);
 
-        // Call the method AbstractTroposphericCorrectionFactory#getTropoCorrection(...) to initialize the
-        // tropospheric correction
-        final TroposphericCorrection tropoCorrection1 = tropoFactory.getTropoCorrection(meteoConditionsProvider,
-            ellipsoidPoint);
-        Assert.assertNotNull(tropoCorrection1);
-
-        // Call the method SaastamoinenModelFactory#buildTropoCorrection(Key) to initialize the tropospheric
+        // Call the method AbstractMeteoBasedCorrectionFactory#getCorrectionModel(...) to initialize the tropospheric
         // correction
-        final TroposphericCorrection tropoCorrection2 = tropoFactory
-            .buildTropoCorrection(new TroposphericCorrectionKey(meteoConditionsProvider, ellipsoidPoint));
-        Assert.assertNotNull(tropoCorrection2);
+        final SaastamoinenModel tropoCorrection = tropoFactory.getCorrectionModel(meteoConditionsProvider,
+            ellipsoidPoint);
+        Assert.assertNotNull(tropoCorrection);
 
-        // Compute and evaluate the signal delays
-        Assert.assertEquals(expectedTropoDelay, tropoCorrection1.computeSignalDelay(defaultDate, elevation),
-            0.);
-        Assert.assertEquals(expectedTropoDelay, tropoCorrection2.computeSignalDelay(defaultDate, elevation),
-            0.);
+        // Compute and evaluate the signal delay
+        Assert.assertEquals(expectedTropoDelay, tropoCorrection.computeSignalDelay(defaultDate, elevation), 0.);
     }
 }

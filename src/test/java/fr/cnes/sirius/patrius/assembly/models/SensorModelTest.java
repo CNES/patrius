@@ -18,6 +18,13 @@
  * @history creation 20/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10.2:FA:FA-3289:31/01/2023:[PATRIUS] Problemes sur le masquage d une visi avec LIGHT_TIME
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -55,13 +62,17 @@ import fr.cnes.sirius.patrius.assembly.properties.SensorProperty;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
+import fr.cnes.sirius.patrius.bodies.ApparentRadiusProvider;
+import fr.cnes.sirius.patrius.bodies.ConstantRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.events.sensor.SecondarySpacecraft;
-import fr.cnes.sirius.patrius.events.sensor.SensorVisibilityDetector;
-import fr.cnes.sirius.patrius.events.sensor.VisibilityFromStationDetector.LinkType;
+import fr.cnes.sirius.patrius.bodies.VariableRadiusProvider;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.SensorVisibilityDetector;
+import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -86,10 +97,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.ApparentRadiusProvider;
-import fr.cnes.sirius.patrius.propagation.events.ConstantRadiusProvider;
-import fr.cnes.sirius.patrius.propagation.events.VariableRadiusProvider;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -311,7 +318,7 @@ public class SensorModelTest {
 
         // Test getNativeFrame
         Assert.assertEquals(assembly.getPart(this.part2).getFrame(),
-                sensorModel.getNativeFrame(null, null));
+                sensorModel.getNativeFrame(null));
     }
 
     /**
@@ -1454,7 +1461,7 @@ public class SensorModelTest {
         // Masking CelestialBody
         final Transform moonPos = new Transform(AbsoluteDate.J2000_EPOCH, new Vector3D(384403000.,
                 -1737000., 0.));
-        final Frame moonFrame = new Frame(FramesFactory.getEME2000(), moonPos, "moon frame");
+        final CelestialBodyFrame moonFrame = new CelestialBodyFrame(FramesFactory.getEME2000(), moonPos, "moon frame", null);
         final EllipsoidBodyShape moon = new OneAxisEllipsoid(1737000., 0., moonFrame, "moon");
 
         sensor.addMaskingCelestialBody(moon);
@@ -1543,7 +1550,7 @@ public class SensorModelTest {
         final Line groundLine = new Line(Vector3D.ZERO, new Vector3D(azim, 0));
 
         // Position satellite dans le TopoFrame
-        final double req = elli.getEquatorialRadius();
+        final double req = elli.getARadius();
         // Distance au satellite sur la ligne tangente au sol
         final double distSat = MathLib.sqrt(MathLib.pow(req + altSat, 2) - MathLib.pow(req, 2));
         final Vector3D topoSatPos = groundLine.pointAt(distSat);
@@ -1618,7 +1625,7 @@ public class SensorModelTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

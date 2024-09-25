@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
+ * à  l'interface DatePolynomialFunctionInterface
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] QuaternionPolynomialSegment plus generique et coherent
@@ -227,6 +229,23 @@ public class DatePolynomialChebyshevFunction implements DatePolynomialFunctionIn
     public Double getTimeFactor() {
         // Return null because the real time is used
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public DatePolynomialChebyshevFunction copy(final AbsoluteDate newOriginDate) {
+
+        // Compute the new shifted start/end range
+        final double delta = this.originDate.durationFrom(newOriginDate);
+        final double newStart = this.fct.getStart() + delta;
+        final double newEnd = this.fct.getEnd() + delta;
+
+        // Build the new polynomial Chebyshev function with the shifted range and the same coefficients
+        final PolynomialChebyshevFunction newPolyFunction = new PolynomialChebyshevFunction(newStart, newEnd,
+            this.fct.getCoefficients());
+
+        // Build the new date polynomial Chebyshev function with the new origin date and the new polynomial function
+        return new DatePolynomialChebyshevFunction(newOriginDate, newPolyFunction);
     }
 
     /** {@inheritDoc} */

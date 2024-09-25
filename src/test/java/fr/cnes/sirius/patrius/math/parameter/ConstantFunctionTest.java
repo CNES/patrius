@@ -58,6 +58,7 @@ public class ConstantFunctionTest {
      * @testedMethod {@link ConstantFunction#ConstantFunction(double)}
      * @testedMethod {@link ConstantFunction#ConstantFunction(String, double)}
      * @testedMethod {@link ConstantFunction#ConstantFunction(Parameter)}
+     * @testedMethod {@link ConstantFunction#getParameter()}
      * @testedMethod {@link ConstantFunction#getParameters()}
      * @testedMethod {@link ConstantFunction#value()}
      *
@@ -70,23 +71,27 @@ public class ConstantFunctionTest {
         ConstantFunction cstFct = new ConstantFunction(1.2);
         Assert.assertEquals(1, cstFct.getParameters().size());
         Assert.assertTrue(cstFct.getParameters().get(0).getName().equals("A0"));
+        Assert.assertEquals(1.2, cstFct.getParameter().getValue(), 0.);
         Assert.assertEquals(1.2, cstFct.getParameters().get(0).getValue(), 0.);
         Assert.assertEquals(1.2, cstFct.value(), 0.);
 
         cstFct = new ConstantFunction("cstA0", 1.1);
         Assert.assertEquals(1, cstFct.getParameters().size());
         Assert.assertTrue(cstFct.getParameters().get(0).getName().equals("cstA0"));
+        Assert.assertEquals(1.1, cstFct.getParameter().getValue(), 0.);
         Assert.assertEquals(1.1, cstFct.getParameters().get(0).getValue(), 0.);
         Assert.assertEquals(1.1, cstFct.value(), 0.);
 
         final Parameter paramA0 = new Parameter("a0", 0.5);
         cstFct = new ConstantFunction(paramA0);
         Assert.assertEquals(1, cstFct.getParameters().size());
-        Assert.assertTrue(cstFct.getParameters().get(0).equals(paramA0));
+        Assert.assertEquals(paramA0, cstFct.getParameter());
+        Assert.assertEquals(paramA0, cstFct.getParameters().get(0));
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the {@link ConstantFunction} values computation feature.
      * 
      * @testedMethod {@link ConstantFunction#value(SpacecraftState)}
@@ -116,7 +121,8 @@ public class ConstantFunctionTest {
     }
 
     /**
-     * @throws PatriusException if attitude cannot be computed if attitude events cannot be computed
+     * @throws PatriusException
+     *         if attitude cannot be computed if attitude events cannot be computed
      * @description Evaluate the {@link ConstantFunction} derivatives computation feature.
      * 
      * @testedMethod {@link ConstantFunction#derivativeValue(Parameter, SpacecraftState)}
@@ -132,7 +138,7 @@ public class ConstantFunctionTest {
         // Evaluate the derivatives
         Assert.assertEquals(1.0, cstFct.derivativeValue(paramA0, this.state.shiftedBy(10.)), 0.);
         Assert.assertEquals(0.,
-                cstFct.derivativeValue(new Parameter("random", 1.), this.state.shiftedBy(10.)), 0.);
+            cstFct.derivativeValue(new Parameter("random", 1.), this.state.shiftedBy(10.)), 0.);
     }
 
     /**
@@ -181,13 +187,25 @@ public class ConstantFunctionTest {
     }
 
     /**
-     * Initial state initialization.
+     * @description Check the String representation method behavior.
+     *
+     * @testedMethod {@link ConstantFunction#toString()}
+     *
+     * @testPassCriteria The container String representation contains the expected information.
      */
+    @Test
+    public void testToString() {
+        final ConstantFunction cstFct = new ConstantFunction("cstA0", 1.1);
+        final String expectedText = "Value    : f = 1.1\n" + "Parameter: [cstA0]\n";
+        Assert.assertEquals(expectedText, cstFct.toString());
+    }
+
+    /** Initial state initialization. */
     @Before
     public void setUp() {
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Orbit orbit = new KeplerianOrbit(7000000, 0.01, 0, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);
+            FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);
         this.state = new SpacecraftState(orbit);
     }
 }

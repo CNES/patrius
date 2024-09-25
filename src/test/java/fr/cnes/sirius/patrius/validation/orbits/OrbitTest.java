@@ -17,6 +17,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -301,9 +304,9 @@ public class OrbitTest {
 
         // ... computes ix and iy as there is no getters for them in OREKIT
         final double actual_ix = 2. * MathLib.sin(orbit.getI() / 2.)
-            * MathLib.cos(orbit.getRightAscensionOfAscendingNode());
+                * MathLib.cos(orbit.getRightAscensionOfAscendingNode());
         final double actual_iy = 2. * MathLib.sin(orbit.getI() / 2.)
-            * MathLib.sin(orbit.getRightAscensionOfAscendingNode());
+                * MathLib.sin(orbit.getRightAscensionOfAscendingNode());
         // ... and &omega; + &Omega; + M
         final double actual_LM = MathUtils.normalizeAngle(orbit.getLM(), FastMath.PI);
 
@@ -1180,9 +1183,9 @@ public class OrbitTest {
 
         // ... expected vs. actual values comparisons
         final double actual_ix = 2. * MathLib.sin(cOrbit.getI() / 2.)
-            * MathLib.cos(cOrbit.getRightAscensionOfAscendingNode());
+                * MathLib.cos(cOrbit.getRightAscensionOfAscendingNode());
         final double actual_iy = 2. * MathLib.sin(cOrbit.getI() / 2.)
-            * MathLib.sin(cOrbit.getRightAscensionOfAscendingNode());
+                * MathLib.sin(cOrbit.getRightAscensionOfAscendingNode());
 
         validate.assertEqualsWithRelativeTolerance(cOrbit.getA(), 2.446456E7, this.epsilonNonReg, expected_a,
             this.epsilonDistance, "Keplerian2CircularEquatorial_A");
@@ -1734,7 +1737,7 @@ public class OrbitTest {
         Assert.assertEquals(Constants.EGM96_EARTH_MU, orbit.getMu(), 0.0);
 
         // Test getNativeFrame
-        Assert.assertEquals(nonInertialFrame, orbit.getNativeFrame(null, null));
+        Assert.assertEquals(nonInertialFrame, orbit.getNativeFrame(null));
     }
 
     /**
@@ -1789,8 +1792,8 @@ public class OrbitTest {
 
     private static void assertAngleEqualsRelative(final double actual, final double nonRegExpected,
                                                   final double nonRegEps,
-                                           final double externalRefExpected, final double externalRefEps,
-                                           final String deviationDesciption) {
+                                                  final double externalRefExpected, final double externalRefEps,
+                                                  final String deviationDesciption) {
         final double actual_angle = MathUtils.normalizeAngle(actual, FastMath.PI);
         final double nonRegExpected_angle = MathUtils.normalizeAngle(nonRegExpected, FastMath.PI);
         final double externalRefExpected_angle = MathUtils.normalizeAngle(externalRefExpected, FastMath.PI);
@@ -1926,7 +1929,8 @@ public class OrbitTest {
         final RealMatrix stateTransMatEquin = equinoctial.getKeplerianTransitionMatrix(dt);
         final RealMatrix stateTransMatKeple = keplerian.getKeplerianTransitionMatrix(dt);
 
-        final double dMda0Alter = -3. / 2. * dt * alternateEqinoctial.getKeplerianMeanMotion() / alternateEqinoctial.getA();
+        final double dMda0Alter = -3. / 2. * dt * alternateEqinoctial.getKeplerianMeanMotion()
+                / alternateEqinoctial.getA();
         final double dMda0Apsis = -3. / 2. * dt * apsis.getKeplerianMeanMotion() / apsis.getA();
         final double dMda0Carte = -3. / 2. * dt * cartesian.getKeplerianMeanMotion() / cartesian.getA();
         final double dMda0Circu = -3. / 2. * dt * circular.getKeplerianMeanMotion() / circular.getA();
@@ -1973,10 +1977,12 @@ public class OrbitTest {
         final RealMatrix jacobT0Apsis = apsis.getJacobian(OrbitType.EQUINOCTIAL, apsis.getType());
         final RealMatrix jacobTApsis = apsis.shiftedBy(dt).getJacobian(apsis.getType(), OrbitType.EQUINOCTIAL);
         expectApsis = jacobTApsis.multiply(expectApsis.multiply(jacobT0Apsis));
-        
+
         // Expected specific case for the alternate eqinoctial orbit
-        final RealMatrix jacobT0Alter = alternateEqinoctial.getJacobian(OrbitType.EQUINOCTIAL, alternateEqinoctial.getType());
-        final RealMatrix jacobTAlter = alternateEqinoctial.shiftedBy(dt).getJacobian(alternateEqinoctial.getType(), OrbitType.EQUINOCTIAL);
+        final RealMatrix jacobT0Alter = alternateEqinoctial.getJacobian(OrbitType.EQUINOCTIAL,
+            alternateEqinoctial.getType());
+        final RealMatrix jacobTAlter = alternateEqinoctial.shiftedBy(dt).getJacobian(alternateEqinoctial.getType(),
+            OrbitType.EQUINOCTIAL);
         expectAlter = jacobTAlter.multiply(expectAlter.multiply(jacobT0Alter));
 
         final double threshold = 0.0;
@@ -2016,14 +2022,15 @@ public class OrbitTest {
 
         // Create reference orbit
         final KeplerianOrbit refOrbit = new KeplerianOrbit(6600.0e3, 0.9, 0.9, 0.5, 0.6, 1.2, PositionAngle.TRUE,
-                FramesFactory.getCIRF(), new AbsoluteDate(), Constants.CNES_STELA_MU);
+            FramesFactory.getCIRF(), new AbsoluteDate(), Constants.CNES_STELA_MU);
 
         // Create shifted orbit
         final KeplerianOrbit shiftedOrbit = (KeplerianOrbit) refOrbit.shiftedBy(0.0);
 
         // Check
         Assert.assertEquals(refOrbit.getAnomaly(PositionAngle.TRUE), shiftedOrbit.getAnomaly(PositionAngle.TRUE), 0.);
-        Assert.assertEquals(0, refOrbit.getPVCoordinates().getPosition().distance(shiftedOrbit.getPVCoordinates().getPosition()), 0);
+        Assert.assertEquals(0,
+            refOrbit.getPVCoordinates().getPosition().distance(shiftedOrbit.getPVCoordinates().getPosition()), 0);
     }
 
     /**
@@ -2041,7 +2048,8 @@ public class OrbitTest {
      */
     @Test
     public void testFT3236() throws PatriusException {
-        final Orbit orbit = new KeplerianOrbit(7000000, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getITRF(), AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU);
+        final Orbit orbit = new KeplerianOrbit(7000000, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getITRF(),
+            AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU);
         try {
             orbit.shiftedBy(0.);
             Assert.assertTrue(true);
@@ -2073,30 +2081,30 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.05, MathLib.toRadians(87), 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
+            PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
         // Expected Jacobians matrix
         final double[][] data = new double[][] {
-                { +2.204306835773834E+00, +3.669944621123036E-06, +2.112586370976925E-07, -1.572050644978659E-04,
-                        -1.704332216611806E+01, +1.936376436167167E+03 },
-                { +2.790373450945979E-08, +1.136625868316173E-09, +1.479339834266202E-07, +1.300902487119967E-04,
-                        -4.119931847401096E-07, +4.679052043793395E-05 },
-                { +1.551538246640517E-07, -2.038978366889197E-10, -2.660526106150696E-08, -2.339618294857573E-05,
-                        -2.289902374454298E-06, +2.601704259749061E-04 },
-                { +1.643522396317823E-09, -1.493057256702297E-07, -1.314093189553968E-09, -1.579355588130542E-12,
-                        -2.253848742465685E-05, -1.983760466926656E-07 },
-                { +9.138577951737561E-09, +2.685197754972047E-08, +2.365902854170666E-10, -8.781729621961646E-12,
-                        -1.253213044949092E-04, -1.103035198576391E-06 },
-                { -2.250783255889947E-13, +1.423051064260026E-07, -2.215922530622735E-09, -1.292001406190715E-04,
-                        +3.236323218084077E-09, +1.799587214307209E-11 } };
+            { 2.204306835773844, 3.669944621178491E-6, 2.1125863709767918E-7, -1.5720506449827532E-4,
+                -17.043322166118156, 1936.37643616718 },
+            { 2.7903734509459815E-8, 1.1366258683158936E-9, 1.479339834266202E-7, 1.300902487119969E-4,
+                -4.119931847401028E-7, 4.6790520437934E-5 },
+            { 1.5515382466405203E-7, -2.0389783668885803E-10, -2.6605261061506936E-8, -2.339618294857574E-5,
+                -2.2899023744542958E-6, 2.6017042597490644E-4 },
+            { 1.6435223963178277E-9, -1.493057256702297E-7, -1.314093189553967E-9, -1.5793555872835114E-12,
+                -2.253848742465682E-5, -1.9837604669266517E-7 },
+            { 9.138577951737556E-9, 2.685197754972044E-8, 2.3659028541706616E-10, -8.781729611797241E-12,
+                -1.2532130449490915E-4, -1.1030351985763899E-6 },
+            { -2.250783256318013E-13, 1.423051064260026E-7, -2.2159225306228586E-9, -1.2920014061907148E-4,
+                3.236323218084077E-9, 1.79958721288512E-11 } };
         final RealMatrix expected = new Array2DRowRealMatrix(data);
 
         // Computed Jacobians matrix
         final RealMatrix actual = ORBIT.getJacobian(0., FramesFactory.getGCRF(),
-                FramesFactory.getITRF(), OrbitType.CARTESIAN, OrbitType.EQUINOCTIAL, PositionAngle.MEAN,
-                PositionAngle.ECCENTRIC);
+            FramesFactory.getITRF(), OrbitType.CARTESIAN, OrbitType.EQUINOCTIAL, PositionAngle.MEAN,
+            PositionAngle.ECCENTRIC);
 
         // Check equality
-        CheckUtils.checkEquality(expected, actual, 0, 1E-14);
+        CheckUtils.checkEquality(expected, actual, 1e-12, 1e-12);
     }
 
     /**
@@ -2121,8 +2129,8 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.0, 0, 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getGCRF(), DATE, Constants.CNES_STELA_MU);
-        
+            PositionAngle.TRUE, FramesFactory.getGCRF(), DATE, Constants.CNES_STELA_MU);
+
         final LocalOrbitalFrame lof = new LocalOrbitalFrame(FramesFactory.getGCRF(), LOFType.QSW, ORBIT, "");
         System.out.println(FramesFactory.getGCRF().getTransformJacobian(lof, DATE));
     }
@@ -2149,7 +2157,7 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.05, MathLib.toRadians(87), 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
+            PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
         // Fixed orbit type and position angle
         final Frame frame = FramesFactory.getGCRF();
         final PositionAngle angleType = PositionAngle.MEAN;
@@ -2192,7 +2200,7 @@ public class OrbitTest {
 
             // Computed Jacobians matrix
             final RealMatrix actual = ORBIT.getJacobian(0., frame, frame, initOrbitType,
-                    destOrbitType, angleType, angleType);
+                destOrbitType, angleType, angleType);
 
             // Check equality
             CheckUtils.checkEquality(expected, actual, 0, 1E-14);
@@ -2221,7 +2229,7 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.05, MathLib.toRadians(87), 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
+            PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
         // Fixed orbit type and position angle
         final Frame frame = FramesFactory.getGCRF();
         final OrbitType orbitType = OrbitType.KEPLERIAN;
@@ -2254,7 +2262,7 @@ public class OrbitTest {
 
             // Computed Jacobians matrix
             final RealMatrix actual = ORBIT.getJacobian(0., frame, frame, orbitType,
-                    orbitType, initAngleType, destAngleType);
+                orbitType, initAngleType, destAngleType);
 
             // Check equality
             CheckUtils.checkEquality(expected, actual, 0, 1E-14);
@@ -2285,7 +2293,7 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.05, MathLib.toRadians(87), 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
+            PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
         final double dt = 0;
 
         final Frame initFrame = FramesFactory.getGCRF();
@@ -2298,10 +2306,10 @@ public class OrbitTest {
         final PositionAngle destAngleType = PositionAngle.ECCENTRIC;
 
         final RealMatrix actual = ORBIT.getJacobian(dt, initFrame, destFrame,
-                initOrbitType, destOrbitType, initAngleType, destAngleType);
+            initOrbitType, destOrbitType, initAngleType, destAngleType);
 
         final RealMatrix expected = ORBIT.getJacobian(initFrame, destFrame,
-                initOrbitType, destOrbitType, initAngleType, destAngleType);
+            initOrbitType, destOrbitType, initAngleType, destAngleType);
 
         CheckUtils.checkEquality(expected, actual, 0, 1E-14);
     }
@@ -2330,7 +2338,7 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.05, MathLib.toRadians(87), 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
+            PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
         final double dt = -150;
 
         final Frame initFrame = FramesFactory.getGCRF();
@@ -2343,24 +2351,24 @@ public class OrbitTest {
         final PositionAngle destAngleType = PositionAngle.ECCENTRIC;
 
         final RealMatrix actual = ORBIT.getJacobian(dt, initFrame, destFrame,
-                initOrbitType, destOrbitType, initAngleType, destAngleType);
+            initOrbitType, destOrbitType, initAngleType, destAngleType);
 
         final double[][] data = {
-                { -4.113029217053092E+09, -7.000838307218823E+06, -6.962899661348412E+04, +1.537009326106234E+04,
-                        -1.643528348457151E+02, +3.637804328920121E+03 },
-                { -4.533665742762486E+09, +6.883057294102346E+06, +8.911055700668189E+04, +1.960224086667627E+06,
-                        -2.096073069364949E+04, +1.548539035684762E+04 },
-                { -5.845169617810908E+01, -1.277425765399821E-01, +2.075208573099659E-02, +1.051721551974414E+00,
-                        -2.252954114680912E-02, +2.036686744443759E-02 },
-                { +1.424627987647924E+01, -1.911682802581024E-01, +2.118370419314648E+01, -5.391856550957956E-01,
-                        -1.046669459851269E+00, -6.597416764955573E-02 },
-                { +4.077445020023145E-01, +6.922522637407933E-04, -1.887718534824362E-03, -4.841178010716536E-06,
-                        +9.933419368790238E-01, +5.744791744025219E-02 },
-                { -1.717175908863360E+02, +1.369740432276837E-02, -2.019314858147541E+01, +5.279208429008163E-01,
-                        -5.645072260276308E-03, +1.015027848403688E+00 } };
+            { -4113029217.0530915, -7000838.307218814, -69628.99661345014, 15370.093261063166, -164.352834845817,
+                3637.8043289184466 },
+            { -4533665742.762493, 6883057.294102375, 89110.55700664083, 1960224.0866676348, -20960.730693648555,
+                15485.390356848462 },
+            { -58.45169617810904, -0.12774257653998197, 0.02075208573099651, 1.051721551974413, -0.022529541146809096,
+                0.020366867444437595 },
+            { 14.246279876474361, -0.1911682802579954, 21.183704193145807, -0.539185655095765, -1.0466694598512518,
+                -0.06597416764953326 },
+            { 0.4077445020022843, 0.0006922522637407573, -0.0018877185348244035, -0.000004841178010686137,
+                0.9933419368790236, 0.057447917440252155 },
+            { -171.71759088633252, 0.013697404322658232, -20.193148581474777, 0.5279208429007883,
+                -0.005645072260295181, 1.0150278484036699 } };
         final RealMatrix expected = new Array2DRowRealMatrix(data);
 
-        CheckUtils.checkEquality(expected, actual, 0, 1E-14);
+        CheckUtils.checkEquality(expected, actual, 1e-12, 1e-12);
     }
 
     /**
@@ -2387,7 +2395,7 @@ public class OrbitTest {
         // Orbit used for the tests
         final AbsoluteDate DATE = AbsoluteDate.J2000_EPOCH;
         final Orbit ORBIT = new KeplerianOrbit(7000000, 0.05, MathLib.toRadians(87), 0, 0, 0,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
+            PositionAngle.TRUE, FramesFactory.getEME2000(), DATE, Constants.CNES_STELA_MU);
         final double dt = +75;
 
         final Frame initFrame = FramesFactory.getGCRF();
@@ -2400,24 +2408,24 @@ public class OrbitTest {
         final PositionAngle destAngleType = PositionAngle.ECCENTRIC;
 
         final RealMatrix actual = ORBIT.getJacobian(dt, initFrame, destFrame,
-                initOrbitType, destOrbitType, initAngleType, destAngleType);
+            initOrbitType, destOrbitType, initAngleType, destAngleType);
 
         final double[][] data = {
-                { +5.037675915878851E-01, +4.954453705864932E-01, +9.389162649247157E+05, -5.100546956739944E+03,
-                        +2.565880102628035E+01, -5.373873237394642E+03 },
-                { -7.451138896665683E-08, +6.763918775553840E-08, +1.276600631467243E-01, -6.934975683250265E-04,
-                        +3.488707440208775E-06, -4.617104106788447E-04 },
-                { +1.607910555270652E-08, -1.962592846642505E-09, +9.994508402434646E-01, -1.086193413710230E-02,
-                        +2.571456836227956E-05, -1.144389951544147E-02 },
-                { -6.119932614291081E-09, +7.084907277740665E-09, +2.565952830849497E-01, +9.972793998539775E-01,
-                        -2.047543278236604E-05, -6.743333469426079E-02 },
-                { +1.204768472583595E-11, +5.892595341847223E-14, -2.806478002459775E-05, +6.017602974677235E-02,
-                        +9.999997844268929E-01, +6.661949626498108E-02 },
-                { -9.662955167535264E-09, -1.013645566243493E-08, -2.511608721498421E-01, +1.364400500786995E-03,
-                        -6.863750353106600E-06, +1.118366452022012E+00 } };
+            { 0.5037675915878853, 0.4954453705864926, 938916.264924715, -5100.546956739478, 25.658801027684586,
+                -5373.873237394409 },
+            { -0.00000007451138896665679, 0.00000006763918775553833, 0.1276600631467242, -0.0006934975683250265,
+                0.0000034887074402697055, -0.0004617104106788447 },
+            { 0.00000001607910555270653, -0.000000001962592846642506, 0.9994508402434645, -0.01086193413710235,
+                0.00002571456836229756, -0.011443899515441527 },
+            { -0.000000006119932614292047, 0.000000007084907277741729, 0.25659528308495333, 0.9972793998539708,
+                -0.00002047543278192181, -0.06743333469426772 },
+            { 0.000000000012047684725824887, 0.00000000000005892595341898922, -0.000028064780024590374,
+                0.06017602974677235, 0.9999997844268929, 0.0666194962649811 },
+            { -0.000000009662955167534424, -0.000000010136455662435992, -0.2511608721498462, 0.00136440050079374,
+                -0.000006863750353828389, 1.1183664520220227 } };
         final RealMatrix expected = new Array2DRowRealMatrix(data);
 
-        CheckUtils.checkEquality(expected, actual,0, 1E-14);
+        CheckUtils.checkEquality(expected, actual, 1e-12, 1e-12);
     }
 
     /**

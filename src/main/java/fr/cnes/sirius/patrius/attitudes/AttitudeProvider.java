@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.7:DM:DM-2872:18/05/2021:Calcul de l'accélération dans la classe QuaternionPolynomialProfile 
@@ -60,7 +61,7 @@ public interface AttitudeProvider extends Serializable {
      *        current date
      * @param frame
      *        reference frame from which attitude is computed
-     * @return attitude attitude on the specified date and position-velocity state
+     * @return attitude on the specified date and position-velocity state
      * @throws PatriusException
      *         if attitude cannot be computed for provided date
      */
@@ -73,7 +74,7 @@ public interface AttitudeProvider extends Serializable {
      * 
      * @param orbit
      *        current orbit
-     * @return attitude attitude on the current orbit
+     * @return attitude on the current orbit
      * @throws PatriusException
      *         if attitude cannot be computed
      */

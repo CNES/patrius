@@ -18,6 +18,12 @@
  * @history creation 10/06/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -55,13 +61,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
-import fr.cnes.sirius.patrius.frames.FactoryManagedFrame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -80,11 +90,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -129,7 +134,7 @@ public class EllipsoidEclipseDetectorTest {
     /** container */
     private KeplerianOrbit orbit;
     /** container */
-    private CelestialBody sun;
+    private CelestialPoint sun;
     /** container */
     private double sunR;
     /** container */
@@ -137,9 +142,9 @@ public class EllipsoidEclipseDetectorTest {
     /** container */
     private double f;
     /** container */
-    private FactoryManagedFrame bodyFrame;
+    private CelestialBodyFrame bodyFrame;
     /** container */
-    private CelestialBody earthC;
+    private CelestialPoint earthC;
     /** container */
     private double propagationDuration;
     /** container */
@@ -250,7 +255,7 @@ public class EllipsoidEclipseDetectorTest {
                 this.bodyFrame, this.name);
 
             // check dimension of adjusted Earth model
-            Assert.assertEquals(this.ae, earth.getConjugateRadius(), 1e-10);
+            Assert.assertEquals(this.ae, earth.getCRadius(), 1e-10);
 
             // Eclipse detectors
             final MySpheroidEclipseDetector detectorSpheroid =
@@ -334,8 +339,7 @@ public class EllipsoidEclipseDetectorTest {
             this.dataSpherical = detectorSpherical.getData();
 
             // eclipse time difference approximation
-            final double daol = MathLib.acos(earth.getConjugateRadius() / A)
-                    - MathLib.acos(earth.getTransverseRadius() / A);
+            final double daol = MathLib.acos(earth.getCRadius() / A) - MathLib.acos(earth.getARadius() / A);
             final double dt = MathLib.abs(this.orbit.getKeplerianPeriod() * daol / 2 / FastMath.PI);
 
             // check that we have the same number of "enter / exit eclipse zone" events
@@ -623,13 +627,12 @@ public class EllipsoidEclipseDetectorTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                                        final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return FramesFactory.getGCRF();
             }
         };
         final Transform t = new Transform(date, new Vector3D(3 * r, 0, 0));
-        final Frame frame = new Frame(FramesFactory.getGCRF(), t, "frame");
+        final CelestialBodyFrame frame = new CelestialBodyFrame(FramesFactory.getGCRF(), t, "frame", null);
 
         // Occulting body is a spheroid:
         final EllipsoidBodyShape occulting =
@@ -642,7 +645,7 @@ public class EllipsoidEclipseDetectorTest {
             private static final long serialVersionUID = 5334262898117182432L;
 
             @Override
-            public fr.cnes.sirius.patrius.propagation.events.EventDetector.Action
+            public fr.cnes.sirius.patrius.events.EventDetector.Action
                 eventOccurred(
                               final SpacecraftState s, final boolean increasing, final boolean forward)
                     throws PatriusException {
@@ -661,7 +664,7 @@ public class EllipsoidEclipseDetectorTest {
             private static final long serialVersionUID = 5334262898117182432L;
 
             @Override
-            public fr.cnes.sirius.patrius.propagation.events.EventDetector.Action
+            public fr.cnes.sirius.patrius.events.EventDetector.Action
                 eventOccurred(
                               final SpacecraftState s, final boolean increasing, final boolean forward)
                     throws PatriusException {

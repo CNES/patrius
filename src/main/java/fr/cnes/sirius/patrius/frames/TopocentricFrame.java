@@ -19,6 +19,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+* VERSION:4.13:FA:FA-159:08/12/2023:[PATRIUS] Probleme de normalisation dans TopocentricFrame
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12.1:FA:FA-124:05/09/2023:[PATRIUS] Problème de calcul d'accélération dans TopocentricFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -45,6 +48,7 @@ import fr.cnes.sirius.patrius.math.analysis.solver.BracketingNthOrderBrentSolver
 import fr.cnes.sirius.patrius.math.analysis.solver.UnivariateSolver;
 import fr.cnes.sirius.patrius.math.exception.TooManyEvaluationsException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.AzimuthElevationCalculator;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.CardanCalculator;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -254,10 +258,12 @@ public final class TopocentricFrame extends Frame {
      * @return east direction in parent body frame
      */
     private static Vector3D computeEastFromZenith(final Vector3D zenith) {
-        Vector3D res = Vector3D.crossProduct(Vector3D.PLUS_K, zenith).normalize();
+        Vector3D res = Vector3D.crossProduct(Vector3D.PLUS_K, zenith);
         if (res.getNorm() < Precision.DOUBLE_COMPARISON_EPSILON) {
             // Case zenith is aligned with +K, east is set arbitrarily to +J (former PATRIUS convention)
             res = Vector3D.PLUS_J;
+        } else {
+            res = res.normalize();
         }
         return res;
     }
@@ -557,7 +563,8 @@ public final class TopocentricFrame extends Frame {
      * Getter for the Cardan x angle of a point.
      * <p>
      * The x angle is angle of the rotation of the mounting around local North axis, this angle is between {@code -PI}
-     * and {@code PI} and counting clockwise. See Spacefight Dynamics, Part I, chapter 10.4.5.2
+     * and {@code PI} and counting clockwise. See Spacefight Dynamics, Part I, chapter 10.4.5.2.
+     * </p>
      *
      * @param extPoint
      *        point for which the x angle shall be computed
@@ -573,15 +580,50 @@ public final class TopocentricFrame extends Frame {
         throws PatriusException {
         // Transform given point from given frame to topocentric frame
         final Transform t = frame.getTransformTo(this, date);
-        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, getOrientation()));
-        final Vector3D extPointTopo = new Transform(date, t, rotation).transformPosition(extPoint);
+        final Vector3D extPointTopo = t.transformPosition(extPoint);
 
         // Compute x angle
-        return computeXangle(extPointTopo);
+        return CardanCalculator.computeXangle(extPointTopo, this.frameOrientation);
     }
 
     /**
-     * Getter for the Cardan x angle rate. See Spaceflight Dynamics, Part I, chapter 10.4.5.2
+     * Getter for the Cardan x angle derivative of a point wrt the local point (dXangleCardan) express in the specified
+     * frame.
+     *
+     * @param extPoint
+     *        point for which elevation shall be computed
+     * @param frame
+     *        frame in which the point is defined
+     * @param date
+     *        computation date
+     * @return the Cardan x angle derivative of a point wrt the local point
+     * @throws PatriusException
+     *         if frames transformations cannot be computed
+     */
+    public Vector3D getDXangleCardan(final Vector3D extPoint, final Frame frame, final AbsoluteDate date)
+        throws PatriusException {
+        final Vector3D dXangleCardanInOutputFrame;
+        if (frame.equals(this)) {
+            // No transformation needed
+            dXangleCardanInOutputFrame = CardanCalculator.computeDXangle(extPoint, this.frameOrientation);
+        } else {
+            // Transform the given point (position) from the given frame to the topocentric frame
+            final Transform t = frame.getTransformTo(this, date);
+            final Vector3D extPointTopo = t.transformPosition(extPoint);
+
+            // Compute the Cardan x angle derivative in the topo frame
+            final Vector3D dXangleCardanInTopoFrame = CardanCalculator.computeDXangle(extPointTopo,
+                this.frameOrientation);
+
+            // Transform the derivatives vector back to the given frame
+            dXangleCardanInOutputFrame = t.getInverse().transformVector(dXangleCardanInTopoFrame);
+        }
+
+        return dXangleCardanInOutputFrame;
+    }
+
+    /**
+     * Getter for the Cardan x angle rate. See Spaceflight Dynamics, Part I, chapter 10.4.5.2.
      *
      * @param extPV
      *        point for which the x angle rate shall be computed
@@ -597,11 +639,11 @@ public final class TopocentricFrame extends Frame {
         throws PatriusException {
         // Transform given point from given frame to topocentric frame
         final Transform t = frame.getTransformTo(this, date);
-        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, getOrientation()));
+        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, this.frameOrientation));
         final PVCoordinates extPVTopo = new Transform(date, t, rotation).transformPVCoordinates(extPV);
 
         // Compute x angle rate
-        return computeXangleRate(extPVTopo);
+        return CardanCalculator.computeXangleRate(extPVTopo, this.frameOrientation);
     }
 
     /**
@@ -610,7 +652,8 @@ public final class TopocentricFrame extends Frame {
      * <p>
      * The y angle is angle of the rotation of the mounting around y'. Y' is the image of West axis by the rotation of
      * angle x around North axis, this angle is between {@code -PI/2} and {@code PI/2} and oriented by y'. See
-     * Spaceflight Dynamics, Part I, chapter 10.4.5.2
+     * Spaceflight Dynamics, Part I, chapter 10.4.5.2.
+     * </p>
      *
      * @param extPoint
      *        point for which the y angle shall be computed
@@ -626,15 +669,51 @@ public final class TopocentricFrame extends Frame {
         throws PatriusException {
         // Transform given point from given frame to topocentric frame
         final Transform t = frame.getTransformTo(this, date);
-        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, getOrientation()));
+        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, this.frameOrientation));
         final Vector3D extPointTopo = new Transform(date, t, rotation).transformPosition(extPoint);
 
         // Compute y angle
-        return computeYangle(extPointTopo);
+        return CardanCalculator.computeYangle(extPointTopo, this.frameOrientation);
     }
 
     /**
-     * Getter for the Cardan y angle rate. See Spaceflight Dynamics, Part I, chapter 10.4.5.2
+     * Getter for the Cardan y angle derivative of a point wrt the local point (dYangleCardan) express in the specified
+     * frame.
+     *
+     * @param extPoint
+     *        point for which elevation shall be computed
+     * @param frame
+     *        frame in which the point is defined
+     * @param date
+     *        computation date
+     * @return the Cardan y angle derivative of a point wrt the local point
+     * @throws PatriusException
+     *         if frames transformations cannot be computed
+     */
+    public Vector3D getDYangleCardan(final Vector3D extPoint, final Frame frame, final AbsoluteDate date)
+        throws PatriusException {
+        final Vector3D dYangleCardanInOutputFrame;
+        if (frame.equals(this)) {
+            // No transformation needed
+            dYangleCardanInOutputFrame = CardanCalculator.computeDYangle(extPoint, this.frameOrientation);
+        } else {
+            // Transform the given point (position) from the given frame to the topocentric frame
+            final Transform t = frame.getTransformTo(this, date);
+            final Vector3D extPointTopo = t.transformPosition(extPoint);
+
+            // Compute the Cardan y angle derivative in the topo frame
+            final Vector3D dYangleCardanInTopoFrame = CardanCalculator.computeDYangle(extPointTopo,
+                this.frameOrientation);
+
+            // Transform the derivatives vector back to the given frame
+            dYangleCardanInOutputFrame = t.getInverse().transformVector(dYangleCardanInTopoFrame);
+        }
+
+        return dYangleCardanInOutputFrame;
+    }
+
+    /**
+     * Getter for the Cardan y angle rate. See Spaceflight Dynamics, Part I, chapter 10.4.5.2.
      *
      * @param extPV
      *        point for which the y angle rate shall be computed
@@ -650,11 +729,11 @@ public final class TopocentricFrame extends Frame {
         throws PatriusException {
         // Transform given point from given frame to topocentric frame
         final Transform t = frame.getTransformTo(this, date);
-        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, getOrientation()));
+        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, this.frameOrientation));
         final PVCoordinates extPVTopo = new Transform(date, t, rotation).transformPVCoordinates(extPV);
 
         // Compute y angle rate
-        return computeYangleRate(extPVTopo);
+        return CardanCalculator.computeYangleRate(extPVTopo, this.frameOrientation);
     }
 
     /**
@@ -797,16 +876,16 @@ public final class TopocentricFrame extends Frame {
         throws PatriusException {
         // Transform given point from given frame to topocentric frame
         final Transform t = frame.getTransformTo(this, date);
-        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, -getOrientation()));
+        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, -this.frameOrientation));
         final Vector3D extPositionTopo = new Transform(date, t, rotation).transformPosition(extPoint);
 
         // Compute y angle
-        final double yAngle = computeYangle(extPositionTopo);
+        final double yAngle = CardanCalculator.computeYangle(extPositionTopo, this.frameOrientation);
         if (MathLib.abs(MathLib.abs(yAngle) - MathUtils.HALF_PI) < Precision.EPSILON) {
             throw new PatriusException(PatriusMessages.CARDAN_MOUNTING_UNDEFINED);
         }
         // Compute x angle
-        final double xAngle = computeXangle(extPositionTopo);
+        final double xAngle = CardanCalculator.computeXangle(extPositionTopo, this.frameOrientation);
         // Compute range
         final double range = computeRange(extPositionTopo);
 
@@ -830,24 +909,23 @@ public final class TopocentricFrame extends Frame {
         throws PatriusException {
         // Transform given point from given frame to topocentric frame
         final Transform t = frame.getTransformTo(this, date);
-        final Transform rotation = new Transform(date, new Rotation(Vector3D.PLUS_K, -getOrientation()));
-        final PVCoordinates extPVTopo = new Transform(date, t, rotation).transformPVCoordinates(extPV);
+        final PVCoordinates extPVTopo = t.transformPVCoordinates(extPV);
 
         final Vector3D position = extPVTopo.getPosition();
 
         // Compute y angle
-        final double yAngle = computeYangle(position);
+        final double yAngle = CardanCalculator.computeYangle(position, this.frameOrientation);
         if (MathLib.abs(MathLib.abs(yAngle) - MathUtils.HALF_PI) < Precision.EPSILON) {
             throw new PatriusException(PatriusMessages.CARDAN_MOUNTING_UNDEFINED);
         }
         // Compute x angle
-        final double xAngle = computeXangle(position);
+        final double xAngle = CardanCalculator.computeXangle(position, this.frameOrientation);
         // Compute range
         final double range = computeRange(position);
         // Compute x angle rate
-        final double xAngleRate = computeXangleRate(extPVTopo);
+        final double xAngleRate = CardanCalculator.computeXangleRate(extPVTopo, this.frameOrientation);
         // Compute y angle rate
-        final double yAngleRate = computeYangleRate(extPVTopo);
+        final double yAngleRate = CardanCalculator.computeYangleRate(extPVTopo, this.frameOrientation);
         // Compute range rate (doppler) : relative rate along the line of sight
         final double rangeRate = computeRangeRate(extPVTopo);
 
@@ -863,24 +941,9 @@ public final class TopocentricFrame extends Frame {
      * @return cartesian coordinates of the point (only the position)
      */
     public Vector3D transformFromTopocentricToPosition(final TopocentricPosition topoCoord) {
-        // Intermediate variables
-        final double e = topoCoord.getElevation();
-        final double alpha = topoCoord.getAzimuth() + getOrientation();
-        final double d = topoCoord.getRange();
-        // Lon/Lat
-        final double[] sincosE = MathLib.sinAndCos(e);
-        final double sinE = sincosE[0];
-        final double cosE = sincosE[1];
-        final double[] sincosAlpha = MathLib.sinAndCos(alpha);
-        final double sinAlpha = sincosAlpha[0];
-        final double cosAlpha = sincosAlpha[1];
-
-        // Cartesian coordinates
-        final double x = d * cosE * cosAlpha;
-        final double y = -d * cosE * sinAlpha;
-        final double z = d * sinE;
-        // Return result
-        return new Vector3D(x, y, z);
+        final Vector3D unitVector = AzimuthElevationCalculator.computeCartesianUnitPosition(topoCoord.getAzimuth(),
+            topoCoord.getElevation(), this.frameOrientation);
+        return unitVector.scalarMultiply(topoCoord.getRange());
     }
 
     /**
@@ -892,30 +955,16 @@ public final class TopocentricFrame extends Frame {
      * @return cartesian coordinates of the point (position and velocity)
      */
     public PVCoordinates transformFromTopocentricToPV(final TopocentricPV topoCoord) {
-        // Position
-        final Vector3D position = transformFromTopocentricToPosition(topoCoord.getTopocentricPosition());
-        // Intermediate variables
-        final double e = topoCoord.getElevation();
-        final double eDot = topoCoord.getElevationRate();
-        final double alpha = topoCoord.getAzimuth() + getOrientation();
-        final double alphaDot = topoCoord.getAzimuthRate();
+        final PVCoordinates unitPV = AzimuthElevationCalculator.computeCartesianUnitPV(topoCoord.getAzimuth(),
+            topoCoord.getAzimuthRate(), topoCoord.getElevation(), topoCoord.getElevationRate(), this.frameOrientation);
+
         final double d = topoCoord.getRange();
         final double dDot = topoCoord.getRangeRate();
-        // Lon/Lat
-        final double[] sincosE = MathLib.sinAndCos(e);
-        final double sinE = sincosE[0];
-        final double cosE = sincosE[1];
-        final double[] sincosAlpha = MathLib.sinAndCos(alpha);
-        final double sinAlpha = sincosAlpha[0];
-        final double cosAlpha = sincosAlpha[1];
 
-        // Compute derivative of position
-        final double xDot = dDot * cosE * cosAlpha - d * (sinE * cosAlpha * eDot + cosE * sinAlpha * alphaDot);
-        final double yDot = -dDot * cosE * sinAlpha - d * (-sinE * sinAlpha * eDot + cosE * cosAlpha * alphaDot);
-        final double zDot = dDot * sinE + d * cosE * eDot;
+        final Vector3D position = unitPV.getPosition().scalarMultiply(d);
+        final Vector3D velocity = unitPV.getPosition().scalarMultiply(dDot).add(unitPV.getVelocity().scalarMultiply(d));
 
-        // Return PV
-        return new PVCoordinates(position, new Vector3D(xDot, yDot, zDot));
+        return new PVCoordinates(position, velocity);
     }
 
     /**
@@ -926,25 +975,9 @@ public final class TopocentricFrame extends Frame {
      * @return cartesian coordinates (only the position)
      */
     public Vector3D transformFromCardanToPosition(final CardanMountPosition cardan) {
-        // Intermediate variables
-        final double xAngle = cardan.getXangle();
-        final double yAngle = cardan.getYangle();
-        final double d = cardan.getRange();
-        // Lon/Lat
-        final double[] sincosX = MathLib.sinAndCos(xAngle);
-        final double sinX = sincosX[0];
-        final double cosX = sincosX[1];
-        final double[] sincosY = MathLib.sinAndCos(yAngle);
-        final double sinY = sincosY[0];
-        final double cosY = sincosY[1];
-        // Cartesian coordinates
-        final double x = d * sinY;
-        final double y = d * cosY * sinX;
-        final double z = d * cosY * cosX;
-        // Result
-        final Vector3D intermediatePoint = new Vector3D(x, y, z);
-        final Rotation rotation = new Rotation(Vector3D.PLUS_K, getOrientation());
-        return rotation.applyInverseTo(intermediatePoint);
+        final Vector3D unitVector = CardanCalculator.computeCartesianUnitPosition(cardan.getXangle(),
+            cardan.getYangle(), this.frameOrientation);
+        return unitVector.scalarMultiply(cardan.getRange());
     }
 
     /**
@@ -956,31 +989,17 @@ public final class TopocentricFrame extends Frame {
      * @return cartesian coordinates (position and velocity)
      */
     public PVCoordinates transformFromCardanToPV(final CardanMountPV cardan) {
-        // Position
-        final Vector3D position = transformFromCardanToPosition(cardan.getCardanMountPosition());
-        // Intermediate variables
-        final double xAngle = cardan.getXangle();
-        final double yAngle = cardan.getYangle();
+
+        final PVCoordinates unitPV = CardanCalculator.computeCartesianUnitPV(cardan.getXangle(),
+            cardan.getXangleRate(), cardan.getYangle(), cardan.getYangleRate(), this.frameOrientation);
+
         final double d = cardan.getRange();
-        final double xAngleDot = cardan.getXangleRate();
-        final double yAngleDot = cardan.getYangleRate();
         final double dDot = cardan.getRangeRate();
-        // Lon/lat
-        final double[] sincosX = MathLib.sinAndCos(xAngle);
-        final double sinX = sincosX[0];
-        final double cosX = sincosX[1];
-        final double[] sincosY = MathLib.sinAndCos(yAngle);
-        final double sinY = sincosY[0];
-        final double cosY = sincosY[1];
 
-        // Compute derivative of position
-        final double xDot = dDot * sinY + d * cosY * yAngleDot;
-        final double yDot = dDot * cosY * sinX + d * (-sinY * sinX * yAngleDot + cosY * cosX * xAngleDot);
-        final double zDot = dDot * cosY * cosX - d * (sinY * cosX * yAngleDot + cosY * sinX * xAngleDot);
+        final Vector3D position = unitPV.getPosition().scalarMultiply(d);
+        final Vector3D velocity = unitPV.getPosition().scalarMultiply(dDot).add(unitPV.getVelocity().scalarMultiply(d));
 
-        // Return PV
-        final Rotation rotation = new Rotation(Vector3D.PLUS_K, getOrientation());
-        return new PVCoordinates(position, rotation.applyInverseTo(new Vector3D(xDot, yDot, zDot)));
+        return new PVCoordinates(position, velocity);
     }
 
     /**
@@ -1004,62 +1023,6 @@ public final class TopocentricFrame extends Frame {
     private static double computeRangeRate(final PVCoordinates extPVTopo) {
         return Vector3D.dotProduct(extPVTopo.getPosition(), extPVTopo.getVelocity())
                 / extPVTopo.getPosition().getNorm();
-    }
-
-    /**
-     * Compute the x angle of a point given in Cartesian coordinates in the local topocentric frame.
-     *
-     * @param extTopo
-     *        point in Cartesian coordinates which shall be transformed
-     * @return x angle
-     */
-    private static double computeXangle(final Vector3D extTopo) {
-        return MathLib.atan2(extTopo.getY(), extTopo.getZ());
-    }
-
-    /**
-     * Compute the x angle rate of a point given in Cartesian coordinates in the local topocentric frame.
-     *
-     * @param extPVTopo
-     *        point in Cartesian coordinates which shall be transformed
-     * @return x angle rate
-     */
-    private static double computeXangleRate(final PVCoordinates extPVTopo) {
-        final Vector3D position = extPVTopo.getPosition();
-
-        final Vector3D cross = Vector3D.crossProduct(position, extPVTopo.getVelocity());
-        final double y = position.getY();
-        final double z = position.getZ();
-
-        return -cross.getX() / (y * y + z * z);
-    }
-
-    /**
-     * Compute the y angle of a point given in Cartesian coordinates in the local topocentric frame.
-     *
-     * @param extTopo
-     *        point in Cartesian coordinates which shall be transformed
-     * @return y angle
-     */
-    private static double computeYangle(final Vector3D extTopo) {
-        return MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, extTopo.normalize().getX())));
-    }
-
-    /**
-     * Compute the y angle rate of a point given in Cartesian coordinates in the local topocentric frame.
-     *
-     * @param extPVTopo
-     *        point in Cartesian coordinates which shall be transformed
-     * @return y angle rate
-     */
-    private static double computeYangleRate(final PVCoordinates extPVTopo) {
-        final Vector3D position = extPVTopo.getPosition();
-        final Vector3D cross = Vector3D.crossProduct(position, extPVTopo.getVelocity());
-
-        final double y = position.getY();
-        final double z = position.getZ();
-        final double d = position.getNorm();
-        return (-y * cross.getZ() + z * cross.getY()) / (d * d * MathLib.sqrt(y * y + z * z));
     }
 
     /**

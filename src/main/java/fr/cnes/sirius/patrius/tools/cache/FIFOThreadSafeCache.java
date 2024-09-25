@@ -1,13 +1,13 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,7 @@ import fr.cnes.sirius.patrius.utils.StringTablePrinter;
  * The tread-safety is handled by the use of the {@link ConcurrentLinkedDeque} implementation (which is a lock-free
  * implementation).
  * </p>
- * 
+ *
  * @param <K>
  *        The key, usually used to identify if the computation has already been performed
  * @param <V>
@@ -87,7 +87,7 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
 
     /**
      * Standard constructor.
-     * 
+     *
      * @param listMaxSize
      *        The max size of the cache. 0 is a legitimate value emulating the absence of cache.
      * @throws NotPositiveException
@@ -108,12 +108,13 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
 
     /**
      * Computes and add a new entry in the cache, if necessary.
-     * 
+     *
      * @param cacheAvailabilityPredicate
      *        The predicate that test if one of the entries of the cache matches the requirement
      * @param entrySupplier
-     *        The supplier that will build the entry if required
-     * @return the entry computed
+     *        The supplier that will build the entry if required. If it returns {@code null}, the entry will be returned
+     *        normally but not added into the cache.
+     * @return the entry computed. Can be {@code null} if the supplier provided such a value.
      */
     public CacheEntry<K, V> computeIf(final Predicate<CacheEntry<K, V>> cacheAvailabilityPredicate,
                                       final Supplier<CacheEntry<K, V>> entrySupplier) {
@@ -123,7 +124,7 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
 
         // Quick escape in case of no cache
         if (this.listMaxSize == 0) {
-            return checkNotNull(entrySupplier.get());
+            return entrySupplier.get();
         }
 
         // Look for an entry that matches the predicate in the internal structure
@@ -135,18 +136,21 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
         }
 
         // The predicate did not match any entry. The entry needs to be computed.
-        entry = checkNotNull(entrySupplier.get());
+        entry = entrySupplier.get();
 
         // Note that in a multi-thread situation, the entry might be added while it has, meanwhile, been added in the
         // structure by another thread. Not a big deal...
-        addEntry(entry);
+        if (entry != null) {
+            // Add the entry in the cache only if it is not null
+            addEntry(entry);
+        }
 
         return entry;
     }
 
     /**
      * Computes and add a new entry in the cache, if necessary.
-     * 
+     *
      * @param key
      *        The key to assess if the computation is required
      * @param entrySupplier
@@ -173,7 +177,7 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
 
     /**
      * Getter for the maximum size of the cache.
-     * 
+     *
      * @return the maximum size of the cache
      */
     public int getMaxSize() {
@@ -185,7 +189,7 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
      * <p>
      * This method can help to chose the size of the cache.
      * </p>
-     * 
+     *
      * @return the reusability ratio (0 means no reusability at all, 0.5 means that the supplier is called only half
      *         time compared to the {@link #computeIf(Predicate, Supplier)} method)
      */
@@ -224,14 +228,14 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
 
     /**
      * Internal method to look for an entry that matches the predicate. Returns null if no entry matched the predicate.
-     * 
+     *
      * <p>
      * Note that the internal structure can be modified while this method is called. Thus, {@code null} can be returned
      * while the key was being added or a value can be returned while it was being suppressed, but it is not a big deal.
      * <br>
      * See {@link ConcurrentLinkedDeque#iterator()} for information about the consistency of the iterator.
      * </p>
-     * 
+     *
      * @param cacheAvailabilityPredicate
      *        The predicate that needs to be matched to return an entry of the internal structure
      * @return the entry that matched the predicate. Might be null if no entry matched
@@ -247,7 +251,7 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
 
     /**
      * Add an entry in the structure. It will be added in the first position.
-     * 
+     *
      * @param newFirstEntry
      *        The entry that should be added
      */
@@ -269,24 +273,8 @@ public class FIFOThreadSafeCache<K, V> implements Serializable {
     }
 
     /**
-     * Internal method to check that the supplier does not provide null entry.
-     * 
-     * @param entry
-     *        The entry to check
-     * @return the entry
-     * @throws IllegalStateException
-     *         if {@code entry} is null (the entry supplier must generate a not null entry)
-     */
-    private CacheEntry<K, V> checkNotNull(final CacheEntry<K, V> entry) {
-        if (entry == null) {
-            throw new IllegalStateException("The entry supplier must generate a not null entry");
-        }
-        return entry;
-    }
-
-    /**
      * Private method for the serialization. It reinitializes the transient attributes.
-     * 
+     *
      * @param aInputStream
      *        stream where the cache should be written
      * @throws ClassNotFoundException

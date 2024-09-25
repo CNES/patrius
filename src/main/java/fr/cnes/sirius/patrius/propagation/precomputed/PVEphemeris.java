@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
@@ -32,7 +34,7 @@ import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.propagation.AbstractPropagator;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.Propagator;
@@ -467,7 +469,7 @@ public class PVEphemeris extends AbstractPropagator implements BoundedPropagator
      * @return frame in which the time-stamped PVCoordinates are defined.
      */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date, final Frame frameIn) {
+    public Frame getNativeFrame(final AbsoluteDate date) {
         return this.getFrame();
     }
 

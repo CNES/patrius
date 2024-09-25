@@ -18,6 +18,7 @@
  * @history created 19/04/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2445:27/05/2020:optimisation de SolarActivityReader 
@@ -40,8 +41,8 @@ package fr.cnes.sirius.patrius.forces.gravity.tides;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
@@ -104,8 +105,8 @@ public class TerrestrialTides extends AbstractTides {
     /** Constant sqrt(5/12). */
     private static final double SQRT5OVER12 = MathLib.sqrt(5. / TWELVE);
 
-    /** Perturbating bodies. */
-    private final CelestialBody[] bodiesP;
+    /** Perturbating celestial points. */
+    private final CelestialPoint[] celestialPoints;
 
     /** Deformation due to third body attraction (degree3). */
     private final boolean thirdBodyCorrectionUpToDegree3;
@@ -123,8 +124,8 @@ public class TerrestrialTides extends AbstractTides {
     private final boolean computePartialDerivativesWrtPosition;
 
     /**
-     * Creates a new instance. It is possible to consider several perturbing bodies. The correction due to the tidal
-     * potential is taken into account up to degree 2 and 3 if it is specified by the user. It is also possible to
+     * Creates a new instance. It is possible to consider several perturbing celestial points. The correction due to the
+     * tidal potential is taken into account up to degree 2 and 3 if it is specified by the user. It is also possible to
      * activate the frequency correction and the ellipticity correction.
      * 
      * @param centralBodyFrame
@@ -133,8 +134,8 @@ public class TerrestrialTides extends AbstractTides {
      *        reference equatorial radius of the potential
      * @param mu
      *        central body attraction coefficient (m<sup>3</sup>/s<sup>2</sup>)
-     * @param bodies
-     *        perturbing bodies
+     * @param celestialPoints
+     *        perturbing celestial points
      * @param thirdBodyAttDegree3
      *        if true the perturbation of tidal potential are taken into account up to degree 3
      * @param frequencyCorr
@@ -146,19 +147,24 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final double equatorialRadius, final double mu,
-        final List<CelestialBody> bodies,
-        final boolean thirdBodyAttDegree3, final boolean frequencyCorr, final boolean ellipticityCorr,
-        final ITerrestrialTidesDataProvider terrestrialData) throws PatriusException {
-        this(centralBodyFrame, equatorialRadius, mu, bodies, thirdBodyAttDegree3, frequencyCorr, ellipticityCorr,
-            terrestrialData, true);
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final double equatorialRadius,
+            final double mu,
+                            final List<CelestialPoint> celestialPoints,
+            final boolean thirdBodyAttDegree3,
+            final boolean frequencyCorr,
+            final boolean ellipticityCorr,
+            final ITerrestrialTidesDataProvider terrestrialData) throws PatriusException {
+        this(centralBodyFrame, equatorialRadius, mu, celestialPoints, thirdBodyAttDegree3, frequencyCorr,
+                ellipticityCorr,
+                terrestrialData, true);
     }
 
     /**
-     * Creates a new instance. It is possible to consider several perturbing bodies. The correction due to the tidal
-     * potential is taken into account up to degree 2 and 3 if it is specified by the user. It is also possible to
+     * Creates a new instance. It is possible to consider several perturbing celestial points. The correction due to the
+     * tidal potential is taken into account up to degree 2 and 3 if it is specified by the user. It is also possible to
      * activate the frequency correction and the ellipticity correction.
      * 
      * @param centralBodyFrame
@@ -167,8 +173,8 @@ public class TerrestrialTides extends AbstractTides {
      *        reference equatorial radius of the potential
      * @param mu
      *        central body attraction coefficient (m<sup>3</sup>/s<sup>2</sup>)
-     * @param bodies
-     *        perturbing bodies
+     * @param celestialPoints
+     *        perturbing celestial points
      * @param thirdBodyAttDegree3
      *        if true the perturbation of tidal potential are taken into account up to degree 3
      * @param frequencyCorr
@@ -182,30 +188,35 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final double equatorialRadius, final double mu,
-        final List<CelestialBody> bodies,
-        final boolean thirdBodyAttDegree3, final boolean frequencyCorr, final boolean ellipticityCorr,
-        final ITerrestrialTidesDataProvider terrestrialData, final boolean computePD) throws PatriusException {
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final double equatorialRadius,
+            final double mu,
+                            final List<CelestialPoint> celestialPoints,
+            final boolean thirdBodyAttDegree3,
+            final boolean frequencyCorr,
+            final boolean ellipticityCorr,
+            final ITerrestrialTidesDataProvider terrestrialData,
+            final boolean computePD) throws PatriusException {
         super(centralBodyFrame, equatorialRadius, mu, 5, 4, computePD ? 5 : 0, computePD ? 4 : 0);
         // all of the corrections are taken into account
         this.thirdBodyCorrectionUpToDegree3 = thirdBodyAttDegree3;
         this.ellipticityCorrectionFlag = ellipticityCorr;
         this.frequencyCorrectionFlag = frequencyCorr;
         this.standard = terrestrialData;
-        // perturbing bodies
-        this.bodiesP = new CelestialBody[bodies.size()];
-        for (int i = 0; i < bodies.size(); i++) {
-            this.bodiesP[i] = bodies.get(i);
+        // perturbing celestial points
+        this.celestialPoints = new CelestialPoint[celestialPoints.size()];
+        for (int i = 0; i < celestialPoints.size(); i++) {
+            this.celestialPoints[i] = celestialPoints.get(i);
         }
         this.computePartialDerivativesWrtPosition = computePD;
     }
 
     /**
-     * Creates a new instance using {@link Parameter}. It is possible to consider several perturbing bodies. The
-     * correction due to the tidal potential is taken into account up to degree 2 and 3 if it is specified by the user.
-     * It is also possible to activate the frequency correction and the ellipticity correction.
+     * Creates a new instance using {@link Parameter}. It is possible to consider several perturbing celestial points.
+     * The correction due to the tidal potential is taken into account up to degree 2 and 3 if it is specified by the
+     * user. It is also possible to activate the frequency correction and the ellipticity correction.
      * 
      * @param centralBodyFrame
      *        rotating body frame
@@ -213,8 +224,8 @@ public class TerrestrialTides extends AbstractTides {
      *        reference equatorial radius of the potential parameter
      * @param mu
      *        central body attraction coefficient (m<sup>3</sup>/s<sup>2</sup>) parameter
-     * @param bodies
-     *        perturbing bodies
+     * @param celestialPoints
+     *        perturbing celestial points
      * @param thirdBodyAttDegree3
      *        if true the perturbation of tidal potential are taken into account up to degree 3
      * @param frequencyCorr
@@ -226,20 +237,25 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final Parameter equatorialRadius, final Parameter mu,
-        final List<CelestialBody> bodies,
-        final boolean thirdBodyAttDegree3, final boolean frequencyCorr, final boolean ellipticityCorr,
-        final ITerrestrialTidesDataProvider terrestrialData) throws PatriusException {
-        this(centralBodyFrame, equatorialRadius, mu, bodies, thirdBodyAttDegree3, frequencyCorr, ellipticityCorr,
-            terrestrialData, true);
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final Parameter equatorialRadius,
+            final Parameter mu,
+                            final List<CelestialPoint> celestialPoints,
+            final boolean thirdBodyAttDegree3,
+            final boolean frequencyCorr,
+            final boolean ellipticityCorr,
+            final ITerrestrialTidesDataProvider terrestrialData) throws PatriusException {
+        this(centralBodyFrame, equatorialRadius, mu, celestialPoints, thirdBodyAttDegree3, frequencyCorr,
+                ellipticityCorr,
+                terrestrialData, true);
     }
 
     /**
-     * Creates a new instance using {@link Parameter}. It is possible to consider several perturbing bodies. The
-     * correction due to the tidal potential is taken into account up to degree 2 and 3 if it is specified by the user.
-     * It is also possible to activate the frequency correction and the ellipticity correction.
+     * Creates a new instance using {@link Parameter}. It is possible to consider several perturbing celestial points.
+     * The correction due to the tidal potential is taken into account up to degree 2 and 3 if it is specified by the
+     * user. It is also possible to activate the frequency correction and the ellipticity correction.
      * 
      * @param centralBodyFrame
      *        rotating body frame
@@ -247,8 +263,8 @@ public class TerrestrialTides extends AbstractTides {
      *        reference equatorial radius of the potential as a parameter
      * @param mu
      *        central body attraction coefficient (m<sup>3</sup>/s<sup>2</sup>) as a parameter
-     * @param bodies
-     *        perturbing bodies
+     * @param celestialPoints
+     *        perturbing celestial points
      * @param thirdBodyAttDegree3
      *        if true the perturbation of tidal potential are taken into account up to degree 3
      * @param frequencyCorr
@@ -262,29 +278,34 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final Parameter equatorialRadius, final Parameter mu,
-        final List<CelestialBody> bodies,
-        final boolean thirdBodyAttDegree3, final boolean frequencyCorr, final boolean ellipticityCorr,
-        final ITerrestrialTidesDataProvider terrestrialData, final boolean computePD) throws PatriusException {
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final Parameter equatorialRadius,
+            final Parameter mu,
+                            final List<CelestialPoint> celestialPoints,
+            final boolean thirdBodyAttDegree3,
+            final boolean frequencyCorr,
+            final boolean ellipticityCorr,
+            final ITerrestrialTidesDataProvider terrestrialData,
+            final boolean computePD) throws PatriusException {
         super(centralBodyFrame, equatorialRadius, mu, 5, 4, computePD ? 5 : 0, computePD ? 4 : 0);
         // all of the corrections are taken into account
         this.thirdBodyCorrectionUpToDegree3 = thirdBodyAttDegree3;
         this.ellipticityCorrectionFlag = ellipticityCorr;
         this.frequencyCorrectionFlag = frequencyCorr;
         this.standard = terrestrialData;
-        // perturbing bodies
-        this.bodiesP = new CelestialBody[bodies.size()];
-        for (int i = 0; i < bodies.size(); i++) {
-            this.bodiesP[i] = bodies.get(i);
+        // perturbing celestial points
+        this.celestialPoints = new CelestialPoint[celestialPoints.size()];
+        for (int i = 0; i < celestialPoints.size(); i++) {
+            this.celestialPoints[i] = celestialPoints.get(i);
         }
         this.computePartialDerivativesWrtPosition = computePD;
     }
 
     /**
-     * Creates a new instance. The perturbating bodies are the moon and the sun. This constructor takes into account all
-     * of the corrections.
+     * Creates a new instance. The perturbating celestial points are the moon and the sun. This constructor takes into
+     * account all of the corrections.
      * 
      * @param centralBodyFrame
      *        rotating body frame
@@ -295,16 +316,17 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final double equatorialRadius,
-        final double mu) throws PatriusException {
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final double equatorialRadius,
+            final double mu) throws PatriusException {
         this(centralBodyFrame, equatorialRadius, mu, true);
     }
 
     /**
-     * Creates a new instance. The perturbating bodies are the moon and the sun. This constructor takes into account all
-     * of the corrections.
+     * Creates a new instance. The perturbating celestial points are the moon and the sun. This constructor takes into
+     * account all of the corrections.
      * 
      * @param centralBodyFrame
      *        rotating body frame
@@ -317,17 +339,19 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final double equatorialRadius,
-        final double mu, final boolean computePD) throws PatriusException {
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final double equatorialRadius,
+            final double mu,
+            final boolean computePD) throws PatriusException {
         this(centralBodyFrame, equatorialRadius, mu, getLuniSolarPerturbation(), true, true, true,
-            new TerrestrialTidesDataProvider(), computePD);
+                new TerrestrialTidesDataProvider(), computePD);
     }
 
     /**
-     * Creates a new instance. The perturbating bodies are the moon and the sun. This constructor takes into account all
-     * of the corrections.
+     * Creates a new instance. The perturbating celestial points are the moon and the sun. This constructor takes into
+     * account all of the corrections.
      * 
      * @param centralBodyFrame
      *        rotating body frame
@@ -338,16 +362,17 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final Parameter equatorialRadius,
-        final Parameter mu) throws PatriusException {
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final Parameter equatorialRadius,
+            final Parameter mu) throws PatriusException {
         this(centralBodyFrame, equatorialRadius, mu, true);
     }
 
     /**
-     * Creates a new instance. The perturbating bodies are the moon and the sun. This constructor takes into account all
-     * of the corrections.
+     * Creates a new instance. The perturbating celestial points are the moon and the sun. This constructor takes into
+     * account all of the corrections.
      * 
      * @param centralBodyFrame
      *        rotating body frame
@@ -360,33 +385,33 @@ public class TerrestrialTides extends AbstractTides {
      * @exception IllegalArgumentException
      *            if coefficients array do not match
      * @throws PatriusException
-     *         if a perturbing celestial body cannot be built
+     *         if a perturbing celestial point cannot be built
      */
-    public TerrestrialTides(final Frame centralBodyFrame, final Parameter equatorialRadius,
-        final Parameter mu, final boolean computePD) throws PatriusException {
+    public TerrestrialTides(final Frame centralBodyFrame,
+            final Parameter equatorialRadius,
+            final Parameter mu,
+            final boolean computePD) throws PatriusException {
         this(centralBodyFrame, equatorialRadius, mu, getLuniSolarPerturbation(), true, true, true,
-            new TerrestrialTidesDataProvider(), computePD);
+                new TerrestrialTidesDataProvider(), computePD);
     }
 
     /**
-     * The perturbing bodies are the moon and the sun.
+     * The perturbing celestial points are the moon and the sun.
      * 
-     * @return list of CelestialBody which contains the moon and the sun.
+     * @return list of celestial points which contains the moon and the sun.
      * @throws PatriusException
-     *         if the celestial body cannot be built
+     *         if a celestial point cannot be built
      */
-    private static List<CelestialBody> getLuniSolarPerturbation() throws PatriusException {
-        final List<CelestialBody> bodies = new ArrayList<>();
-        bodies.add(CelestialBodyFactory.getSun());
-
-        bodies.add(CelestialBodyFactory.getMoon());
-        return bodies;
+    private static List<CelestialPoint> getLuniSolarPerturbation() throws PatriusException {
+        final List<CelestialPoint> celestialPoints = new ArrayList<>();
+        celestialPoints.add(CelestialBodyFactory.getSun());
+        celestialPoints.add(CelestialBodyFactory.getMoon());
+        return celestialPoints;
     }
 
     /** {@inheritDoc} */
     @Override
     public void updateCoefficientsCandS(final AbsoluteDate date) throws PatriusException {
-
         final double[] coeff = this.thirdBodyAttractionDegree2(date);
         this.thirdBodyAttractionCorrectionDegree2(coeff);
         if (this.ellipticityCorrectionFlag) {
@@ -443,7 +468,7 @@ public class TerrestrialTides extends AbstractTides {
      */
     private void thirdBodyAttractionCorrectionDegree3(final AbsoluteDate date) throws PatriusException {
 
-        // perturbing body position
+        // perturbing celestial point position
         final double[] sinml = new double[5];
         final double[] cosml = new double[5];
 
@@ -456,11 +481,11 @@ public class TerrestrialTides extends AbstractTides {
         double s31 = 0.;
         double c32 = 0.;
 
-        // loop over the perturbing bodies
-        for (final CelestialBody bodyP : this.bodiesP) {
+        // loop over the perturbing celestial points
+        for (final CelestialPoint point : this.celestialPoints) {
 
-            // body position
-            final Vector3D position = bodyP.getPVCoordinates(date, this.bodyFrame).getPosition();
+            // Point position
+            final Vector3D position = point.getPVCoordinates(date, this.bodyFrame).getPosition();
             final double posx = position.getX();
             final double posy = position.getY();
             final double posz = position.getZ();
@@ -475,8 +500,8 @@ public class TerrestrialTides extends AbstractTides {
             final double cosineLambda = MathLib.divide(posx, rpxy);
 
             // constant multiplicative coefficient : mu_p(i) / mu_c * (req / r_p)^3
-            final double k = MathLib.divide(bodyP.getGM(), this.paramMu.getValue())
-                * MathLib.pow(MathLib.divide(this.paramAe.getValue(), rp), 4) / 7.;
+            final double k = MathLib.divide(point.getGM(), this.paramMu.getValue())
+                    * MathLib.pow(MathLib.divide(this.paramAe.getValue(), rp), 4) / 7.;
 
             // calculation of cos(m * lambda) and sin(m * lambda) thanks to an iterative method
             sinml[0] = 0;
@@ -519,7 +544,7 @@ public class TerrestrialTides extends AbstractTides {
 
         this.coefficientsC[3][3] = wk3[3] * c33;
         this.coefficientsS[3][3] = wk3[3] * s33;
-        
+
         // No result to return
         // Coefficients are simply modified
     }
@@ -582,7 +607,7 @@ public class TerrestrialTides extends AbstractTides {
         this.coefficientsS[2][1] += s21;
         this.coefficientsC[2][2] += c22;
         this.coefficientsS[2][2] -= s22;
-        
+
         // No result to return
         // Coefficients are simply modified
     }
@@ -619,7 +644,7 @@ public class TerrestrialTides extends AbstractTides {
      */
     private double[] thirdBodyAttractionDegree2(final AbsoluteDate date) throws PatriusException {
 
-        // perturbing body position
+        // perturbing celestial point position
         final double[] sinml = new double[5];
         final double[] cosml = new double[5];
 
@@ -630,11 +655,11 @@ public class TerrestrialTides extends AbstractTides {
         double c22 = 0.;
         double s22 = 0.;
 
-        // loop over the perturbing bodies
-        for (final CelestialBody bodyP : this.bodiesP) {
+        // loop over the perturbing celestial points
+        for (final CelestialPoint point : this.celestialPoints) {
 
-            // body position
-            final Vector3D position = bodyP.getPVCoordinates(date, this.bodyFrame).getPosition();
+            // Point position
+            final Vector3D position = point.getPVCoordinates(date, this.bodyFrame).getPosition();
             final double posx = position.getX();
             final double posy = position.getY();
             final double posz = position.getZ();
@@ -648,8 +673,8 @@ public class TerrestrialTides extends AbstractTides {
             final double cosLambda = MathLib.divide(posx, rpxy);
 
             // multiplicative coefficient : mu_p(i) / mu_c * (req / r_p)^3
-            final double k = MathLib.divide(ZERO_POINT_TWO * bodyP.getGM(), this.paramMu.getValue())
-                * MathLib.pow(MathLib.divide(this.paramAe.getValue(), rp), 3);
+            final double k = MathLib.divide(ZERO_POINT_TWO * point.getGM(), this.paramMu.getValue())
+                    * MathLib.pow(MathLib.divide(this.paramAe.getValue(), rp), 3);
 
             // calculation of cos(m * lambda) and sin(m * lambda) thanks to an iterative method
             sinml[0] = 0;
@@ -682,10 +707,11 @@ public class TerrestrialTides extends AbstractTides {
     public boolean computeGradientPosition() {
         return this.computePartialDerivativesWrtPosition;
     }
-    
+
     /** {@inheritDoc} */
     @Override
-    public void checkData(final AbsoluteDate start, final AbsoluteDate end) throws PatriusException {
+    public void checkData(final AbsoluteDate start,
+            final AbsoluteDate end) throws PatriusException {
         // Nothing to do
     }
 }

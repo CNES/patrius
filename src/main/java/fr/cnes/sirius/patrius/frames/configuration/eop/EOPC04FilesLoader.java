@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2244:27/05/2020:Evolution de la prise en compte des fichiers EOP IERS
@@ -29,7 +30,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
@@ -173,7 +174,7 @@ public class EOPC04FilesLoader implements EOP1980HistoryLoader, EOP2000HistoryLo
                                    final EOP2000History history2000) throws IOException, PatriusException {
 
         // set up a reader for line-oriented bulletin B files
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(input, Charset.forName("UTF-8")));
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
 
         // read all file, ignoring header
         int lineNumber = 0;

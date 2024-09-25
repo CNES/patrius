@@ -19,6 +19,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2398:27/05/2020:incoherence de seuils de norme entre AngularCoordinates et Rotation 
@@ -45,6 +46,7 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import fr.cnes.sirius.patrius.math.complex.Quaternion;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
@@ -1656,6 +1658,34 @@ public class Rotation implements Serializable {
             rez = new Rotation(false, q);
         }
         return rez;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == this.getClass())) {
+            // Same object type: check all attributes
+            final Rotation other = (Rotation) object;
+
+            // Evaluate the attitudes components
+            isEqual = Double.doubleToLongBits(this.q0) == Double.doubleToLongBits(other.q0)
+                    && Double.doubleToLongBits(this.q1) == Double.doubleToLongBits(other.q1)
+                    && Double.doubleToLongBits(this.q2) == Double.doubleToLongBits(other.q2)
+                    && Double.doubleToLongBits(this.q3) == Double.doubleToLongBits(other.q3);
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.q0, this.q1, this.q2, this.q3);
     }
 
     /**

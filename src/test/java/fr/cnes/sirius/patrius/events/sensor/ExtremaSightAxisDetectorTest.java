@@ -17,6 +17,10 @@
  *
  *
  * HISTORY
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -56,6 +60,14 @@ import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaSightAxisDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -76,10 +88,6 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger;
-import fr.cnes.sirius.patrius.propagation.events.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -219,7 +227,6 @@ public class ExtremaSightAxisDetectorTest {
         }
 
         this.vehicle = builder.returnAssembly();
-
     }
 
     /**
@@ -333,7 +340,6 @@ public class ExtremaSightAxisDetectorTest {
         // ResultsFileWriter.writeResultsToPlot("sensor", "switchingFunction.txt",
         // curentDetector.results);
         // ResultsFileWriter.writeResultsToPlot("sensor", "detectedEvents.txt", results);
-
     }
 
     /**
@@ -426,7 +432,6 @@ public class ExtremaSightAxisDetectorTest {
             final double[] currentResult = { sstate.getDate().durationFrom(this.initDate), angle };
 
             results.add(currentResult);
-
         }
 
         // Unitary validation based on SVS value
@@ -480,7 +485,6 @@ public class ExtremaSightAxisDetectorTest {
         Assert.assertEquals(Action.STOP, detector3.eventOccurred(s, true, false));
         Assert.assertEquals(Action.STOP, detector3.eventOccurred(s, false, true));
         Assert.assertEquals(Action.STOP, detector3.eventOccurred(s, false, false));
-
     }
 
     /**
@@ -550,7 +554,6 @@ public class ExtremaSightAxisDetectorTest {
         sstate = propagator.propagate(finalDate);
 
         Assert.assertEquals(reference, sstate.getDate().durationFrom(this.initDate), EPSILON_DURATION);
-
     }
 
     /**
@@ -731,6 +734,68 @@ public class ExtremaSightAxisDetectorTest {
     }
 
     /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final PVCoordinatesProvider target = this.targetMap.get("onBodyZero");
+        final ExtremaSightAxisDetector eventDetector1 = new ExtremaSightAxisDetector(
+            ExtremaSightAxisDetector.MIN, target, this.sightViewAxis, 600, 1e-6, Action.CONTINUE);
+        final ExtremaSightAxisDetector eventDetector2 = (ExtremaSightAxisDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        final KeplerianOrbit orbit = this.orbitMap.get("Retro");
+        final Propagator propagator = new KeplerianPropagator(orbit, this.attitude);
+        propagator.addEventDetector(wrapper1);
+        propagator.addEventDetector(wrapper2);
+        final SpacecraftState finalState = propagator.propagate(this.initDate.shiftedBy(orbit.getKeplerianPeriod()));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:01:38.446"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:01:38.446"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T13:47:43.735"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T13:47:43.735"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:01:38.418"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("2011-11-09T12:01:38.448"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T13:47:43.707"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("2011-11-09T13:47:43.740"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(target, eventDetector1.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+    }
+
+    /**
      * 
      * Implementation of a step handler to track the evolution of the physical value to track
      * 
@@ -838,7 +903,6 @@ public class ExtremaSightAxisDetectorTest {
 
                     // p3 : SightView Axis in spacecraft frame position is Axis, velocity is null
                     p3 = new PVCoordinates(this.sightViewAxis, Vector3D.ZERO);
-
                 }
 
                 // Angle between p1 and p3
@@ -852,6 +916,5 @@ public class ExtremaSightAxisDetectorTest {
                 e.printStackTrace();
             }
         }
-
     }
 }

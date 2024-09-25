@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2767:18/05/2021:Evolutions et corrections diverses 
@@ -59,7 +60,7 @@ import fr.cnes.sirius.patrius.assembly.properties.AeroProperty;
 import fr.cnes.sirius.patrius.assembly.properties.MassProperty;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
@@ -663,7 +664,7 @@ public class GlobalAeroModelTest {
         builder3.addProperty(new MassProperty(mass), "Main3");
         builder3.addProperty(new AeroProperty(0.11, 300, new AlphaConstant(1.)), "Main3");
 
-        final CelestialBody sun = new MeeusSun();
+        final CelestialPoint sun = new MeeusSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
             Constants.WGS84_EARTH_FLATTENING, FramesFactory.getMOD(false));
         final MSISE2000InputParameters data = new ContinuousMSISE2000SolarData(new ConstantSolarActivity(140, 15));

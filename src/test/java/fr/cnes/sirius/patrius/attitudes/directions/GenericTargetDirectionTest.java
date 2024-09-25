@@ -18,6 +18,9 @@
  * @history creation 30/11/2011
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:FA:FA-3201:03/11/2022:[PATRIUS] Prise en compte de l'aberration stellaire dans l'interface ITargetDirection
  * VERSION:4.9:DM:DM-3147:10/05/2022:[PATRIUS] Ajout a l'interface ITargetDirection d'une methode getTargetPvProv ...
@@ -29,8 +32,8 @@
 
 package fr.cnes.sirius.patrius.attitudes.directions;
 
-import junit.framework.Assert;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -306,7 +309,7 @@ public class GenericTargetDirectionTest {
      * @description Instantiation of a direction described by a target stationnary point in an arbitrary frame defined
      *              by a {@link BasicPVCoordinatesProvider}. The origin object is described by a {@link KeplerianOrbit}
      *              .The output result is the direction vector connecting both objects taking into account the delay of
-     *              signal propagation. The input frame is frozen in the ICRF frame, it leads to a difference between
+     *              signal propagation. The input frame is GCRF frame, it leads to a difference between
      *              the expected signal propagation duration and the actual one (absolute error of 1E-6 second).
      * 
      * @input the origin is a spacecraft created as {@link KeplerianOrbit}
@@ -328,8 +331,6 @@ public class GenericTargetDirectionTest {
         // frames used for testing
         final Frame gcrf = FramesFactory.getGCRF();
         final Frame icrf = FramesFactory.getICRF();
-        final Frame frozen = gcrf.getFrozenFrame(icrf, fixedDate, "");
-        final Transform frozenToGcrf = frozen.getTransformTo(gcrf, fixedDate);
 
         // target object
         final BasicPVCoordinatesProvider target = new BasicPVCoordinatesProvider(PVCoordinates.ZERO, gcrf);
@@ -344,12 +345,10 @@ public class GenericTargetDirectionTest {
         // delay of signal propagation between objects, slightly different
         // from the one computed by the method
         final double expectedDt = MathLib.divide(a, Constants.SPEED_OF_LIGHT);
-        System.out.println(expectedDt);
-        System.out.println();
         // local orbital frame
         final Frame lof = new LocalOrbitalFrame(gcrf, LOFType.QSW, origin, "orbital frame");
-        final Frame frozenLof = lof.getFrozenFrame(icrf, fixedDate, "");
-        final Transform frozenToLof = frozenLof.getTransformTo(lof, fixedDate);
+        final Frame propLofFrame = origin.getNativeFrame(fixedDate).getFirstPseudoInertialAncestor();
+        final Transform propToLof = propLofFrame.getTransformTo(lof, fixedDate);
 
         Vector3D actual;
         Vector3D expected;
@@ -365,12 +364,6 @@ public class GenericTargetDirectionTest {
         Vector3D sourceVelocityProjInFrame;
         // actual beta factor
         double actualBetaFactor;
-        // expected delta theta
-        double expectedDeltaTheta;
-        // actual theta
-        double actualTheta;
-        // actual delta theta
-        double actualDeltaTheta;
 
         PVCoordinates pvOrigin;
         PVCoordinates pvTarget;
@@ -441,18 +434,15 @@ public class GenericTargetDirectionTest {
             FixedDate.EMISSION, gcrf, eps);
         // with true signal propagation duration
         dt = 0.03335469884296893;
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozen);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), frozen);
-        // expected direction vector in frozen frame
+        pvOrigin = origin.getPVCoordinates(fixedDate, gcrf);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), gcrf);
         expected = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = frozenToGcrf.transformVector(expected);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // with expected signal propagation duration
         dt = expectedDt;
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), frozen);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), gcrf);
         // expected direction vector in frozen frame
         expected = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = frozenToGcrf.transformVector(expected);
         checkVector3DEquality(expected, actual, 1E-1, 1E-4);
 
         // from origin to target, fixed date is signal emission date
@@ -460,11 +450,9 @@ public class GenericTargetDirectionTest {
             FixedDate.RECEPTION, gcrf, eps);
         // with expected signal propagation duration
         dt = 0.033358120624931265;
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozen);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), frozen);
-        // expected direction vector in frozen frame
+        pvOrigin = origin.getPVCoordinates(fixedDate, gcrf);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), gcrf);
         expected = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = frozenToGcrf.transformVector(expected);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
 
         // direction vector computed in local orbital frame
@@ -474,31 +462,32 @@ public class GenericTargetDirectionTest {
             FixedDate.EMISSION, lof, eps);
         // with expected signal propagation duration
         dt = expectedDt;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        // expected direction vector in frozen frame
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        // expected direction vector in lof frame
         expected = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = frozenToLof.transformVector(expected);
-        checkVector3DEquality(expected, actual, 1E-1, 1E-4);
+        expected = propToLof.transformVector(expected);
+        checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
+
         // with the true signal propagation duration
-        dt = 0.03335812068567534;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        // expected direction vector in frozen frame
+        dt = 0.03335640951981521;
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        // expected direction vector in native lof frame
         expected = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = frozenToLof.transformVector(expected);
+        expected = propToLof.transformVector(expected);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
 
         // from origin to target, fixed date is signal reception date
         actual = toTarget.getVector(origin, SignalDirection.TOWARD_TARGET, AberrationCorrection.LIGHT_TIME, fixedDate,
             FixedDate.RECEPTION, lof, eps);
         // with the true signal propagation duration
-        dt = 0.03335469890377918;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        // expected direction vector in frozen frame
+        dt = 0.03335640951981521;
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        // expected direction vector in native lof frame
         expected = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = frozenToLof.transformVector(expected);
+        expected = propToLof.transformVector(expected);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
 
         // ABERRATION CORRECTION: STELLAR
@@ -512,14 +501,16 @@ public class GenericTargetDirectionTest {
         pvTarget = target.getPVCoordinates(t0, gcrf);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = StellarAberrationCorrection.applyInverseTo(origin, expectedPreStellarCorrection, gcrf, t0);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, origin
+            .getPVCoordinates(t0, gcrf).getVelocity(), SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // with expected signal propagation duration
         dt = expectedDt;
         pvTarget = target.getPVCoordinates(t0, gcrf);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = StellarAberrationCorrection.applyInverseTo(origin, expectedPreStellarCorrection, gcrf, t0);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, origin
+            .getPVCoordinates(t0, gcrf).getVelocity(), SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = origin.getPVCoordinates(t0, icrf).getVelocity();
@@ -529,14 +520,6 @@ public class GenericTargetDirectionTest {
         actualBetaFactor = sourceVelocityProjInFrame.getNorm() / Constants.SPEED_OF_LIGHT;
         // check beta factor
         Assert.assertEquals(approxExpectedBetaFactor, actualBetaFactor, 3E-7);
-        // expected delta theta
-        expectedDeltaTheta = Vector3D.angle(expectedPreStellarCorrection, expected);
-        // actual theta
-        actualTheta = Vector3D.angle(expectedPreStellarCorrection, sourceVelocityProjInFrame);
-        // actual delta theta
-        actualDeltaTheta = MathLib.asin(MathLib.sin(actualTheta) * actualBetaFactor);
-        // check delta theta
-        Assert.assertEquals(expectedDeltaTheta, actualDeltaTheta, this.comparisonEpsilon);
 
         // from origin to target, fixed date is signal emission date
         actual = toTarget.getVector(origin, SignalDirection.FROM_TARGET, AberrationCorrection.STELLAR, t0,
@@ -545,7 +528,8 @@ public class GenericTargetDirectionTest {
         pvTarget = target.getPVCoordinates(t0, gcrf);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
-        expected = StellarAberrationCorrection.applyTo(origin, expectedPreStellarCorrection.negate(), gcrf, t0);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection.negate(), origin
+            .getPVCoordinates(t0, gcrf).getVelocity(), SignalDirection.FROM_TARGET);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = origin.getPVCoordinates(t0, icrf).getVelocity();
@@ -555,14 +539,6 @@ public class GenericTargetDirectionTest {
         actualBetaFactor = sourceVelocityProjInFrame.getNorm() / Constants.SPEED_OF_LIGHT;
         // check beta factor
         Assert.assertEquals(approxExpectedBetaFactor, actualBetaFactor, 2E-6);
-        // expected delta theta
-        expectedDeltaTheta = Vector3D.angle(expectedPreStellarCorrection, expected.negate());
-        // actual theta
-        actualTheta = Vector3D.angle(expectedPreStellarCorrection, sourceVelocityProjInFrame);
-        // actual delta theta
-        actualDeltaTheta = MathLib.asin(MathLib.sin(actualTheta) * actualBetaFactor);
-        // check delta theta
-        Assert.assertEquals(expectedDeltaTheta, actualDeltaTheta, this.comparisonEpsilon);
 
         // direction vector computed in local orbital frame
 
@@ -573,7 +549,8 @@ public class GenericTargetDirectionTest {
         pvTarget = target.getPVCoordinates(t0, lof);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
-        expected = StellarAberrationCorrection.applyInverseTo(target, expectedPreStellarCorrection, lof, t0).negate();
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, target
+            .getPVCoordinates(t0, lof).getVelocity(), SignalDirection.TOWARD_TARGET).negate();
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // with the true signal propagation duration
         dt = 0.03335812068567534;
@@ -581,7 +558,8 @@ public class GenericTargetDirectionTest {
         pvTarget = target.getPVCoordinates(t0, lof);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
-        expected = StellarAberrationCorrection.applyInverseTo(target, expectedPreStellarCorrection, lof, t0).negate();
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, target
+            .getPVCoordinates(t0, lof).getVelocity(), SignalDirection.TOWARD_TARGET).negate();
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = target.getPVCoordinates(t0, icrf).getVelocity();
@@ -591,14 +569,6 @@ public class GenericTargetDirectionTest {
         actualBetaFactor = sourceVelocityProjInFrame.getNorm() / Constants.SPEED_OF_LIGHT;
         // check beta factor
         Assert.assertEquals(approxExpectedBetaFactor, actualBetaFactor, 2E-6);
-        // expected delta theta
-        expectedDeltaTheta = Vector3D.angle(expectedPreStellarCorrection, expected.negate());
-        // actual theta
-        actualTheta = Vector3D.angle(expectedPreStellarCorrection, sourceVelocityProjInFrame);
-        // actual delta theta
-        actualDeltaTheta = MathLib.asin(MathLib.sin(actualTheta) * actualBetaFactor);
-        // check delta theta
-        Assert.assertEquals(expectedDeltaTheta, actualDeltaTheta, this.comparisonEpsilon);
 
         // from origin to target, fixed date is signal reception date
         actual = toTarget.getVector(origin, SignalDirection.TOWARD_TARGET, AberrationCorrection.STELLAR, t0,
@@ -607,7 +577,8 @@ public class GenericTargetDirectionTest {
         pvTarget = target.getPVCoordinates(t0, lof);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expected = StellarAberrationCorrection.applyTo(target, expectedPreStellarCorrection.negate(), lof, t0).negate();
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection.negate(), target
+            .getPVCoordinates(t0, lof).getVelocity(), SignalDirection.TOWARD_TARGET).negate();
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = target.getPVCoordinates(t0, icrf).getVelocity();
@@ -617,14 +588,6 @@ public class GenericTargetDirectionTest {
         actualBetaFactor = sourceVelocityProjInFrame.getNorm() / Constants.SPEED_OF_LIGHT;
         // check beta factor
         Assert.assertEquals(approxExpectedBetaFactor, actualBetaFactor, 2E-6);
-        // expected delta theta
-        expectedDeltaTheta = Vector3D.angle(expectedPreStellarCorrection, expected);
-        // actual theta
-        actualTheta = Vector3D.angle(expectedPreStellarCorrection, sourceVelocityProjInFrame);
-        // actual delta theta
-        actualDeltaTheta = MathLib.asin(MathLib.sin(actualTheta) * actualBetaFactor);
-        // check delta theta
-        Assert.assertEquals(expectedDeltaTheta, actualDeltaTheta, this.comparisonEpsilon);
 
         // ABERRATION CORRECTION: ALL
 
@@ -635,20 +598,20 @@ public class GenericTargetDirectionTest {
             FixedDate.EMISSION, gcrf, eps);
         // with expected signal propagation duration
         dt = expectedDt;
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozen);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), frozen);
+        pvOrigin = origin.getPVCoordinates(fixedDate, gcrf);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), gcrf);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expectedPreStellarCorrection = frozenToGcrf.transformVector(expectedPreStellarCorrection);
-        expected = StellarAberrationCorrection.applyInverseTo(origin, expectedPreStellarCorrection, gcrf, fixedDate);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, origin
+            .getPVCoordinates(fixedDate, gcrf).getVelocity(), SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(expected, actual, 6E-2, 1.0004);
         // with true signal propagation duration
         dt = 0.03335469884296893;
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), frozen);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), gcrf);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expectedPreStellarCorrection = frozenToGcrf.transformVector(expectedPreStellarCorrection);
-        expected = StellarAberrationCorrection.applyInverseTo(origin, expectedPreStellarCorrection, gcrf, fixedDate);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, origin
+            .getPVCoordinates(fixedDate, gcrf).getVelocity(), SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = origin.getPVCoordinates(t0, icrf).getVelocity();
@@ -658,26 +621,18 @@ public class GenericTargetDirectionTest {
         actualBetaFactor = sourceVelocityProjInFrame.getNorm() / Constants.SPEED_OF_LIGHT;
         // check beta factor
         Assert.assertEquals(approxExpectedBetaFactor, actualBetaFactor, 3E-7);
-        // expected delta theta
-        expectedDeltaTheta = Vector3D.angle(expectedPreStellarCorrection, expected);
-        // actual theta
-        actualTheta = Vector3D.angle(expectedPreStellarCorrection, sourceVelocityProjInFrame);
-        // actual delta theta
-        actualDeltaTheta = MathLib.asin(MathLib.sin(actualTheta) * actualBetaFactor);
-        // check delta theta
-        Assert.assertEquals(expectedDeltaTheta, actualDeltaTheta, 4E-5);
 
         // from origin to target, fixed date is signal emission date
         actual = toTarget.getVector(origin, SignalDirection.FROM_TARGET, AberrationCorrection.ALL, fixedDate,
             FixedDate.RECEPTION, gcrf, eps);
         // with expected signal propagation duration
         dt = 0.033358120624931265;
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozen);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), frozen);
+        pvOrigin = origin.getPVCoordinates(fixedDate, gcrf);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), gcrf);
         // expected direction vector in frozen frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
-        expectedPreStellarCorrection = frozenToGcrf.transformVector(expectedPreStellarCorrection);
-        expected = StellarAberrationCorrection.applyTo(origin, expectedPreStellarCorrection.negate(), gcrf, fixedDate);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection.negate(), origin
+            .getPVCoordinates(fixedDate, gcrf).getVelocity(), SignalDirection.FROM_TARGET);
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = target.getPVCoordinates(t0, icrf).getVelocity();
@@ -687,14 +642,6 @@ public class GenericTargetDirectionTest {
         actualBetaFactor = sourceVelocityProjInFrame.getNorm() / Constants.SPEED_OF_LIGHT;
         // check beta factor
         Assert.assertEquals(approxExpectedBetaFactor, actualBetaFactor, 2E-6);
-        // expected delta theta
-        expectedDeltaTheta = Vector3D.angle(expectedPreStellarCorrection, expected.negate());
-        // actual theta
-        actualTheta = Vector3D.angle(expectedPreStellarCorrection, sourceVelocityProjInFrame);
-        // actual delta theta
-        actualDeltaTheta = MathLib.asin(MathLib.sin(actualTheta) * actualBetaFactor);
-        // check delta theta
-        Assert.assertEquals(expectedDeltaTheta, actualDeltaTheta, 4E-5);
 
         // direction vector computed in local orbital frame
 
@@ -703,23 +650,25 @@ public class GenericTargetDirectionTest {
             FixedDate.EMISSION, lof, eps);
         // with expected signal propagation duration
         dt = expectedDt;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        // expected direction vector in frozen frame
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        // expected direction vector in native lof frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
-        expectedPreStellarCorrection = frozenToLof.transformVector(expectedPreStellarCorrection);
-        expected = StellarAberrationCorrection.applyInverseTo(target, expectedPreStellarCorrection, lof,
-            fixedDate).negate();
-        checkVector3DEquality(expected, actual, 1E-1, 1);
-        // with the true signal propagation duration
-        dt = 0.03335812068567534;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), frozenLof);
-        // expected direction vector in frozen frame
-        expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
-        expectedPreStellarCorrection = frozenToLof.transformVector(expectedPreStellarCorrection);
-        expected = StellarAberrationCorrection.applyInverseTo(target, expectedPreStellarCorrection, lof,
-            fixedDate).negate();
+        expectedPreStellarCorrection = propToLof.transformVector(expectedPreStellarCorrection);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, target
+            .getPVCoordinates(fixedDate, lof).getVelocity(), SignalDirection.TOWARD_TARGET).negate();
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
+
+        // with the true signal propagation duration
+        dt = 0.03335640951981521;
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), propLofFrame);
+        // expected direction vector in native lof frame
+        expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate();
+        expectedPreStellarCorrection = propToLof.transformVector(expectedPreStellarCorrection);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection, target
+            .getPVCoordinates(fixedDate, lof).getVelocity(), SignalDirection.TOWARD_TARGET).negate();
+        checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
+
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = target.getPVCoordinates(t0, icrf).getVelocity();
         // source velocity projected in LOF frame
@@ -733,14 +682,14 @@ public class GenericTargetDirectionTest {
         actual = toTarget.getVector(origin, SignalDirection.TOWARD_TARGET, AberrationCorrection.ALL, fixedDate,
             FixedDate.RECEPTION, lof, eps);
         // with the true signal propagation duration
-        dt = 0.03335469890377918;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        // expected direction vector in frozen frame
+        dt = 0.03335640951981521;
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        // expected direction vector in native lof frame
         expectedPreStellarCorrection = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        expectedPreStellarCorrection = frozenToLof.transformVector(expectedPreStellarCorrection);
-        expected = StellarAberrationCorrection.applyTo(target, expectedPreStellarCorrection.negate(), lof,
-            fixedDate).negate();
+        expectedPreStellarCorrection = propToLof.transformVector(expectedPreStellarCorrection);
+        expected = LightAberrationTransformation.applyTo(expectedPreStellarCorrection.negate(), target
+            .getPVCoordinates(fixedDate, lof).getVelocity(), SignalDirection.FROM_TARGET).negate();
         checkVector3DEquality(expected, actual, this.comparisonEpsilon, this.comparisonEpsilon);
         // inertial velocity of source in ICRF frame
         sourceVelocityInIcrf = origin.getPVCoordinates(t0, icrf).getVelocity();
@@ -784,12 +733,8 @@ public class GenericTargetDirectionTest {
         // arbitrary fixed date for signal emission/reception
         final AbsoluteDate fixedDate = t0.shiftedBy(10);
 
-        // ICRF Frame
-        final Frame icrf = FramesFactory.getICRF();
         // GCRF Frame
         final Frame gcrf = FramesFactory.getGCRF();
-        final Frame frozenGcrf = gcrf.getFrozenFrame(icrf, fixedDate, " ");
-        final Transform frozenToGcrf = frozenGcrf.getTransformTo(gcrf, fixedDate);
 
         // spherical coordinates of ground station
         final double lat = MathLib.toRadians(25.);
@@ -802,8 +747,8 @@ public class GenericTargetDirectionTest {
         // local frame
         final Transform t = new Transform(t0, posInGcrf);
         final Frame stationFrame = new Frame(gcrf, t, "station local frame", true);
-        final Frame frozenStationFrame = stationFrame.getFrozenFrame(icrf, fixedDate, " ");
-        final Transform frozenToStation = frozenStationFrame.getTransformTo(stationFrame, fixedDate);
+        final Frame propStationFrame = stationFrame.getNativeFrame(fixedDate).getFirstPseudoInertialAncestor();
+        final Transform propToStation = propStationFrame.getTransformTo(stationFrame, fixedDate);
 
         // target object is a basic pv provider
         final BasicPVCoordinatesProvider target = new BasicPVCoordinatesProvider(new PVCoordinates(posInGcrf,
@@ -817,8 +762,8 @@ public class GenericTargetDirectionTest {
             t0, mu);
         // local orbital frame
         final Frame lof = new LocalOrbitalFrame(gcrf, LOFType.QSW, origin, "orbital frame");
-        final Frame frozenLof = lof.getFrozenFrame(icrf, fixedDate, " ");
-        final Transform frozenToLof = frozenLof.getTransformTo(lof, fixedDate);
+        final Frame propLofFrame = origin.getNativeFrame(fixedDate).getFirstPseudoInertialAncestor();
+        final Transform propToLof = propLofFrame.getTransformTo(lof, fixedDate);
 
         Line actual;
         Vector3D direction;
@@ -886,53 +831,52 @@ public class GenericTargetDirectionTest {
         // expected signal propagation delay
         dt = MathLib.divide(toTarget.getVector(origin, fixedDate, gcrf).getNorm(), Constants.SPEED_OF_LIGHT);
         // the direction vector with delay is the same as without delay if computed in gcrf frame
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozenStationFrame);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), frozenStationFrame);
-        direction = frozenToStation.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()));
+        pvOrigin = origin.getPVCoordinates(fixedDate, propStationFrame);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), propStationFrame);
+        direction = propToStation.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()));
         // the equality is not strict due to delta between expected propagation duration
         // and the duration computed by the model
         checkVector3DEquality(direction.normalize(), actual.getDirection(), 3E-9, 6E-9);
-        Assert.assertTrue(actual.distance(frozenToStation.transformPosition(pvOrigin.getPosition())) < 1E-9);
+        Assert.assertTrue(actual.distance(propToStation.transformPosition(pvOrigin.getPosition())) < 1.1E-5);
 
         // from origin to target, fixed date is signal reception date
         // computed in LOCAL ORBITAL FRAME
         actual = toTarget.getLine(origin, SignalDirection.TOWARD_TARGET, AberrationCorrection.LIGHT_TIME, fixedDate,
             FixedDate.RECEPTION, lof, eps);
         // true signal propagation duration
-        dt = 0.014442019927144223;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        direction = frozenToLof.transformVector(pvOrigin.getPosition().subtract(pvTarget.getPosition()));
-        checkVector3DEquality(direction.normalize(), actual.getDirection(), this.comparisonEpsilon,
-            this.comparisonEpsilon);
-        Assert.assertTrue(actual.distance(frozenToLof.transformPosition(pvOrigin.getPosition())) < 2E-10);
-        Assert.assertTrue(actual.distance(frozenToLof.transformPosition(pvTarget.getPosition())) < 2E-9);
+        dt = MathLib.divide(toTarget.getVector(origin, fixedDate, lof).getNorm(), Constants.SPEED_OF_LIGHT);
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        direction = propToLof.transformVector(pvOrigin.getPosition().subtract(pvTarget.getPosition()));
+        checkVector3DEquality(direction.normalize(), actual.getDirection(), 6e-10, 9e-10);
+        Assert.assertTrue(actual.distance(propToLof.transformPosition(pvOrigin.getPosition())) < 3e-3);
+        Assert.assertTrue(actual.distance(propToLof.transformPosition(pvTarget.getPosition())) < 1.1e-5);
 
         // from target to origin, fixed date is signal emission date
         // computed in LOCAL ORBITAL FRAME
         actual = toTarget.getLine(origin, SignalDirection.FROM_TARGET, AberrationCorrection.LIGHT_TIME, fixedDate,
             FixedDate.RECEPTION, lof, eps);
         // true signal propagation duration
-        dt = 0.014440818596972216;
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), frozenLof);
-        direction = frozenToLof.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()));
+        dt = MathLib.divide(toTarget.getVector(origin, fixedDate, lof).getNorm(), Constants.SPEED_OF_LIGHT);
+        pvOrigin = origin.getPVCoordinates(fixedDate, propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), propLofFrame);
+        direction = propToLof.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()));
         checkVector3DEquality(direction.normalize(), actual.getDirection(), this.comparisonEpsilon,
             this.comparisonEpsilon);
-        Assert.assertTrue(actual.distance(pvOrigin.getPosition()) < this.comparisonEpsilon);
-
+        Assert.assertTrue(actual.distance(propToLof.transformPosition(pvOrigin.getPosition())) < 1.4e-5);
+        Assert.assertTrue(actual.distance(propToLof.transformPosition(pvTarget.getPosition())) < 1.4e-5);
+        
         // from target to origin, fixed date is signal reception date
         // computed in GCRF
         actual = toTarget.getLine(origin, SignalDirection.FROM_TARGET, AberrationCorrection.LIGHT_TIME, fixedDate,
             FixedDate.EMISSION, gcrf, eps);
         // true signal propagation duration
-        dt = 0.014440598718237885;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), frozenGcrf);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenGcrf);
-        direction = frozenToGcrf.transformVector(pvOrigin.getPosition().subtract(pvTarget.getPosition()));
-        checkVector3DEquality(direction.normalize(), actual.getDirection(), this.comparisonEpsilon,
-            this.comparisonEpsilon);
-        Assert.assertTrue(actual.distance(frozenToGcrf.transformPosition(pvTarget.getPosition())) < 3E-10);
+        dt = MathLib.divide(toTarget.getVector(origin, fixedDate, gcrf).getNorm(), Constants.SPEED_OF_LIGHT);
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), gcrf);
+        pvTarget = target.getPVCoordinates(fixedDate, gcrf);
+        direction = pvOrigin.getPosition().subtract(pvTarget.getPosition());
+        checkVector3DEquality(direction.normalize(), actual.getDirection(), 2.4e-10, 5e-10);
+        Assert.assertTrue(actual.distance(pvTarget.getPosition()) < 3E-10);
 
         // ABERRATION CORRECTION: STELLAR
 
@@ -943,7 +887,8 @@ public class GenericTargetDirectionTest {
         pvOrigin = origin.getPVCoordinates(t0, stationFrame);
         pvTarget = target.getPVCoordinates(t0, stationFrame);
         direction = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        direction = StellarAberrationCorrection.applyInverseTo(origin, direction, stationFrame, t0);
+        direction = LightAberrationTransformation.applyTo(direction, origin.getPVCoordinates(t0, stationFrame)
+            .getVelocity(), SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(direction.normalize(), actual.getDirection(), this.comparisonEpsilon,
             this.comparisonEpsilon);
         Assert.assertTrue(actual.distance(pvOrigin.getPosition()) < 5E-6);
@@ -955,7 +900,8 @@ public class GenericTargetDirectionTest {
         pvOrigin = origin.getPVCoordinates(t0, lof);
         pvTarget = target.getPVCoordinates(t0, lof);
         direction = pvOrigin.getPosition().subtract(pvTarget.getPosition());
-        direction = StellarAberrationCorrection.applyInverseTo(origin, direction, lof, t0);
+        direction = LightAberrationTransformation.applyTo(direction, origin.getPVCoordinates(t0, lof).getVelocity(),
+            SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(direction.normalize(), actual.getDirection(), 2E-4, 4E-4);
         Assert.assertTrue(actual.distance(pvTarget.getPosition()) < 8E-7);
 
@@ -966,7 +912,8 @@ public class GenericTargetDirectionTest {
         pvOrigin = origin.getPVCoordinates(t0, lof);
         pvTarget = target.getPVCoordinates(t0, lof);
         direction = pvTarget.getPosition().subtract(pvOrigin.getPosition());
-        direction = StellarAberrationCorrection.applyTo(target, direction, lof, t0);
+        direction = LightAberrationTransformation.applyTo(direction, target.getPVCoordinates(t0, lof).getVelocity(),
+            SignalDirection.FROM_TARGET);
         checkVector3DEquality(direction.normalize(), actual.getDirection(), 2E-4, 4E-4);
         Assert.assertTrue(actual.distance(pvOrigin.getPosition()) < 8E-7);
 
@@ -977,10 +924,11 @@ public class GenericTargetDirectionTest {
         pvTarget = target.getPVCoordinates(t0, gcrf);
         pvOrigin = origin.getPVCoordinates(t0, gcrf);
         direction = pvOrigin.getPosition().subtract(pvTarget.getPosition()).negate();
-        direction = StellarAberrationCorrection.applyTo(target, direction, gcrf, t0).negate();
+        direction = LightAberrationTransformation.applyTo(direction, target.getPVCoordinates(t0, gcrf).getVelocity(),
+            SignalDirection.FROM_TARGET).negate();
         checkVector3DEquality(direction.normalize(), actual.getDirection(), this.comparisonEpsilon,
             this.comparisonEpsilon);
-        Assert.assertTrue(actual.distance(pvTarget.getPosition()) < 3E-10);
+        Assert.assertTrue(actual.distance(pvTarget.getPosition()) < 4E-10);
 
         // ABERRATION CORRECTION: ALL
 
@@ -991,54 +939,57 @@ public class GenericTargetDirectionTest {
         // expected signal propagation delay
         dt = MathLib.divide(toTarget.getVector(origin, fixedDate, gcrf).getNorm(), Constants.SPEED_OF_LIGHT);
         // the direction vector with delay is the same as without delay if computed in gcrf frame
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozenStationFrame);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), frozenStationFrame);
-        direction = frozenToStation.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()));
-        direction = StellarAberrationCorrection.applyInverseTo(origin, direction, stationFrame, fixedDate);
+        pvOrigin = origin.getPVCoordinates(fixedDate, propStationFrame);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(dt), propStationFrame);
+        direction = propToStation.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()));
+        direction = LightAberrationTransformation.applyTo(direction, origin.getPVCoordinates(fixedDate, stationFrame)
+            .getVelocity(), SignalDirection.TOWARD_TARGET);
         // the equality is not strict due to delta between expected propagation duration
         // and the duration computed by the model
         checkVector3DEquality(direction.normalize(), actual.getDirection(), 3E-9, 6E-9);
-        Assert.assertTrue(actual.distance(frozenToStation.transformPosition(pvOrigin.getPosition())) < 2E-10);
+        Assert.assertTrue(actual.distance(propToStation.transformPosition(pvOrigin.getPosition())) < 1.1e-5);
 
         // from origin to target, fixed date is signal reception date
         // computed in LOCAL ORBITAL FRAME
         actual = toTarget.getLine(origin, SignalDirection.TOWARD_TARGET, AberrationCorrection.ALL, fixedDate,
             FixedDate.RECEPTION, lof, eps);
         // true signal propagation duration
-        dt = 0.014442019927144223;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenLof);
-        direction = frozenToLof.transformVector(pvOrigin.getPosition().subtract(pvTarget.getPosition()));
-        direction = StellarAberrationCorrection.applyInverseTo(origin, direction, lof, fixedDate);
+        dt = MathLib.divide(toTarget.getVector(origin, fixedDate, lof).getNorm(), Constants.SPEED_OF_LIGHT);
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(-dt), propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate, propLofFrame);
+        direction = propToLof.transformVector(pvOrigin.getPosition().subtract(pvTarget.getPosition()));
+        direction = LightAberrationTransformation.applyTo(direction, origin.getPVCoordinates(fixedDate, lof)
+            .getVelocity(), SignalDirection.TOWARD_TARGET);
         checkVector3DEquality(direction.normalize(), actual.getDirection(), 2E-4, 4E-4);
-        Assert.assertTrue(actual.distance(frozenToLof.transformPosition(pvTarget.getPosition())) < 2E-9);
+        Assert.assertTrue(actual.distance(propToLof.transformPosition(pvTarget.getPosition())) < 1.1e-5);
 
         // from target to origin, fixed date is signal emission date
         // computed in LOCAL ORBITAL FRAME
         actual = toTarget.getLine(origin, SignalDirection.FROM_TARGET, AberrationCorrection.ALL, fixedDate,
             FixedDate.RECEPTION, lof, eps);
         // true signal propagation duration
-        dt = 0.014440818596972216;
-        pvOrigin = origin.getPVCoordinates(fixedDate, frozenLof);
-        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), frozenLof);
-        direction = frozenToLof.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate());
-        direction = StellarAberrationCorrection.applyTo(target, direction, lof, fixedDate).negate();
+        dt = MathLib.divide(toTarget.getVector(origin, fixedDate, lof).getNorm(), Constants.SPEED_OF_LIGHT);
+        pvOrigin = origin.getPVCoordinates(fixedDate, propLofFrame);
+        pvTarget = target.getPVCoordinates(fixedDate.shiftedBy(-dt), propLofFrame);
+        direction = propToLof.transformVector(pvTarget.getPosition().subtract(pvOrigin.getPosition()).negate());
+        direction = LightAberrationTransformation.applyTo(direction,
+            target.getPVCoordinates(fixedDate, lof).getVelocity(), SignalDirection.FROM_TARGET).negate();
         checkVector3DEquality(direction.normalize(), actual.getDirection(), 2E-4, 4E-4);
-        Assert.assertTrue(actual.distance(pvOrigin.getPosition()) < this.comparisonEpsilon);
+        Assert.assertTrue(actual.distance(propToLof.transformPosition(pvOrigin.getPosition())) < 1.4e-5);
 
         // from target to origin, fixed date is signal reception date
         // computed in GCRF
         actual = toTarget.getLine(origin, SignalDirection.FROM_TARGET, AberrationCorrection.ALL, fixedDate,
             FixedDate.EMISSION, gcrf, eps);
         // true signal propagation duration
-        dt = 0.014440598718237885;
-        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), frozenGcrf);
-        pvTarget = target.getPVCoordinates(fixedDate, frozenGcrf);
-        direction = frozenToGcrf.transformVector(pvOrigin.getPosition().subtract(pvTarget.getPosition()).negate());
-        direction = StellarAberrationCorrection.applyTo(target, direction, gcrf, fixedDate).negate();
-        checkVector3DEquality(direction.normalize(), actual.getDirection(), this.comparisonEpsilon,
-            this.comparisonEpsilon);
-        Assert.assertTrue(actual.distance(frozenToGcrf.transformPosition(pvTarget.getPosition())) < 3E-10);
+        dt = MathLib.divide(toTarget.getVector(origin, fixedDate, lof).getNorm(), Constants.SPEED_OF_LIGHT);
+        pvOrigin = origin.getPVCoordinates(fixedDate.shiftedBy(dt), gcrf);
+        pvTarget = target.getPVCoordinates(fixedDate, gcrf);
+        direction = pvOrigin.getPosition().subtract(pvTarget.getPosition()).negate();
+        direction = LightAberrationTransformation.applyTo(direction,
+            target.getPVCoordinates(fixedDate, gcrf).getVelocity(), SignalDirection.FROM_TARGET).negate();
+        checkVector3DEquality(direction.normalize(), actual.getDirection(), 2.4e-10, 3.9e-10);
+        Assert.assertTrue(actual.distance(pvTarget.getPosition()) < 3E-10);
     }
 
     /**
@@ -1082,41 +1033,33 @@ public class GenericTargetDirectionTest {
         // Results are not round because of GCRF / ICRF relative movement during the signal propagation
 
         // No aberration correction
-        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.NONE, FixedDate.EMISSION, new Vector3D(1.0,
-            0.0, 0.0));
-        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.NONE, FixedDate.RECEPTION, new Vector3D(1.0,
-            0.0, 0.0));
-        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.NONE, FixedDate.EMISSION, new Vector3D(1.0,
-            0.0, 0.0));
-        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.NONE, FixedDate.RECEPTION, new Vector3D(1.0,
-            0.0, 0.0));
+        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.NONE, FixedDate.EMISSION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.NONE, FixedDate.RECEPTION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.NONE, FixedDate.EMISSION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.NONE, FixedDate.RECEPTION, Vector3D.PLUS_I);
+
         // Stellar aberration correction
-        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.STELLAR, FixedDate.EMISSION, new Vector3D(
-            0.9999999998328042, 1.6777453297209673E-5, 7.273848681420285E-6));
-        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.STELLAR, FixedDate.RECEPTION, new Vector3D(
-            1.0, 0.0, 0.0));
-        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.STELLAR, FixedDate.EMISSION, new Vector3D(1.0,
-            0.0, 0.0));
-        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.STELLAR, FixedDate.RECEPTION, new Vector3D(
-            0.9999999998328042, -1.6777453297209673E-5, -7.273848681420285E-6));
+        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.STELLAR, FixedDate.EMISSION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.STELLAR, FixedDate.RECEPTION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.STELLAR, FixedDate.EMISSION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.STELLAR, FixedDate.RECEPTION, Vector3D.PLUS_I);
+
         // Light-time aberration correction
         testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.LIGHT_TIME, FixedDate.EMISSION, new Vector3D(
             -3.335640863497846E-9, 1.0, 0.0));
         testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.LIGHT_TIME, FixedDate.RECEPTION,
-            new Vector3D(0.999999999832806, -1.67773606560119E-5, -7.273808575969392E-6));
-        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.LIGHT_TIME, FixedDate.EMISSION, new Vector3D(
-            0.9999999998328022, 1.6777545958801177E-5, 7.273888795725275E-6));
+            Vector3D.PLUS_I);
+        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.LIGHT_TIME, FixedDate.EMISSION, Vector3D.PLUS_I);
         testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.LIGHT_TIME, FixedDate.RECEPTION, new Vector3D(
             0.9949874371066201, -0.0999999999999995, 0.0));
+
         // All aberration corrections
         testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.ALL, FixedDate.EMISSION, new Vector3D(
-            9.934855497244164E-5, 0.999999995038478, 7.273848681420279E-6));
-        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.ALL, FixedDate.RECEPTION, new Vector3D(
-            0.999999999832806, -1.677736071197515E-5, -7.273808600232205E-6));
-        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.ALL, FixedDate.EMISSION, new Vector3D(
-            0.9999999998328022, 1.6777545902837307E-5, 7.273888771462194E-6));
+            -3.335640863497846E-9, 1., 0.));
+        testDirection(SignalDirection.TOWARD_TARGET, AberrationCorrection.ALL, FixedDate.RECEPTION, Vector3D.PLUS_I);
+        testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.ALL, FixedDate.EMISSION, Vector3D.PLUS_I);
         testDirection(SignalDirection.FROM_TARGET, AberrationCorrection.ALL, FixedDate.RECEPTION, new Vector3D(
-            0.9949847738731045, -0.10002649502896005, -7.273848681420281E-6));
+            0.9949874371066201, -0.0999999999999995, 0.));
     }
 
     /**
@@ -1127,7 +1070,7 @@ public class GenericTargetDirectionTest {
      * @param fixedDate fixed date type
      * @param expected expected result
      */
-    private void testDirection(final SignalDirection signalDirection,
+    private static void testDirection(final SignalDirection signalDirection,
                                final AberrationCorrection aberrationCorrection,
                                final FixedDate fixedDate,
                                final Vector3D expected) throws PatriusException {
@@ -1138,8 +1081,10 @@ public class GenericTargetDirectionTest {
         final PVCoordinatesProvider origin = new ConstantPVCoordinatesProvider(Vector3D.ZERO, frame);
         // Target of the form (a, b, 0.)
         final PVCoordinatesProvider target = new PVCoordinatesProvider(){
+            private static final long serialVersionUID = 7639723301982513122L;
+
             @Override
-            public PVCoordinates getPVCoordinates(AbsoluteDate date, Frame frame) throws PatriusException {
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) {
                 final double dt = date.durationFrom(originDate);
                 Vector3D position;
                 if (date.durationFrom(originDate) < 0) {
@@ -1157,15 +1102,13 @@ public class GenericTargetDirectionTest {
             }
 
             @Override
-            public Frame getNativeFrame(AbsoluteDate date, Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return null;
             }
         };
         final GenericTargetDirection direction = new GenericTargetDirection(target);
         final Vector3D dir = direction.getVector(origin, signalDirection, aberrationCorrection, originDate, fixedDate,
-            frame,
-            1E-12);
-        System.out.println(signalDirection + " " + aberrationCorrection + " " + fixedDate + " " + dir.normalize());
+            frame, 1E-12);
         Assert.assertEquals(0., dir.normalize().subtract(expected).getNorm(), 0.);
     }
 }

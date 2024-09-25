@@ -15,12 +15,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.bodies;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * This class aims at gathering in one single object the three coordinates latitude, longitude and height, and the
@@ -114,5 +116,32 @@ public class LLHCoordinates implements Serializable {
     public String toString() {
         return String.format("%s={lat=%s, long=%s}rad, %s=%sm", this.coordSystem.getLatLongSystemLabel(),
             this.latitude, this.longitude, this.coordSystem.getHeightSystemLabel(), this.height);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == this.getClass())) {
+            // Same object type: check all attributes
+            final LLHCoordinates other = (LLHCoordinates) object;
+
+            isEqual = Objects.equals(this.coordSystem, other.coordSystem)
+                    && Double.doubleToLongBits(this.latitude) == Double.doubleToLongBits(other.latitude)
+                    && Double.doubleToLongBits(this.longitude) == Double.doubleToLongBits(other.longitude)
+                    && Double.doubleToLongBits(this.height) == Double.doubleToLongBits(other.height);
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.coordSystem, this.latitude, this.longitude, this.height);
     }
 }

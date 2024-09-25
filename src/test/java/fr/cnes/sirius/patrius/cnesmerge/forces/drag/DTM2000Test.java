@@ -18,6 +18,8 @@
  * @history created 14/02/12
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -43,6 +45,7 @@ import fr.cnes.sirius.patrius.forces.atmospheres.DTMInputParameters;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ACSOLFormatReader;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataFactory;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.specialized.DTMSolarData;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -99,7 +102,7 @@ public class DTM2000Test {
      */
     @Test(expected = PatriusException.class)
     public void getDensityError() throws PatriusException {
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.460, 1.0 / 298.257222101, itrf);
         final SolarInputs97to05 in = SolarInputs97to05.getInstance();

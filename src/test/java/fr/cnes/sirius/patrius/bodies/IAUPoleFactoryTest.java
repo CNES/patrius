@@ -18,6 +18,7 @@
  * @history created 17/02/2017
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:FA:FA-2945:15/11/2021:[PATRIUS] Utilisation des degres dans des fonctions mathematiques 
@@ -29,8 +30,7 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,6 +42,7 @@ import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * Test class for class {@link IAUPoleFactory}.
@@ -54,24 +55,24 @@ public class IAUPoleFactoryTest {
     }
 
     @Test
-    public void testPoleData() {
+    public void testPoleData() throws PatriusException {
         Utils.setDataRoot("regular-data");
 
         Report.printMethodHeader("testPoleData", "Pole data (alpha, delta, W) computation", "Scilab", 1E-12,
             ComparisonType.ABSOLUTE);
 
         // Actual data
-        final IAUPole sunActual = IAUPoleFactory.getIAUPole(EphemerisType.SUN);
-        final IAUPole mercuryActual = IAUPoleFactory.getIAUPole(EphemerisType.MERCURY);
-        final IAUPole venusActual = IAUPoleFactory.getIAUPole(EphemerisType.VENUS);
-        final IAUPole earthActual = IAUPoleFactory.getIAUPole(EphemerisType.EARTH);
-        final IAUPole moonActual = IAUPoleFactory.getIAUPole(EphemerisType.MOON);
-        final IAUPole marsActual = IAUPoleFactory.getIAUPole(EphemerisType.MARS);
-        final IAUPole jupiterActual = IAUPoleFactory.getIAUPole(EphemerisType.JUPITER);
-        final IAUPole saturnActual = IAUPoleFactory.getIAUPole(EphemerisType.SATURN);
-        final IAUPole uranusActual = IAUPoleFactory.getIAUPole(EphemerisType.URANUS);
-        final IAUPole neptuneActual = IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE);
-        final IAUPole plutoActual = IAUPoleFactory.getIAUPole(EphemerisType.PLUTO);
+        final CelestialBodyIAUOrientation sunActual = IAUPoleFactory.getIAUPole(EphemerisType.SUN);
+        final CelestialBodyIAUOrientation mercuryActual = IAUPoleFactory.getIAUPole(EphemerisType.MERCURY);
+        final CelestialBodyIAUOrientation venusActual = IAUPoleFactory.getIAUPole(EphemerisType.VENUS);
+        final CelestialBodyIAUOrientation earthActual = IAUPoleFactory.getIAUPole(EphemerisType.EARTH);
+        final CelestialBodyIAUOrientation moonActual = IAUPoleFactory.getIAUPole(EphemerisType.MOON);
+        final CelestialBodyIAUOrientation marsActual = IAUPoleFactory.getIAUPole(EphemerisType.MARS);
+        final CelestialBodyIAUOrientation jupiterActual = IAUPoleFactory.getIAUPole(EphemerisType.JUPITER);
+        final CelestialBodyIAUOrientation saturnActual = IAUPoleFactory.getIAUPole(EphemerisType.SATURN);
+        final CelestialBodyIAUOrientation uranusActual = IAUPoleFactory.getIAUPole(EphemerisType.URANUS);
+        final CelestialBodyIAUOrientation neptuneActual = IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE);
+        final CelestialBodyIAUOrientation plutoActual = IAUPoleFactory.getIAUPole(EphemerisType.PLUTO);
 
         // Expected
         final double[] sunExpected = { 4.9939105887313753, 1.1147417932487782, 306.963719657295144 };
@@ -87,17 +88,17 @@ public class IAUPoleFactoryTest {
         final double[] plutoExpected = { 2.32116573210481869, -0.10756464180041053, 1218.04185854675688 };
 
         // Check
-        this.checkIAUData(sunActual, sunExpected, "Sun");
-        this.checkIAUData(mercuryActual, mercuryExpected, "Mercury");
-        this.checkIAUData(venusActual, venusExpected, "Venus");
-        this.checkIAUData(earthActual, earthExpected, "Earth");
-        this.checkIAUData(moonActual, moonExpected, "Moon");
-        this.checkIAUData(marsActual, marsExpected, "Mars");
-        this.checkIAUData(jupiterActual, jupiterExpected, "Jupiter");
-        this.checkIAUData(saturnActual, saturnExpected, "Saturn");
-        this.checkIAUData(uranusActual, uranusExpected, "Uranus");
-        this.checkIAUData(neptuneActual, neptuneExpected, "Neptune");
-        this.checkIAUData(plutoActual, plutoExpected, "Pluto");
+        checkIAUData(sunActual, sunExpected, "Sun");
+        checkIAUData(mercuryActual, mercuryExpected, "Mercury");
+        checkIAUData(venusActual, venusExpected, "Venus");
+        checkIAUData(earthActual, earthExpected, "Earth");
+        checkIAUData(moonActual, moonExpected, "Moon");
+        checkIAUData(marsActual, marsExpected, "Mars");
+        checkIAUData(jupiterActual, jupiterExpected, "Jupiter");
+        checkIAUData(saturnActual, saturnExpected, "Saturn");
+        checkIAUData(uranusActual, uranusExpected, "Uranus");
+        checkIAUData(neptuneActual, neptuneExpected, "Neptune");
+        checkIAUData(plutoActual, plutoExpected, "Pluto");
     }
 
     /**
@@ -109,13 +110,16 @@ public class IAUPoleFactoryTest {
      *        expected result [pole alpha, pole delta, prime meridian angle]
      * @param body
      *        body name
+     * @throws PatriusException
+     *         if attitude cannot be computed for provided date
      */
-    private void checkIAUData(final IAUPole actual, final double[] expected, final String body) {
+    private static void checkIAUData(final CelestialBodyIAUOrientation actual, final double[] expected,
+                                     final String body) throws PatriusException {
         final AbsoluteDate ref = new AbsoluteDate(2000, 1, 1, 12, 0, 0, TimeScalesFactory.getTDB());
         final AbsoluteDate date = ref.shiftedBy(1234. * Constants.JULIAN_DAY);
-        Report.printToReport(body + " alpha", this.mod(expected[0]), this.mod(actual.getPole(date).getAlpha()));
-        Report.printToReport(body + " delta", this.mod(expected[1]), this.mod(actual.getPole(date).getDelta()));
-        Report.printToReport(body + " W", this.mod(expected[2]), this.mod(actual.getPrimeMeridianAngle(date)));
+        Report.printToReport(body + " alpha", mod(expected[0]), mod(actual.getPole(date).getAlpha()));
+        Report.printToReport(body + " delta", mod(expected[1]), mod(actual.getPole(date).getDelta()));
+        Report.printToReport(body + " W", mod(expected[2]), mod(actual.getPrimeMeridianAngle(date)));
         // Results are not perfectly accurate since Scilab coding does take into account time dilatation due to TDB
         // scale
         Assert.assertEquals(0., actual.getPole(date).distance(new Vector3D(expected[0], expected[1])), 2E-12);
@@ -129,7 +133,7 @@ public class IAUPoleFactoryTest {
      *        value
      * @return value [2Pi]
      */
-    private double mod(final double value) {
+    private static double mod(final double value) {
         return (value + 2. * FastMath.PI) % (2. * FastMath.PI);
     }
 }

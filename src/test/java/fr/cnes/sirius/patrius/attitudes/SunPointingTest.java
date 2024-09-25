@@ -18,6 +18,8 @@
  * @history creation 03/04/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-99:08/12/2023:[PATRIUS] Ajout du repere de calcul dans MomentumDirection
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -43,6 +45,7 @@ import fr.cnes.sirius.patrius.attitudes.directions.MomentumDirection;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -204,8 +207,8 @@ public class SunPointingTest {
         // satellite axis
         // should be aligned at best with the normal to the satellite orbit
         final IDirection d1 = new GenericTargetDirection(sun);
-        final IDirection d2 = new MomentumDirection(earth);
-        final AttitudeLaw siriusYawSteering = new SunPointing(earth, Vector3D.PLUS_K, Vector3D.PLUS_I);
+        final IDirection d2 = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
+        final AttitudeLaw siriusYawSteering = new SunPointing(earth.getInertialFrame(IAUPoleModelType.CONSTANT), Vector3D.PLUS_K, Vector3D.PLUS_I);
 
         final double period = MathUtils.TWO_PI * MathLib.sqrt(MathLib.pow(a, 3) / mu);
 
@@ -266,7 +269,7 @@ public class SunPointingTest {
      */
     @Test
     public void testConstructors() throws PatriusException {
-        // ellipstic orbit
+        // elliptic orbit
         final AbsoluteDate date = new AbsoluteDate(2012, 4, 2, 15, 3, 0, TimeScalesFactory.getTAI());
         final Orbit orbit = new KeplerianOrbit(10000000, 0.93, MathLib.toRadians(75), 0, 0, 0, PositionAngle.MEAN,
             FramesFactory.getGCRF(), date, Constants.EGM96_EARTH_MU);
@@ -279,9 +282,9 @@ public class SunPointingTest {
         Assert.assertEquals(0., Rotation.distance(attitude1.getRotation(), attitude2.getRotation()));
 
         // Check results are exactly the same with default constructor 2 and detailed constructor 2
-        final AttitudeLaw law3 = new SunPointing(earth, Vector3D.PLUS_K, Vector3D.PLUS_I);
+        final AttitudeLaw law3 = new SunPointing(earth.getInertialFrame(IAUPoleModelType.CONSTANT), Vector3D.PLUS_K, Vector3D.PLUS_I);
         final AttitudeLaw law4 =
-            new SunPointing(earth, Vector3D.PLUS_K, Vector3D.PLUS_I, CelestialBodyFactory.getSun());
+            new SunPointing(earth.getInertialFrame(IAUPoleModelType.CONSTANT), Vector3D.PLUS_K, Vector3D.PLUS_I, CelestialBodyFactory.getSun());
         final Attitude attitude3 = law3.getAttitude(orbit);
         final Attitude attitude4 = law4.getAttitude(orbit);
         Assert.assertEquals(0., Rotation.distance(attitude3.getRotation(), attitude4.getRotation()));
@@ -336,13 +339,13 @@ public class SunPointingTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        sun = loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
+        sun = (CelestialBody) loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SUN, loaderSun);
         final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader("unxp2000.405",
             EphemerisType.EARTH);
 
-        earth = loaderEarth.loadCelestialBody(CelestialBodyFactory.EARTH);
+        earth = (CelestialBody) loaderEarth.loadCelestialPoint(CelestialBodyFactory.EARTH);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH, loaderEarth);
     }
 }

@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-40:22/05/2023:[PATRIUS] Gestion derivees par rapport au coefficient k dans les GravityModel
@@ -1027,7 +1028,7 @@ public class CunninghamGravityModelTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         this.ITRF2005 = null;
         this.propagator = null;
         Utils.setDataRoot("regular-data");

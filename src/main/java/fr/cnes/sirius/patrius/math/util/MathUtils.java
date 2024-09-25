@@ -395,8 +395,7 @@ public final class MathUtils {
 
     /**
      * Among 2 values, determines the smallest relative distance to a given number. In case of
-     * equality, distance to a
-     * is returned.
+     * equality, distance to a is returned.
      *
      * @param nb
      *        the given number
@@ -416,5 +415,26 @@ public final class MathUtils {
             offset = nb - b;
         }
         return offset;
+    }
+
+    /**
+     * Evaluate if the given values describe at least one {@link Double#NaN}.
+     * 
+     * <p>
+     * This method should be used when multiple {@link Double#NaN} evaluations are performed to reduce the complexity.
+     * </p>
+     *
+     * @param values
+     *        Values to evaluate
+     * @return {@code true} if at least one value is {@link Double#NaN}, {@code false} if all values aren't
+     *         {@link Double#NaN}
+     */
+    public static boolean containsNaN(final double... values) {
+        for (final double value : values) {
+            if (Double.isNaN(value)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

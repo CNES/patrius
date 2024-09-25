@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.11:DM:DM-3260:22/05/2023:[PATRIUS] Harmonisation des EOP2000HistoryLoader
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -25,7 +26,7 @@ package fr.cnes.sirius.patrius.frames.configuration.eop;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
@@ -137,7 +138,7 @@ public class RapidDataAndPredictionXMLLoader implements EOP1980HistoryLoader, EO
 
             // read all file, ignoring header
             synchronized (this) {
-                reader.parse(new InputSource(new InputStreamReader(input, Charset.forName("UTF-8"))));
+                reader.parse(new InputSource(new InputStreamReader(input, StandardCharsets.UTF_8)));
             }
 
         } catch (final SAXException se) {

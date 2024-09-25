@@ -31,8 +31,8 @@
 package fr.cnes.sirius.patrius.assembly.models.aerocoeffs;
 
 import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
-import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -62,7 +62,7 @@ public class AeroCoeffByAoA extends AbstractAeroCoeff1D {
     private static final long serialVersionUID = -4308034491799514262L;
 
     /** Earth shape. */
-    private final EllipsoidBodyShape earthShape;
+    private final OneAxisEllipsoid earthShape;
 
     /**
      * Constructor.
@@ -74,7 +74,7 @@ public class AeroCoeffByAoA extends AbstractAeroCoeff1D {
      * @param earthShapeIn
      *        Earth shape
      */
-    public AeroCoeffByAoA(final double[] xVariables, final double[] yVariables, final EllipsoidBodyShape earthShapeIn) {
+    public AeroCoeffByAoA(final double[] xVariables, final double[] yVariables, final OneAxisEllipsoid earthShapeIn) {
         super(xVariables, yVariables);
         this.earthShape = earthShapeIn;
     }
@@ -97,7 +97,7 @@ public class AeroCoeffByAoA extends AbstractAeroCoeff1D {
      *         if the transformation from state frame to body frame cannot be computed
      */
     public static double angleOfAttackFromSpacecraftState(final SpacecraftState state,
-                                                          final EllipsoidBodyShape earthShape)
+                                                          final OneAxisEllipsoid earthShape)
         throws PatriusException {
 
         // Point and topocentric frame

@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
+* VERSION:4.13:FA:FA-145:08/12/2023:[PATRIUS] Utilisation en dur du 
+ *          repere EME2000 dans la classe AbstractGroundPointing 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -49,6 +53,7 @@ import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.AbstractVector3DFunction;
@@ -61,7 +66,6 @@ import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
@@ -73,6 +77,7 @@ import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 public class YawSteeringTest {
@@ -81,7 +86,7 @@ public class YawSteeringTest {
     private AbsoluteDate date;
 
     // Reference frame = ITRF 2005C
-    private Frame frameITRF2005;
+    private CelestialBodyFrame frameITRF2005;
 
     // Satellite position
     CircularOrbit circOrbit;
@@ -219,7 +224,7 @@ public class YawSteeringTest {
             sPlus.getAttitude().getRotation(),
             2 * h);
         Assert.assertTrue(spin0.getNorm() > 1.0e-3);
-        Assert.assertEquals(0.0, spin0.subtract(reference).getNorm(), 2.0e-12);
+        Assert.assertEquals(0.0, spin0.subtract(reference).getNorm(), 4.0e-12);
 
         Report.printToReport("Spin at date", reference, spin0);
     }
@@ -283,7 +288,7 @@ public class YawSteeringTest {
             final Vector3D accDerivateSpin =
                 this.getSpinFunction(yawCompensLaw, this.circOrbit, this.circOrbit.getFrame(),
                     this.date.shiftedBy(i)).nthDerivative(1).getVector3D(this.date.shiftedBy(i));
-            Assert.assertEquals(accActual.distance(accDerivateSpin), 0.0, 2e-8);
+            Assert.assertEquals(accActual.distance(accDerivateSpin), 0.0, 1e-7);
             if (i == 0) {
                 Report.printToReport("Rotation acceleration at date", accDerivateSpin, accActual);
             }

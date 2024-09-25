@@ -1336,14 +1336,14 @@ public class CovarianceTest {
         // Default format
         result = covariance.toString();
         builder = new StringBuilder();
-        builder.append("Covariance[Parameters: p0_X, p1_Y, p2_Z]");
+        builder.append("Covariance[Parameters: X_p0, Y_p1, Z_p2]");
         Assert.assertEquals(builder.toString(), result);
 
         // Java format
         format = MatrixUtils.JAVA_FORMAT;
         result = covariance.toString(format);
         builder = new StringBuilder();
-        builder.append("Covariance[Parameters: p0_X, p1_Y, p2_Z;");
+        builder.append("Covariance[Parameters: X_p0, Y_p1, Z_p2;");
         builder.append(System.lineSeparator());
         builder.append("          {{6.64932, -0.71215, -0.57605}, {-0.71215, 6.91963, -0.42339}, {-0.57605, -0.42339, 7.27005}}]");
         Assert.assertEquals(builder.toString(), result);
@@ -1352,7 +1352,7 @@ public class CovarianceTest {
         format = MatrixUtils.OCTAVE_FORMAT;
         result = covariance.toString(format);
         builder = new StringBuilder();
-        builder.append("Covariance[Parameters: p0_X, p1_Y, p2_Z;");
+        builder.append("Covariance[Parameters: X_p0, Y_p1, Z_p2;");
         builder.append(System.lineSeparator());
         builder.append("          [6.64932, -0.71215, -0.57605; -0.71215, 6.91963, -0.42339; -0.57605, -0.42339, 7.27005]]");
         Assert.assertEquals(builder.toString(), result);
@@ -1361,7 +1361,7 @@ public class CovarianceTest {
         format = MatrixUtils.SCILAB_FORMAT;
         result = covariance.toString(format);
         builder = new StringBuilder();
-        builder.append("Covariance[Parameters: p0_X, p1_Y, p2_Z;");
+        builder.append("Covariance[Parameters: X_p0, Y_p1, Z_p2;");
         builder.append(System.lineSeparator());
         builder.append("           [6.64932, -0.71215, -0.57605; -0.71215, 6.91963, -0.42339; -0.57605, -0.42339, 7.27005]]");
         Assert.assertEquals(builder.toString(), result);
@@ -1370,7 +1370,7 @@ public class CovarianceTest {
         format = MatrixUtils.VISUAL_FORMAT;
         result = covariance.toString(format);
         builder = new StringBuilder();
-        builder.append("Covariance[Parameters: p0_X, p1_Y, p2_Z;");
+        builder.append("Covariance[Parameters: X_p0, Y_p1, Z_p2;");
         builder.append(System.lineSeparator());
         builder.append("          [[      6.6493,    -0.71215,    -0.57605]");
         builder.append(System.lineSeparator());
@@ -1405,9 +1405,9 @@ public class CovarianceTest {
 
         // Java format (custom name and field separator)
         format = MatrixUtils.JAVA_FORMAT;
-        result = covariance.toString(format, " | ", ".", true, false);
+        result = covariance.toString(format, " | ", ".", true, true);
         builder = new StringBuilder();
-        builder.append("Covariance[Parameters: p0.X | p1.Y | p2.Z;");
+        builder.append("Covariance[Parameters: X.p0 | Y.p1 | Z.p2;");
         builder.append(System.lineSeparator());
         builder.append("          {{6.64932, -0.71215, -0.57605}, {-0.71215, 6.91963, -0.42339}, {-0.57605, -0.42339, 7.27005}}]");
         Assert.assertEquals(builder.toString(), result);

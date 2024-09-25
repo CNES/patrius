@@ -18,6 +18,7 @@
  * @history created 17/10/2014
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -45,6 +46,9 @@
  */
 package fr.cnes.sirius.patrius.forces.maneuvers;
 
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.GradientModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -60,9 +64,6 @@ import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.math.parameter.ParameterUtils;
 import fr.cnes.sirius.patrius.math.parameter.StandardFieldDescriptors;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -77,11 +78,11 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * </p>
  * 
  * <p>
- * The maneuver is associated to two triggering {@link fr.cnes.sirius.patrius.propagation.events.EventDetector
+ * The maneuver is associated to two triggering {@link fr.cnes.sirius.patrius.events.EventDetector
  * EventDetector} (one to start the thrust, the other one to stop the thrust): the maneuver is triggered <b>only if</b>
- * the underlying event generates a {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#STOP STOP}
+ * the underlying event generates a {@link fr.cnes.sirius.patrius.events.EventDetector.Action#STOP STOP}
  * event, in which case this class will generate a
- * {@link fr.cnes.sirius.patrius.propagation.events.EventDetector.Action#RESET_STATE RESET_STATE} event (the stop event
+ * {@link fr.cnes.sirius.patrius.events.EventDetector.Action#RESET_STATE RESET_STATE} event (the stop event
  * from the underlying object is therefore filtered out).
  * </p>
  * 

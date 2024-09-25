@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:FA:FA-3279:22/05/2023:[PATRIUS] Absence de TU pour JPLHistoricEphemerisLoader
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
@@ -391,7 +393,7 @@ public class JPLHistoricEphemerisLoaderTest {
         Assert.assertTrue(tICrF_GCRF4.getAngular().getRotation().isEqualTo(Rotation.IDENTITY));
 
         // Test GetNativeFrame
-        Assert.assertEquals(icrfMoon, CelestialBodyFactory.getMoon().getNativeFrame(null, null));
+        Assert.assertEquals(icrfMoon, CelestialBodyFactory.getMoon().getNativeFrame(null));
         
         // Set back former size
         loader.setCacheSize(50);

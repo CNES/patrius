@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION::DM:1489:21/05/2018:add GENOPUS Custom classes
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -28,13 +30,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.DihedralFieldOfViewDetector;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.ApsideDetector;
-import fr.cnes.sirius.patrius.propagation.events.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.DihedralFieldOfViewDetector;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -306,7 +308,7 @@ public class EventsLogger {
         /**
          * Does nothing.
          * 
-         * @see fr.cnes.sirius.patrius.propagation.events.EventDetector#init(fr.cnes.sirius.patrius.propagation.SpacecraftState,
+         * @see fr.cnes.sirius.patrius.events.EventDetector#init(fr.cnes.sirius.patrius.propagation.SpacecraftState,
          *      fr.cnes.sirius.patrius.time.AbsoluteDate)
          */
         @Override
@@ -322,6 +324,15 @@ public class EventsLogger {
         @Override
         public EventDetector copy() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final SpacecraftState state,
+                final boolean increasing,
+                final boolean forward) throws PatriusException {
+            // Do nothing by default, event is not filtered
+            return false;
         }
     }
 }

@@ -15,7 +15,17 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-125:05/09/2023:[PATRIUS] Reliquat OPENFD-62 sur le code des body shapes
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:FA:FA-137:08/12/2023:[PATRIUS] Exception asin dans FacetBodyShape.getApparentRadius
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-133:08/12/2023:[PATRIUS] Conversion en trop dans OneAxisEllipsoid#getIntersectionPoints
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.12:DM:DM-7:17/08/2023:[PATRIUS] Symétriser les méthodes closestPointTo de BodyShape
  * VERSION:4.12:FA:FA-116:17/08/2023:[PATRIUS] Gestion du timeInterval dans
  * les classes QuaternionPolynomialProfile et QuaternionDatePolynomialProfile
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -69,10 +79,12 @@ import fr.cnes.sirius.patrius.bodies.AbstractBodyShape;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -94,8 +106,6 @@ import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.EclipseDetector;
 import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -159,13 +169,6 @@ public class FacetBodyShape extends AbstractBodyShape {
     /** Mesh of {@link Triangle} stored under a Binary Space Partition Tree. */
     private transient TrianglesSet tree;
 
-    /**
-     * Type of ellipsoid to apply transformation methods on.
-     * @deprecated as of 4.12, any kin of ellipsoid can be built on the fly.
-     */
-    @Deprecated
-    private final EllipsoidType ellipsoidType;
-
     /** Distance from center to closest vertex to center. */
     private final double minNorm;
 
@@ -220,13 +223,12 @@ public class FacetBodyShape extends AbstractBodyShape {
      *        body name
      * @param bodyFrame
      *        frame in which celestial body coordinates are defined
-     * @param ellipsoidTypeIn
-     *        ellipsoid type to apply the transform methods on
      * @param meshLoader
      *        mesh loader
      */
-    public FacetBodyShape(final String name, final Frame bodyFrame, final EllipsoidType ellipsoidTypeIn,
-                          final MeshProvider meshLoader) {
+    public FacetBodyShape(final String name,
+            final CelestialBodyFrame bodyFrame,
+            final MeshProvider meshLoader) {
         super(name, bodyFrame);
 
         this.meshProvider = meshLoader;
@@ -262,8 +264,6 @@ public class FacetBodyShape extends AbstractBodyShape {
         this.maxSlope = maxSlopeTemp;
         this.threshold = DEFAULT_THRESHOLD;
 
-        // Type of ellispoid to use for transformation computation
-        this.ellipsoidType = ellipsoidTypeIn;
 
         // Build BSP tree
         this.tree = new TrianglesSet(this.triangles);
@@ -441,19 +441,8 @@ public class FacetBodyShape extends AbstractBodyShape {
     }
 
     /**
-     * Retrieve the ellipsoid specified by the {@link EllipsoidType} attribute use to apply transformation methods on.
-     *
-     * @return an ellipsoid that models the body.
-     * @deprecated as of 4.12 {@link EllipsoidPoint} is restrained with use of {@link OneAxisEllipsoid} and associated
-     *             method {@link OneAxisEllipsoid#buildPoint(Vector3D, Frame, AbsoluteDate)}.
-     */
-    @Deprecated
-    private OneAxisEllipsoid getTransformEllipsoid() {
-        return getEllipsoid(this.ellipsoidType);
-    }
-
-    /**
      * Getter for the ellipsoid of the desired type.
+     * Once computed, the required ellipsoid is stored for future use.
      * 
      * @param ellipsoidTypeIn
      *        the type of the ellipsoid to be returned
@@ -655,7 +644,7 @@ public class FacetBodyShape extends AbstractBodyShape {
     public FacetPoint getIntersectionPoint(final Line line, final Vector3D close, final Frame frame,
                                            final AbsoluteDate date, final String nameIn)
         throws PatriusException {
-        
+
         // Convert line to body frame
         final Transform t = frame.getTransformTo(getBodyFrame(), date);
         final Line lineInBodyFrame = t.transformLine(line);
@@ -680,7 +669,7 @@ public class FacetBodyShape extends AbstractBodyShape {
             // compute all the triangles containing the computed intersection (with a tolerance of altitude epsilon)
             final List<Triangle> trianglesList = new ArrayList<>();
             for (final Triangle neighbor : neighborsMap.values()) {
-                if (neighbor.closestPointTo(line)[1].distance(intersection.getPoint()) < getDistanceEpsilon()) {
+                if (neighbor.closestPointTo(line)[1].distance(intersection.getPoint()) < this.distanceEpsilon) {
                     // the computed intersection belongs to current neighbor : add this neighbor to output list if not
                     // added yet
                     trianglesList.add(neighbor);
@@ -777,14 +766,9 @@ public class FacetBodyShape extends AbstractBodyShape {
                 }
             } else {
                 // Conversion
-                final Transform tInv = t.getInverse();
                 for (int i = 0; i < result.length; i++) {
                     final Intersection intersectionPoint = intersectionPoints.get(i);
-                    final Intersection intersectionTransformed = new Intersection(intersectionPoint.getTriangle(),
-                        tInv.transformPosition(intersectionPoint.getPoint()));
-                    // The triangle is expressed in the body frame, so it isn't transformed
-                    // The point is expressed in the output frame, so it is transformed from body frame to output frame
-                    result[i] = new FacetPoint(this, intersectionTransformed, BodyPointName.INTERSECTION);
+                    result[i] = new FacetPoint(this, intersectionPoint, BodyPointName.INTERSECTION);
                 }
             }
 
@@ -795,37 +779,6 @@ public class FacetBodyShape extends AbstractBodyShape {
 
         // Return result
         return result;
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Warning: this method considers the body either as the inner sphere, the outer ellipsoid or the fitted ellipsoid
-     * depending on the {@link EllipsoidType} attribute.
-     * </p>
-     *
-     * @deprecated as of 4.12 {@link EllipsoidPoint} is restrained with use of {@link OneAxisEllipsoid} and associated
-     *             method {@link OneAxisEllipsoid#buildPoint(Vector3D, Frame, AbsoluteDate)}.
-     */
-    @Deprecated
-    @Override
-    public EllipsoidPoint transform(final Vector3D point, final Frame frame, final AbsoluteDate date)
-        throws PatriusException {
-        // Approximation of body by its transform ellipsoid
-        return getTransformEllipsoid().buildPoint(point, frame, date, BodyPointName.DEFAULT);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @deprecated as of 4.12 {@link EllipsoidPoint} is restrained with use of {@link OneAxisEllipsoid} and associated
-     *             method {@link OneAxisEllipsoid#buildPoint(Vector3D, Frame, AbsoluteDate)}. Simply returns the point
-     *             position.
-     */
-    @Deprecated
-    @Override
-    public Vector3D transform(final EllipsoidPoint point) {
-        return point.getPosition();
     }
 
     /**
@@ -910,9 +863,9 @@ public class FacetBodyShape extends AbstractBodyShape {
         // Case of light speed propagation (dedicated in order to optimize computation times)
         if (propagationDelayType.equals(PropagationDelayType.LIGHT_SPEED)) {
             // Native frames
-            final Frame nativeFrameObserver = pvObserver.getNativeFrame(date, getBodyFrame());
-            final Frame nativeFrameOccultingBody = getNativeFrame(date, getBodyFrame());
-            final Frame nativeFrameOccultedBody = occultedBody.getNativeFrame(date, getBodyFrame());
+            final Frame nativeFrameObserver = pvObserver.getNativeFrame(date);
+            final Frame nativeFrameOccultingBody = getNativeFrame(date);
+            final Frame nativeFrameOccultedBody = occultedBody.getNativeFrame(date);
 
             // Position of emitter is at date of emission taking into account light speed if required
             // Signal propagation is performed in closest (in term of distance on frames tree) inertial frame
@@ -952,12 +905,13 @@ public class FacetBodyShape extends AbstractBodyShape {
             // Retrieve the normal axis to the plane
             final Vector3D normalAxis = plane.getNormal();
             // Initialize the minimum angle to the angle corresponding to the minimum radius
-            double minAngle = FastMath.asin(minRadius / obsOcculting.getNorm());
+            double minAngle = MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, minRadius / obsOcculting.getNorm())));
             // Initialize the maximum angle to the angle corresponding to the maximum radius
-            double maxAngle = FastMath.asin(maxRadius / obsOcculting.getNorm());
+            double maxAngle = MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, maxRadius / obsOcculting.getNorm())));
             // Initialize the current angle between the direction observer-occulting and the direction
             // observer-tangentialPoint to the angle corresponding to the new apparent radius
-            double currentAngle = FastMath.asin(newApparentRadius / obsOcculting.getNorm());
+            double currentAngle = MathLib.asin(MathLib.min(1.0,
+                    MathLib.max(-1.0, newApparentRadius / obsOcculting.getNorm())));
             // Initialize the old apparent radius to the minimum radius
             double oldApparentRadius = minRadius;
             // Initialize the error to the difference between the new apparent radius and the old apparent radius
@@ -991,7 +945,7 @@ public class FacetBodyShape extends AbstractBodyShape {
                 // Update the value of the current angle to the average between the minimum angle and the maximum angle
                 currentAngle = (minAngle + maxAngle) / 2;
                 // Update the value of the apparent radius to the radius corresponding to the current angles
-                newApparentRadius = obsOcculting.getNorm() * FastMath.abs(FastMath.sin(currentAngle));
+                newApparentRadius = obsOcculting.getNorm() * MathLib.abs(MathLib.sin(currentAngle));
                 // Compute the error as the difference between the new apparent radius and the old apparent radius
                 error = newApparentRadius - oldApparentRadius;
                 // Keep track of steps
@@ -1634,17 +1588,6 @@ public class FacetBodyShape extends AbstractBodyShape {
     }
 
     /**
-     * Getter for the type of ellipsoid to apply transformation methods on.
-     *
-     * @return the maxSlope
-     * @deprecated as of 4.12, any type of ellipsoid can be retrieved using {@link #getEllipsoid(EllipsoidType)}.
-     */
-    @Deprecated
-    public EllipsoidType getEllipsoidType() {
-        return this.ellipsoidType;
-    }
-
-    /**
      * Setter for the threshold for apparent radius determination convergence.
      *
      * @param threshold
@@ -1754,8 +1697,9 @@ public class FacetBodyShape extends AbstractBodyShape {
             }
         };
         // Copy and return the new FacetBodyShape with modified vertices of triangles FacetBodyShape
-        return new FacetBodyShape(getName(), getBodyFrame(), this.ellipsoidType, newMeshProvider);
+        return new FacetBodyShape(getName(), getBodyFrame(), newMeshProvider);
     }
+
 
     /**
      * Setter for the maximum number of steps in the while loop of
@@ -1830,7 +1774,7 @@ public class FacetBodyShape extends AbstractBodyShape {
      */
     @Override
     public FacetPoint[] closestPointTo(final Line line) {
-        
+
         // Compute distance to all facets
         double minDistance = Double.POSITIVE_INFINITY;
         Vector3D[] closestPoints = null;
@@ -1870,9 +1814,9 @@ public class FacetBodyShape extends AbstractBodyShape {
             }
         }
 
-         // closest point on shape as a FacetPoint known to be on the shape surface
+        // closest point on shape as a FacetPoint known to be on the shape surface
         final FacetPoint closestOnShape = new FacetPoint(this, closestPoints[1], closestTriangles, true,
-                BodyPointName.CLOSEST_ON_SHAPE);
+            BodyPointName.CLOSEST_ON_SHAPE);
 
         // closest point on line as a FacetPoint whose closest point on shape is closestOnShape
         final FacetPoint closestOnLine = new FacetPoint(this, closestPoints[0], BodyPointName.CLOSEST_ON_LINE);

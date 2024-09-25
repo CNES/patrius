@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+* VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+* VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
+* VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+* VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
 * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
@@ -37,7 +41,6 @@ import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceKernelManager;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataFactory;
-import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataReader;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.DiurnalRotation;
@@ -45,18 +48,20 @@ import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationFactory;
 import fr.cnes.sirius.patrius.frames.configuration.PolarMotion;
-import fr.cnes.sirius.patrius.frames.configuration.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistoryFactory;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPInterpolators;
 import fr.cnes.sirius.patrius.frames.configuration.eop.NoEOP2000History;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModel;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
 import fr.cnes.sirius.patrius.models.earth.GeoMagneticFieldFactory;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
 
@@ -99,6 +104,7 @@ public class Utils {
      * Clear data stored in JVM in static variables.
      */
     public static void clear() {
+        PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.NEW_MODELS);
         FramesFactory.clearConfiguration();
         FramesFactory.clear();
         CelestialBodyFactory.clearCelestialBodyLoaders();
@@ -142,12 +148,12 @@ public class Utils {
         final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
 
         // Precession Nutation
-        final PrecessionNutation precNut = new PrecessionNutation(false,
-            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT);
+        final PrecessionNutation precNut =
+            new PrecessionNutation(false, PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED);
 
         builder.setDiurnalRotation(defaultDiurnalRotation);
         builder.setPolarMotion(defaultPolarMotion);
-        builder.setPrecessionNutation(precNut);
+        builder.setCIRFPrecessionNutation(precNut);
         builder.setEOPHistory(EOPHistoryFactory.getEOP2000History(EOPInterpolators.LAGRANGE4));
 
         return builder.getConfiguration();
@@ -162,7 +168,7 @@ public class Utils {
      * @throws PatriusException
      *         if the EOP data cannot be loaded
      */
-    public static FramesConfiguration getIERS2003ConfigurationWOEOP(final boolean ignoreTides) throws PatriusException {
+    public static FramesConfiguration getIERS2003ConfigurationWOEOP(final boolean ignoreTides) {
 
         // Configurations builder
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
@@ -180,11 +186,11 @@ public class Utils {
 
         // Precession Nutation
         final PrecessionNutation precNut = new PrecessionNutation(false,
-            PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED_CONSTANT);
+            PrecessionNutationModelFactory.PN_IERS2003_INTERPOLATED);
 
         builder.setDiurnalRotation(defaultDiurnalRotation);
         builder.setPolarMotion(defaultPolarMotion);
-        builder.setPrecessionNutation(precNut);
+        builder.setCIRFPrecessionNutation(precNut);
         builder.setEOPHistory(new NoEOP2000History());
 
         return builder.getConfiguration();
@@ -246,12 +252,12 @@ public class Utils {
         final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
 
         // Precession Nutation
-        final PrecessionNutation precNut = new PrecessionNutation(false,
-            PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED_NON_CONSTANT);
+        final PrecessionNutation precNut =
+            new PrecessionNutation(false, PrecessionNutationModelFactory.PN_IERS2010_INTERPOLATED);
 
         builder.setDiurnalRotation(defaultDiurnalRotation);
         builder.setPolarMotion(defaultPolarMotion);
-        builder.setPrecessionNutation(precNut);
+        builder.setCIRFPrecessionNutation(precNut);
         try {
             builder.setEOPHistory(EOPHistoryFactory.getEOP2000History(EOPInterpolators.LAGRANGE4));
         } catch (final PatriusException e) {

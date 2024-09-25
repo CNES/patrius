@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
@@ -77,7 +78,7 @@ public final class SpiceBody {
     private static final String CLASSNAME = "SpiceBody";
 
     /** Count of default SPICE mapping assignments. */
-    private static final int NPERM = 692;
+    private static final int NPERM = 695;
 
     // Body-code lists
     /** Table of ids in the database. */
@@ -518,6 +519,7 @@ public final class SpiceBody {
      */
     //CHECKSTYLE: stop MethodLength check
     //CHECKSTYLE: stop CommentRatio check
+    //CHECKSTYLE: stop MultipleStringLiterals check
     //Reason: Spice code kept as such
     private static void populateBodies() {
         //CHECKSTYLE: resume MethodLength check
@@ -2598,6 +2600,15 @@ public final class SpiceBody {
         defcod[691] = 399069;
         defnam[691] = "DSS-69";
 
+        defcod[692] = 2065803;
+        defnam[692] = "DIDYMOS BARYCENTER";
+
+        defcod[693] = -658030;
+        defnam[693] = "DIDYMOS";
+
+        defcod[694] = -658031;
+        defnam[694] = "DIMORPHOS";
+
         for (int i = 0; i < NPERM; i++) {
             defnor[i] = normalize(defnam[i]);
         }
@@ -2617,4 +2628,5 @@ public final class SpiceBody {
     }
 
     // CHECKSTYLE: resume MagicNumber check
+    //CHECKSTYLE: resume MultipleStringLiterals check
 }

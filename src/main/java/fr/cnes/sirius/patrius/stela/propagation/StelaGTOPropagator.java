@@ -18,6 +18,7 @@
  * @history created 18/01/2013
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] Attitude spacecraft state lazy
@@ -60,7 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
-import fr.cnes.sirius.patrius.bodies.MeeusSun;
+import fr.cnes.sirius.patrius.events.utils.EventState;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -69,13 +70,11 @@ import fr.cnes.sirius.patrius.math.ode.nonstiff.RungeKutta6Integrator;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.StelaEquinoctialParameters;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventState;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation.AttitudeType;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.stela.JavaMathAdapter;
 import fr.cnes.sirius.patrius.stela.PerigeeAltitudeDetector;
-import fr.cnes.sirius.patrius.stela.bodies.MeeusMoonStela;
 import fr.cnes.sirius.patrius.stela.forces.AbstractStelaGaussContribution;
 import fr.cnes.sirius.patrius.stela.forces.AbstractStelaLagrangeContribution;
 import fr.cnes.sirius.patrius.stela.forces.StelaForceModel;
@@ -365,10 +364,6 @@ public class StelaGTOPropagator extends StelaAbstractPropagator {
         // Convert to mean elements if necessary and get equinoctial orbit
         SpacecraftState initialState2 = initialState;
         if (isOsculatingIn) {
-            // Reset transform
-            MeeusSun.resetTransform();
-            MeeusMoonStela.resetTransform();
-
             // Convert to mean elements
             final StelaEquinoctialOrbit equiOrbit = new StelaEquinoctialOrbit(
                     initialState.getOrbit());

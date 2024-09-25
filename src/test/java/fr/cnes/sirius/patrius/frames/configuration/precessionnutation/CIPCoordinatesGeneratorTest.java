@@ -17,6 +17,9 @@
  * @history creation 18/10/2012
  *
  * HISTORY
+ * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -37,6 +40,8 @@ import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeComponents;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
 
 /**
  * Test class for {@link CIPCoordinatesGenerator}.
@@ -54,9 +59,9 @@ public class CIPCoordinatesGeneratorTest {
     @Before
     public void testCIPCoordinatesGenerator() {
         this.generator03 = new CIPCoordinatesGenerator(new IERS20032010PrecessionNutation(
-            PrecessionNutationConvention.IERS2003, true), 12, 43200);
+            PrecessionNutationConvention.IERS2003), 12, 43200);
         this.generator10 = new CIPCoordinatesGenerator(new IERS20032010PrecessionNutation(
-            PrecessionNutationConvention.IERS2010, true), 12, 43200);
+            PrecessionNutationConvention.IERS2010), 12, 43200);
     }
 
     @Test
@@ -77,7 +82,6 @@ public class CIPCoordinatesGeneratorTest {
             Assert.assertEquals(0, it.next().getDate().durationFrom(origin), Precision.EPSILON);
             origin = origin.shiftedBy(43200);
         }
-
     }
 
     @Test
@@ -89,11 +93,12 @@ public class CIPCoordinatesGeneratorTest {
         final List<CIPCoordinates> list = this.generator03.generate(dummy, date);
 
         Assert.assertEquals(9, list.size());
-
     }
 
     @Test
     public void testComputePoleCoordinates() {
+        
+        PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.NEW_MODELS);
 
         // Date
         final AbsoluteDate date = new AbsoluteDate(2005, 3, 5, 0, 0, 0.0, TimeScalesFactory.getTAI());
@@ -101,22 +106,16 @@ public class CIPCoordinatesGeneratorTest {
         // test against original implementation
         final double[] cip10ref = { 4.903997475506334E-4, 4.166125167417491E-5, -1.4432494003292058E-8 };
         final double[] cip03ref = { 4.903997402091521E-4, 4.1661387967743685E-5, -1.4432569047616784E-8 };
-        assertArrayEquals(cip03ref,
-            new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2003, true).getCIPMotion(date),
-            Precision.EPSILON);
-        assertArrayEquals(cip10ref,
-            new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2010, true).getCIPMotion(date),
-            Precision.EPSILON);
+        assertArrayEquals(cip03ref, new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2003)
+            .getCIPCoordinates(date).getCIPMotion(), Precision.EPSILON);
+        assertArrayEquals(cip10ref, new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2010)
+            .getCIPCoordinates(date).getCIPMotion(), Precision.EPSILON);
 
         final double[] cip03dvRef = { 5.937686116830366E-12, 6.514079689041986E-13, -3.7719714412691603E-17 };
         final double[] cip10dvRef = { 5.937685565984846E-12, 6.514070432335979E-13, -3.7719099455199287E-17 };
-        assertArrayEquals(cip03dvRef,
-            new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2003, true)
-                .getCIPMotionTimeDerivative(date), Precision.EPSILON);
-        assertArrayEquals(cip10dvRef,
-            new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2010, true)
-                .getCIPMotionTimeDerivative(date), Precision.EPSILON);
-
+        assertArrayEquals(cip03dvRef, new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2003)
+            .getCIPCoordinates(date).getCIPMotionTimeDerivatives(), Precision.EPSILON);
+        assertArrayEquals(cip10dvRef, new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2010)
+            .getCIPCoordinates(date).getCIPMotionTimeDerivatives(), Precision.EPSILON);
     }
-
 }

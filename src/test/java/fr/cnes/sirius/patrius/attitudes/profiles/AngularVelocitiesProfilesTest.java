@@ -18,6 +18,7 @@
  * @history Created 04/04/2013
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3154:10/05/2022:[PATRIUS] Amelioration des methodes permettant l'extraction d'une sous-sequence 
@@ -290,8 +291,8 @@ public class AngularVelocitiesProfilesTest {
         final Vector3D originalS = law.getAttitude(prop, date1, cirf).getSpin();
         final Vector3D computedS = profile.getAttitude(prop, date1, cirf).getOrientation()
             .getRotationRate();
-        Assert.assertEquals(0, originalS.getNorm(), 1e-15);
-        Assert.assertEquals(0, computedS.getNorm(), 1e-15);
+        Assert.assertEquals(0, originalS.getNorm(), 4e-12);
+        Assert.assertEquals(0, computedS.getNorm(), 4e-12);
     }
 
     /**

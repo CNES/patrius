@@ -29,7 +29,6 @@
 package fr.cnes.sirius.patrius.math.parameter;
 
 import java.util.Locale;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -38,6 +37,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.utils.serializablefunction.SerializableFunction;
 
 /**
  * Unit tests for {@link FieldDescriptor}
@@ -91,10 +91,9 @@ public class FieldDescriptorTest {
     public void testConstructor2() {
         final String name = "date";
         final Class<AbsoluteDate> fieldClass = AbsoluteDate.class;
-        final Function<AbsoluteDate, String> printFunction = (date) -> date.toString();
+        final SerializableFunction<AbsoluteDate, String> printFunction = (date) -> date.toString();
 
-        final FieldDescriptor<AbsoluteDate> fieldDescriptor = new FieldDescriptor<>(name,
-                fieldClass, printFunction);
+        final FieldDescriptor<AbsoluteDate> fieldDescriptor = new FieldDescriptor<>(name, fieldClass, printFunction);
         Assert.assertEquals(name, fieldDescriptor.getName());
         Assert.assertEquals(fieldClass, fieldDescriptor.getFieldClass());
         Assert.assertEquals(printFunction, fieldDescriptor.getPrintFunction());
@@ -126,14 +125,14 @@ public class FieldDescriptorTest {
     public void testPrintField() {
         // If no print function is defined, the default toString() method should be used.
         final FieldDescriptor<AbsoluteDate> fieldDescriptor = new FieldDescriptor<>("date",
-                AbsoluteDate.class);
+            AbsoluteDate.class);
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final String string1 = fieldDescriptor.printField(date);
         Assert.assertEquals("2000-01-01T11:59:27.816", string1);
 
         // If a print function is defined and the provided field is a date, it should be used
         // instead of the default toString() method.
-        final Function<AbsoluteDate, String> printFunction = (datetime) -> "AbsoluteDate["
+        final SerializableFunction<AbsoluteDate, String> printFunction = (datetime) -> "AbsoluteDate["
                 + datetime.toString(6) + "]";
         fieldDescriptor.setPrintFunction(printFunction);
         final String string2 = fieldDescriptor.printField(date);
@@ -153,9 +152,9 @@ public class FieldDescriptorTest {
     @Test
     public void testToString() {
         final FieldDescriptor<AbsoluteDate> fieldDescriptor = new FieldDescriptor<>("date",
-                AbsoluteDate.class);
+            AbsoluteDate.class);
         Assert.assertEquals("FieldDescriptor[name: date; class: AbsoluteDate]",
-                fieldDescriptor.toString());
+            fieldDescriptor.toString());
     }
 
     /**
@@ -167,7 +166,7 @@ public class FieldDescriptorTest {
     public void testEqualsAndHashCode() {
         FieldDescriptor<?> other;
         final FieldDescriptor<String> instance = new FieldDescriptor<>("name", String.class);
-        final Function<String, String> printFunction = (string) -> string.toString();
+        final SerializableFunction<String, String> printFunction = (string) -> string.toString();
 
         // Check the hashCode consistency between calls
         final int hashCode = instance.hashCode();
@@ -212,14 +211,14 @@ public class FieldDescriptorTest {
      */
     @Test
     public void testSerialization() {
-        final Function<String, String> printFunction = (string) -> "value: " + string.toString();
+        final SerializableFunction<String, String> printFunction = (string) -> "value: " + string.toString();
         final FieldDescriptor<String> fieldDescriptor = new FieldDescriptor<>("string",
-                String.class, printFunction);
+            String.class, printFunction);
 
         final FieldDescriptor<String> deserialized = TestUtils.serializeAndRecover(fieldDescriptor);
         Assert.assertNotSame(fieldDescriptor, deserialized);
         Assert.assertEquals(fieldDescriptor, deserialized);
-        Assert.assertNull(deserialized.getPrintFunction());
         Assert.assertEquals(fieldDescriptor.hashCode(), deserialized.hashCode());
+        Assert.assertEquals(fieldDescriptor.toString(), deserialized.toString());
     }
 }

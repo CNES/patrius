@@ -19,6 +19,12 @@
  * @history A-1004 : 15/10/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -50,13 +56,14 @@ import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
-import fr.cnes.sirius.patrius.bodies.IAUPole;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
-import fr.cnes.sirius.patrius.frames.FactoryManagedFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -110,10 +117,10 @@ public class RediffusedFluxTest {
     private static final double ALBINF_EPSILON = 1e-7;
 
     /** ITRF reference frame */
-    private static FactoryManagedFrame itrf;
+    private static CelestialBodyFrame itrf;
 
     /** GCRF reference frame */
-    private static Frame gcrf;
+    private static CelestialBodyFrame gcrf;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -126,8 +133,8 @@ public class RediffusedFluxTest {
      * 
      * @testedFeature {@link features#REDISTRIBUTED_FLUX}
      * 
-     * @testedMethod {@link RediffusedFlux#RediffusedFlux(int, int, Frame, CelestialBody, PVCoordinatesProvider, AbsoluteDate, IEmissivityModel)}
-     * @testedMethod {@link RediffusedFlux#RediffusedFlux(int, int, Frame, CelestialBody, PVCoordinatesProvider, AbsoluteDate, IEmissivityModel, boolean, boolean)}
+     * @testedMethod {@link RediffusedFlux#RediffusedFlux(int, int, Frame, CelestialPoint, PVCoordinatesProvider, AbsoluteDate, IEmissivityModel)}
+     * @testedMethod {@link RediffusedFlux#RediffusedFlux(int, int, Frame, CelestialPoint, PVCoordinatesProvider, AbsoluteDate, IEmissivityModel, boolean, boolean)}
      * 
      * @description test the albedo and infrared flux
      * 
@@ -168,14 +175,14 @@ public class RediffusedFluxTest {
             public CelestialBodyEphemeris getEphemeris() {
                 return null;
             }
-            
+
             @Override
-            public void setEphemeris(CelestialBodyEphemeris ephemerisIn) {
+            public void setEphemeris(final CelestialBodyEphemeris ephemerisIn) {
             }
 
             @Override
             public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
-                                                                                             throws PatriusException {
+                throws PatriusException {
                 // Reference position for the date d
                 final Vector3D position = new Vector3D(-1.4734309100022910E+11,
                     7.6346686461594896E+09, -1.5742957910260618E+10);
@@ -234,7 +241,7 @@ public class RediffusedFluxTest {
                 }
                 return frame;
             }
-            
+
             /**
              * {@inheritDoc}
              */
@@ -270,44 +277,50 @@ public class RediffusedFluxTest {
                 return frame;
             }
 
-			@Override
-			public BodyShape getShape() {
-				return this.sunProvider.getShape();
-			}
+            @Override
+            public BodyShape getShape() {
+                return this.sunProvider.getShape();
+            }
 
-			@Override
-			public void setShape(final BodyShape shapeIn) {
-				this.sunProvider.setShape(shapeIn);;
-			}
+            @Override
+            public void setShape(final BodyShape shapeIn) {
+                this.sunProvider.setShape(shapeIn);
+                ;
+            }
 
-			@Override
+            @Override
             public GravityModel getGravityModel() {
                 return this.sunProvider.getGravityModel();
-			}
+            }
 
-			@Override
+            @Override
             public void setGravityModel(final GravityModel gravityModelIn) {
                 this.sunProvider.setGravityModel(gravityModelIn);
-			}
+            }
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
                 return null;
             }
 
             @Override
-            public IAUPole getIAUPole() {
+            public CelestialBodyIAUOrientation getOrientation() {
                 return null;
             }
 
             @Override
-            public void setIAUPole(final IAUPole iauPoleIn) {  
+            public void setOrientation(final CelestialBodyOrientation celestialBodyOrientation) {
             }
 
             @Override
             public void setGM(final double gmIn) {
+            }
+
+            @Override
+            public CelestialBodyFrame getEclipticJ2000() throws PatriusException {
+                // nothing to do
+                return null;
             }
         };
 
@@ -316,7 +329,7 @@ public class RediffusedFluxTest {
         Assert.assertEquals(-3.89513229411636293e+06, pvcp.getY(), POS_EPSILON);
         Assert.assertEquals(-5.09383750217838865e+06, pvcp.getZ(), POS_EPSILON);
 
-        final FactoryManagedFrame itrfFrame = itrf;
+        final CelestialBodyFrame itrfFrame = itrf;
         final PVCoordinates satPV = satProvider.getPVCoordinates(d, itrfFrame);
 
         // Checking the satellite position...
@@ -428,8 +441,8 @@ public class RediffusedFluxTest {
      */
     private void rediffusedFluxSubcaseZero(final PVCoordinatesProvider satProvider,
                                            final AbsoluteDate d, final IEmissivityModel model,
-                                           final CelestialBody mockSun,
-                                           final FactoryManagedFrame itrfFrame) throws PatriusException {
+                                           final CelestialPoint mockSun,
+                                           final CelestialBodyFrame itrfFrame) throws PatriusException {
         // Without flux
         final RediffusedFlux flux0 = new RediffusedFlux(10, 10, itrfFrame, mockSun, satProvider, d,
             model, false, false);
@@ -448,7 +461,7 @@ public class RediffusedFluxTest {
      * 
      * @testedFeature {@link features#REDISTRIBUTED_FLUX}
      * 
-     * @testedMethod {@link RediffusedFlux#RediffusedFlux(int, int, Frame, CelestialBody, PVCoordinatesProvider, AbsoluteDate, IEmissivityModel)}
+     * @testedMethod {@link RediffusedFlux#RediffusedFlux(int, int, Frame, CelestialPoint, PVCoordinatesProvider, AbsoluteDate, IEmissivityModel)}
      * 
      * @description test the exception
      * 
@@ -466,12 +479,11 @@ public class RediffusedFluxTest {
      */
     @Test
     public void testRediffusedFluxException() throws PatriusException {
-        final CelestialBody sunProvider = CelestialBodyFactory.getSun();
+        final CelestialPoint sunProvider = CelestialBodyFactory.getSun();
         final PVCoordinatesProvider satProvider = this.getOrbitLEO();
         final AbsoluteDate d = new AbsoluteDate(2005, 3, 5, 0, 24, 0.0, TimeScalesFactory.getTAI());
         final IEmissivityModel model = new KnockeRiesModel();
-        @SuppressWarnings("deprecation")
-        final FactoryManagedFrame itrfFrame = FramesFactory.getITRF();
+        final CelestialBodyFrame itrfFrame = FramesFactory.getITRF();
 
         boolean asExpected = false;
         try {

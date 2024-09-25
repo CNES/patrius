@@ -18,6 +18,7 @@
  * @history creation 17/04/2012
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
  * VERSION:4.11.1:FA:FA-74:30/06/2023:[PATRIUS] Reliquat OGM3320 hash code de Vector3D
  * VERSION:4.11.1:FA:FA-86:30/06/2023:[PATRIUS] Retours JE Alice
  * VERSION:4.11:DM:DM-3288:22/05/2023:[PATRIUS] ID de facette pour un FacetBodyShape
@@ -38,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
@@ -1126,20 +1126,32 @@ public class PyramidalFieldTest {
 
         /*
          * Case 7: two square fields, a rotation of pi/4 is applied around pyramid main axis (Z-axis)
-         * Does not work
          */
         builderA = new RectangularPyramidalFieldBuilder(-1, 1, -1, 1, 1);
         builderB = builderA.rotate(MathLib.PI / 4.);
         fieldA = builderA.build(nameA, Vector3D.ZERO);
         fieldB = builderB.build(nameB, Vector3D.ZERO);
 
-        try {
-            union = fieldA.getUnionWith(fieldB);
-            Assert.fail();
-        } catch (final PatriusException exception) {
-            // Expected field of view is a 8-branches star, but computation throws an error
-            Assert.assertEquals(SEVERAL_BOUNDARY_LOOPS, exception.getMessage().toString());
-        }
+        union = fieldA.getUnionWith(fieldB);
+        Vector3D[] expectedDirections = new Vector3D[16];
+        expectedDirections[0] = new Vector3D(-1, -1, 1);
+        expectedDirections[1] = new Vector3D(-0.4142135623730948, -1, 1);
+        expectedDirections[2] = new Vector3D(0, -1.4142135623730948, 1);
+        expectedDirections[3] = new Vector3D(0.4142135623730948, -1, 1);
+        expectedDirections[4] = new Vector3D(1, -1, 1);
+        expectedDirections[5] = new Vector3D(1, -0.4142135623730948, 1);
+        expectedDirections[6] = new Vector3D(1.4142135623730948, 0, 1);
+        expectedDirections[7] = new Vector3D(1, 0.4142135623730948, 1);
+        expectedDirections[8] = new Vector3D(1, 1, 1);
+        expectedDirections[9] = new Vector3D(0.4142135623730948, 1, 1);
+        expectedDirections[10] = new Vector3D(0, 1.4142135623730948, 1);
+        expectedDirections[11] = new Vector3D(-0.4142135623730948, 1, 1);
+        expectedDirections[12] = new Vector3D(-1, 1, 1);
+        expectedDirections[13] = new Vector3D(-1, 0.4142135623730948, 1);
+        expectedDirections[14] = new Vector3D(-1.4142135623730948, 0, 1);
+        expectedDirections[15] = new Vector3D(-1, -0.4142135623730948, 1);
+        expected = new PyramidalField("expected", expectedDirections);
+        Assert.assertTrue(PyramidalFieldTest.equals(union, expected, comparisonEpsilon));
 
         /*
          * Case 8: overlapping square fields combining horizontal and vertical translations
@@ -1149,7 +1161,7 @@ public class PyramidalFieldTest {
         fieldA = builderA.build(nameA, Vector3D.ZERO);
         fieldB = builderB.build(nameB, Vector3D.ZERO);
         union = fieldA.getUnionWith(fieldB);
-        Vector3D[] expectedDirections = new Vector3D[8];
+        expectedDirections = new Vector3D[8];
         expectedDirections[0] = new Vector3D(-1, -1, 1);
         expectedDirections[1] = new Vector3D(1, -1, 1);
         expectedDirections[2] = new Vector3D(1, 0.5, 1);
@@ -1314,81 +1326,6 @@ public class PyramidalFieldTest {
 
     }
 
-    /**
-     * Test needed to validate the union computation between two square quadrilateral pyramidal fields.
-     * Two square fields, a rotation of pi/4 is applied around pyramid main axis (Z-axis).
-     * Expected output corresponds to a 8-branch star.
-     * 
-     * Test added for FA-3264 in PATRIUS-4.11 after review of DM-3211 (PATRIUS-4.10).
-     * 
-     * @throws PatriusException
-     * 
-     * @testedMethod {@link PyramidalField#getUnionWith(PyramidalField)}
-     */
-    @Test
-    @Ignore
-    public void getUnionStarCaseTest() throws PatriusException {
-
-        final RectangularPyramidalFieldBuilder builderA = new RectangularPyramidalFieldBuilder(-1, 1, -1, 1, 1);
-        final RectangularPyramidalFieldBuilder builderB = builderA.rotate(MathLib.PI / 4.);
-        final PyramidalField fieldA = builderA.build("fieldA", Vector3D.ZERO);
-        final PyramidalField fieldB = builderB.build("fieldB", Vector3D.ZERO);
-
-        final PyramidalField union1 = fieldB.getUnionWith(fieldA);
-        for (int i = 0; i < union1.getSideAxis().length; i++) {
-            System.out.println(union1.getSideAxis()[i]);
-        }
-//        System.out.println("----------------");
-//        for (int i = 0; i < fieldA.getUnionWith(fieldB).getSideAxis().length; i++) {
-//            System.out.println(fieldA.getUnionWith(fieldB).getSideAxis()[i]);
-//        }
-
-        // // Vector3D[] directions1 = new Vector3D[5];
-        // // directions1[0] = new Vector3D(1, 1, 1);
-        // // directions1[1] = new Vector3D(0, 0, 1);
-        // directions1[2] = new Vector3D(-1, 1, 1);
-        // directions1[3] = new Vector3D(-1, -1, 1);
-        // directions1[4] = new Vector3D(1, -1, 1);
-        //
-        // final double stmo = FastMath.sqrt(2) - 1;
-        // final double halfSt = 1/FastMath.sqrt(2);
-        // Vector3D[] directions2 = new Vector3D[5];
-        // directions2[0] = new Vector3D(1, stmo, 1);
-        // directions2[1] = new Vector3D(-halfSt, stmo, 1);
-        // directions2[2] = new Vector3D(-halfSt, -stmo, 1);
-        // directions2[3] = new Vector3D(1, -stmo, 1);
-        // directions2[4] = new Vector3D(FastMath.sqrt(2), 0, 1);
-        // fieldB = new PyramidalField("fieldB", directions2);
-        //
-        // System.out.println(printSideAxis(fieldA));
-        // System.out.println(printSideAxis(fieldB));
-        //
-        // // final PyramidalField uni = fieldB.getUnionWith(fieldA);
-        // // System.out.println(printSideAxis(uni));
-        // final RegionFactory<Euclidean3D> factory = new RegionFactory<>();
-        // final Region<Euclidean3D> unionABKO = factory.union(fieldA.getPolyhedronsSet().copySelf(),
-        // fieldB.getPolyhedronsSet().copySelf());
-        // final Region<Euclidean3D> unionBAOK = factory.union(fieldB.getPolyhedronsSet().copySelf(),
-        // fieldA.getPolyhedronsSet().copySelf());
-        //
-        // System.out.println(unionABKO.hashCode());
-        // System.out.println(unionBAOK.hashCode());
-        // System.out.println(unionABKO.equals(unionBAOK));
-        //
-        // // Assert.fail();
-        //
-        // fieldB.getUnionWith(fieldA);
-        // // fieldA.getUnionWith(fieldB);
-        //
-        // try{
-        // final PyramidalField union = fieldB.getUnionWith(fieldA);
-        // Assert.fail();
-        // } catch(final PatriusException exception) {
-        // // Expected field of view is a 8-branches star, but computation throws an error
-        // Assert.assertEquals(SEVERAL_BOUNDARY_LOOPS, exception.getMessage().toString());
-        // }
-    }
-    
     /**
      * Test needed to validate the clockwise computation method
      * {@link PyramidalField#turnClockwise(PyramidalField) turnClockwise}.

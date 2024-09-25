@@ -19,6 +19,10 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.11:DM:DM-17:22/05/2023:[PATRIUS] Detecteur de distance a la surface d'un corps celeste
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -40,8 +44,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.DistanceDetector;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
@@ -53,7 +59,6 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -93,7 +98,7 @@ public class DistanceDetectorTest {
     private static SpacecraftState tISSSpState;
 
     /** The Sun. */
-    private static CelestialBody theSun;
+    private static CelestialPoint theSun;
 
     /** Initial propagator date. */
     private static AbsoluteDate iniDate;
@@ -224,6 +229,11 @@ public class DistanceDetectorTest {
         // Test getter
         Assert.assertEquals(54321., detector6.getDistance());
         Assert.assertEquals(theSun, detector6.getBody());
+
+        final DistanceDetector detector7 = new DistanceDetector(theSun, 54321., 2, 10, 0.1, Action.STOP, false);
+        final DistanceDetector detector8 = (DistanceDetector) detector7.copy();
+        // Test getter
+        Assert.assertEquals(2, detector8.getSlopeSelection());
     }
 
     /**
@@ -250,8 +260,32 @@ public class DistanceDetectorTest {
         // Illegal integer as parameter
         final DistanceDetector detector =
             new DistanceDetector(theSun, -1.);
-        // We should never reach the next line...
-        Assert.fail(detector.toString() + " exists but should not...");
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#VALIDATE_DISTANCE_DETECTOR}
+     * 
+     * @testedMethod {@link DistanceDetector#DistanceDetector (org.orekit.utils.PVCoordinatesProvider, int) }
+     * 
+     * @description error constructor test
+     * 
+     * @input constructor parameters : reference body, negative distance
+     * 
+     * @output none
+     * 
+     * @testPassCriteria the {@link DistanceDetector} cannot be created (IllegalArgumentException)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testDistanceDetectorCtorError2() {
+        // Illegal integer as parameter
+        final DistanceDetector detector =
+            new DistanceDetector(theSun, -1., 2, 300, 1E-3, Action.CONTINUE, false);
     }
 
     /**

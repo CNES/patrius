@@ -14,14 +14,20 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.bodies;
 
-import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
 
 /**
  * Abstract class for all JPL celestial body loaders.
@@ -131,7 +137,7 @@ public abstract class AbstractJPLCelestialBodyLoader implements CelestialBodyLoa
      * @return the shape of the celestial body
      */
     protected BodyShape buildDefaultBodyShape(final String name,
-            final Frame bodyFrame,
+            final CelestialBodyFrame bodyFrame,
             final EphemerisType ephemerisType) {
 
         // flatness coefficient of the celestial body
@@ -140,6 +146,11 @@ public abstract class AbstractJPLCelestialBodyLoader implements CelestialBodyLoa
         final BodyShape shape;
 
         switch (ephemerisType) {
+            case EARTH:
+                // Earth
+                shape = new OneAxisEllipsoid(Constants.GRS80_EARTH_EQUATORIAL_RADIUS, Constants.GRS80_EARTH_FLATTENING,
+                        bodyFrame, name);
+                break;
             case SUN:
                 // Sun
                 shape = new OneAxisEllipsoid(SUN_RADIUS, 0, bodyFrame, name);
@@ -186,9 +197,8 @@ public abstract class AbstractJPLCelestialBodyLoader implements CelestialBodyLoa
                 shape = new OneAxisEllipsoid(PLUTO_RADIUS, 0, bodyFrame, name);
                 break;
             default:
-                // A default null shape is set to Earth-Moon and Solar System barycenters
-                shape = null;
-                break;
+                // Cannot happen
+                throw new PatriusRuntimeException(PatriusMessages.INTERNAL_ERROR, null);
         }
 
         return shape;

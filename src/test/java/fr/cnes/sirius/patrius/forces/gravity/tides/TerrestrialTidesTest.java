@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -44,7 +45,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
@@ -143,7 +144,7 @@ public class TerrestrialTidesTest {
         // Earth equatorial radius from grim4s4_gr GRGS file
         final double requa = 6378136.;
 
-        final List<CelestialBody> bodies = new ArrayList<>();
+        final List<CelestialPoint> bodies = new ArrayList<>();
         bodies.add(CelestialBodyFactory.getSun());
         bodies.add(CelestialBodyFactory.getMoon());
 
@@ -208,7 +209,7 @@ public class TerrestrialTidesTest {
         // Earth equatorial radius from grim4s4_gr GRGS file
         final double requa = 6378136.;
 
-        final List<CelestialBody> bodies = new ArrayList<>();
+        final List<CelestialPoint> bodies = new ArrayList<>();
         bodies.add(CelestialBodyFactory.getSun());
         bodies.add(CelestialBodyFactory.getMoon());
 
@@ -561,7 +562,7 @@ public class TerrestrialTidesTest {
         // Earth equatorial radius from grim4s4_gr GRGS file
         final double requa = 6378136.;
 
-        final List<CelestialBody> bodies = new ArrayList<>();
+        final List<CelestialPoint> bodies = new ArrayList<>();
         bodies.add(CelestialBodyFactory.getSun());
         bodies.add(CelestialBodyFactory.getMoon());
 
@@ -647,7 +648,7 @@ public class TerrestrialTidesTest {
         // Earth equatorial radius from grim4s4_gr GRGS file
         final double requa = 6378136.;
 
-        final List<CelestialBody> bodies = new ArrayList<>();
+        final List<CelestialPoint> bodies = new ArrayList<>();
         bodies.add(CelestialBodyFactory.getSun());
         bodies.add(CelestialBodyFactory.getMoon());
 

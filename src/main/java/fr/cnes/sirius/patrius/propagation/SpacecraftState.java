@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-157:08/12/2023:[PATRIUS] Anomalie de la methode SpacecraftState#updateOrbit
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] Attitude spacecraft state lazy
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -1089,15 +1090,30 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
      * <b>{@link SpacecraftState} object state being immutable, a new {@link SpacecraftState} object
      * is returned.</b>
      * </p>
+     * <p>Attitude if existent will be converted in orbital frame.</p>
+     * <p>Warning: additional state are supposed to be valid in new orbit frame. No conversion is performed.</p>
      *
      * @param newOrbit
      *        the new orbit
      * @return a new SpacecraftState with an updated orbit
-     * @throws PatriusException if attitude cannot be computed
-     *         if attitude events cannot be computed
+     * @throws PatriusException if attitude cannot be computed or new orbit doesn't have same date as former orbit
      */
     public SpacecraftState updateOrbit(final Orbit newOrbit) throws PatriusException {
-        return new SpacecraftState(newOrbit, this.getAttitude(), this.getAttitudeEvents(), this.additionalStates);
+        if (this.attitude == null) {
+            return new SpacecraftState(attitudeProvider, attitudeProviderEvents, newOrbit, this.additionalStates);
+        } else {
+            // Convert attitude in right frame to keep orbit/attitude frame consistency
+            Attitude att = this.getAttitude();
+            if (att != null) {
+                att = att.withReferenceFrame(newOrbit.getFrame());
+            }
+            Attitude attEvents = this.getAttitudeEvents();
+            if (attEvents != null) {
+                attEvents = attEvents.withReferenceFrame(newOrbit.getFrame());
+            }
+            // Build updated spaccraft state
+            return new SpacecraftState(newOrbit, att, attEvents, this.additionalStates);
+        }
     }
 
     /**

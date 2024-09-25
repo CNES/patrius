@@ -19,6 +19,15 @@
  */
 /*
  * HISTORY
+* VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
+ *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
 * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les AbstractTropoFactory
  * VERSION:4.11:DM:DM-14:22/05/2023:[PATRIUS] Nombre max d'iterations dans le calcul de la propagation du signal 
@@ -47,11 +56,13 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.LinearTwoPointsPVProvider;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
@@ -60,15 +71,15 @@ import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.exception.ConvergenceException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagation.SignalPropagationRole;
 import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel.ConvergenceAlgorithm;
 import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel.FixedDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -110,11 +121,8 @@ public class VacuumSignalPropagationTest {
         SIGNAL_TROPO_CORRECTION
     }
 
-    /** Epsilon for double comparison. */
-    private final double comparisonEpsilon = Precision.DOUBLE_COMPARISON_EPSILON;
-
     @BeforeClass
-    public static void setUpBeforeClass() throws PatriusException {
+    public static void setUpBeforeClass() {
         Report.printClassHeader(VacuumSignalPropagationTest.class.getSimpleName(), "Signal propagation");
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
@@ -126,13 +134,13 @@ public class VacuumSignalPropagationTest {
      * 
      * @testedFeature {@link features#SIGNAL_PROPAGATION}
      * 
-     * @testedMethod {@link VacuumSignalPropagationModel#computeSignalPropagation(PVCoordinatesProvider, PVCoordinatesProvider, AbsoluteDate, FixedDate)}
-     * @testedMethod {@link VacuumSignalPropagation#getVector(Frame)}
+     * @testedMethod {@link VacuumSignalPropagationModel#computeSignalPropagation}
+     * @testedMethod {@link VacuumSignalPropagation#getVector()}
      * @testedMethod {@link VacuumSignalPropagation#getEmissionDate()}
      * @testedMethod {@link VacuumSignalPropagation#getReceptionDate()}
+     * @testedMethod {@link VacuumSignalPropagation#getEmitterPV()}
+     * @testedMethod {@link VacuumSignalPropagation#getReceiverPV()}
      * @testedMethod {@link VacuumSignalPropagation#getFrame()}
-     * @testedMethod {@link VacuumSignalPropagation#getdPropdPem(Frame)}
-     * @testedMethod {@link VacuumSignalPropagation#getdPropdPrec(Frame)}
      * 
      * @description computation of a signal propagation between two moving points in the void
      * 
@@ -184,39 +192,44 @@ public class VacuumSignalPropagationTest {
 
         // Values tests
         // The position comparison are made with a relative "threshold" value, so 1.0e-6
-        final Vector3D vector = goSignal.getVector(refFrame);
+        final Vector3D vector = goSignal.getVector();
         final double expectedDuration = 1.e7 / (Constants.SPEED_OF_LIGHT + 1.e7 / 10.);
         Assert.assertEquals(expectedDuration * Constants.SPEED_OF_LIGHT, vector.getX(), 1.e-6);
         Assert.assertEquals(0., vector.getY(), 1.e-6);
         Assert.assertEquals(0., vector.getZ(), 1.e-6);
 
         Assert.assertEquals(0., goSignal.getEmissionDate().durationFrom(startDate), threshold);
+        Assert.assertEquals(station.getPVCoordinates(startDate, refFrame), goSignal.getEmitterPV());
         Assert.assertEquals(expectedDuration, goSignal.getReceptionDate().durationFrom(startDate), threshold);
+        Assert.assertEquals(spacecraft.getPVCoordinates(goSignal.getReceptionDate(), refFrame),
+            goSignal.getReceiverPV());
         Assert.assertEquals(goSignal.getFixedDateType(), FixedDate.EMISSION);
         Assert.assertTrue(goSignal.getFrame().equals(refFrame));
 
         Report.printToReport("Signal duration", expectedDuration, goSignal.getReceptionDate().durationFrom(startDate));
 
         // Same computation from the reception date
+        final AbsoluteDate recDate = goSignal.getReceptionDate();
         final VacuumSignalPropagation goSignal2 = model.computeSignalPropagation(
-            station, spacecraft, goSignal.getReceptionDate(), FixedDate.RECEPTION);
+            station, spacecraft, recDate, FixedDate.RECEPTION);
 
         // Values tests
-        final Vector3D vector2 = goSignal2.getVector(refFrame);
+        // Deprecated method
+        final Vector3D vector2 = goSignal2.getVector();
         Assert.assertEquals(vector.getX(), vector2.getX(), 1.e-6);
         Assert.assertEquals(vector.getY(), vector2.getY(), 1.e-6);
         Assert.assertEquals(vector.getZ(), vector2.getZ(), 1.e-6);
 
         Assert.assertEquals(0., goSignal2.getEmissionDate().durationFrom(startDate), threshold);
-        Assert.assertEquals(0., goSignal2.getReceptionDate().durationFrom(goSignal.getReceptionDate()),
-            threshold);
+        Assert.assertEquals(station.getPVCoordinates(goSignal2.getEmissionDate(), refFrame), goSignal2.getEmitterPV());
+        Assert.assertEquals(0., goSignal2.getReceptionDate().durationFrom(recDate), threshold);
+        Assert.assertEquals(spacecraft.getPVCoordinates(recDate, refFrame), goSignal2.getReceiverPV());
         Assert.assertEquals(goSignal2.getFixedDateType(), FixedDate.RECEPTION);
 
         // Wrong model creation
         final Frame wrongFrame = new LocalOrbitalFrame(refFrame, LOFType.TNW, spacecraft, "wrong frame");
         try {
-            new VacuumSignalPropagationModel(wrongFrame, threshold,
-                VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+            new VacuumSignalPropagationModel(wrongFrame, threshold, VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
             Assert.fail();
         } catch (final IllegalArgumentException e) {
             // expected
@@ -327,7 +340,7 @@ public class VacuumSignalPropagationTest {
      * 
      * @testedFeature {@link features#SIGNAL_PROPAGATION}
      * 
-     * @testedMethod {@link VacuumSignalPropagation#getShapiroTimeCorrection(CelestialBody)}
+     * @testedMethod {@link VacuumSignalPropagation#getShapiroTimeCorrection(CelestialPoint)}
      * @testedMethod {@link VacuumSignalPropagation#getShapiroTimeCorrection(double)}
      * 
      * @description evaluate the computation of the Shapiro time dilation due to the gravitational attraction of the
@@ -355,7 +368,7 @@ public class VacuumSignalPropagationTest {
         final AbsoluteDate startDate = AbsoluteDate.J2000_EPOCH;
 
         // "station"
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final double mu = earth.getGM();
         // final BodyShape earthShape = earth.getShape();
         final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(Constants.GRS80_EARTH_EQUATORIAL_RADIUS,
@@ -386,17 +399,80 @@ public class VacuumSignalPropagationTest {
 
     /**
      * @throws PatriusException
+     *         if frames problems occur
+     * @testType UT
+     * 
+     * @testedFeature {@link features#SIGNAL_PROPAGATION}
+     * 
+     * @testedMethod {@link SignalPropagationRole#TRANSMITTER}
+     * @testedMethod {@link SignalPropagationRole#RECEIVER}
+     * 
+     * @description Evaluate the enumerate behavior
+     * 
+     * @testPassCriteria the enumerate return the expected information
+     */
+    @Test
+    public void signalPropagationRoleTest() throws PatriusException {
+
+        // Frame and dates
+        final Frame refFrame = FramesFactory.getGCRF();
+        final AbsoluteDate startDate = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate endDate = startDate.shiftedBy(10.);
+
+        // "station"
+        final PVCoordinates pvSta1 = new PVCoordinates(Vector3D.ZERO, Vector3D.ZERO);
+        final PVCoordinates pvSta2 = new PVCoordinates(new Vector3D(1.e7, 0., 0.), Vector3D.ZERO);
+
+        final PVCoordinatesProvider station = new LinearTwoPointsPVProvider(
+            pvSta1, startDate, pvSta2, endDate, refFrame);
+
+        // "spacecraft"
+        final PVCoordinates pvSpace1 = new PVCoordinates(new Vector3D(1.0e7, 0., 0.), Vector3D.ZERO);
+        final PVCoordinates pvSpace2 = new PVCoordinates(new Vector3D(0., 0., 0.), Vector3D.ZERO);
+
+        final PVCoordinatesProvider spacecraft = new LinearTwoPointsPVProvider(
+            pvSpace1, startDate, pvSpace2, endDate, refFrame);
+
+        // Model
+        final VacuumSignalPropagationModel model = new VacuumSignalPropagationModel(refFrame, 1e-13,
+            VacuumSignalPropagationModel.DEFAULT_MAX_ITER);
+
+        // Station - spacecraft signal computation
+        final VacuumSignalPropagation goSignal = model.computeSignalPropagation(station, spacecraft,
+            startDate, FixedDate.EMISSION);
+
+        final SignalPropagationRole transmitterRole = SignalPropagationRole.TRANSMITTER;
+        final AbsoluteDate transDate = transmitterRole.getDate(goSignal);
+        final Vector3D transDTPropDPos = transmitterRole.getdTPropDPos(goSignal);
+        final RealMatrix transDPropDPos = transmitterRole.getdPropDPos(goSignal);
+
+        Assert.assertEquals(goSignal.getEmissionDate(), transDate);
+        Assert.assertEquals(goSignal.getdTpropdPem(), transDTPropDPos);
+        Assert.assertEquals(goSignal.getdPropdPem(), transDPropDPos);
+
+        final SignalPropagationRole receiverRole = SignalPropagationRole.RECEIVER;
+        final AbsoluteDate receiverDate = receiverRole.getDate(goSignal);
+        final Vector3D receiverDTPropDPos = receiverRole.getdTPropDPos(goSignal);
+        final RealMatrix receiverDPropDPos = receiverRole.getdPropDPos(goSignal);
+
+        Assert.assertEquals(goSignal.getReceptionDate(), receiverDate);
+        Assert.assertEquals(goSignal.getdTpropdPrec(), receiverDTPropDPos);
+        Assert.assertEquals(goSignal.getdPropdPrec(), receiverDPropDPos);
+    }
+
+    /**
+     * @throws PatriusException
      *         if an error occurs
      * @description Evaluate the signal propagation serialization / deserialization process.
      *
      * @testPassCriteria The signal propagation can be serialized and deserialized.
      */
     @Test
-    public void testSerialization() throws PatriusException {
+    public void testSerialization() {
 
         // Orbit initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final Frame eme2000 = FramesFactory.getEME2000();
+        final CelestialBodyFrame eme2000 = FramesFactory.getEME2000();
 
         // Station frame creation
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6000000., 0., eme2000);
@@ -414,9 +490,10 @@ public class VacuumSignalPropagationTest {
 
         Assert.assertEquals(signal.getEmissionDate(), deserializedSignal.getEmissionDate());
         Assert.assertEquals(signal.getReceptionDate(), deserializedSignal.getReceptionDate());
-        Assert.assertEquals(signal.getVector(eme2000), deserializedSignal.getVector(eme2000));
-        Assert.assertEquals(signal.getdPropdT(eme2000), deserializedSignal.getdPropdT(eme2000));
-        Assert.assertEquals(signal.getdTpropdPrec(eme2000), deserializedSignal.getdTpropdPrec(eme2000));
+        Assert.assertEquals(signal.getVector(), deserializedSignal.getVector());
+        Assert.assertEquals(signal.getdPropdT(), deserializedSignal.getdPropdT());
+        Assert.assertEquals(signal.getdTpropdPrec(), deserializedSignal.getdTpropdPrec());
+        Assert.assertEquals(signal.getdTpropdPem(), deserializedSignal.getdTpropdPem());
     }
 
     /**

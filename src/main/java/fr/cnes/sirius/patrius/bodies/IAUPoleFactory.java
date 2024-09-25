@@ -17,6 +17,8 @@
  */
 /*
  * HISTORY
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3147:10/05/2022:[PATRIUS] Ajout a l'interface ITargetDirection d'une methode getTargetPvProv ...
@@ -56,6 +58,7 @@ import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
 
 //CHECKSTYLE: stop MultipleStringLiteralsCheck check
@@ -131,7 +134,7 @@ public final class IAUPoleFactory {
     private static Properties properties;
 
     /** IAU pole data for all celestial bodies. */
-    private static Map<EphemerisType, IAUPole> poleData;
+    private static Map<EphemerisType, CelestialBodyIAUOrientation> poleData;
 
     static {
         // Load IAU pole data
@@ -176,7 +179,7 @@ public final class IAUPoleFactory {
      * @param body body name
      * @return generic IAUPole
      */
-    private static IAUPole buildGeneric(final String body) {
+    private static CelestialBodyIAUOrientation buildGeneric(final String body) {
         // Alpha 0
         final List<IAUPoleFunction> alpha0List = new ArrayList<>();
         alpha0List.add(new IAUPoleFunction(IAUPoleFunctionType.CONSTANT,
@@ -218,7 +221,7 @@ public final class IAUPoleFactory {
      * Build Mercury IAUPole.
      * @return Mercury IAUPole
      */
-    private static IAUPole buildMercury() {
+    private static CelestialBodyIAUOrientation buildMercury() {
         // Alpha 0
         final List<IAUPoleFunction> alpha0List = new ArrayList<>();
         alpha0List.add(new IAUPoleFunction(IAUPoleFunctionType.CONSTANT,
@@ -270,7 +273,7 @@ public final class IAUPoleFactory {
      * Build Jupiter IAUPole.
      * @return Jupiter IAUPole
      */
-    private static IAUPole buildJupiter() {
+    private static CelestialBodyIAUOrientation buildJupiter() {
         // Alpha 0
         final List<IAUPoleFunction> alpha0List = new ArrayList<>();
         alpha0List.add(new IAUPoleFunction(IAUPoleFunctionType.CONSTANT,
@@ -344,7 +347,7 @@ public final class IAUPoleFactory {
      */
     // CHECKSTYLE: stop MethodLength check
     // Reason: code consistency with other methods
-    private static IAUPole buildMoon() {
+    private static CelestialBodyIAUOrientation buildMoon() {
         // CHECKSTYLE: resume MethodLength check
 
         // Alpha 0
@@ -444,7 +447,7 @@ public final class IAUPoleFactory {
      * Build Neptune IAUPole.
      * @return Neptune IAUPole
      */
-    private static IAUPole buildNeptune() {
+    private static CelestialBodyIAUOrientation buildNeptune() {
         // Alpha 0
         final List<IAUPoleFunction> alpha0List = new ArrayList<>();
         alpha0List.add(new IAUPoleFunction(IAUPoleFunctionType.CONSTANT,
@@ -496,8 +499,8 @@ public final class IAUPoleFactory {
      * @return IAU pole for the body, or dummy EME2000 aligned pole
      *         for barycenters
      */
-    public static IAUPole getIAUPole(final EphemerisType body) {
-        final IAUPole iauPole = poleData.get(body);
+    public static CelestialBodyIAUOrientation getIAUPole(final EphemerisType body) {
+        final CelestialBodyIAUOrientation iauPole = poleData.get(body);
         if (iauPole == null) {
             return new GCRFAligned();
         }
@@ -569,7 +572,7 @@ public final class IAUPoleFactory {
      * frames are identical and aligned with GCRF. It is used for example to define the ICRF.
      * </p>
      */
-    private static class GCRFAligned implements IAUPole {
+    private static class GCRFAligned implements CelestialBodyIAUOrientation {
 
         /** Serializable UID. */
         private static final long serialVersionUID = 4148478144525077641L;
@@ -588,18 +591,6 @@ public final class IAUPoleFactory {
 
         /** {@inheritDoc} */
         @Override
-        public double getPrimeMeridianAngle(final AbsoluteDate date) {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString() {
-            return "GCRF-aligned";
-        }
-
-        /** {@inheritDoc} */
-        @Override
         public Vector3D getPoleDerivative(final AbsoluteDate date) {
             return Vector3D.PLUS_K;
         }
@@ -612,8 +603,14 @@ public final class IAUPoleFactory {
 
         /** {@inheritDoc} */
         @Override
+        public double getPrimeMeridianAngle(final AbsoluteDate date) {
+            return 0.;
+        }
+
+        /** {@inheritDoc} */
+        @Override
         public double getPrimeMeridianAngleDerivative(final AbsoluteDate date) {
-            return 0;
+            return 0.;
         }
 
         /** {@inheritDoc} */
@@ -626,6 +623,26 @@ public final class IAUPoleFactory {
         @Override
         public double getPrimeMeridianAngleDerivative(final AbsoluteDate date, final IAUPoleModelType iauPoleType) {
             return 0.;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public AngularCoordinates getAngularCoordinates(final AbsoluteDate date,
+                final OrientationType orientationType) {
+            return AngularCoordinates.IDENTITY;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public AngularCoordinates getAngularCoordinates(final AbsoluteDate date, final OrientationType orientationType,
+                                                        final IAUPoleModelType iauPoleType) {
+            return AngularCoordinates.IDENTITY;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString() {
+            return "GCRF-aligned";
         }
     }
 

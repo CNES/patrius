@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -109,23 +111,24 @@ public final class TabulatedSlew extends TabulatedAttitude implements Slew {
         super(inAttitudes, nbInterpolationPoints, natureIn);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public Attitude getAttitude(final AbsoluteDate date,
-            final Frame frame) throws PatriusException {
-        return getAttitude(null, date, frame);
-    }
-
-    /** {@inheritDoc}
+    /**
+     * {@inheritDoc}
+     * 
      * <p>
      * pvProvider is unused since slew has been computed beforehand.
      * </p>
-     * */
+     */
     @Override
     public Attitude getAttitude(final PVCoordinatesProvider pvProvider, final AbsoluteDate date,
                                 final Frame frame) throws PatriusException {
+        return getAttitude(date, frame);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Attitude getAttitude(final AbsoluteDate date, final Frame frame) throws PatriusException {
         // Delegate to tabulated attitude
-        Attitude res = super.getAttitude(null, date, frame);
+        Attitude res = super.getAttitude(date, frame);
         // Handle spin derivatives
         if (isSpinDerivativesComputation()) {
             res = new Attitude(date, frame, res.getRotation(), res.getSpin(), this.getSpinDerivatives(date, frame));
@@ -152,17 +155,15 @@ public final class TabulatedSlew extends TabulatedAttitude implements Slew {
             final Vector3D res;
             if (date.durationFrom(this.getTimeInterval().getLowerData()) < AbstractVector3DFunction.DEFAULT_STEP) {
                 // Lower bound
-                final Vector3D spin1 = super.getAttitude(null, date, frame).getSpin();
-                final Vector3D spin2 =
-                        super.getAttitude(null, date.shiftedBy(AbstractVector3DFunction.DEFAULT_STEP),
-                        frame).getSpin();
+                final Vector3D spin1 = super.getAttitude(date, frame).getSpin();
+                final Vector3D spin2 = super.getAttitude(date.shiftedBy(AbstractVector3DFunction.DEFAULT_STEP), frame)
+                    .getSpin();
                 res = spin2.subtract(spin1).scalarMultiply(AbstractVector3DFunction.DEFAULT_STEP);
             } else {
                 // Upper bound
-                final Vector3D spin1 =
-                        super.getAttitude(null, date.shiftedBy(-AbstractVector3DFunction.DEFAULT_STEP),
-                        frame).getSpin();
-                final Vector3D spin2 = super.getAttitude(null, date, frame).getSpin();
+                final Vector3D spin1 = super.getAttitude(date.shiftedBy(-AbstractVector3DFunction.DEFAULT_STEP), frame)
+                    .getSpin();
+                final Vector3D spin2 = super.getAttitude(date, frame).getSpin();
                 res = spin2.subtract(spin1).scalarMultiply(AbstractVector3DFunction.DEFAULT_STEP);
             }
             return res;
@@ -201,7 +202,7 @@ public final class TabulatedSlew extends TabulatedAttitude implements Slew {
      */
     private Attitude getAttitudeNoSpinDerivative(final AbsoluteDate date,
             final Frame frame) throws PatriusException {
-        return super.getAttitude(null, date, frame);
+        return super.getAttitude(date, frame);
     }
 
     /** {@inheritDoc} */

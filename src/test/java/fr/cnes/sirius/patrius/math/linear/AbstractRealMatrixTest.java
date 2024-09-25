@@ -20,6 +20,8 @@
  */
 /* 
  * HISTORY
+* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -651,43 +653,80 @@ public class AbstractRealMatrixTest {
      * Tests the method that returns the minimum value in the matrix.
      *
      * <p>
-     * Tested method:<br>
-     * {@linkplain AbstractRealMatrix#getMin()}
+     * Tested methods:<br>
+     * {@linkplain AbstractRealMatrix#getMin()} {@linkplain AbstractRealMatrix#getMin(boolean)}
      * </p>
      */
     @Test
     public void testGetMin() {
         // Tested matrix
         final double[][] data = { { 2.35639, -2.78746, 4.82891, -0.71887 },
-                { -6.24815, 0.88230, 8.32589, 3.31554 },
-                { -1.62108, -9.49048, -9.15960, -2.29497 },
-                { 4.26757, 5.89620, -2.90152, -3.79535 }, { -6.72737, 1.89045, 3.51700, 4.79905 },
-                { -3.67920, 9.03245, 5.52913, -8.62147 } };
+            { -6.24815, 0.88230, 8.32589, 3.31554 },
+            { -1.62108, -9.49048, -9.15960, -2.29497 },
+            { 4.26757, 5.89620, -2.90152, -3.79535 },
+            { -6.72737, 1.89045, 3.51700, 4.79905 },
+            { -3.67920, 9.03245, 5.52913, -8.62147 } };
         final RealMatrix matrix = new SimpleMatrix(data);
 
         // Test the method
         Assert.assertEquals(-9.49048, matrix.getMin(), 0.);
+        Assert.assertEquals(0.71887, matrix.getMin(true), 0.); // Absolute value case
     }
 
     /**
      * Tests the method that returns the maximum value in the matrix.
      *
      * <p>
-     * Tested method:<br>
-     * {@linkplain AbstractRealMatrix#getMax()}
+     * Tested methods:<br>
+     * {@linkplain AbstractRealMatrix#getMax()} {@linkplain AbstractRealMatrix#getMax(boolean)}
      * </p>
      */
     @Test
     public void testGetMax() {
         // Tested matrix
         final double[][] data = { { -8.51756, 6.35722, -8.51210, -7.07860 },
-                { 2.79282, 9.68088, 5.00724, -5.65473 }, { -4.53290, -5.92541, 5.59738, 3.20725 },
-                { 2.95600, -4.48622, 8.36183, 5.60165 },
-                { -1.80463, -7.58314, -7.78892, -8.82253 }, { -8.63062, 1.17801, 0.81403, 1.61800 } };
+            { 2.79282, 9.68088, 5.00724, -5.65473 },
+            { -4.53290, -5.92541, 5.59738, 3.20725 },
+            { 2.95600, -4.48622, 8.36183, 5.60165 },
+            { -1.80463, -7.58314, -7.78892, -8.82253 },
+            { -18.63062, 1.17801, 0.81403, 1.61800 } };
         final RealMatrix matrix = new SimpleMatrix(data);
 
         // Test the method
         Assert.assertEquals(9.68088, matrix.getMax(), 0.);
+        Assert.assertEquals(18.63062, matrix.getMax(true), 0.); // Absolute value case
+    }
+
+    /**
+     * Tests the method that returns the corresponding absolute values matrix.
+     *
+     * <p>
+     * Tested method:<br>
+     * {@linkplain AbstractRealMatrix#getAbs()}
+     * </p>
+     */
+    @Test
+    public void testGetAbs() {
+        // Tested matrix
+        final double[][] data = { { -8.51756, 6.35722, -8.51210, -7.07860 },
+            { 2.79282, 9.68088, 5.00724, -5.65473 },
+            { -4.53290, -5.92541, 5.59738, 3.20725 },
+            { 2.95600, -4.48622, 8.36183, 5.60165 },
+            { -1.80463, -7.58314, -7.78892, -8.82253 },
+            { -18.63062, 1.17801, 0.81403, 1.61800 } };
+        final RealMatrix matrix = new SimpleMatrix(data);
+
+        // Expected matrix
+        final double[][] expectedData = { { 8.51756, 6.35722, 8.51210, 7.07860 },
+            { 2.79282, 9.68088, 5.00724, 5.65473 },
+            { 4.53290, 5.92541, 5.59738, 3.20725 },
+            { 2.95600, 4.48622, 8.36183, 5.60165 },
+            { 1.80463, 7.58314, 7.78892, 8.82253 },
+            { 18.63062, 1.17801, 0.81403, 1.61800 } };
+        final RealMatrix expectedMatrix = new SimpleMatrix(expectedData);
+
+        // Evaluate result
+        CheckUtils.checkEquality(expectedMatrix, matrix.getAbs(), 0., 0.);
     }
 
     /**
@@ -3441,7 +3480,7 @@ public class AbstractRealMatrixTest {
         RealMatrixFormat format;
 
         // Tested matrix
-        final double[][] data = { { 0.97900, 6.08152, -1.10616 }, { -2.90091, 4.06284, -6.07261 } };
+        final double[][] data = { { 0.97900, 5 / 3., -1.10616 }, { -2.90091, 163728819.73891395, -1.8820193993901e-8 } };
         final RealMatrix matrix = new SimpleMatrix(data);
 
         // Line separator
@@ -3452,11 +3491,12 @@ public class AbstractRealMatrixTest {
         format = MatrixUtils.VISUAL_FORMAT;
         result = matrix.toString(format);
         builder = new StringBuilder();
-        builder.append("SimpleMatrix[[     0.97900,      6.0815,     -1.1062]");
+        builder.append("SimpleMatrix[[     0.97900,      1.6667,     -1.1062]");
         builder.append(lineSeparator);
-        builder.append("             [     -2.9009,      4.0628,     -6.0726]]");
+        builder.append("             [     -2.9009,  1.6373e+08, -1.8820e-08]]");
         Assert.assertEquals(builder.toString(), result);
 
+        // AbstractRealMatrix#toString() should use VISUAL_FORMAT
         result = matrix.toString();
         Assert.assertEquals(builder.toString(), result);
 
@@ -3464,39 +3504,54 @@ public class AbstractRealMatrixTest {
         format = MatrixUtils.DEFAULT_FORMAT;
         result = matrix.toString(format);
         builder = new StringBuilder();
-        builder.append("SimpleMatrix{{0.979,6.08152,-1.10616},{-2.90091,4.06284,-6.07261}}");
+        builder.append("SimpleMatrix{{0.979,1.6666666667,-1.10616},{-2.90091,163728819.73891395,-0.0000000188}}");
         Assert.assertEquals(builder.toString(), result);
 
         // Java format
         format = MatrixUtils.JAVA_FORMAT;
         result = matrix.toString(format);
         builder = new StringBuilder();
-        builder.append("SimpleMatrix{{0.979, 6.08152, -1.10616}, {-2.90091, 4.06284, -6.07261}}");
+        builder
+            .append("SimpleMatrix{{0.979, 1.6666666666666667, -1.10616}, {-2.90091, 163728819.73891395, -0.000000018820193993901}}");
         Assert.assertEquals(builder.toString(), result);
 
         // Octave format
         format = MatrixUtils.OCTAVE_FORMAT;
         result = matrix.toString(format);
         builder = new StringBuilder();
-        builder.append("SimpleMatrix[0.979, 6.08152, -1.10616; -2.90091, 4.06284, -6.07261]");
+        builder
+            .append("SimpleMatrix[0.979, 1.6666666666666667, -1.10616; -2.90091, 163728819.73891395, -0.000000018820193993901]");
+        Assert.assertEquals(builder.toString(), result);
+
+        // Numpy format
+        format = MatrixUtils.NUMPY_FORMAT;
+        result = matrix.toString(format);
+        builder = new StringBuilder();
+        builder
+            .append("SimpleMatrix[[0.979, 1.6666666666666667, -1.10616], [-2.90091, 163728819.73891395, -0.000000018820193993901]]");
         Assert.assertEquals(builder.toString(), result);
 
         // Scilab format
         format = MatrixUtils.SCILAB_FORMAT;
         result = matrix.toString(format);
         builder = new StringBuilder();
-        builder.append("SimpleMatrix [0.979, 6.08152, -1.10616; -2.90091, 4.06284, -6.07261]");
+        builder
+            .append("SimpleMatrix [0.979, 1.6666666666666667, -1.10616; -2.90091, 163728819.73891395, -0.000000018820193993901]");
         Assert.assertEquals(builder.toString(), result);
 
         // Summary format
         format = MatrixUtils.SUMMARY_FORMAT;
         result = matrix.toString(format);
         builder = new StringBuilder();
-        builder.append("SimpleMatrix[[    0.97900,      6.0815,     -1.1062]");
+        builder.append("SimpleMatrix[[    0.97900,      1.6667,     -1.1062]");
         builder.append(lineSeparator);
-        builder.append("             [    -2.9009,      4.0628,     -6.0726]]");
+        builder.append("             [    -2.9009,  1.6373e+08, -1.8820e-08]]");
         builder.append(lineSeparator);
         builder.append("            Rows number : 2\t Columns number : 3");
+        Assert.assertEquals(builder.toString(), result);
+
+        // Summary format with specified sub-corners blocs dimensions
+        format = MatrixUtils.buildSummaryMatrixFormat(2);
         Assert.assertEquals(builder.toString(), result);
     }
 

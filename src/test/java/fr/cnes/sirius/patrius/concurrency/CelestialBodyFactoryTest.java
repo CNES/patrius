@@ -17,6 +17,7 @@
  * @history creation 03/04/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
@@ -31,14 +32,20 @@ import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.junit.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
+import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -91,7 +98,6 @@ public class CelestialBodyFactoryTest {
             sbf.append(regDatCNESpath + System.getProperty("path.separator"));
         }
         System.setProperty(KEY, sbf.toString());
-        System.out.println("BEFORECLASS : orekit.data.path = " + System.getProperty(KEY));
     }
 
     /**
@@ -122,7 +128,34 @@ public class CelestialBodyFactoryTest {
         final Frame b1Frame = b1.getRotatingFrame(IAUPoleModelType.TRUE);
         // Get the PV coordinates of the second body in the first's frame
         final PVCoordinates pvc = b2.getPVCoordinates(new AbsoluteDate(LocalDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneOffset.UTC), TimeScalesFactory.getTT()), b1Frame);
-        System.out.println("pvc : " + pvc.toString());
+    }
+
+    /**
+     * FA-3269.
+     * Check that there is no multi-thread issues when adding different CelestialBodyLoader at the same time for a given body.
+     * Without correction (FA-3269) in CelestialBodyFactory, this test failed about one in ten times. 
+     */
+    @org.junit.Test
+    public void addCelestialBodyLoaderConcurrentTest() {
+        CelestialBodyFactory.clearCelestialBodyLoaders();
+        // Build n threads
+        final List<Integer> list = new ArrayList<Integer>();
+        for (int i = 0; i < 4; i++) {
+            list.add(i);
+        }
+        
+        // For each thread, add 1000 times the same body loader
+        list.parallelStream().forEach(entry -> {
+            for (int i = 0; i < 1000; i++) {
+                try {
+                    CelestialBodyFactory.addCelestialBodyLoader("SUN", new JPLCelestialBodyLoader(entry.toString(), EphemerisType.SUN));
+                } catch (final Exception e) {
+                    // Multi-thread conflict
+                    Assert.fail();
+                }
+            }
+        });
+        Assert.assertTrue(true);
     }
 
     /** Order for the celestial body pick. */
@@ -140,7 +173,7 @@ public class CelestialBodyFactoryTest {
         if (orderCB > 10) {
             orderCB = 0;
         }
-        CelestialBody cBody;
+        CelestialPoint cBody;
         switch (nextInt) {
             case 0:
                 cBody = CelestialBodyFactory.getEarth();
@@ -176,6 +209,6 @@ public class CelestialBodyFactoryTest {
             default:
                 cBody = CelestialBodyFactory.getMoon();
         }
-        return cBody;
+        return (CelestialBody) cBody;
     }
 }

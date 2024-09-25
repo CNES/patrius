@@ -16,13 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- */
-/* 
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
-* VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
+ * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
  * VERSION:4.5.1:FA:FA-2540:04/08/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear
@@ -32,9 +31,20 @@
  */
 package fr.cnes.sirius.patrius.math.linear;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
@@ -107,6 +117,13 @@ public final class MatrixUtils {
     public static final String CARRIER_RETURN = "\n";
 
     /**
+     * Maximum number of fraction digits for no numerical approximation.<br>
+     * Set to integer maximum value so that the formatter uses the upper value adapted to the numeric type being
+     * formatted (see {@link NumberFormat#setMaximumFractionDigits}.
+     */
+    public static final int MAX_DIGITS = Integer.MAX_VALUE;
+
+    /**
      * The default {@link RealMatrixFormat}.
      *
      * @since 3.1
@@ -115,30 +132,49 @@ public final class MatrixUtils {
 
     /**
      * The JAVA format for {@link RealMatrix} objects.
+     * <p>
+     * This format guarantee no numerical approximation.
+     * </p>
      *
      * @since 4.5
      */
     public static final RealMatrixFormat JAVA_FORMAT = new RealMatrixFormat(OPENING_CURLY_BRACKET,
-            CLOSING_CURLY_BRACKET, OPENING_CURLY_BRACKET, CLOSING_CURLY_BRACKET, COMMA + SPACE,
-            COMMA + SPACE, CompositeFormat.getDefaultNumberFormat(Locale.US));
+        CLOSING_CURLY_BRACKET, OPENING_CURLY_BRACKET, CLOSING_CURLY_BRACKET, COMMA + SPACE,
+        COMMA + SPACE, CompositeFormat.getDefaultNumberFormat(Locale.US, MAX_DIGITS));
 
     /**
      * A format for {@link RealMatrix} objects compatible with octave.
+     * <p>
+     * This format guarantee no numerical approximation.
+     * </p>
      *
      * @since 3.1
      */
-    public static final RealMatrixFormat OCTAVE_FORMAT = new RealMatrixFormat(OPENING_BRACKET,
-            CLOSING_BRACKET, "", "", SEMICOLON + SPACE, COMMA + SPACE,
-            CompositeFormat.getDefaultNumberFormat(Locale.US));
+    public static final RealMatrixFormat OCTAVE_FORMAT = new RealMatrixFormat(OPENING_BRACKET, CLOSING_BRACKET, "", "",
+        SEMICOLON + SPACE, COMMA + SPACE, CompositeFormat.getDefaultNumberFormat(Locale.US, MAX_DIGITS));
+
+    /**
+     * The NUMPY format for {@link RealMatrix} objects.
+     * <p>
+     * This format guarantee no numerical approximation.
+     * </p>
+     *
+     * @since 4.13
+     */
+    public static final RealMatrixFormat NUMPY_FORMAT = new RealMatrixFormat(OPENING_BRACKET, CLOSING_BRACKET,
+        OPENING_BRACKET, CLOSING_BRACKET, COMMA + SPACE, COMMA + SPACE,
+        CompositeFormat.getDefaultNumberFormat(Locale.US, MAX_DIGITS));
 
     /**
      * The SCILAB format for {@link RealMatrix} objects.
+     * <p>
+     * This format guarantee no numerical approximation.
+     * </p>
      *
      * @since 4.5
      */
-    public static final RealMatrixFormat SCILAB_FORMAT = new RealMatrixFormat(SPACE
-            + OPENING_BRACKET, CLOSING_BRACKET, "", "", SEMICOLON + SPACE, COMMA + SPACE,
-            CompositeFormat.getDefaultNumberFormat(Locale.US));
+    public static final RealMatrixFormat SCILAB_FORMAT = new RealMatrixFormat(SPACE + OPENING_BRACKET, CLOSING_BRACKET,
+        "", "", SEMICOLON + SPACE, COMMA + SPACE, CompositeFormat.getDefaultNumberFormat(Locale.US, MAX_DIGITS));
 
     static {
         // set the minimum fraction digits to 1 to keep compatibility
@@ -148,32 +184,29 @@ public final class MatrixUtils {
     /**
      * Visual format for {@link RealMatrix} objects displayed on several rows.
      * <p>
-     * The pattern <cite>"% 11.5g"</cite> by default set the significant digit accuracy at 5, the
-     * width equal to 11, the format is automatically set to digital or scientific and the space
-     * between % and 11 allows to display the sign for scientific values.
+     * The pattern <cite>"% 11.5g"</cite> by default set the significant digit accuracy at 5, the width equal to 11, the
+     * format is automatically set to digital or scientific and the space between % and 11 allows to display the sign
+     * for scientific values.
      * </p>
      *
      * @since 4.5
      */
-    public static final RealMatrixFormat VISUAL_FORMAT = new RealMatrixFormat(OPENING_BRACKET,
-            CLOSING_BRACKET, OPENING_BRACKET + SPACE, CLOSING_BRACKET, CARRIER_RETURN + SPACE,
-            COMMA + SPACE, NUMBER_FORMAT);
+    public static final RealMatrixFormat VISUAL_FORMAT = new RealMatrixFormat(OPENING_BRACKET, CLOSING_BRACKET,
+        OPENING_BRACKET + SPACE, CLOSING_BRACKET, CARRIER_RETURN + SPACE, COMMA + SPACE, NUMBER_FORMAT);
 
     /**
      * Summary visual format for {@link RealMatrix} objects displayed on several rows.
      * <p>
-     * The pattern <cite>"% 11.5g"</cite> by default set the significant digit accuracy at 5, the
-     * width equal to 11, the format is automatically set to digital or scientific and the space
-     * between % and 11 allows to display the sign for scientific values. The summary mode, with an
-     * index set to 3, will display the 3x3 sub-matrix in each corner and the rows and columns total
-     * number.
+     * The pattern <cite>"% 11.5g"</cite> by default set the significant digit accuracy at 5, the width equal to 11, the
+     * format is automatically set to digital or scientific and the space between % and 11 allows to display the sign
+     * for scientific values. The summary mode, with an index set to 3, will display the 3x3 sub-matrix in each corner
+     * and the rows and columns total number.
      * </p>
      *
      * @since 4.5
      */
-    public static final RealMatrixFormat SUMMARY_FORMAT = new RealMatrixFormat(OPENING_BRACKET,
-            CLOSING_BRACKET, OPENING_BRACKET, CLOSING_BRACKET, CARRIER_RETURN + SPACE, COMMA
-                    + SPACE, NUMBER_FORMAT, 3);
+    public static final RealMatrixFormat SUMMARY_FORMAT = new RealMatrixFormat(OPENING_BRACKET, CLOSING_BRACKET,
+        OPENING_BRACKET, CLOSING_BRACKET, CARRIER_RETURN + SPACE, COMMA + SPACE, NUMBER_FORMAT, 3);
 
     /** Max matrix size above which a block matrix is used. */
     private static final double MAX_SIZE = 4096;
@@ -186,12 +219,30 @@ public final class MatrixUtils {
     }
 
     /**
+     * Build a summary matrix format with different specific size for sub-corners blocs square dimensions of the summary
+     * view.
+     * <p>
+     * The pattern <cite>"% 11.5g"</cite> by default set the significant digit accuracy at 5, the width equal to 11, the
+     * format is automatically set to digital or scientific and the space between % and 11 allows to display the sign
+     * for scientific values.
+     * </p>
+     * 
+     * @param summarySize
+     *        Sub-corners blocs square dimensions for summary view
+     * @return the real matrix format
+     * @see {@link #SUMMARY_FORMAT} specialized with user-specified sub-corners blocs square dimension
+     */
+    public static RealMatrixFormat buildSummaryMatrixFormat(final int summarySize) {
+        return new RealMatrixFormat(OPENING_BRACKET, CLOSING_BRACKET, OPENING_BRACKET, CLOSING_BRACKET,
+            CARRIER_RETURN + SPACE, COMMA + SPACE, NUMBER_FORMAT, summarySize);
+    }
+
+    /**
      * Returns a {@link RealMatrix} with specified dimensions.
      * <p>
-     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e.
-     * 4096 elements or 64&times;64 for a square matrix) which can be stored in a 32kB array, a
-     * {@link Array2DRowRealMatrix} instance is built. Above this threshold a
-     * {@link BlockRealMatrix} instance is built.
+     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or
+     * 64&times;64 for a square matrix) which can be stored in a 32kB array, a {@link Array2DRowRealMatrix} instance is
+     * built. Above this threshold a {@link BlockRealMatrix} instance is built.
      * </p>
      * <p>
      * The matrix elements are all set to 0.0.
@@ -215,11 +266,94 @@ public final class MatrixUtils {
     }
 
     /**
+     * Utility function to print a matrix in a file to see its structure (for example for sparse matrices).
+     *
+     * <p>
+     * Non zero values are represented with "1" and zero values with "0".
+     * </p>
+     *
+     * @param matrix
+     *        The matrix to write
+     * @param outputFileName
+     *        The name of the file
+     * @throws IOException
+     *         if an I/O exception occurs
+     */
+    public static void writeMatrixStructure(final RealMatrix matrix, final String outputFileName) throws IOException {
+        final File file = new File(outputFileName);
+        final Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+        try (final BufferedWriter bufferedWriter = new BufferedWriter(writer);) {
+
+            final int nr = matrix.getRowDimension();
+            final int nc = matrix.getColumnDimension();
+            final char[] chars = new char[nc];
+
+            for (int i = 0; i < nr; i++) {
+                for (int j = 0; j < nc; j++) {
+                    final double value = matrix.getEntry(i, j);
+                    if (value == 0.) {
+                        chars[j] = '0';
+                    } else {
+                        chars[j] = '1';
+                    }
+                }
+                bufferedWriter.write(chars);
+                bufferedWriter.newLine();
+            }
+        }
+    }
+
+    /**
+     * Utility function to print a matrix in a file with the machine precision.
+     *
+     * @param matrix
+     *        The matrix to write
+     * @param outputFileName
+     *        The name of the file
+     * @throws IOException
+     *         if an I/O exception occurs
+     */
+    public static void writeMatrix(final RealMatrix matrix, final String outputFileName) throws IOException {
+        writeMatrix(matrix, outputFileName, "% .17E ");
+    }
+
+    /**
+     * Utility function to print a matrix in a file with the provided format.
+     *
+     * @param matrix
+     *        The matrix to write
+     * @param outputFileName
+     *        The name of the file
+     * @param numberFormat
+     *        Number print format ("% .17E " for example for a scientific format with 17 decimal numbers)
+     * @throws IOException
+     *         if an I/O exception occurs
+     */
+    public static void writeMatrix(final RealMatrix matrix, final String outputFileName, final String numberFormat)
+        throws IOException {
+        final File file = new File(outputFileName);
+        final Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+        try (final BufferedWriter bufferedWriter = new BufferedWriter(writer)) {
+
+            final int nr = matrix.getRowDimension();
+            final int nc = matrix.getColumnDimension();
+
+            for (int i = 0; i < nr; i++) {
+                for (int j = 0; j < nc; j++) {
+                    final double value = matrix.getEntry(i, j);
+                    bufferedWriter.write(String.format(Locale.US, numberFormat, value));
+                }
+                bufferedWriter.newLine();
+            }
+        }
+    }
+
+    /**
      * Returns a {@link FieldMatrix} with specified dimensions.
      * <p>
-     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e.
-     * 4096 elements or 64&times;64 for a square matrix), a {@link FieldMatrix} instance is built.
-     * Above this threshold a {@link BlockFieldMatrix} instance is built.
+     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or
+     * 64&times;64 for a square matrix), a {@link FieldMatrix} instance is built. Above this threshold a
+     * {@link BlockFieldMatrix} instance is built.
      * </p>
      * <p>
      * The matrix elements are all set to field.getZero().
@@ -251,10 +385,9 @@ public final class MatrixUtils {
     /**
      * Returns a {@link RealMatrix} whose entries are the the values in the the input array.
      * <p>
-     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e.
-     * 4096 elements or 64&times;64 for a square matrix) which can be stored in a 32kB array, a
-     * {@link Array2DRowRealMatrix} instance is built. Above this threshold a
-     * {@link BlockRealMatrix} instance is built.
+     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or
+     * 64&times;64 for a square matrix) which can be stored in a 32kB array, a {@link Array2DRowRealMatrix} instance is
+     * built. Above this threshold a {@link BlockRealMatrix} instance is built.
      * </p>
      * <p>
      * The input array is copied, not referenced.
@@ -278,20 +411,19 @@ public final class MatrixUtils {
     /**
      * Returns a {@link RealMatrix} whose entries are the the values in the the input array.
      * <p>
-     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e.
-     * 4096 elements or 64&times;64 for a square matrix) which can be stored in a 32kB array, a
-     * {@link Array2DRowRealMatrix} instance is built. Above this threshold a
-     * {@link BlockRealMatrix} instance is built.
+     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or
+     * 64&times;64 for a square matrix) which can be stored in a 32kB array, a {@link Array2DRowRealMatrix} instance is
+     * built. Above this threshold a {@link BlockRealMatrix} instance is built.
      * </p>
      * <p>
-     * The input array is either copied or referenced, depending on the {@code forceCopyArray}
-     * argument.
+     * The input array is either copied or referenced, depending on the {@code forceCopyArray} argument.
      * </p>
      *
      * @param data
      *        the input array
      * @param forceCopyArray
-     *        if {@code true}, the input array is copied, otherwise it is referenced
+     *        if {@code true} or if the matrix has more than 4096 elements, the input array is copied, otherwise it is
+     *        referenced
      * @return a new {@link RealMatrix} containing the values of the input array
      * @throws NullArgumentException
      *         if either {@code data} or {@code data[0]} is {@code null}.
@@ -315,7 +447,7 @@ public final class MatrixUtils {
             out = new Array2DRowRealMatrix(data, forceCopyArray);
         } else {
             out = new BlockRealMatrix(data.length, data[0].length,
-                    BlockRealMatrix.toBlocksLayout(data), forceCopyArray);
+                BlockRealMatrix.toBlocksLayout(data), false); // Always false as the array is copied anyway
         }
         return out;
     }
@@ -323,9 +455,9 @@ public final class MatrixUtils {
     /**
      * Returns a {@link FieldMatrix} whose entries are the the values in the the input array.
      * <p>
-     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e.
-     * 4096 elements or 64&times;64 for a square matrix), a {@link FieldMatrix} instance is built.
-     * Above this threshold a {@link BlockFieldMatrix} instance is built.
+     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or
+     * 64&times;64 for a square matrix), a {@link FieldMatrix} instance is built. Above this threshold a
+     * {@link BlockFieldMatrix} instance is built.
      * </p>
      * <p>
      * The input array is copied, not referenced.
@@ -366,10 +498,9 @@ public final class MatrixUtils {
     /**
      * Returns {@code dimension x dimension} identity matrix.
      * <p>
-     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e.
-     * 4096 elements or 64&times;64 for a square matrix) which can be stored in a 32kB array, a
-     * {@link Array2DRowRealMatrix} instance is built. Above this threshold a
-     * {@link BlockRealMatrix} instance is built.
+     * The type of matrix returned depends on the dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or
+     * 64&times;64 for a square matrix) which can be stored in a 32kB array, a {@link Array2DRowRealMatrix} instance is
+     * built. Above this threshold a {@link BlockRealMatrix} instance is built.
      * </p>
      *
      * @param dimension
@@ -388,23 +519,22 @@ public final class MatrixUtils {
      * Returns {@code dimension x dimension} identity matrix.
      * <p>
      * If {@code diagonalMatrixInstance} is set to {@code true}, the generated identity matrix is a
-     * {@link DiagonalMatrix} instance. Otherwise, the type of matrix returned depends on the
-     * dimension. Below 2<sup>12</sup> elements (i.e. 4096 elements or 64&times;64 for a square
-     * matrix) which can be stored in a 32kB array, a {@link Array2DRowRealMatrix} instance is
-     * built. Above this threshold a {@link BlockRealMatrix} instance is built.
+     * {@link DiagonalMatrix} instance. Otherwise, the type of matrix returned depends on the dimension. Below
+     * 2<sup>12</sup> elements (i.e. 4096 elements or 64&times;64 for a square matrix) which can be stored in a 32kB
+     * array, a {@link Array2DRowRealMatrix} instance is built. Above this threshold a {@link BlockRealMatrix} instance
+     * is built.
      * </p>
      * <p>
-     * Although {@link DiagonalMatrix} instances are optimized for storing diagonal matrices, they
-     * do have some limitations. Setting off-diagonal elements to non-zero values is forbidden,
-     * which means any attempt to modify the matrix will most likely result in an exception.
+     * Although {@link DiagonalMatrix} instances are optimized for storing diagonal matrices, they do have some
+     * limitations. Setting off-diagonal elements to non-zero values is forbidden, which means any attempt to modify the
+     * matrix will most likely result in an exception.
      * </p>
      *
      * @param dimension
      *        the dimension of identity matrix to be generated
      * @param diagonalMatrixInstance
      *        if {@code true}, the generated identity matrix is a {@link DiagonalMatrix} instance,
-     *        otherwise it is either an {@link Array2DRowRealMatrix} or a {@link BlockRealMatrix}
-     *        instance
+     *        otherwise it is either an {@link Array2DRowRealMatrix} or a {@link BlockRealMatrix} instance
      * @return the generated identity matrix
      * @throws NotStrictlyPositiveException
      *         if the specified dimension is not strictly positive
@@ -412,7 +542,7 @@ public final class MatrixUtils {
      * @see #createRealMatrix(int, int)
      */
     public static RealMatrix createRealIdentityMatrix(final int dimension,
-            final boolean diagonalMatrixInstance) {
+                                                      final boolean diagonalMatrixInstance) {
         final RealMatrix out;
 
         if (diagonalMatrixInstance) {
@@ -443,8 +573,8 @@ public final class MatrixUtils {
      *         if dimension is not positive
      * @since 2.0
      */
-    public static <T extends FieldElement<T>> FieldMatrix<T> createFieldIdentityMatrix(
-            final Field<T> field, final int dimension) {
+    public static <T extends FieldElement<T>> FieldMatrix<T> createFieldIdentityMatrix(final Field<T> field,
+                                                                                       final int dimension) {
         final T zero = field.getZero();
         final T one = field.getOne();
         final T[][] d = MathArrays.buildArray(field, dimension, dimension);
@@ -483,10 +613,9 @@ public final class MatrixUtils {
      * @return diagonal matrix
      * @since 2.0
      */
-    public static <T extends FieldElement<T>> FieldMatrix<T> createFieldDiagonalMatrix(
-            final T[] diagonal) {
+    public static <T extends FieldElement<T>> FieldMatrix<T> createFieldDiagonalMatrix(final T[] diagonal) {
         final FieldMatrix<T> m = createFieldMatrix(diagonal[0].getField(), diagonal.length,
-                diagonal.length);
+            diagonal.length);
         for (int i = 0; i < diagonal.length; ++i) {
             m.setEntry(i, i, diagonal[i]);
         }
@@ -568,8 +697,7 @@ public final class MatrixUtils {
      * @throws NullArgumentException
      *         if {@code rowData} is {@code null}.
      */
-    public static <T extends FieldElement<T>> FieldMatrix<T>
-            createRowFieldMatrix(final T[] rowData) {
+    public static <T extends FieldElement<T>> FieldMatrix<T> createRowFieldMatrix(final T[] rowData) {
         MathUtils.checkNotNull(rowData);
         final int nCols = rowData.length;
         if (nCols == 0) {
@@ -616,8 +744,7 @@ public final class MatrixUtils {
      * @throws NullArgumentException
      *         if {@code columnData} is {@code null}.
      */
-    public static <T extends FieldElement<T>> FieldMatrix<T> createColumnFieldMatrix(
-            final T[] columnData) {
+    public static <T extends FieldElement<T>> FieldMatrix<T> createColumnFieldMatrix(final T[] columnData) {
         MathUtils.checkNotNull(columnData);
         final int nRows = columnData.length;
         if (nRows == 0) {
@@ -663,8 +790,8 @@ public final class MatrixUtils {
     /**
      * Resizes the provided matrix to a NxM matrix.
      * <p>
-     * The provided matrix is truncated or extended, depending on whether its dimensions are bigger
-     * or smaller than the requested dimensions. If extended, the terms added are set to zero.
+     * The provided matrix is truncated or extended, depending on whether its dimensions are bigger or smaller than the
+     * requested dimensions. If extended, the terms added are set to zero.
      * </p>
      *
      * @param matrix
@@ -688,8 +815,7 @@ public final class MatrixUtils {
     /**
      * Multiplies the matrix L by R<sup>T</sup>.
      * <p>
-     * This methods allows to combine matrix multiplication and matrix transposition for
-     * optimization purposes.
+     * This methods allows to combine matrix multiplication and matrix transposition for optimization purposes.
      * </p>
      *
      * @param matrixL
@@ -699,15 +825,15 @@ public final class MatrixUtils {
      * @return the result of the multiplication
      */
     public static RealMatrix
-            multiplyByTranspose(final RealMatrix matrixL, final RealMatrix matrixR) {
+        multiplyByTranspose(final RealMatrix matrixL, final RealMatrix matrixR) {
         return multiplyByTranspose(1.0, matrixL, matrixR);
     }
 
     /**
      * Multiplies the matrix L by R<sup>T</sup> and by a scalar factor &alpha;.
      * <p>
-     * This methods allows to combine scalar multiplication, matrix multiplication and matrix
-     * transposition for optimization purposes.
+     * This methods allows to combine scalar multiplication, matrix multiplication and matrix transposition for
+     * optimization purposes.
      * </p>
      *
      * @param alpha
@@ -719,7 +845,7 @@ public final class MatrixUtils {
      * @return the result of the multiplication
      */
     public static RealMatrix multiplyByTranspose(final double alpha, final RealMatrix matrixL,
-            final RealMatrix matrixR) {
+                                                 final RealMatrix matrixR) {
         return matrixL.multiply(matrixR, true, alpha);
     }
 
@@ -759,8 +885,7 @@ public final class MatrixUtils {
      *
      * @param array
      *        the array to be copied
-     * @return a deep copy of the provided array, or {@code null} if the supplied array is
-     *         {@code null}
+     * @return a deep copy of the provided array, or {@code null} if the supplied array is {@code null}
      */
     public static double[][] copyArray(final double[][] array) {
         double[][] copy = null;
@@ -776,8 +901,8 @@ public final class MatrixUtils {
     /**
      * Checks the validity of a matrix data array.
      * <p>
-     * To be valid, the provided data array must not be {@code null} or empty, its first row must
-     * also not be {@code null} or empty, and the rows must all have the same length.
+     * To be valid, the provided data array must not be {@code null} or empty, its first row must also not be
+     * {@code null} or empty, and the rows must all have the same length.
      * </p>
      *
      * @param data
@@ -796,9 +921,9 @@ public final class MatrixUtils {
     /**
      * Checks the validity of a matrix data array.
      * <p>
-     * To be valid, the provided data array must not be {@code null} or empty, and its first row
-     * must also not be {@code null} or empty. Setting {@code checkColumnDimensions} to {@code true}
-     * , enables an additional check which verifies that the rows all have the same length.
+     * To be valid, the provided data array must not be {@code null} or empty, and its first row must also not be
+     * {@code null} or empty. Setting {@code checkColumnDimensions} to {@code true} , enables an additional check which
+     * verifies that the rows all have the same length.
      * </p>
      *
      * @param data
@@ -853,8 +978,8 @@ public final class MatrixUtils {
     /**
      * Checks the validity of a matrix data array.
      * <p>
-     * To be valid, the provided data array must not be {@code null} or empty, its first row must
-     * also not be {@code null} or empty, and the rows must all have the same length.
+     * To be valid, the provided data array must not be {@code null} or empty, its first row must also not be
+     * {@code null} or empty, and the rows must all have the same length.
      * </p>
      *
      * @param data
@@ -873,9 +998,9 @@ public final class MatrixUtils {
     /**
      * Checks the validity of a matrix data array.
      * <p>
-     * To be valid, the provided data array must not be {@code null} or empty, and its first row
-     * must also not be {@code null} or empty. Setting {@code checkColumnDimensions} to {@code true}
-     * , enables an additional check which verifies that the rows all have the same length.
+     * To be valid, the provided data array must not be {@code null} or empty, and its first row must also not be
+     * {@code null} or empty. Setting {@code checkColumnDimensions} to {@code true} , enables an additional check which
+     * verifies that the rows all have the same length.
      * </p>
      *
      * @param data
@@ -937,8 +1062,7 @@ public final class MatrixUtils {
      */
     public static void checkRowDimension(final int rowDimension) {
         if (rowDimension < 1) {
-            throw new NotStrictlyPositiveException(PatriusMessages.NOT_POSITIVE_ROW_DIMENSION,
-                    rowDimension);
+            throw new NotStrictlyPositiveException(PatriusMessages.NOT_POSITIVE_ROW_DIMENSION, rowDimension);
         }
     }
 
@@ -952,8 +1076,7 @@ public final class MatrixUtils {
      */
     public static void checkColumnDimension(final int columnDimension) {
         if (columnDimension < 1) {
-            throw new NotStrictlyPositiveException(PatriusMessages.NOT_POSITIVE_COLUMN_DIMENSION,
-                    columnDimension);
+            throw new NotStrictlyPositiveException(PatriusMessages.NOT_POSITIVE_COLUMN_DIMENSION, columnDimension);
         }
     }
 
@@ -995,7 +1118,7 @@ public final class MatrixUtils {
 
         if (column < 0 || column >= array[row].length) {
             throw new OutOfRangeException(PatriusMessages.COLUMN_INDEX, column, 0,
-                    array[row].length - 1);
+                array[row].length - 1);
         }
     }
 
@@ -1028,8 +1151,7 @@ public final class MatrixUtils {
      */
     public static void checkRowIndex(final AnyMatrix m, final int row) {
         if (row < 0 || row >= m.getRowDimension()) {
-            throw new OutOfRangeException(PatriusMessages.ROW_INDEX, row, 0,
-                    m.getRowDimension() - 1);
+            throw new OutOfRangeException(PatriusMessages.ROW_INDEX, row, 0, m.getRowDimension() - 1);
         }
     }
 
@@ -1045,17 +1167,16 @@ public final class MatrixUtils {
      */
     public static void checkColumnIndex(final AnyMatrix m, final int column) {
         if (column < 0 || column >= m.getColumnDimension()) {
-            throw new OutOfRangeException(PatriusMessages.COLUMN_INDEX, column, 0,
-                    m.getColumnDimension() - 1);
+            throw new OutOfRangeException(PatriusMessages.COLUMN_INDEX, column, 0, m.getColumnDimension() - 1);
         }
     }
 
     /**
      * Checks if the provided indices are valid row indices for a given matrix.
      * <p>
-     * This method throws an exception if the provided array is not a valid row index array. An
-     * index array is considered to be valid if it is not {@code null} or empty, and if each of its
-     * indices are between 0 to n-1, with n the row dimension of the matrix.
+     * This method throws an exception if the provided array is not a valid row index array. An index array is
+     * considered to be valid if it is not {@code null} or empty, and if each of its indices are between 0 to n-1, with
+     * n the row dimension of the matrix.
      * </p>
      *
      * @param m
@@ -1087,9 +1208,9 @@ public final class MatrixUtils {
     /**
      * Checks if the provided indices are valid column indices for a given matrix.
      * <p>
-     * This method throws an exception if the provided array is not a valid row index array. An
-     * index array is considered to be valid if it is not {@code null} or empty, and if each of its
-     * indices are between 0 to n-1, with n the column dimension of the matrix.
+     * This method throws an exception if the provided array is not a valid row index array. An index array is
+     * considered to be valid if it is not {@code null} or empty, and if each of its indices are between 0 to n-1, with
+     * n the column dimension of the matrix.
      * </p>
      *
      * @param m
@@ -1119,7 +1240,7 @@ public final class MatrixUtils {
     }
 
     /**
-     * Checks if the provided submatrix ranges are valid for a given matrix.
+     * Checks if the provided sub-matrix ranges are valid for a given matrix.
      * <p>
      * Rows and columns are indicated counting from 0 to {@code n - 1}.
      * </p>
@@ -1140,24 +1261,23 @@ public final class MatrixUtils {
      *         if {@code endRow < startRow} or {@code endColumn < startColumn}.
      */
     public static void checkSubMatrixIndex(final AnyMatrix m, final int startRow, final int endRow,
-            final int startColumn, final int endColumn) {
+                                           final int startColumn, final int endColumn) {
         checkRowIndex(m, startRow);
         checkRowIndex(m, endRow);
         checkColumnIndex(m, startColumn);
         checkColumnIndex(m, endColumn);
 
         if (endRow < startRow) {
-            throw new NumberIsTooSmallException(PatriusMessages.INITIAL_ROW_AFTER_FINAL_ROW,
-                    endRow, startRow, false);
+            throw new NumberIsTooSmallException(PatriusMessages.INITIAL_ROW_AFTER_FINAL_ROW, endRow, startRow, false);
         }
         if (endColumn < startColumn) {
-            throw new NumberIsTooSmallException(PatriusMessages.INITIAL_COLUMN_AFTER_FINAL_COLUMN,
-                    endColumn, startColumn, false);
+            throw new NumberIsTooSmallException(PatriusMessages.INITIAL_COLUMN_AFTER_FINAL_COLUMN, endColumn, 
+                startColumn, false);
         }
     }
 
     /**
-     * Checks if the provided submatrix indices are valid for a given matrix.
+     * Checks if the provided sub-matrix indices are valid for a given matrix.
      * <p>
      * Rows and columns are indicated counting from 0 to n-1.
      * </p>
@@ -1176,7 +1296,7 @@ public final class MatrixUtils {
      *         if any of the provided indices is not a valid row or column index
      */
     public static void checkSubMatrixIndex(final AnyMatrix m, final int[] selectedRows,
-            final int[] selectedColumns) {
+                                           final int[] selectedColumns) {
         checkRowIndices(m, selectedRows);
         checkColumnIndices(m, selectedColumns);
     }
@@ -1213,8 +1333,7 @@ public final class MatrixUtils {
      * @throws NonSymmetricMatrixException
      *         if the provided matrix is not symmetric
      */
-    public static void checkSymmetry(final RealMatrix matrix, final double absTol,
-            final double relTol) {
+    public static void checkSymmetry(final RealMatrix matrix, final double absTol, final double relTol) {
         if (!matrix.isSymmetric(relTol, absTol)) {
             throw new NonSymmetricMatrixException(0, 0, relTol); // Not fully implemented
         }
@@ -1223,14 +1342,14 @@ public final class MatrixUtils {
     /**
      * Builds a row permutation index array for a given matrix, starting with the preselected rows.
      * <p>
-     * This methods creates a permutation index array by completing the supplied index array with
-     * the missing row indices (in increasing order). The preselected indices must be valid row
-     * indices for the supplied matrix. Any duplicate found in the supplied index array is simply
-     * ignored.
+     * This methods creates a permutation index array by completing the supplied index array with the missing row
+     * indices (in increasing order). The preselected indices must be valid row indices for the supplied matrix. Any
+     * duplicate found in the supplied index array is simply ignored.
      * </p>
      * <p>
      * <b>Usage examples, for a 5x4 matrix:</b>
      * </p>
+     * 
      * <pre>
      * getRowPermutation(m, {2, 3}) => {2, 3, 0, 1, 4}
      * getRowPermutation(m, {0, 4, 1, 0}) => {0, 4, 1, 2, 3}
@@ -1248,7 +1367,7 @@ public final class MatrixUtils {
 
         // Set containing every possible row index
         final SortedSet<Integer> rowIndices = IntStream.range(0, nbRows).boxed()
-                .collect(Collectors.toCollection(TreeSet::new));
+            .collect(Collectors.toCollection(TreeSet::new));
 
         // Array storing the permutation indices
         int index = 0;
@@ -1278,15 +1397,14 @@ public final class MatrixUtils {
      * Builds a column permutation index array for a given matrix, starting with the preselected
      * columns.
      * <p>
-     * This methods creates a permutation index array by completing the supplied index array with
-     * the missing column indices (in increasing order). The preselected indices must be valid
-     * column indices for the supplied matrix. Any duplicate found in the supplied index array is
-     * simply ignored.
+     * This methods creates a permutation index array by completing the supplied index array with the missing column
+     * indices (in increasing order). The preselected indices must be valid column indices for the supplied matrix. Any
+     * duplicate found in the supplied index array is simply ignored.
      * </p>
      * <p>
      * <b>Usage examples, for a 4x5 matrix:</b>
      * </p>
-     * 
+     *
      * <pre>
      * getColumnPermutation(m, {2, 3}) => {2, 3, 0, 1, 4}
      * getColumnPermutation(m, {0, 4, 1, 0}) => {0, 4, 1, 2, 3}
@@ -1298,14 +1416,13 @@ public final class MatrixUtils {
      *        the preselected column indices
      * @return the column permutation index array built
      */
-    public static int[] getColumnPermutationIndexArray(final AnyMatrix m,
-            final int[] preSelectedColumns) {
+    public static int[] getColumnPermutationIndexArray(final AnyMatrix m, final int[] preSelectedColumns) {
         // Column dimension of the matrix
         final int nbColumns = m.getColumnDimension();
 
         // Set containing every possible column index
         final SortedSet<Integer> columnIndices = IntStream.range(0, nbColumns).boxed()
-                .collect(Collectors.toCollection(TreeSet::new));
+            .collect(Collectors.toCollection(TreeSet::new));
 
         // Array storing the permutation indices
         int index = 0;
@@ -1361,7 +1478,7 @@ public final class MatrixUtils {
         if ((left.getRowDimension() != right.getRowDimension())
                 || (left.getColumnDimension() != right.getColumnDimension())) {
             throw new MatrixDimensionMismatchException(right.getRowDimension(),
-                    right.getColumnDimension(), left.getRowDimension(), left.getColumnDimension());
+                right.getColumnDimension(), left.getRowDimension(), left.getColumnDimension());
         }
     }
 
@@ -1406,17 +1523,17 @@ public final class MatrixUtils {
      *         if {@code getColumnDimension(left) != getRowDimension(right)}
      */
     public static void checkMultiplicationCompatible(final AnyMatrix left, final AnyMatrix right,
-            final boolean rightToTransposed) {
+                                                     final boolean rightToTransposed) {
 
         if (!rightToTransposed) {
             if (left.getColumnDimension() != right.getRowDimension()) {
                 throw new DimensionMismatchException(right.getRowDimension(),
-                        left.getColumnDimension());
+                    left.getColumnDimension());
             }
         } else {
             if (left.getColumnDimension() != right.getColumnDimension()) {
                 throw new DimensionMismatchException(right.getColumnDimension(),
-                        left.getColumnDimension());
+                    left.getColumnDimension());
             }
         }
     }
@@ -1441,8 +1558,7 @@ public final class MatrixUtils {
      *        Matrix to convert.
      * @return the converted matrix.
      */
-    public static Array2DRowRealMatrix bigFractionMatrixToRealMatrix(
-            final FieldMatrix<BigFraction> m) {
+    public static Array2DRowRealMatrix bigFractionMatrixToRealMatrix(final FieldMatrix<BigFraction> m) {
         final BigFractionMatrixConverter converter = new BigFractionMatrixConverter();
         m.walkInOptimizedOrder(converter);
         return converter.getConvertedMatrix();
@@ -1451,16 +1567,14 @@ public final class MatrixUtils {
     /**
      * Serialize a {@link RealVector}.
      * <p>
-     * This method is intended to be called from within a private <code>writeObject</code> method
-     * (after a call to <code>oos.defaultWriteObject()</code>) in a class that has a
-     * {@link RealVector} field, which should be declared <code>transient</code>. This way, the
-     * default handling does not serialize the vector (the {@link RealVector} interface is not
-     * serializable by default) but this method does serialize it specifically.
+     * This method is intended to be called from within a private <code>writeObject</code> method (after a call to
+     * <code>oos.defaultWriteObject()</code>) in a class that has a {@link RealVector} field, which should be declared
+     * <code>transient</code>. This way, the default handling does not serialize the vector (the {@link RealVector}
+     * interface is not serializable by default) but this method does serialize it specifically.
      * </p>
      * <p>
-     * The following example shows how a simple class with a name and a real vector should be
-     * written:
-     * 
+     * The following example shows how a simple class with a name and a real vector should be written:
+     *
      * <pre>
      * <code>
      * public class NamedVector implements Serializable {
@@ -1483,7 +1597,7 @@ public final class MatrixUtils {
      * }
      * </code>
      * </pre>
-     * 
+     *
      * </p>
      *
      * @param vector
@@ -1495,7 +1609,7 @@ public final class MatrixUtils {
      * @see #deserializeRealVector(ObjectInputStream)
      */
     public static void serializeRealVector(final RealVector vector, final ObjectOutputStream oos)
-            throws IOException {
+        throws IOException {
         final int n = vector.getDimension();
         oos.writeInt(n);
         for (int i = 0; i < n; ++i) {
@@ -1506,11 +1620,10 @@ public final class MatrixUtils {
     /**
      * Deserialize a {@link RealVector} field in a class.
      * <p>
-     * This method is intended to be called from within a private <code>readObject</code> method
-     * (after a call to <code>ois.defaultReadObject()</code>) in a class that has a
-     * {@link RealVector} field, which should be declared <code>transient</code>. This way, the
-     * default handling does not deserialize the vector (the {@link RealVector} interface is not
-     * serializable by default) but this method does deserialize it specifically.
+     * This method is intended to be called from within a private <code>readObject</code> method (after a call to
+     * <code>ois.defaultReadObject()</code>) in a class that has a {@link RealVector} field, which should be declared
+     * <code>transient</code>. This way, the default handling does not deserialize the vector (the {@link RealVector}
+     * interface is not serializable by default) but this method does deserialize it specifically.
      * </p>
      *
      * @param ois
@@ -1534,17 +1647,34 @@ public final class MatrixUtils {
 
     /**
      * Serialize a {@link RealMatrix}.
+     *
+     * @param matrix
+     *        real matrix to serialize
+     * @param file
+     *        file where the real matrix should be written
+     * @throws IOException
+     *         if an I/O error occurs
+     * @see #deserializeRealMatrix(String)
+     */
+    public static void serializeRealMatrix(final RealMatrix matrix, final String file) throws IOException {
+        final FileOutputStream stream = new FileOutputStream(file);
+        try (
+            final ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(stream))) {
+            serializeRealMatrix(matrix, oos);
+        }
+    }
+
+    /**
+     * Serialize a {@link RealMatrix}.
      * <p>
-     * This method is intended to be called from within a private <code>writeObject</code> method
-     * (after a call to <code>oos.defaultWriteObject()</code>) in a class that has a
-     * {@link RealMatrix} field, which should be declared <code>transient</code>. This way, the
-     * default handling does not serialize the matrix (the {@link RealMatrix} interface is not
-     * serializable by default) but this method does serialize it specifically.
+     * This method is intended to be called from within a private <code>writeObject</code> method (after a call to
+     * <code>oos.defaultWriteObject()</code>) in a class that has a {@link RealMatrix} field, which should be declared
+     * <code>transient</code>. This way, the default handling does not serialize the matrix (the {@link RealMatrix}
+     * interface is not serializable by default) but this method does serialize it specifically.
      * </p>
      * <p>
-     * The following example shows how a simple class with a name and a real matrix should be
-     * written:
-     * 
+     * The following example shows how a simple class with a name and a real matrix should be written:
+     *
      * <pre>
      * <code>
      * public class NamedMatrix implements Serializable {
@@ -1563,42 +1693,53 @@ public final class MatrixUtils {
      *         ois.defaultReadObject();  // takes care of name field
      *         MatrixUtils.deserializeRealMatrix(this, "coefficients", ois);
      *     }
-     * 
      * }
      * </code>
      * </pre>
-     * 
+     *
      * </p>
      *
      * @param matrix
      *        real matrix to serialize
      * @param oos
      *        stream where the real matrix should be written
-     * @exception IOException
-     *            if object cannot be written to stream
+     * @throws IOException
+     *         if object cannot be written to stream
      * @see #deserializeRealMatrix(ObjectInputStream)
      */
-    public static void serializeRealMatrix(final RealMatrix matrix, final ObjectOutputStream oos)
-            throws IOException {
-        final int n = matrix.getRowDimension();
-        final int m = matrix.getColumnDimension();
-        oos.writeInt(n);
-        oos.writeInt(m);
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < m; ++j) {
-                oos.writeDouble(matrix.getEntry(i, j));
-            }
+    public static void serializeRealMatrix(final RealMatrix matrix, final ObjectOutputStream oos) throws IOException {
+        oos.writeObject(matrix);
+    }
+
+    /**
+     * Deserialize a {@link RealMatrix}.
+     *
+     * @param file
+     *        file from which the real matrix should be read
+     * @return read real matrix
+     * @throws FileNotFoundException
+     *         if the file does not exist, is a directory rather than a regular file, or for some other reason cannot be
+     *         opened for reading
+     * @throws IOException
+     *         if an I/O error occurs
+     * @throws ClassNotFoundException
+     *         Class of a serialized object cannot be found
+     * @see #serializeRealMatrix(RealMatrix, String)
+     */
+    public static RealMatrix deserializeRealMatrix(final String file)
+        throws FileNotFoundException, IOException, ClassNotFoundException {
+        try (final ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            return deserializeRealMatrix(ois);
         }
     }
 
     /**
-     * Deserialize a {@link RealMatrix} field in a class.
+     * Deserialize a {@link RealMatrix}.
      * <p>
-     * This method is intended to be called from within a private <code>readObject</code> method
-     * (after a call to <code>ois.defaultReadObject()</code>) in a class that has a
-     * {@link RealMatrix} field, which should be declared <code>transient</code>. This way, the
-     * default handling does not deserialize the matrix (the {@link RealMatrix} interface is not
-     * serializable by default) but this method does deserialize it specifically.
+     * This method is intended to be called from within a private <code>readObject</code> method (after a call to
+     * <code>ois.defaultReadObject()</code>) in a class that has a {@link RealMatrix} field, which should be declared
+     * <code>transient</code>. This way, the default handling does not deserialize the matrix (the {@link RealMatrix}
+     * interface is not serializable by default) but this method does deserialize it specifically.
      * </p>
      *
      * @param ois
@@ -1606,31 +1747,24 @@ public final class MatrixUtils {
      * @return read real matrix
      * @exception IOException
      *            if object cannot be read from the stream
+     * @throws IOException
+     *         if an I/O error occurs
+     * @throws ClassNotFoundException
+     *         Class of a serialized object cannot be found
      * @see #serializeRealMatrix(RealMatrix, ObjectOutputStream)
      */
-    public static RealMatrix deserializeRealMatrix(final ObjectInputStream ois) throws IOException {
-        // read the matrix data
-        final int n = ois.readInt();
-        final int m = ois.readInt();
-        final double[][] data = new double[n][m];
-        for (int i = 0; i < n; ++i) {
-            final double[] dataI = data[i];
-            for (int j = 0; j < m; ++j) {
-                dataI[j] = ois.readDouble();
-            }
-        }
-
-        // create the instance
-        return new Array2DRowRealMatrix(data, false);
+    public static RealMatrix deserializeRealMatrix(final ObjectInputStream ois)
+        throws IOException, ClassNotFoundException {
+        return RealMatrix.class.cast(ois.readObject());
     }
 
     /**
      * Solve a system of composed of a Lower Triangular Matrix {@link RealMatrix}.
      * <p>
-     * This method is called to solve systems of equations which are of the lower triangular form.
-     * The matrix {@link RealMatrix} is assumed, though not checked, to be in lower triangular form.
-     * The vector {@link RealVector} is overwritten with the solution. The matrix is checked that it
-     * is square and its dimensions match the length of the vector.
+     * This method is called to solve systems of equations which are of the lower triangular form. The matrix
+     * {@link RealMatrix} is assumed, though not checked, to be in lower triangular form. The vector {@link RealVector}
+     * is overwritten with the solution. The matrix is checked that it is square and its dimensions match the length of
+     * the vector.
      * </p>
      *
      * @param rm
@@ -1648,7 +1782,7 @@ public final class MatrixUtils {
     public static void solveLowerTriangularSystem(final RealMatrix rm, final RealVector b) {
         if ((rm == null) || (b == null) || (rm.getRowDimension() != b.getDimension())) {
             throw new DimensionMismatchException((rm == null) ? 0 : rm.getRowDimension(),
-                    (b == null) ? 0 : b.getDimension());
+                (b == null) ? 0 : b.getDimension());
         }
         if (rm.getColumnDimension() != rm.getRowDimension()) {
             throw new NonSquareMatrixException(rm.getRowDimension(), rm.getColumnDimension());
@@ -1670,10 +1804,10 @@ public final class MatrixUtils {
     /**
      * Solver a system composed of an Upper Triangular Matrix {@link RealMatrix}.
      * <p>
-     * This method is called to solve systems of equations which are of the lower triangular form.
-     * The matrix {@link RealMatrix} is assumed, though not checked, to be in upper triangular form.
-     * The vector {@link RealVector} is overwritten with the solution. The matrix is checked that it
-     * is square and its dimensions match the length of the vector.
+     * This method is called to solve systems of equations which are of the lower triangular form. The matrix
+     * {@link RealMatrix} is assumed, though not checked, to be in upper triangular form. The vector {@link RealVector}
+     * is overwritten with the solution. The matrix is checked that it is square and its dimensions match the length of
+     * the vector.
      * </p>
      *
      * @param rm
@@ -1691,7 +1825,7 @@ public final class MatrixUtils {
     public static void solveUpperTriangularSystem(final RealMatrix rm, final RealVector b) {
         if ((rm == null) || (b == null) || (rm.getRowDimension() != b.getDimension())) {
             throw new DimensionMismatchException((rm == null) ? 0 : rm.getRowDimension(),
-                    (b == null) ? 0 : b.getDimension());
+                (b == null) ? 0 : b.getDimension());
         }
         if (rm.getColumnDimension() != rm.getRowDimension()) {
             throw new NonSquareMatrixException(rm.getRowDimension(), rm.getColumnDimension());
@@ -1795,7 +1929,7 @@ public final class MatrixUtils {
         /** {@inheritDoc} */
         @Override
         public void start(final int rows, final int columns, final int startRow, final int endRow,
-                final int startColumn, final int endColumn) {
+                          final int startColumn, final int endColumn) {
             this.data = new double[rows][columns];
         }
 
@@ -1813,12 +1947,11 @@ public final class MatrixUtils {
         private Array2DRowRealMatrix getConvertedMatrix() {
             return new Array2DRowRealMatrix(this.data, false);
         }
-
     }
 
     /** Converter for {@link FieldMatrix}/{@link BigFraction}. */
     private static class BigFractionMatrixConverter extends
-            DefaultFieldMatrixPreservingVisitor<BigFraction> {
+        DefaultFieldMatrixPreservingVisitor<BigFraction> {
 
         /** Converted array. */
         private double[][] data;
@@ -1831,7 +1964,7 @@ public final class MatrixUtils {
         /** {@inheritDoc} */
         @Override
         public void start(final int rows, final int columns, final int startRow, final int endRow,
-                final int startColumn, final int endColumn) {
+                          final int startColumn, final int endColumn) {
             this.data = new double[rows][columns];
         }
 

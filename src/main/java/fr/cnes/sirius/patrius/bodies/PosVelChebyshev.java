@@ -5,9 +5,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,7 @@
  * END-HISTORY
  */
 /*
- * 
+ *
  */
 package fr.cnes.sirius.patrius.bodies;
 
@@ -43,7 +43,7 @@ import fr.cnes.sirius.patrius.time.TimeStamped;
  * This class represent the most basic element of the piecewise ephemerides for solar system bodies like JPL DE 405
  * ephemerides.
  * </p>
- * 
+ *
  * @see JPLCelestialBodyLoader
  * @author Luc Maisonobe
  */
@@ -72,7 +72,7 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
 
     /**
      * Simple constructor.
-     * 
+     *
      * @param startIn
      *        start of the validity range of the instance
      * @param durationIn
@@ -105,7 +105,7 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
 
     /**
      * Get model validity duration.
-     * 
+     *
      * @return model validity duration in seconds
      */
     public double getValidityDuration() {
@@ -118,7 +118,7 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
      * The instance is the successor of another model if its start date is within a 1ms tolerance interval of the end
      * date of the other model.
      * </p>
-     * 
+     *
      * @param predecessor
      *        model to check instance against
      * @return true if the instance is the successor of the predecessor model
@@ -130,7 +130,7 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
 
     /**
      * Check if a date is in validity range.
-     * 
+     *
      * @param date
      *        date to check
      * @return true if date is in validity range
@@ -142,7 +142,7 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
 
     /**
      * Get the position-velocity-acceleration at a specified date.
-     * 
+     *
      * @param date
      *        date at which position-velocity-acceleration is requested
      * @return position-velocity-acceleration at specified date
@@ -209,9 +209,9 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
         }
 
         final double vScale = 2 / this.duration;
+        final double aScale = vScale * vScale;
         return new PVCoordinates(new Vector3D(xP, yP, zP),
-            new Vector3D(xV * vScale, yV * vScale, zV * vScale), new Vector3D(xA * vScale * vScale, yA * vScale
-                    * vScale, zA * vScale * vScale));
+            new Vector3D(xV * vScale, yV * vScale, zV * vScale), new Vector3D(xA * aScale, yA * aScale, zA * aScale));
     }
 
 }

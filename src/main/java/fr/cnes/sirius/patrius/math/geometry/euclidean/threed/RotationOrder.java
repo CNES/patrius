@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -26,6 +28,7 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * This class is a utility representing a rotation order specification
@@ -174,6 +177,34 @@ public final class RotationOrder implements Serializable {
         this.a1 = a1In;
         this.a2 = a2In;
         this.a3 = a3In;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == this.getClass())) {
+            // Same object type: check all attributes
+            final RotationOrder other = (RotationOrder) object;
+
+            // Evaluate the attitudes components
+            isEqual = Objects.equals(this.name, other.name)
+                    && Objects.equals(this.a1, other.a1)
+                    && Objects.equals(this.a2, other.a2)
+                    && Objects.equals(this.a3, other.a3);
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.name, this.a1, this.a2, this.a3);
     }
 
     /**

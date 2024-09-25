@@ -1,23 +1,24 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * 
+ *
+ *
  * @history created 23/05/12
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import fr.cnes.sirius.patrius.math.exception.ConvergenceException;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.signalpropagation.AngularCorrection;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditions;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditionsProvider;
@@ -55,84 +57,84 @@ import fr.cnes.sirius.patrius.utils.Constants;
 /**
  * This class is a tropospheric correction model that implements the TroposphericCorrection
  * and AngularCorrection interfaces to correct a signal with the Azoulay model.
- * 
+ *
  * @concurrency immutable
- * 
+ *
  * @see TroposphericCorrection
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.1
- * 
+ *
  */
 public final class AzoulayModel implements TroposphericCorrection, AngularCorrection {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 4794751982189820026L;
 
-    /** epsilon */
+    /** Epsilon. */
     private static final double EPS = 0.0017;
 
-    /** to kelvin degrees transformation */
+    /** To Kelvin degrees transformation. */
     private static final double TK = 273.16;
 
-    /** coeff 1 for Goff and Gratch formula */
+    /** Coefficient 1 for Goff and Gratch formula. */
     private static final double C1 = 10.79574;
 
-    /** coeff 2 for Goff and Gratch formula */
+    /** Coefficient 2 for Goff and Gratch formula. */
     private static final double C2 = 5.028;
 
-    /** coeff 3 for Goff and Gratch formula */
+    /** Coefficient 3 for Goff and Gratch formula. */
     private static final double C3 = 1.50475e-4;
 
-    /** coeff 4 for Goff and Gratch formula */
+    /** Coefficient 4 for Goff and Gratch formula. */
     private static final double C4 = -8.2969;
 
-    /** coeff 5 for Goff and Gratch formula */
+    /** Coefficient 5 for Goff and Gratch formula. */
     private static final double C5 = 0.42873e-3;
 
-    /** coeff 6 for Goff and Gratch formula */
+    /** Coefficient 6 for Goff and Gratch formula. */
     private static final double C6 = 4.76955;
 
-    /** coeff 7 for Goff and Gratch formula */
+    /** Coefficient 7 for Goff and Gratch formula. */
     private static final double C7 = 0.78614;
 
-    /** 100.0 */
-    private static final double HUNDRED = 100.0;
+    /** One hundred. */
+    private static final double ONE_HUNDRED = 100.0;
 
-    /** 1.0e-3 */
+    /** 1.0e-3. */
     private static final double EMINUS3 = 1.0e-3;
 
-    /** 1.0e-6 */
+    /** 1.0e-6. */
     private static final double EMINUS6 = 1.0e-6;
 
-    /** coeff 77.6 */
+    /** Coefficient 77.6. */
     private static final double C8 = 77.6;
 
-    /** coeff 4810.0 */
+    /** Coefficient 4810. */
     private static final double C9 = 4810.0;
 
-    /** coeff 370.0 */
+    /** Coefficient 370. */
     private static final double C10 = 370.0;
 
-    /** coeff 1.437e+3 */
+    /** Coefficient 1.437e+3. */
     private static final double C11 = 1.437e+3;
 
-    /** convergence epsilon distance */
+    /** Convergence epsilon distance. */
     private static final double EPSDIST = 1.0;
 
-    /** convergence epsilon elevation */
+    /** Convergence epsilon elevation */
     private static final double EPSELEV = 1.0e-4;
 
-    /** max iterations */
-    private static final int MAXITER = 50;
+    /** Maximum iterations. */
+    private static final int MAX_ITER = 50;
 
-    /** Provider for the meteorological conditions */
+    /** Provider for the meteorological conditions. */
     private final MeteorologicalConditionsProvider meteoConditionsProvider;
 
-    /** the ground point geodetic altitude */
+    /** The ground point geodetic altitude. */
     private final double inAltitude;
 
     /**
@@ -144,11 +146,11 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
 
     /**
      * Constructor using the geometric elevation in the model.
-     * 
+     *
      * @param meteoConditionsProvider
-     *        provider for the meteorological conditions
+     *        Provider for the meteorological conditions
      * @param geodeticAltitude
-     *        the ground point geodetic altitude [m]
+     *        The ground point geodetic altitude [m]
      */
     public AzoulayModel(final MeteorologicalConditionsProvider meteoConditionsProvider,
                         final double geodeticAltitude) {
@@ -157,15 +159,14 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
 
     /**
      * Constructor.
-     * 
+     *
      * @param meteoConditionsProvider
-     *        provider for the meteorological conditions
+     *        Provider for the meteorological conditions
      * @param geodeticAltitude
-     *        the ground point geodetic altitude [m]
+     *        The ground point geodetic altitude [m]
      * @param isGeometricElevation
-     *        true if the computed correction is used to get the apparent elevation from
-     *        the geometric elevation value, false if it is used to get the geometric elevation from
-     *        the apparent elevation value
+     *        {@code true} if the computed correction is used to get the apparent elevation from the geometric elevation
+     *        value, {@code false} if it is used to get the geometric elevation from the apparent elevation value
      */
     public AzoulayModel(final MeteorologicalConditionsProvider meteoConditionsProvider,
                         final double geodeticAltitude, final boolean isGeometricElevation) {
@@ -194,32 +195,42 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
 
     /** {@inheritDoc} */
     @Override
+    public double derivativeValueFromApparentElevation(final Parameter p, final double elevation) {
+        return 0.; // No supported parameter yet
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double derivativeValueFromGeometricElevation(final Parameter p, final double geometricElevation) {
+        return 0.; // No supported parameter yet
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public boolean isDifferentiableBy(final Parameter p) {
         return supportsParameter(p); // No supported parameter yet
     }
 
     /**
      * Computes the corrections due to the troposphere from the geometric value of the elevation at a given date.
-     * 
+     *
      * @param date
-     *        date of meteorological conditions
+     *        Date of meteorological conditions
      * @param geometricElevation
-     *        the geometric elevation [rad]
-     * @return an array that contains both corrections : {(geometric elevation - apparent
-     *         elevation),
-     *         (geometric distance - apparent distance)}
+     *        The geometric elevation [rad]
+     * @return an array that contains both corrections : {@code (apparent elevation - geometric
+     *         elevation), (apparent distance - geometric distance)}
      */
-    public double[] getCorrectionsFromGeometricElevation(final AbsoluteDate date,
-                                                         final double geometricElevation) {
+    public double[] getCorrectionsFromGeometricElevation(final AbsoluteDate date, final double geometricElevation) {
 
-        // initialisations
+        // Initializations
         double distMes = 0.0;
         double elevMes = geometricElevation;
         boolean condition = true;
         int failCheck = 0;
         double[] corrections = { 0.0, 0.0 };
 
-        // iterations
+        // Iterations
         while (condition) {
 
             // Correction
@@ -234,8 +245,8 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
                 distMes = corrections[1];
             }
 
-            // check of the max iterations number
-            if (failCheck > MAXITER) {
+            // Check of the max iterations number
+            if (failCheck > MAX_ITER) {
                 // Too many iterations
                 throw new ConvergenceException();
             }
@@ -248,29 +259,27 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
 
     /**
      * Computes the corrections due to the troposphere from the apparent value of the elevation at a given date.
-     * 
+     *
      * @param date
-     *        date of meteorological conditions
+     *        Date of meteorological conditions
      * @param apparentElevation
-     *        the apparent elevation (rad)
-     * @return an array that contains both corrections : {(geometric elevation - apparent
-     *         elevation),
-     *         (geometric distance - apparent distance)}
+     *        The apparent elevation (rad)
+     * @return an array that contains both corrections : {@code (apparent elevation - geometric
+     *         elevation), (apparent distance - geometric distance)}
      */
-    public double[] getCorrectionsFromApparentElevation(final AbsoluteDate date,
-                                                        final double apparentElevation) {
+    public double[] getCorrectionsFromApparentElevation(final AbsoluteDate date, final double apparentElevation) {
 
-        final MeteorologicalConditions meteoConditionsAtDate = this.meteoConditionsProvider
-            .getMeteorologicalConditions(date);
-
-        // kelvin temperature
-        final double temperature = meteoConditionsAtDate.getTemperature();
+        final MeteorologicalConditions meteoConditionsAtDate =
+            this.meteoConditionsProvider.getMeteorologicalConditions(date);
 
         // Pressure in hPa
-        final double pressure = meteoConditionsAtDate.getPressure() / HUNDRED;
+        final double pressure = meteoConditionsAtDate.getPressure() / ONE_HUNDRED;
+
+        // Kelvin temperature
+        final double temperature = meteoConditionsAtDate.getTemperature();
 
         // Humidity in fraction
-        final double humidity = meteoConditionsAtDate.getHumidity() / HUNDRED;
+        final double humidity = meteoConditionsAtDate.getHumidity() / ONE_HUNDRED;
 
         // Goff and Gratch formula
         final double xlew = C1 * (1.0 - MathLib.divide(TK, temperature)) - C2
@@ -279,15 +288,15 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
                 * (MathLib.pow(10.0, C6 * (1.0 - MathLib.divide(TK, temperature))) - 1.0) + C7;
         final double ew = MathLib.exp(MathLib.log(10.0) * xlew);
 
-        // water steam partial pressure
+        // Water steam partial pressure
         final double pve = ew * humidity;
 
-        // co-index at measure point altitude
+        // Co-index at measure point altitude
         final double h0 = this.inAltitude * EMINUS3;
         final double xnh0 = MathLib.divide(C8 * (pressure + MathLib.divide(C9 * pve, temperature)),
             temperature);
 
-        // vertical distance error
+        // Vertical distance error
         double delta0 = 0.0;
         if (xnh0 >= C10) {
             delta0 = 1.0;
@@ -295,7 +304,7 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
         final double fnh0 = 3.0 * xnh0 + C11 + delta0 * (xnh0 - C10) * (xnh0 - C10) / 10.0;
         final double dlv = fnh0 - h0 * xnh0 / 2.0;
 
-        // distance and elevation correction "denom" can't be zero
+        // Distance and elevation correction "denom" can't be zero
         final double[] sincos = MathLib.sinAndCos(apparentElevation);
         final double sinEl = sincos[0];
         final double cosEl = sincos[1];
@@ -307,21 +316,34 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
 
     /** {@inheritDoc} */
     @Override
-    public double computeElevationCorrection(final AbsoluteDate date, final double elevation) {
+    public double computeSignalDelay(final AbsoluteDate date, final double elevation) {
+        final double signalDelay;
         if (this.inIsGeometricElevation) {
-            return this.getCorrectionsFromGeometricElevation(date, elevation)[0];
+            signalDelay = this.getCorrectionsFromGeometricElevation(date, elevation)[1] / Constants.SPEED_OF_LIGHT;
+        } else {
+            signalDelay = this.getCorrectionsFromApparentElevation(date, elevation)[1] / Constants.SPEED_OF_LIGHT;
         }
-        return this.getCorrectionsFromApparentElevation(date, elevation)[0];
+        return signalDelay;
     }
 
     /** {@inheritDoc} */
     @Override
-    public double computeSignalDelay(final AbsoluteDate date, final double elevation) {
-        if (this.inIsGeometricElevation) {
-            return this.getCorrectionsFromGeometricElevation(date, elevation)[1]
-                    / Constants.SPEED_OF_LIGHT;
-        }
-        return this.getCorrectionsFromApparentElevation(date, elevation)[1]
-                / Constants.SPEED_OF_LIGHT;
+    public double computeElevationCorrectionFromApparentElevation(final AbsoluteDate date,
+                                                                  final double apparentElevation) {
+        return this.getCorrectionsFromApparentElevation(date, apparentElevation)[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double computeElevationCorrectionFromGeometricElevation(final AbsoluteDate date,
+                                                                   final double geometricElevation) {
+        return this.getCorrectionsFromGeometricElevation(date, geometricElevation)[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getMinimalToleratedApparentElevation() {
+        // No constraint on the elevation
+        return -MathUtils.HALF_PI;
     }
 }

@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-17:22/05/2023:[PATRIUS] Detecteur de distance a la surface d'un corps celeste
  * END-HISTORY
@@ -31,6 +33,10 @@ import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector;
+import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector.BodyDistanceType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
@@ -40,8 +46,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.SurfaceDistanceDetector.BodyDistanceType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -186,6 +190,68 @@ public class SurfaceDistanceDetectorTest {
     /**
      * @testType UT
      * 
+     * @testedMethod {@link SurfaceDistanceDetector#SurfaceDistanceDetector (PVCoordinatesProvider, int, BodyDistanceType, double, double, Action)}
+     * 
+     * @description constructor test
+     * 
+     * @input constructor parameters : reference body, distance, max check, threshold, slode selection and STOP.Action
+     * 
+     * @output a {@link SurfaceDistanceDetector}
+     * 
+     * @testPassCriteria the {@link SurfaceDistanceDetector} is successfully created
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSurfaceDistanceDetectorCtor4() {
+        final SurfaceDistanceDetector detector =
+            new SurfaceDistanceDetector(theSun, 54321., BodyDistanceType.CLOSEST, 0, 10, 0.1, Action.STOP, false);
+        final SurfaceDistanceDetector detector2 = (SurfaceDistanceDetector) detector.copy();
+        // Test getter
+        Assert.assertEquals(54321., detector2.getDistance());
+        Assert.assertEquals(theSun, detector2.getBody());
+        Assert.assertEquals(theSun.getShape(), detector2.getBodyShape());
+        Assert.assertEquals(theSun.getShape().getBodyFrame(), detector2.getBodyFixedFrame());
+        Assert.assertEquals(BodyDistanceType.CLOSEST, detector2.getBodyDistanceType());
+        Assert.assertEquals(0, detector2.getSlopeSelection());
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedMethod {@link SurfaceDistanceDetector#SurfaceDistanceDetector (PVCoordinatesProvider, int, BodyDistanceType, double, double, Action)}
+     * 
+     * @description constructor test
+     * 
+     * @input constructor parameters : reference body, distance, max check, threshold, slode selection and STOP.Action
+     * 
+     * @output a {@link SurfaceDistanceDetector}
+     * 
+     * @testPassCriteria the {@link SurfaceDistanceDetector} is successfully created
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSurfaceDistanceDetectorCtor5() {
+        final SurfaceDistanceDetector detector =
+            new SurfaceDistanceDetector(theSun, 54321., BodyDistanceType.CLOSEST, 1, 10, 0.1, Action.STOP, false);
+        final SurfaceDistanceDetector detector2 = (SurfaceDistanceDetector) detector.copy();
+        // Test getter
+        Assert.assertEquals(54321., detector2.getDistance());
+        Assert.assertEquals(theSun, detector2.getBody());
+        Assert.assertEquals(theSun.getShape(), detector2.getBodyShape());
+        Assert.assertEquals(theSun.getShape().getBodyFrame(), detector2.getBodyFixedFrame());
+        Assert.assertEquals(BodyDistanceType.CLOSEST, detector2.getBodyDistanceType());
+        Assert.assertEquals(1, detector2.getSlopeSelection());
+    }
+
+    /**
+     * @testType UT
+     * 
      * @testedMethod {@link SurfaceDistanceDetector#SurfaceDistanceDetector (PVCoordinatesProvider, int, BodyDistanceType) }
      * 
      * @description constructor test without error
@@ -308,6 +374,52 @@ public class SurfaceDistanceDetectorTest {
         theEarth = CelestialBodyFactory.getEarth();
     }
 
+
+    
+    /**
+     * @testType UT
+     * 
+     * @testedMethod {@link SurfaceDistanceDetector#g(SpacecraftState)}
+     * 
+     * @description tests {@link SurfaceDistanceDetector#g(SpacecraftState)}
+     * 
+     * @input constructor and g parameters
+     * 
+     * @output g output
+     * 
+     * @testPassCriteria g returns the expected value
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     * 
+     * @throws PatriusException
+     *         should not happen here
+     */
+    @Test
+    public void comparingGWithNormalHeight() throws PatriusException {
+     // Orekit initialization specific for this test
+        Utils.setDataRoot("regular-dataCNES-2003");
+        FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003ConfigurationWOEOP(true));
+        theEarth.setShape(new OneAxisEllipsoid(6378137.0, 1.0 / 298.257222101, FramesFactory.getITRF()));
+
+        // 400 km
+        final double targetDistance = 400000.;
+        final Frame bodyFrame = theEarth.getShape().getBodyFrame();
+        final Vector3D posBody = tISSSpState.getPVCoordinates(bodyFrame).getPosition();
+
+        // CLOSEST case
+
+        final SurfaceDistanceDetector detector1 =
+            new SurfaceDistanceDetector(theEarth, targetDistance, BodyDistanceType.CLOSEST,
+                0.05 * tISSOrbit.getKeplerianPeriod(), AbstractDetector.DEFAULT_THRESHOLD);
+        final BodyPoint point = theEarth.getShape().buildPoint(posBody, bodyFrame, tISSSpState.getDate(), "");
+        // We basically reimplement g...
+        final double expectedAd1 = point.getNormalHeight() - targetDistance;
+        Assert.assertEquals(expectedAd1, detector1.g(tISSSpState), 0.);
+
+        
+    }
     /**
      * @testType UT
      * 

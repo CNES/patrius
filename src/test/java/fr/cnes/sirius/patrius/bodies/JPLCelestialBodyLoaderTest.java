@@ -14,6 +14,13 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
@@ -46,6 +53,7 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.forces.gravity.AbstractGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
@@ -61,7 +69,6 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -95,11 +102,9 @@ public class JPLCelestialBodyLoaderTest {
 
         // Retrieve frames
         final Frame gcrf = FramesFactory.getGCRF();
-        final Frame icrf = CelestialBodyFactory.getSolarSystemBarycenter().getInertialFrame(IAUPoleModelType.CONSTANT);
-        final Frame frameSSB = CelestialBodyFactory.getSolarSystemBarycenter().getInertialFrame(
-            IAUPoleModelType.CONSTANT);
-        final Frame frameEMB = CelestialBodyFactory.getEarthMoonBarycenter()
-            .getInertialFrame(IAUPoleModelType.CONSTANT);
+        final Frame icrf = CelestialBodyFactory.getSolarSystemBarycenter().getICRF();
+        final Frame frameSSB = CelestialBodyFactory.getSolarSystemBarycenter().getICRF();
+        final Frame frameEMB = CelestialBodyFactory.getEarthMoonBarycenter().getICRF();
 
         // Compute transforms
         final Transform tGCRF_ICRF = gcrf.getTransformTo(icrf, AbsoluteDate.J2000_EPOCH);
@@ -192,11 +197,11 @@ public class JPLCelestialBodyLoaderTest {
         final EphemerisType type = EphemerisType.MARS;
         final JPLCelestialBodyLoader loaderInpopTCBBig = new JPLCelestialBodyLoader("^inpop.*_TCB_.*_bigendian\\.dat$",
             type);
-        final CelestialBody bodysInpopTCBBig = loaderInpopTCBBig.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialPoint bodysInpopTCBBig = loaderInpopTCBBig.loadCelestialPoint(CelestialBodyFactory.MARS);
         Assert.assertEquals(1.0, ((JPLHistoricEphemerisLoader) loaderInpopTCBBig.getEphemerisLoader()).getLoadedConstant("TIMESC"), 1.0e-10);
         final JPLCelestialBodyLoader loaderInpopTCBLittle = new JPLCelestialBodyLoader(
             "^inpop.*_TCB_.*_littleendian\\.dat$", type);
-        final CelestialBody bodysInpopTCBLittle = loaderInpopTCBLittle.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialPoint bodysInpopTCBLittle = loaderInpopTCBLittle.loadCelestialPoint(CelestialBodyFactory.MARS);
         Assert.assertEquals(1.0, ((JPLHistoricEphemerisLoader) loaderInpopTCBLittle.getEphemerisLoader()).getLoadedConstant("TIMESC"), 1.0e-10);
         final AbsoluteDate t0 = new AbsoluteDate(1969, 7, 17, 10, 43, 23.4, TimeScalesFactory.getTT());
         final Frame eme2000 = FramesFactory.getEME2000();
@@ -216,14 +221,14 @@ public class JPLCelestialBodyLoaderTest {
         Utils.setDataRoot("regular-data:inpop");
         final EphemerisType type = EphemerisType.MARS;
         final JPLCelestialBodyLoader loaderDE405 = new JPLCelestialBodyLoader("^unxp(\\d\\d\\d\\d)\\.405$", type);
-        final CelestialBody bodysDE405 = loaderDE405.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialPoint bodysDE405 = loaderDE405.loadCelestialPoint(CelestialBodyFactory.MARS);
         final JPLCelestialBodyLoader loaderInpopTDBBig = new JPLCelestialBodyLoader("^inpop.*_TDB_.*_bigendian\\.dat$",
             type);
-        final CelestialBody bodysInpopTDBBig = loaderInpopTDBBig.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialPoint bodysInpopTDBBig = loaderInpopTDBBig.loadCelestialPoint(CelestialBodyFactory.MARS);
         Assert.assertEquals(0.0, ((JPLHistoricEphemerisLoader) loaderInpopTDBBig.getEphemerisLoader()).getLoadedConstant("TIMESC"), 1.0e-10);
         final JPLCelestialBodyLoader loaderInpopTCBBig = new JPLCelestialBodyLoader("^inpop.*_TCB_.*_bigendian\\.dat$",
             type);
-        final CelestialBody bodysInpopTCBBig = loaderInpopTCBBig.loadCelestialBody(CelestialBodyFactory.MARS);
+        final CelestialPoint bodysInpopTCBBig = loaderInpopTCBBig.loadCelestialPoint(CelestialBodyFactory.MARS);
         Assert.assertEquals(1.0, ((JPLHistoricEphemerisLoader) loaderInpopTCBBig.getEphemerisLoader()).getLoadedConstant("TIMESC"), 1.0e-10);
         final AbsoluteDate t0 = new AbsoluteDate(1969, 7, 17, 10, 43, 23.4, TimeScalesFactory.getTT());
         final Frame gcrf = FramesFactory.getGCRF();
@@ -246,7 +251,7 @@ public class JPLCelestialBodyLoaderTest {
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
             JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.EARTH);
-        Assert.assertEquals("Earth", loader.loadCelestialBody("Earth").getName());
+        Assert.assertEquals("Earth", loader.loadCelestialPoint("Earth").getName());
 
         Assert.assertEquals(Double.NaN, ((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedConstant("Mock"), 0.0);
 
@@ -276,7 +281,40 @@ public class JPLCelestialBodyLoaderTest {
         Assert.assertTrue(tICrF_GCRF4.getAngular().getRotation().isEqualTo(Rotation.IDENTITY));
 
         // Test GetNativeFrame
-        Assert.assertEquals(icrfMoon, CelestialBodyFactory.getMoon().getNativeFrame(null, null));
+        Assert.assertEquals(icrfMoon, CelestialBodyFactory.getMoon().getNativeFrame(null));
+        
+        // Test exception in case of loading barycenter as CelestialBody
+        try {
+            final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(
+                    JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            loaderSSB.loadCelestialBody("");
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(true);
+        }
+        try {
+            final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(
+                    JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.EARTH_MOON);
+            loaderEMB.loadCelestialBody("");
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(true);
+        }
+        
+        // Check that a barycenter cannot be loaded as a body
+        try {
+            CelestialBodyFactory.getBody("Earth-Moon barycenter");
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(true);
+        }
+        CelestialBodyFactory.getEarthMoonBarycenter();
+        try {
+            CelestialBodyFactory.getBody("Earth-Moon barycenter");
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertTrue(true);
+        }
     }
 
     /**
@@ -290,9 +328,9 @@ public class JPLCelestialBodyLoaderTest {
         Assert.assertEquals(FramesFactory.getGCRF(), earth.getInertialFrame(IAUPoleModelType.CONSTANT));
         Assert.assertEquals(FramesFactory.getMOD(true), earth.getInertialFrame(IAUPoleModelType.MEAN));
         Assert.assertEquals(FramesFactory.getTOD(true), earth.getInertialFrame(IAUPoleModelType.TRUE));
-        Assert.assertNull(earth.getIAUPole());
+        Assert.assertNull(earth.getOrientation());
         // Nothing to do
-        earth.setIAUPole(null);
+        earth.setOrientation(null);
         try {
             earth.getRotatingFrame(IAUPoleModelType.CONSTANT);
             Assert.fail();
@@ -306,7 +344,7 @@ public class JPLCelestialBodyLoaderTest {
             Assert.assertTrue(true);
         }
         Assert.assertEquals(FramesFactory.getITRF(), earth.getRotatingFrame(IAUPoleModelType.TRUE));
-        Assert.assertEquals(earth.getInertialFrame(IAUPoleModelType.CONSTANT), earth.getNativeFrame(null, null));
+        Assert.assertEquals(earth.getInertialFrame(IAUPoleModelType.CONSTANT), earth.getNativeFrame(null));
     }
 
     /**
@@ -378,7 +416,12 @@ public class JPLCelestialBodyLoaderTest {
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
                 JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, type);
-            final CelestialBody celestialBody = loader.loadCelestialBody("body");
+            final CelestialPoint celestialObject = loader.loadCelestialPoint("body");
+            if (!(celestialObject instanceof CelestialBody)) {
+                // CelestialBarycenter are not concerned
+                return;
+            }
+            final CelestialBody celestialBody = (CelestialBody) celestialObject;
 
             if (type.equals(EphemerisType.EARTH_MOON)
                     || type.equals(EphemerisType.SOLAR_SYSTEM_BARYCENTER)) {
@@ -468,7 +511,12 @@ public class JPLCelestialBodyLoaderTest {
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
                 JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, type);
-            final CelestialBody celestialBody = loader.loadCelestialBody("body");
+            final CelestialPoint celestialObject = loader.loadCelestialPoint("body");
+            if (!(celestialObject instanceof CelestialBody)) {
+                // CelestialBarycenter are not concerned
+                return;
+            }
+            final CelestialBody celestialBody = (CelestialBody) celestialObject;
 
             // central attraction coefficient
             final double mu = celestialBody.getGM();
@@ -504,26 +552,28 @@ public class JPLCelestialBodyLoaderTest {
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
                 JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, type, attractionModel);
-            final CelestialBody celestialBody = loader.loadCelestialBody("body");
-
-            // La Terre est une exception car elle utilise toujours un modèle d'attraction de type PointAttraction
-            if (!type.equals(EphemerisType.EARTH)) {
-                // central attraction coefficient
-                final double mu = celestialBody.getGM();
-                final GravityModel actual = celestialBody.getGravityModel();
-
-                Assert.assertTrue(actual.getClass().equals(NewtonianGravityModel.class));
-                Assert.assertEquals(mu, actual.getMu(), 0.);
-
-                // set a new AttractionModel
-                final AbstractGravityModel newModel = new NewtonianGravityModel(2 * mu);
-                celestialBody.setGravityModel(newModel);
-                Assert.assertEquals(2 * mu, celestialBody.getGM(), 0.);
-
-                // set a new central attraction coefficient, the attraction model must me updated
-                celestialBody.setGM(1.5 * mu);
-                Assert.assertEquals(1.5 * mu, celestialBody.getGravityModel().getMu(), 0.);
+            final CelestialPoint celestialObject = loader.loadCelestialPoint("body");
+            if (!(celestialObject instanceof CelestialBody)) {
+                // CelestialBarycenter are not concerned
+                return;
             }
+            final CelestialBody celestialBody = (CelestialBody) celestialObject;
+
+            // central attraction coefficient
+            final double mu = celestialBody.getGM();
+            final GravityModel actual = celestialBody.getGravityModel();
+
+            Assert.assertTrue(actual.getClass().equals(NewtonianGravityModel.class));
+            Assert.assertEquals(mu, actual.getMu(), 0.);
+
+            // set a new AttractionModel
+            final AbstractGravityModel newModel = new NewtonianGravityModel(2 * mu);
+            celestialBody.setGravityModel(newModel);
+            Assert.assertEquals(2 * mu, celestialBody.getGM(), 0.);
+
+            // set a new central attraction coefficient, the attraction model must me updated
+            celestialBody.setGM(1.5 * mu);
+            Assert.assertEquals(1.5 * mu, celestialBody.getGravityModel().getMu(), 0.);
         }
     }
 
@@ -541,7 +591,12 @@ public class JPLCelestialBodyLoaderTest {
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
                 JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, ephemerisType);
-            final CelestialBody celestialBody = loader.loadCelestialBody("body");
+            final CelestialPoint celestialObject = loader.loadCelestialPoint("body");
+            if (!(celestialObject instanceof CelestialBody)) {
+                // CelestialBarycenter are not concerned
+                return;
+            }
+            final CelestialBody celestialBody = (CelestialBody) celestialObject;
 
             // La Terre est une exception car elle utilise toujours un modèle d'attraction de type PointAttraction
             if (!ephemerisType.equals(EphemerisType.EARTH)) {
@@ -567,7 +622,7 @@ public class JPLCelestialBodyLoaderTest {
     private static void checkDerivative(final String supportedNames, final AbsoluteDate date)
         throws PatriusException {
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.MERCURY);
-        final CelestialBody body = loader.loadCelestialBody(CelestialBodyFactory.MERCURY);
+        final CelestialPoint body = loader.loadCelestialPoint(CelestialBodyFactory.MERCURY);
         final double h = 20;
 
         // eight points finite differences estimation of the velocity
@@ -625,9 +680,9 @@ public class JPLCelestialBodyLoaderTest {
             Assert.assertEquals(((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedAstronomicalUnit(),
                     ((JPLHistoricEphemerisLoader) deserializedLoader.getEphemerisLoader()).getLoadedAstronomicalUnit(), 0.);
 
-            final CelestialBody mars1 = loader.loadCelestialBody(CelestialBodyFactory.MARS);
-            final CelestialBody mars2 = deserializedLoader
-                .loadCelestialBody(CelestialBodyFactory.MARS);
+            final CelestialPoint mars1 = loader.loadCelestialPoint(CelestialBodyFactory.MARS);
+            final CelestialPoint mars2 = deserializedLoader
+                .loadCelestialPoint(CelestialBodyFactory.MARS);
 
             for (int i = 0; i < 10; i++) {
                 final AbsoluteDate currentDate = date.shiftedBy(i);

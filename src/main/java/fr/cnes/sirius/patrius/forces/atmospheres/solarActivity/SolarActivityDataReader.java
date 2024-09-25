@@ -18,6 +18,7 @@
  * @history Created 20/08/2012
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-165:08/12/2023:[PATRIUS] SolarActivityDataReader.getMaxDate erronee
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:FA:FA-3009:15/11/2021:[PATRIUS] IllegalArgumentException SolarActivityToolbox
@@ -326,9 +327,9 @@ public abstract class SolarActivityDataReader implements DataLoader, SolarActivi
     @Override
     public AbsoluteDate getMaxDate() {
         if (this.getFluxMaxDate().compareTo(this.getApKpMaxDate()) <= 0) {
-            return this.getApKpMaxDate();
+            return this.getFluxMaxDate();
         }
-        return this.getFluxMaxDate();
+        return this.getApKpMaxDate();
     }
 
     /** {@inheritDoc} */

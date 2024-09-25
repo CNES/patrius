@@ -1,13 +1,24 @@
 /**
+ *
+ *
+ * Copyright 2011-2022 CNES
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
  * HISTORY
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
- */
-/*
- */
-/*
- */
-/*
  */
 package fr.cnes.sirius.patrius.tools.cache;
 
@@ -87,6 +98,12 @@ public class FIFOThreadSafeCacheTest {
             // An exception occurred: fail
             Assert.assertTrue(false);
         }
+
+        // Evaluate the use of a supplier which generate a null entry (shouldn't fail)
+        final Supplier<CacheEntry<Integer, Integer>> nullSupplier = () -> {
+            return null;
+        };
+        Assert.assertNull(fifoCache.computeIfAbsent(1, nullSupplier));
     }
 
     /**
@@ -207,11 +224,9 @@ public class FIFOThreadSafeCacheTest {
     }
 
     /**
-     * @description Try to build an angular actors container with initialization errors.
+     * @description Try to build a FIFO thread safe cache with initialization errors.
      *
      * @testedMethod {@link FIFOThreadSafeCache#FIFOThreadSafeCache(int)}
-     * @testedMethod {@link FIFOThreadSafeCache#computeIfAbsent(Object, Supplier)}
-     * @testedMethod {@link FIFOThreadSafeCache#computeIf(java.util.function.Predicate, Supplier)}
      *
      * @testPassCriteria The exceptions are returned as expected.
      */
@@ -223,27 +238,6 @@ public class FIFOThreadSafeCacheTest {
             new FIFOThreadSafeCache<Integer, Integer>(-1);
             Assert.fail();
         } catch (final NotPositiveException e) {
-            // expected
-            Assert.assertTrue(true);
-        }
-
-        // Try to use a supplier which generate a null entry
-        final Supplier<CacheEntry<Integer, Integer>> nullSupplier = () -> {
-            return null;
-        };
-        final FIFOThreadSafeCache<Integer, Integer> cache = new FIFOThreadSafeCache<>();
-
-        try {
-            cache.computeIfAbsent(1, nullSupplier);
-            Assert.fail();
-        } catch (final IllegalStateException e) {
-            // expected
-            Assert.assertTrue(true);
-        }
-        try {
-            cache.computeIf((cacheEntry) -> cacheEntry.getKey().equals(1), nullSupplier);
-            Assert.fail();
-        } catch (final IllegalStateException e) {
             // expected
             Assert.assertTrue(true);
         }

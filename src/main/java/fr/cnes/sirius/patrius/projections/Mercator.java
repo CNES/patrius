@@ -15,8 +15,9 @@
  *
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
- *          lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC) 
+ * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -37,6 +38,7 @@ import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.Vector2D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -178,11 +180,17 @@ public class Mercator extends AbstractProjection {
      *        if true, Y coordinates equal 0 in pivot point. The rotation if around pivot.
      * @param seriesIn
      *        boolean indicating if the inverse projection uses a direct method with series, or an iterative method
+     * @throws IllegalArgumentException
+     *         if the pivot point's body shape isn't a {@link OneAxisEllipsoid}
      */
     public Mercator(final EllipsoidPoint pivotIn, final double azimuthIn, final boolean centeredIn,
                     final boolean seriesIn) {
-
         super(pivotIn);
+
+        // This class needs an OneAxisEllipsoid associated to its pivot point to work properly
+        if (!(getReference() instanceof OneAxisEllipsoid)) {
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.NOT_ASSOCIATED_ONEAXISELLIPSOID);
+        }
 
         // longitude of pivot point
         this.lon0 = MathUtils.normalizeAngle(pivotIn.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC)
@@ -201,15 +209,15 @@ public class Mercator extends AbstractProjection {
         // Re-scale CelestialBody radius
         final double pivotScaleFactor = getScaleFactor(lat0);
         this.pivotCosLat = MathLib.cos(lat0);
-        this.scaledRadius = getReference().getEquatorialRadius() * pivotScaleFactor;
+        this.scaledRadius = getCastedReference().getEquatorialRadius() * pivotScaleFactor;
 
         // Define boundary zone : at point at max latitude, opposite at the pivot longitude
         // Get parameters : use re-scaled CelestialBody radius.
-        final EllipsoidBodyShape ell = getReference();
         this.maxEastValue = FastMath.PI * this.scaledRadius;
-        this.maxNorthValue = ProjectionEllipsoidUtils.computeMercatorLatitude(MAX_LATITUDE, ell) * this.scaledRadius;
+        this.maxNorthValue = ProjectionEllipsoidUtils.computeMercatorLatitude(MAX_LATITUDE, getCastedReference())
+                * this.scaledRadius;
 
-        this.lat0Mer = ProjectionEllipsoidUtils.computeMercatorLatitude(lat0, ell);
+        this.lat0Mer = ProjectionEllipsoidUtils.computeMercatorLatitude(lat0, getCastedReference());
     }
 
     /**
@@ -226,13 +234,15 @@ public class Mercator extends AbstractProjection {
      *        reference shape
      */
     public Mercator(final double centralMeridian, final EllipsoidBodyShape ref) {
-        this(new EllipsoidPoint(ref, ref.getLLHCoordinatesSystem(), 0., centralMeridian, 0., "pivot"), 0., false, true);
+        this(new EllipsoidPoint(ref, LLHCoordinatesSystem.ELLIPSODETIC, 0., centralMeridian, 0., "pivot"), 0., false,
+                true);
     }
 
     /** {@inheritDoc} */
     @Override
-    public final boolean canMap(final EllipsoidPoint point) {
-        return MathLib.abs(point.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude()) <= MAX_LATITUDE;
+    public final boolean canMap(final EllipsoidPoint coordinates) {
+        return MathLib.abs(
+            coordinates.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude()) <= MAX_LATITUDE;
     }
 
     /** {@inheritDoc} */
@@ -255,7 +265,7 @@ public class Mercator extends AbstractProjection {
         }
 
         // compute mercator latitude (also called crescent latitude)
-        final double latMerc = ProjectionEllipsoidUtils.computeMercatorLatitude(latUsed, getReference());
+        final double latMerc = ProjectionEllipsoidUtils.computeMercatorLatitude(latUsed, getCastedReference());
 
         // compute longitude (relative to the pivot)
         if (this.lon0 == 0 && getPivotPoint() != null) {
@@ -366,7 +376,7 @@ public class Mercator extends AbstractProjection {
         double phi = 0;
 
         // eccentricity
-        final double e = ProjectionEllipsoidUtils.getEccentricity(getReference());
+        final double e = ProjectionEllipsoidUtils.getEccentricity(getCastedReference());
         final double half = 0.5;
 
         if (this.series) {
@@ -482,7 +492,7 @@ public class Mercator extends AbstractProjection {
         final double[] sincos = MathLib.sinAndCos(lat);
         final double cosLat = sincos[1];
         final double sinLat = sincos[0];
-        final double e = ProjectionEllipsoidUtils.getEccentricity(getReference());
+        final double e = ProjectionEllipsoidUtils.getEccentricity(getCastedReference());
         return MathLib.divide(cosLat, MathLib.sqrt(MathLib.max(0.0, 1. - e * e * sinLat * sinLat)));
     }
 
@@ -491,8 +501,18 @@ public class Mercator extends AbstractProjection {
     public final double getDistortionFactor(final double lat) {
         final EllipsoidPoint pivot = getPivotPoint();
         final double pivotRadius = ProjectionEllipsoidUtils.computeRadiusEastWest(
-            pivot.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude(), getReference());
-        final double latRadius = ProjectionEllipsoidUtils.computeRadiusEastWest(lat, getReference());
+            pivot.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude(), getCastedReference());
+        final double latRadius = ProjectionEllipsoidUtils.computeRadiusEastWest(lat, getCastedReference());
         return MathLib.divide(pivotRadius * this.pivotCosLat, latRadius * MathLib.cos(lat));
+    }
+
+    /**
+     * Cast the reference to work with the services.<br>
+     * This can be done safely as the verification is directly made in the constructor.
+     * 
+     * @return the casted reference
+     */
+    private OneAxisEllipsoid getCastedReference() {
+        return (OneAxisEllipsoid) getReference();
     }
 }

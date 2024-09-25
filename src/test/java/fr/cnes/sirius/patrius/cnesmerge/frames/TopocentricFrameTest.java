@@ -18,6 +18,10 @@
  * @history creation 27/09/2011
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:FA:FA-159:08/12/2023:[PATRIUS] Probleme de normalisation dans TopocentricFrame
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3161:10/05/2022:[PATRIUS] Ajout d'une methode getNativeFrame() a l'interface PVCoordinatesProvider 
@@ -38,6 +42,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -48,10 +53,8 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.CardanMountPV;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.CardanMountPosition;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.TopocentricPV;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.TopocentricPosition;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.DateComponents;
 import fr.cnes.sirius.patrius.time.TimeComponents;
@@ -70,7 +73,7 @@ public class TopocentricFrameTest {
     private AbsoluteDate date;
 
     /** Reference frame = ITRF 2005. */
-    private Frame frameITRF2005;
+    private CelestialBodyFrame frameITRF2005;
 
     /** Earth shape. */
     OneAxisEllipsoid earthSpheric;
@@ -265,6 +268,76 @@ public class TopocentricFrameTest {
     /**
      * @testType UT
      * 
+     * @testedFeature {@link features#DEFINITION}
+     * 
+     * @testedMethod {@link TopocentricFrame#TopocentricFrame(EllipsoidPoint, String)}
+     * 
+     * @description two topocentric frames are generated, the origins of these frames are the
+     *              singular north and south poles. We check here
+     *              if these topocentric frames are well defined.
+     * 
+     * @input GeodeticPoint point1 = (90°,30°,0 m)
+     *        <p>
+     *        GeodeticPoint point2 = (-90°, 30°, 0 m)
+     *        </p>
+     * 
+     * @output TopocentricFrame
+     * 
+     * @testPassCriteria The obtained topocentric frames should have their Zenith, East and North
+     *                   axis be unit vector forming a right-handed orthonormal basis. The epsilon
+     *                   used is equal to 1e-14, it takes into account the computation errors.
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSingularPoles() {
+        // First point at north pole
+        final EllipsoidPoint point1 =
+                new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
+                        MathLib.toRadians(90.), MathLib.toRadians(30.), 0., "");
+        final TopocentricFrame topoFrame1 = new TopocentricFrame(point1, "lat 90");
+
+        // Second point at south pole
+        final EllipsoidPoint point2 =
+                new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
+                        MathLib.toRadians(-90.), MathLib.toRadians(30.), 0., "");
+        final TopocentricFrame topoFrame2 = new TopocentricFrame(point2, "lat -90");
+
+        final Vector3D zenith1 = topoFrame1.getZenith();
+        final Vector3D zenith2 = topoFrame2.getZenith();
+        final Vector3D east1 = topoFrame1.getEast();
+        final Vector3D east2 = topoFrame2.getEast();
+        final Vector3D north1 = topoFrame1.getNorth();
+        final Vector3D north2 = topoFrame2.getNorth();
+
+        // Check that East and North are unit vectors
+        Assert.assertEquals(1., zenith1.getNorm(), this.comparisonEpsilon);
+        Assert.assertEquals(1., zenith2.getNorm(), this.comparisonEpsilon);
+        Assert.assertEquals(1., east1.getNorm(), this.comparisonEpsilon);
+        Assert.assertEquals(1., east2.getNorm(), this.comparisonEpsilon);
+        Assert.assertEquals(1., north1.getNorm(), this.comparisonEpsilon);
+        Assert.assertEquals(1., north2.getNorm(), this.comparisonEpsilon);
+
+        // Check that Zenith, East and North define a right-handed orthonormal basis
+        final double dotProduct1 = Vector3D.dotProduct(east1, north1);
+        final Vector3D crossProduct1 = Vector3D.crossProduct(east1, north1);
+        final double zDiff1 = Vector3D.dotProduct(crossProduct1, zenith1);
+        Assert.assertEquals(0., dotProduct1, this.comparisonEpsilon);
+        Assert.assertEquals(1., zDiff1, this.comparisonEpsilon);
+
+        final double dotProduct2 = Vector3D.dotProduct(east2, north2);
+        final Vector3D crossProduct2 = Vector3D.crossProduct(east2, north2);
+        final double zDiff2 = Vector3D.dotProduct(crossProduct2, zenith2);
+        Assert.assertEquals(0., dotProduct2, this.comparisonEpsilon);
+        Assert.assertEquals(1., zDiff2, this.comparisonEpsilon);
+
+    }
+
+    /**
+     * @testType UT
+     * 
      * @testedFeature {@link features#AZIMUTH}
      * 
      * @testedMethod {@link TopocentricFrame#getAzimuth(Vector3D, Frame, AbsoluteDate)}
@@ -365,11 +438,15 @@ public class TopocentricFrameTest {
             MathLib.toRadians(0.), MathLib.toRadians(30.), 0., "");
         final TopocentricFrame topoEast = new TopocentricFrame(point, "lon 30 lat 0");
 
+        Assert.assertEquals(-MathUtils.HALF_PI, topoEast.getOrientation(), 0.);
+
         /*
          * test the North topocentric frame first
          */
         // get the north topocentric frame
         final TopocentricFrame topoNorth = new TopocentricFrame(point, 0., "lon 30 lat 0");
+
+        Assert.assertEquals(0., topoNorth.getOrientation(), 0.);
 
         // get the transformation east to north
         final Transform eastTOnorth = topoEast.getTransformTo(topoNorth, AbsoluteDate.FIFTIES_EPOCH_TT);
@@ -393,6 +470,8 @@ public class TopocentricFrameTest {
         // get a topocentric frame rotated by 30 degrees around the zenith from the north frame
         final TopocentricFrame topo30 = new TopocentricFrame(point, MathLib.toRadians(30.),
             "lon 30 lat 0");
+
+        Assert.assertEquals(MathLib.toRadians(30.), topo30.getOrientation(), 0.);
 
         // get the transformation east to north
         final Transform eastTO30 = topoEast.getTransformTo(topo30, AbsoluteDate.FIFTIES_EPOCH_TT);
@@ -523,11 +602,7 @@ public class TopocentricFrameTest {
         Assert.assertEquals(FastMath.PI, topoNorth.getAzimuth(new Vector3D(-1, -1, 0), topoNorthMinus45, this.date),
             this.angleEpsilon);
         Assert.assertEquals(MathUtils.HALF_PI,
-            topoNorth.getAzimuth(new Vector3D(1, -1, 0), topoNorthMinus45, this.date),
-            this.angleEpsilon);
-
-        // Test the getOrientation method:
-        Assert.assertEquals(MathLib.toRadians(45), topoNorth45.getOrientation(), 0.0);
+            topoNorth.getAzimuth(new Vector3D(1, -1, 0), topoNorthMinus45, this.date), this.angleEpsilon);
     }
 
     /**
@@ -646,121 +721,13 @@ public class TopocentricFrameTest {
     }
 
     /**
-     * @testType UT
-     * 
-     * @testedFeature {@link features#TRANSFORMATION}
-     * 
-     * @testedMethod {@link TopocentricFrame#transformFromPositionToTopocentric(Vector3D, Frame, AbsoluteDate)}
-     * @testedMethod {@link TopocentricFrame#transformFromTopocentricToPosition(TopocentricPosition)}
-     * @testedMethod {@link TopocentricFrame#transformFromPositionToCardan(Vector3D, Frame, AbsoluteDate)}
-     * @testedMethod {@link TopocentricFrame#transformFromCardanToPosition(CardanMountPosition)}
-     * 
-     * @description we test the transformations analytically
-     * 
-     * @input The inputs are the following :
-     *        <p>
-     *        CardanMounting cardanCoord = (PI/4, acos(sqrt(2/3)), sqrt(3))
-     *        </p>
-     *        <p>
-     *        TopocentricCoordinates topoCoord = (acos(sqrt(2/3)), PI/4, sqrt(3))
-     *        </p>
-     * 
-     * @output set of pv coordinates, Cardan mount, set of pv coordinates, Topocentric coordinates
-     * 
-     * @testPassCriteria In both cases, the obtained set of pv coordinates should be :
-     *                   <p>
-     *                   Vector3D position = (1,1,1)
-     *                   </p>
-     *                   <p>
-     *                   and the inputs when the opposite transformation is permformed.
-     *                   </p>
-     *                   <p>
-     *                   with 1e-7 as epsilon on angles and 1e-12 as epsilon on distances.
-     *                   </p>
-     * 
-     * @referenceVersion 1.0
-     * 
-     * @nonRegressionVersion 1.0
-     * 
-     * @throws PatriusException
-     *         if frames transformations cannot be computed
-     */
-    @Test
-    public void testTransform() throws PatriusException {
-        // North topocentric frame
-        final EllipsoidPoint point = new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
-            MathLib.toRadians(43.604482), MathLib.toRadians(1.443962), 0., "");
-        final TopocentricFrame topoNorth = new TopocentricFrame(point, 0., "north topocentric frame");
-
-        Vector3D position;
-
-        /*
-         * Cardan mounting
-         */
-
-        // from Cardan mounting set to cartesian coordinates set (position only)
-        final CardanMountPosition cardanCoordPosition = new CardanMountPosition(MathLib.toRadians(45),
-            MathLib.acos(MathLib.sqrt(2. / 3.)), MathLib.sqrt(3));
-        position = topoNorth.transformFromCardanToPosition(cardanCoordPosition);
-
-        Assert.assertEquals(1., position.getX(), this.distanceEpsilon);
-        Assert.assertEquals(1., position.getY(), this.distanceEpsilon);
-        Assert.assertEquals(1., position.getZ(), this.distanceEpsilon);
-
-        // from position coordinates set (position only) to Cardan mounting set
-        final CardanMountPosition cardanCoordResult = topoNorth
-            .transformFromPositionToCardan(position, topoNorth, this.date);
-
-        Assert.assertEquals(MathLib.toRadians(45), cardanCoordResult.getXangle(), this.angleEpsilon);
-        Assert.assertEquals(MathLib.acos(MathLib.sqrt(2. / 3.)), cardanCoordResult.getYangle(), this.angleEpsilon);
-        Assert.assertEquals(MathLib.sqrt(3), cardanCoordResult.getRange(), this.distanceEpsilon);
-
-        // transformation done component to component
-        Assert.assertEquals(MathLib.toRadians(45), topoNorth.getXangleCardan(position, topoNorth, this.date),
-            this.angleEpsilon);
-        Assert.assertEquals(MathLib.acos(MathLib.sqrt(2. / 3.)),
-            topoNorth.getYangleCardan(position, topoNorth, this.date), this.angleEpsilon);
-        Assert.assertEquals(MathLib.sqrt(3), topoNorth.getRange(position, topoNorth, this.date), this.distanceEpsilon);
-
-        /*
-         * Topocentric coordinates
-         */
-
-        // from topocentric coordinates to cartesian coordinates (position only)
-        final TopocentricPosition topoCoordPosition = new TopocentricPosition(MathLib.acos(MathLib.sqrt(2. / 3.)),
-            MathLib.toRadians(315), MathLib.sqrt(3));
-        position = topoNorth.transformFromTopocentricToPosition(topoCoordPosition);
-
-        Assert.assertEquals(1., position.getX(), this.distanceEpsilon);
-        Assert.assertEquals(1., position.getY(), this.distanceEpsilon);
-        Assert.assertEquals(1., position.getZ(), this.distanceEpsilon);
-
-        // from cartesian coordinates (position only) to topocentric coordinates
-        final TopocentricPosition topoCoordResult = topoNorth.transformFromPositionToTopocentric(position, topoNorth,
-            this.date);
-
-        Assert.assertEquals(MathLib.acos(MathLib.sqrt(2. / 3.)), topoCoordResult.getElevation(), this.angleEpsilon);
-        Assert.assertEquals(MathLib.toRadians(315), topoCoordResult.getAzimuth(), this.angleEpsilon);
-        Assert.assertEquals(MathLib.sqrt(3), topoCoordResult.getRange(), this.distanceEpsilon);
-
-        // transformation done component to component
-        Assert.assertEquals(MathLib.acos(MathLib.sqrt(2. / 3.)),
-            topoNorth.getElevation(position, topoNorth, this.date),
-            this.angleEpsilon);
-        Assert.assertEquals(MathLib.toRadians(315), topoNorth.getAzimuth(position, topoNorth, this.date),
-            this.angleEpsilon);
-        Assert.assertEquals(MathLib.sqrt(3), topoNorth.getRange(position, topoNorth, this.date), this.distanceEpsilon);
-
-    }
-
-    /**
      * before the tests
      */
     @Before
     public void setUp() {
         try {
 
-            Utils.setDataRoot("regular-dataCNES-2003");
+            Utils.setDataRoot("regular-dataPBASE");
             FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
 
             // Reference frame = ITRF 2005

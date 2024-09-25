@@ -19,6 +19,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-73:30/06/2023:[PATRIUS] Reliquat OPENFD-14 VacuumSignalPropagationModel
@@ -43,13 +45,13 @@
  */
 package fr.cnes.sirius.patrius.signalpropagation;
 
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.exception.ConvergenceException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -59,9 +61,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * Model for the computation of a signal propagation vector and toolbox
  * for the different corrections to be applied to it.
  *
- * @concurrency not thread-safe
- *
- * @concurrency.comment use of the frames tree
+ * @concurrency.comment concurrency depends of the {@link PVCoordinatesProvider} implementations
  *
  * @author Thomas Trapier
  *
@@ -322,7 +322,7 @@ public class VacuumSignalPropagationModel {
     /**
      * Compute signal emission date which is the date at which the signal received by the spacecraft
      * (receiver) has been emitted by the emitter depending on {@link PropagationDelayType}.
-     * 
+     *
      * @param emitter
      *        emitter
      * @param orbit
@@ -356,7 +356,7 @@ public class VacuumSignalPropagationModel {
     /**
      * Compute signal emission date which is the date at which the signal received by the spacecraft
      * (receiver) has been emitted by the emitter depending on {@link PropagationDelayType}.
-     * 
+     *
      * @param emitter
      *        emitter
      * @param orbit
@@ -404,7 +404,7 @@ public class VacuumSignalPropagationModel {
      * Compute signal reception date which is the date at which the signal emitted by the spacecraft
      * (emitter) has been
      * received by the receiver depending on {@link PropagationDelayType}.
-     * 
+     *
      * @param receiver receiver
      * @param orbit orbit of the spacecraft (emitter)
      * @param date date at which the spacecraft orbit is defined
@@ -430,7 +430,7 @@ public class VacuumSignalPropagationModel {
     /**
      * Compute signal reception date which is the date at which the signal emitted by the spacecraft
      * (emitter) has been received by the receiver depending on {@link PropagationDelayType}.
-     * 
+     *
      * @param receiver receiver
      * @param orbit orbit of the spacecraft (emitter)
      * @param date date at which the spacecraft orbit is defined
@@ -509,7 +509,7 @@ public class VacuumSignalPropagationModel {
 
         /**
          * Recompute the signal propagation duration with the convergence algorithm.
-         * 
+         *
          * @param oldTprop
          *        the old signal propagation duration (n-1)
          * @param velEmitterOrReceptor

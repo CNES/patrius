@@ -16,6 +16,11 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -25,7 +30,6 @@
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:DM:DM-3194:03/11/2022:[PATRIUS] Fusion des interfaces GeometricBodyShape et BodyShape 
  * VERSION:4.10:DM:DM-3228:03/11/2022:[PATRIUS] Integration des evolutions de la branche patrius-for-lotus 
- * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:DM:DM-2571:27/01/2021:[PATRIUS] Integrateur Stormer-Cowell 
  * VERSION:4.3:FA:FA-2079:15/05/2019:Non suppression de detecteurs d'evenements en fin de propagation
@@ -79,6 +83,10 @@ import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.events.sensor.SatToSatMutualVisibilityTest;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
@@ -95,6 +103,7 @@ import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
 import fr.cnes.sirius.patrius.forces.maneuvers.ConstantThrustManeuverTest;
 import fr.cnes.sirius.patrius.forces.maneuvers.ContinuousThrustManeuver;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
@@ -120,10 +129,6 @@ import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.MultiPropagator;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.DateDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.propagation.events.NodeDetector;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation.AttitudeType;
@@ -1609,8 +1614,8 @@ public class MultiNumericalPropagatorTest {
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
-        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
+        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
+        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         final GravityModel sunGravityModel = sun.getGravityModel();
         ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
@@ -1630,7 +1635,7 @@ public class MultiNumericalPropagatorTest {
         // vehicle);
 
         // d) drag force
-        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final SimpleExponentialAtmosphere atm = new SimpleExponentialAtmosphere(new OneAxisEllipsoid(Utils.ae,
             1.0 / 298.257222101, itrf), 0.0004, 42000.0, 7500.0);
         final SphericalSpacecraft spacecraft = new SphericalSpacecraft(FastMath.PI, 1.5, 1., 0., 0., DEFAULT);
@@ -1838,7 +1843,7 @@ public class MultiNumericalPropagatorTest {
      * @testedFeature {@link features#MULTI_SAT_PROPAGATION_EVENTS}
      *
      * @testedMethod {@link MultiNumericalPropagator#propagate(AbsoluteDate)}
-     * @testedMethod {@link MultiNumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.propagation.events.EventDetector, String)}
+     * @testedMethod {@link MultiNumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.events.EventDetector, String)}
      * @testedMethod {@link MultiNumericalPropagator#clearEventsDetectors()}
      * @testedMethod {@link MultiNumericalPropagator#getEventsDetectors()}
      * @description Test a single sat detector
@@ -2640,7 +2645,7 @@ public class MultiNumericalPropagatorTest {
     public void testSetNonInertialFrame() throws PatriusException {
         // Propagator
         final FirstOrderIntegrator ode = new DormandPrince853Integrator(0.1, 10.0, 1.0e-3, 1e-6);
-        Map<String, Frame> propFrameMap = new HashMap<String, Frame>();
+        final Map<String, Frame> propFrameMap = new HashMap<String, Frame>();
         propFrameMap.put("1", FramesFactory.getTIRF());
 
         // An exception should occur here !
@@ -2747,7 +2752,7 @@ public class MultiNumericalPropagatorTest {
         final double[] relTolerance = { 1.0e-7, 1.0e-4, 1.0e-4, 1.0e-7, 1.0e-7, 1.0e-7 };
         final AdaptiveStepsizeIntegrator dop = new DormandPrince853Integrator(0.001, 200, absTolerance, relTolerance);
         dop.setInitialStepSize(60);
-        Map<String, Frame> propFrameMap = new HashMap<String, Frame>();
+        final Map<String, Frame> propFrameMap = new HashMap<String, Frame>();
         propFrameMap.put("key1", propFrame);
         propFrameMap.put("key2", propFrame);
         final MultiNumericalPropagator propagator = new MultiNumericalPropagator(dop, propFrameMap);
@@ -2779,7 +2784,7 @@ public class MultiNumericalPropagatorTest {
         final Orbit convInitialOrbit1 = type1.convertOrbit(initialOrbit1, propFrame);
 
         final double n = MathLib.sqrt(convInitialOrbit1.getMu() / convInitialOrbit1.getA()) / convInitialOrbit1.getA();
-        Assert.assertEquals(convInitialOrbit1.getA(), finalOrbit1.getA(), 6.0e-8);
+        Assert.assertEquals(convInitialOrbit1.getA(), finalOrbit1.getA(), 7.0e-8);
         Assert.assertEquals(convInitialOrbit1.getEquinoctialEx(), finalOrbit1.getEquinoctialEx(), 1.0e-10);
         Assert.assertEquals(convInitialOrbit1.getEquinoctialEy(), finalOrbit1.getEquinoctialEy(), 1.0e-10);
         Assert.assertEquals(convInitialOrbit1.getHx(), finalOrbit1.getHx(), 1.0e-10);
@@ -2792,7 +2797,7 @@ public class MultiNumericalPropagatorTest {
         final Orbit convInitialOrbit2 = type2.convertOrbit(initialOrbit2, propFrame);
 
         final double m = MathLib.sqrt(convInitialOrbit2.getMu() / convInitialOrbit2.getA()) / convInitialOrbit2.getA();
-        Assert.assertEquals(convInitialOrbit2.getA(), finalOrbit2.getA(), 3.0e-8);
+        Assert.assertEquals(convInitialOrbit2.getA(), finalOrbit2.getA(), 5.0e-7);
         Assert.assertEquals(convInitialOrbit2.getEquinoctialEx(), finalOrbit2.getEquinoctialEx(), 1.0e-10);
         Assert.assertEquals(convInitialOrbit2.getEquinoctialEy(), finalOrbit2.getEquinoctialEy(), 1.0e-10);
         Assert.assertEquals(convInitialOrbit2.getHx(), finalOrbit2.getHx(), 1.0e-10);

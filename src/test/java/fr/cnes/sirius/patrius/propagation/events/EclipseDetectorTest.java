@@ -16,7 +16,18 @@
  *
  *
  * HISTORY
- * VERSION:4.12.1:FA:FA-125:05/09/2023:[PATRIUS] Reliquat OPENFD-62 sur le code des body shapes
+ * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+ * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
+ * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ * retourner un CelestialBodyFrame
+ * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
+ * VERSION:4.12:DM:DM-7:17/08/2023:[PATRIUS] Symétriser les méthodes closestPointTo de BodyShape
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -60,14 +71,25 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.directions.ConstantVectorDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.EarthCenterDirection;
+import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.ITargetDirection;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
+import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -81,8 +103,6 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector.PropagationDelayType;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
@@ -99,6 +119,23 @@ public class EclipseDetectorTest {
 
     private final double sunRadius = 696000000.;
     private final double earthRadius = 6400000.;
+
+    /**
+     * FA-128. Eclipse should be computable when occulted body is defined by a direction (and not being a ITargetDirection)
+     * and occulting body by a body shape.
+     */
+    @Test
+    public void testOccultingBodyShapeOccultedDirection() {
+        final IDirection direction = new ConstantVectorDirection(Vector3D.PLUS_I, FramesFactory.getGCRF());
+        final EventDetector detector = new EclipseDetector(direction, new OneAxisEllipsoid(6378000, 0.001, FramesFactory.getGCRF()), 0, 60., 1.e-3,
+                Action.CONTINUE, Action.CONTINUE, false, false);
+        try {
+            detector.g(this.initialState);
+            Assert.assertTrue(true);
+        } catch (final Exception e) {
+            Assert.fail();
+        }
+    }
 
     @Test
     public void testEclipse() throws PatriusException {
@@ -119,6 +156,78 @@ public class EclipseDetectorTest {
         Assert.assertEquals(2303.1835, finalState.getDate().durationFrom(this.iniDate), 1.0e-3);
     }
 
+    /**
+     * @description Test this event detector wrap feature in {@link SignalPropagationWrapperDetector}
+     * 
+     * @input this event detector in INSTANTANEOUS & LIGHT_SPEED
+     * 
+     * @output the emitter & receiver dates
+     * 
+     * @testPassCriteria The results containers as expected (non regression)
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testSignalPropagationWrapperDetector() throws PatriusException {
+
+        // Build two identical event detectors (the first in INSTANTANEOUS, the second in LIGHT_SPEED)
+        final CelestialBody occultedBody = CelestialBodyFactory.getSun();
+        final CelestialBody occultingBody = CelestialBodyFactory.getEarth();
+        final EclipseDetector eventDetector1 = new EclipseDetector(occultedBody, this.sunRadius, occultingBody,
+            this.earthRadius, 0, 60., 1.e-3){
+
+            /** Serializable UID. */
+            private static final long serialVersionUID = 4206045819676401256L;
+
+            @Override
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
+                return Action.CONTINUE;
+            }
+        };
+        final EclipseDetector eventDetector2 = (EclipseDetector) eventDetector1.copy();
+        eventDetector2.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+
+        // Wrap these event detectors
+        final SignalPropagationWrapperDetector wrapper1 = new SignalPropagationWrapperDetector(eventDetector1);
+        final SignalPropagationWrapperDetector wrapper2 = new SignalPropagationWrapperDetector(eventDetector2);
+
+        // Add them in the propagator, then propagate
+        this.propagator.addEventDetector(wrapper1);
+        this.propagator.addEventDetector(wrapper2);
+        this.propagator.addForceModel(new DirectBodyAttraction(
+            new NewtonianGravityModel(this.propagator.getInitialState().getMu())));
+        final SpacecraftState finalState = this.propagator.propagate(this.iniDate.shiftedBy(6000));
+
+        // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
+        Assert.assertEquals(2, wrapper1.getNBOccurredEvents());
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("1969-07-28T04:37:51.000"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("1969-07-28T04:37:51.000"), 1e-3));
+        Assert.assertTrue(wrapper1.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("1969-07-28T05:12:26.763"), 1e-3));
+        Assert.assertTrue(wrapper1.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("1969-07-28T05:12:26.763"), 1e-3));
+
+        // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
+        Assert.assertEquals(2, wrapper2.getNBOccurredEvents());
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
+            .equals(new AbsoluteDate("1969-07-28T04:29:24.383"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(0)
+            .equals(new AbsoluteDate("1969-07-28T04:37:51.061"), 1e-3));
+        Assert.assertTrue(wrapper2.getEmitterDatesList().get(1)
+            .equals(new AbsoluteDate("1969-07-28T05:04:00.121"), 1e-3));
+        Assert.assertTrue(wrapper2.getReceiverDatesList().get(1)
+            .equals(new AbsoluteDate("1969-07-28T05:12:26.798"), 1e-3));
+
+        // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
+        Assert.assertEquals(occultedBody, eventDetector1.getEmitter(null));
+        Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
+        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+    }
+
     // test for coverage
     @Test
     public void testConstructors() throws PatriusException {
@@ -129,23 +238,13 @@ public class EclipseDetectorTest {
             private static final long serialVersionUID = -8121394927618726243L;
 
             @Override
-            public Frame getBodyFrame() {
+            public CelestialBodyFrame getBodyFrame() {
                 return null;
             }
 
             @Override
             public EllipsoidPoint getIntersectionPoint(final Line line, final Vector3D close, final Frame frame,
                                                        final AbsoluteDate date) {
-                return null;
-            }
-
-            @Override
-            public EllipsoidPoint transform(final Vector3D point, final Frame frame, final AbsoluteDate date) {
-                return null;
-            }
-
-            @Override
-            public Vector3D transform(final EllipsoidPoint point) {
                 return null;
             }
 
@@ -166,7 +265,7 @@ public class EclipseDetectorTest {
 
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return null;
             }
 
@@ -275,6 +374,15 @@ public class EclipseDetectorTest {
                 return true;
             }
 
+            @Override
+            public double getEpsilonSignalPropagation() {
+                return 0.;
+            }
+
+            @Override
+            public void setEpsilonSignalPropagation(final double epsilon) {
+                // nothing to do
+            }
         };
         final EclipseDetector eclipse1 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
             body, 1, AbstractDetector.DEFAULT_MAXCHECK, AbstractDetector.DEFAULT_THRESHOLD);
@@ -292,7 +400,7 @@ public class EclipseDetectorTest {
         // Cover the EclipseDetector(PVCoordinatesProvider, double, PVCoordinatesProvider, double, double, double,
         // double) constructor:
         EclipseDetector eclipse3 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
-            CelestialBodyFactory.getEarth(), this.earthRadius, 1e-12, 100, 1E-6);
+            CelestialBodyFactory.getEarth(), this.earthRadius, 0, 100, 1E-6);
         Assert.assertTrue(eclipse3.isTotalEclipse());
         eclipse3 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
             CelestialBodyFactory.getEarth(), this.earthRadius, 1.0 - 1e-12, 100, 1E-6);
@@ -304,7 +412,7 @@ public class EclipseDetectorTest {
         // Cover the EclipseDetector(PVCoordinatesProvider, double, BodyShape, double, double, double)
         // constructor:
         EclipseDetector eclipse4 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
-            body, 1e-12, 100, 1E-6);
+            body, 0, 100, 1E-6);
         Assert.assertTrue(eclipse4.isTotalEclipse());
         eclipse4 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
             body, 1.0 - 1e-12, 100, 1E-6);
@@ -325,14 +433,14 @@ public class EclipseDetectorTest {
 
         // Cover the EclipseDetector with two actions
         final EclipseDetector eclipse6 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
-            CelestialBodyFactory.getEarth(), this.earthRadius, 1e-12, 100, 1E-6, Action.RESET_STATE, Action.CONTINUE);
+            CelestialBodyFactory.getEarth(), this.earthRadius, 0, 100, 1E-6, Action.RESET_STATE, Action.CONTINUE);
         Assert.assertTrue(eclipse6.isTotalEclipse());
         Assert.assertEquals(Action.CONTINUE, eclipse6.eventOccurred(state, true, true));
         Assert.assertEquals(Action.RESET_STATE, eclipse6.eventOccurred(state, false, true));
 
         // Cover the EclipseDetector with two actions
         final EclipseDetector eclipse7 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
-            body, 1e-12, 100, 1E-6, Action.RESET_STATE, Action.CONTINUE);
+            body, 0, 100, 1E-6, Action.RESET_STATE, Action.CONTINUE);
         Assert.assertTrue(eclipse7.isTotalEclipse());
         Assert.assertEquals(Action.CONTINUE, eclipse7.eventOccurred(state, true, true));
         Assert.assertEquals(Action.RESET_STATE, eclipse7.eventOccurred(state, false, true));
@@ -356,7 +464,7 @@ public class EclipseDetectorTest {
         // Evaluate the EclipseDetector(PVCoordinatesProvider, double, BodyShape,
         // double, double, double, int) constructor
         final EclipseDetector eclipse11 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
-            body, 1e-12, 100, 1E-6, 0);
+            body, 0, 100, 1E-6, 0);
         Assert.assertTrue(eclipse11.isTotalEclipse());
         Assert.assertEquals(Action.STOP, eclipse11.eventOccurred(state, true, true));
         Assert.assertEquals(Action.STOP, eclipse11.eventOccurred(state, false, true));
@@ -369,7 +477,7 @@ public class EclipseDetectorTest {
         // Evaluate the EclipseDetector(PVCoordinatesProvider, double, BodyShape, double, double, double,
         // Action, boolean, int) constructor
         final EclipseDetector eclipse12 = new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
-            body, 1e-12, 100, 1E-6, Action.CONTINUE, false, 2);
+            body, 0, 100, 1E-6, Action.CONTINUE, false, 2);
         Assert.assertTrue(eclipse12.isTotalEclipse());
         Assert.assertEquals(Action.CONTINUE, eclipse12.eventOccurred(state, true, true));
         Assert.assertEquals(Action.CONTINUE, eclipse12.eventOccurred(state, false, true));
@@ -393,7 +501,7 @@ public class EclipseDetectorTest {
         // Evaluate the EclipseDetector(PVCoordinatesProvider, double, BodyShape, double, double, double,
         // Action, Action, boolean, boolean, int) constructor
         final EclipseDetector eclipse13 = (EclipseDetector) new EclipseDetector(CelestialBodyFactory.getSun(),
-            this.sunRadius, body, 1e-12, 100, 1E-6, Action.RESET_STATE, Action.CONTINUE, false, true, 2).copy();
+            this.sunRadius, body, 0, 100, 1E-6, Action.RESET_STATE, Action.CONTINUE, false, true, 2).copy();
         Assert.assertTrue(eclipse13.isTotalEclipse());
         Assert.assertEquals(Action.CONTINUE, eclipse13.eventOccurred(state, true, true));
         Assert.assertEquals(Action.RESET_STATE, eclipse13.eventOccurred(state, false, true));
@@ -405,10 +513,10 @@ public class EclipseDetectorTest {
 
         // Evaluate the EclipseDetector(IDirection, BodyShape, double, double, double, Action, Action, boolean,
         // boolean) constructor with 2 actions, an occulted direction which is not an instance of ITargetDirection and a
-        // lightning ratio (1e-12) <= EPSILON (1e-10)
+        // lighting ratio (1e-12) <= EPSILON (1e-10)
         final ConstantVectorDirection direction = new ConstantVectorDirection(new Vector3D(1, 0, 0),
             FramesFactory.getGCRF());
-        final EclipseDetector eclipse14 = new EclipseDetector(direction, body, 1e-12, 100, 1E-6, Action.RESET_STATE,
+        final EclipseDetector eclipse14 = new EclipseDetector(direction, body, 0, 100, 1E-6, Action.RESET_STATE,
             Action.CONTINUE, false, true);
         Assert.assertNotNull(eclipse14);
         final EclipseDetector detector3 = (EclipseDetector) eclipse14.copy();
@@ -421,7 +529,7 @@ public class EclipseDetectorTest {
 
         // Evaluate the EclipseDetector(IDirection, BodyShape, double, double, double, Action, Action, boolean,
         // boolean) constructor with 2 actions, an occulted direction which is not an instance of ITargetDirection and a
-        // lightning ratio (1 - 1e-12) >= 1 - EPSILON (1 - 1e-10)
+        // lighting ratio (1 - 1e-12) >= 1 - EPSILON (1 - 1e-10)
         final ConstantVectorDirection direction2 = new ConstantVectorDirection(new Vector3D(1, 0, 0),
             FramesFactory.getGCRF());
         final EclipseDetector eclipse15 = new EclipseDetector(direction2, body, 1 - 1e-12, 100, 1E-6,
@@ -437,7 +545,7 @@ public class EclipseDetectorTest {
 
         // Evaluate the EclipseDetector(IDirection, BodyShape, double, double, double, Action, Action, boolean,
         // boolean) constructor with 2 actions, an occulted direction which is not an instance of ITargetDirection and a
-        // lightning ratio such that lightning ratio (0.5) > EPSILON (1e-10) and lightning ratio (0.5) < 1 - EPSILON (1
+        // lighting ratio such that lighting ratio (0.5) > EPSILON (1e-10) and lighting ratio (0.5) < 1 - EPSILON (1
         // - 1e-10)
         final ConstantVectorDirection direction3 = new ConstantVectorDirection(new Vector3D(1, 0, 0),
             FramesFactory.getGCRF());
@@ -456,7 +564,7 @@ public class EclipseDetectorTest {
         // boolean) constructor with 2 actions, an occulted direction which is an instance of ITargetDirection and a
         // light speed propagation delay type for the detector
         final EarthCenterDirection direction4 = new EarthCenterDirection();
-        final EclipseDetector eclipse17 = new EclipseDetector(direction4, body, 1e-12, 100, 1E-6, Action.RESET_STATE,
+        final EclipseDetector eclipse17 = new EclipseDetector(direction4, body, 0, 100, 1E-6, Action.RESET_STATE,
             Action.CONTINUE, false, true);
         Assert.assertNotNull(eclipse17);
         final EclipseDetector detector6 = (EclipseDetector) eclipse17.copy();
@@ -477,6 +585,14 @@ public class EclipseDetectorTest {
             isTestOk = true;
         }
         Assert.assertTrue(isTestOk);
+
+        // Try using signal propagation with a detector and a IDirect
+        try {
+            eclipse16.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
+            Assert.fail();
+        } catch (final IllegalArgumentException e) {
+            Assert.assertTrue(true);
+        }
     }
 
     @Test
@@ -532,7 +648,7 @@ public class EclipseDetectorTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return null;
             }
         };
@@ -548,7 +664,7 @@ public class EclipseDetectorTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return null;
             }
         };
@@ -569,7 +685,7 @@ public class EclipseDetectorTest {
 
         // Eclipse detector, propagation will stop when exiting the eclipse
         final EclipseDetector eclipseDetector =
-            new EclipseDetector(testSun, radiusSun, testMoon, radiusMoon, 0.0, 1000, 1E-6);
+            new EclipseDetector(testSun, radiusSun, testMoon, radiusMoon, 0.0, 1000, 1E-8);
 
         // Check that the satellite is under the occulting body surface
         final double dSatOccculting = initState.getPVCoordinates().getPosition()
@@ -635,7 +751,7 @@ public class EclipseDetectorTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return null;
             }
         };
@@ -651,7 +767,7 @@ public class EclipseDetectorTest {
             }
 
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date, final Frame frame) {
+            public Frame getNativeFrame(final AbsoluteDate date) {
                 return null;
             }
         };
@@ -672,7 +788,7 @@ public class EclipseDetectorTest {
 
         // Eclipse detector, propagation will stop when exiting the eclipse
         final EclipseDetector eclipseDetector =
-            new EclipseDetector(testSun, radiusSun, testMoon, radiusMoon, 0.0, 1000, 1E-6);
+            new EclipseDetector(testSun, radiusSun, testMoon, radiusMoon, 0.0, 1000, 1E-8);
 
         // Check that the satellite is under the occulting body surface
         final double dSatOccculting = initState.getPVCoordinates().getPosition()

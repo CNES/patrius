@@ -19,6 +19,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:FA:FA-45:08/12/2023:[PATRIUS]Probleme de detection d'evenement
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:DM:DM-2571:27/01/2021:[PATRIUS] Integrateur Stormer-Cowell 
@@ -487,7 +488,11 @@ public abstract class AbstractIntegrator extends Observable implements FirstOrde
                         interpolator2.setInterpolatedTime(previousT);
                         state.storeState(previousT, interpolator2.getInterpolatedState(), true);
                     }
-                    if (!state.equals(currentEvent) && state.evaluateStep(interpolator)) {
+                    // Event too close to be detected
+                    final boolean closeEvent = !Double.isNaN(state.getPreviousEventTime())
+                            && MathLib.abs(state.getPreviousEventTime() - eventT) <= state.getConvergence();
+
+                    if (!state.equals(currentEvent) && !closeEvent && state.evaluateStep(interpolator)) {
                         // A missed event has been found during the reduced step
                         // If event occurs exactly at reset_state event time: it should not be considered since this
                         // event

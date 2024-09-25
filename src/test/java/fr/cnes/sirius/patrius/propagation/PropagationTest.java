@@ -23,6 +23,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.propagation;
 
 import org.junit.Assert;

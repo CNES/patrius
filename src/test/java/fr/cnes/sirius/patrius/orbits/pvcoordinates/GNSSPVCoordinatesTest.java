@@ -18,6 +18,8 @@
  * @history creation 10/11/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -178,6 +180,6 @@ public class GNSSPVCoordinatesTest {
                 0., 0., 0., 0.);
         final GNSSPVCoordinates galileoAlmanacPVCoordinates = new GNSSPVCoordinates(galileoAlmanacParams, weekDate);
 
-        Assert.assertEquals(FramesFactory.getITRF(), galileoAlmanacPVCoordinates.getNativeFrame(null, null));
+        Assert.assertEquals(FramesFactory.getITRF(), galileoAlmanacPVCoordinates.getNativeFrame(null));
     }
 }

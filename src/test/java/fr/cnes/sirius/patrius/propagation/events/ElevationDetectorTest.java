@@ -18,6 +18,10 @@
 /*
  * 
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
+ *          retourner un CelestialBodyFrame 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -43,6 +47,9 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.detectors.ElevationDetector;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
@@ -55,7 +62,6 @@ import fr.cnes.sirius.patrius.propagation.ParametersType;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.EcksteinHechlerPropagator;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScale;
@@ -92,7 +98,7 @@ public class ElevationDetectorTest {
         // Earth and frame
         final double ae = 6378137.0; // equatorial radius in meter
         final double f = 1.0 / 298.257223563; // flattening
-        final Frame ITRF2005 = FramesFactory.getITRF(); // terrestrial frame at an arbitrary date
+        final CelestialBodyFrame ITRF2005 = FramesFactory.getITRF(); // terrestrial frame at an arbitrary date
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(ae, f, ITRF2005);
         final EllipsoidPoint point = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),
             MathLib.toRadians(48.833), MathLib.toRadians(2.333), 0.0, "");
@@ -110,7 +116,7 @@ public class ElevationDetectorTest {
     public void testConstructor() throws PatriusException {
         final double ae = 6378137.0; // equatorial radius in meter
         final double f = 1.0 / 298.257223563; // flattening
-        final Frame ITRF2005 = FramesFactory.getITRF();
+        final CelestialBodyFrame ITRF2005 = FramesFactory.getITRF();
         final EllipsoidBodyShape earth = new OneAxisEllipsoid(ae, f, ITRF2005);
         final EllipsoidPoint point = new EllipsoidPoint(earth, earth.getLLHCoordinatesSystem(),
             MathLib.toRadians(48.833), MathLib.toRadians(2.333), 0.0, "");
@@ -147,7 +153,7 @@ public class ElevationDetectorTest {
                 // Shape
                 final double ae = 6378137.0; // equatorial radius in meter
                 final double f = 1.0 / 298.257223563; // flattening
-                final Frame ITRF2005 = FramesFactory.getITRF(); // terrestrial frame at an arbitrary date
+                final CelestialBodyFrame ITRF2005 = FramesFactory.getITRF(); // terrestrial frame at an arbitrary date
                 final EllipsoidBodyShape shape = new OneAxisEllipsoid(ae, f, ITRF2005);
 
                 final TopocentricFrame topo = this.getTopocentricFrame();
@@ -170,7 +176,7 @@ public class ElevationDetectorTest {
     }
 
     @Before
-    public void setUp() throws PatriusException {
+    public void setUp() {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
         this.mu = 3.9860047e14;

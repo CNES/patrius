@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
+ * à  l'interface DatePolynomialFunctionInterface
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
@@ -131,6 +133,17 @@ public interface DatePolynomialFunctionInterface extends UnivariateDateFunction 
      * @return the primitive date polynomial function at the given date and for the given function value at abscissa0
      */
     public DatePolynomialFunctionInterface primitive(final AbsoluteDate date0, final double ordinate0);
+
+    /**
+     * Build a new date polynomial function whose value over time is the same as this (same degree), only the origin
+     * date is different what may modify the time factor and/or the polynomial coefficients (pending the polynomial
+     * type).
+     *
+     * @param newOriginDate
+     *        The new origin date
+     * @return a new date polynomial function
+     */
+    public DatePolynomialFunctionInterface copy(final AbsoluteDate newOriginDate);
 
     /**
      * Getter for the type of this polynomial function.

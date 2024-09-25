@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -29,9 +30,9 @@
  */
 package fr.cnes.sirius.patrius.validation.events;
 
+import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.events.AbstractDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -121,7 +122,7 @@ public class EventDetectorMock extends AbstractDetector {
 
     /**
      * 
-     * @see fr.cnes.sirius.patrius.propagation.events.AbstractDetector#shouldBeRemoved()
+     * @see fr.cnes.sirius.patrius.events.AbstractDetector#shouldBeRemoved()
      */
     @Override
     public boolean shouldBeRemoved() {

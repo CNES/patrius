@@ -104,6 +104,7 @@ public final class NadirDirection implements IDirection {
         final Vector3D nadirDirection = nadirPoint.getNormal().negate();
         // Create and return the requested line
         // A multiplicative factor is used for increased precision
+        // Note: transformLine is not used, since it leads to some numerical quality issues in some cases
         return Line.createLine(satPosition,
             transform.transformVector(nadirDirection.scalarMultiply(MULTIPLICATIVE_FACTOR)));
     }

@@ -18,6 +18,7 @@
  * @history creation 06/08/2012
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] Rendre la classe QuaternionPolynomialSegment plus generique et ajouter de la coherence dans le package polynomials
@@ -38,6 +39,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.events.detectors.AngularMomentumExcessDetector;
+import fr.cnes.sirius.patrius.events.detectors.CenteredAolPassageDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.DatePolynomialFunction;
@@ -53,9 +56,6 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.propagation.analytical.twod.Analytical2DOrbitModel;
 import fr.cnes.sirius.patrius.propagation.analytical.twod.Analytical2DParameterModel;
-import fr.cnes.sirius.patrius.propagation.events.AngularMomentumExcessDetector;
-import fr.cnes.sirius.patrius.propagation.events.CenteredAolPassageDetector;
-import fr.cnes.sirius.patrius.propagation.events.EventDetector;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 

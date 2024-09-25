@@ -15,6 +15,8 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.signalpropagation;
 
 import org.junit.Assert;

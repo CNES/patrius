@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2962:15/11/2021:[PATRIUS] Precision numerique lors du ShiftedBy avec TimeScale 
@@ -102,7 +103,7 @@ public class PoleTidesTest {
         { 4.126325028650181E-11, -1.1687864177922587E-11 },
         { 4.2748966171682433E-11, -6.653631198410937E-12 },
         { 4.427062174960805E-11, -1.8331287698543768E-12 },
-        { 4.375074996573126E-11, 3.380973383024135E-12 },
+        { 4.3750749965731255E-11, 3.380973383024135E-12 },
         { 4.2506397726512026E-11, 8.286138948780413E-12 },
         { 3.90175373182191E-11, 1.3040588217056401E-11 },
         { 3.5922066030590826E-11, 1.7548820216114432E-11 },

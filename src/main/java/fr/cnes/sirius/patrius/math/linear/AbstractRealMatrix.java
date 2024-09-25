@@ -527,6 +527,21 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
 
     /** {@inheritDoc} */
     @Override
+    public double getTrace() {
+        // Ensure this is a square matrix
+        checkSquare();
+
+        // Compute the trace of the matrix
+        double trace = 0;
+        final int dim = this.getRowDimension();
+        for (int i = 0; i < dim; ++i) {
+            trace += this.getEntry(i, i);
+        }
+        return trace;
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public double getNorm() {
         return this.walkInColumnOrder(new RealMatrixPreservingVisitor() {
 
@@ -597,53 +612,60 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
 
     /** {@inheritDoc} */
     @Override
-    public double getTrace() {
-        // Ensure this is a square matrix
-        checkSquare();
+    public double getMin(final boolean absValue) {
+        // The minimum is initially set to +Infinite
+        double min = Double.POSITIVE_INFINITY;
 
-        // Compute the trace of the matrix
-        double trace = 0;
-        final int dim = this.getRowDimension();
-        for (int i = 0; i < dim; ++i) {
-            trace += this.getEntry(i, i);
+        // Loop on each entry
+        for (int i = 0; i < this.getRowDimension(); i++) {
+            for (int j = 0; j < this.getColumnDimension(); j++) {
+                // Search the min entry considering the absolute value or not
+                if (absValue) {
+                    min = MathLib.min(min, MathLib.abs(this.getEntry(i, j)));
+                } else {
+                    min = MathLib.min(min, this.getEntry(i, j));
+                }
+            }
         }
-        return trace;
+        return min;
     }
 
     /** {@inheritDoc} */
     @Override
-    public double getMax() {
-        // First element used to define the initial max value
-        double maxElement = this.getEntry(0, 0);
-        // Search for the entry with the highest value
+    public double getMax(final boolean absValue) {
+        // The maximum is initially set to -Infinite
+        double max = Double.NEGATIVE_INFINITY;
+
+        // Loop on each entry
         for (int i = 0; i < this.getRowDimension(); i++) {
             for (int j = 0; j < this.getColumnDimension(); j++) {
-                final double entry = this.getEntry(i, j);
-                if (entry > maxElement) {
-                    // Update the max value
-                    maxElement = entry;
+                // Search the max entry considering the absolute value or not
+                if (absValue) {
+                    max = MathLib.max(max, MathLib.abs(this.getEntry(i, j)));
+                } else {
+                    max = MathLib.max(max, this.getEntry(i, j));
                 }
             }
         }
-        return maxElement;
+        return max;
     }
 
     /** {@inheritDoc} */
     @Override
-    public double getMin() {
-        // First element used to define the initial min value
-        double minElement = this.getEntry(0, 0);
-        // Search for the entry with the lowest value
-        for (int i = 0; i < this.getRowDimension(); i++) {
-            for (int j = 0; j < this.getColumnDimension(); j++) {
-                final double entry = this.getEntry(i, j);
-                if (entry < minElement) {
-                    // Update the min value
-                    minElement = entry;
-                }
+    public RealMatrix getAbs() {
+        // Dimensions of the returned matrix
+        final int nbRow = this.getRowDimension();
+        final int nbColumn = this.getColumnDimension();
+
+        // Initialize the output matrix with the appropriate dimensions
+        final RealMatrix out = this.createMatrix(nbRow, nbColumn);
+        // Compute the absolute values of each entry
+        for (int row = 0; row < nbRow; ++row) {
+            for (int col = 0; col < nbColumn; ++col) {
+                out.setEntry(row, col, MathLib.abs(this.getEntry(row, col)));
             }
         }
-        return minElement;
+        return out;
     }
 
     /** {@inheritDoc} */

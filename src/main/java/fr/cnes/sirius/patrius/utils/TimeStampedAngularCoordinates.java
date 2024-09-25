@@ -17,6 +17,8 @@
 /* Copyright 2002-2015 CS Systèmes d'Information
  *
  * HISTORY
+* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -27,7 +29,9 @@
  */
 package fr.cnes.sirius.patrius.utils;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 import fr.cnes.sirius.patrius.math.analysis.differentiation.DerivativeStructure;
 import fr.cnes.sirius.patrius.math.analysis.interpolation.HermiteInterpolator;
@@ -51,13 +55,17 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @author Luc Maisonobe
  * @since 3.1
  */
-public class TimeStampedAngularCoordinates extends AngularCoordinates implements TimeStamped {
+public class TimeStampedAngularCoordinates extends AngularCoordinates implements TimeStamped,
+    Comparable<TimeStampedAngularCoordinates> {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 20140723L;
 
     /** Epsilon. */
     private static final double EPSILON = 1.0e-4;
+
+    /** Prime number used to combine hashes. Same value as used in {@link Arrays#hashCode}. */
+    private static final int HASH_PRIME = 31;
 
     /** The date. */
     private final AbsoluteDate date;
@@ -72,7 +80,7 @@ public class TimeStampedAngularCoordinates extends AngularCoordinates implements
      * @param rotationRate
      *        rotation rate Ω (rad/s)
      * @param rotationAcceleration
-     *        rotation acceleration dΩ/dt (rad²/s²)
+     *        rotation acceleration dΩ/dt (rad/s²)
      */
     public TimeStampedAngularCoordinates(final AbsoluteDate dateIn,
         final Rotation rotation,
@@ -375,6 +383,79 @@ public class TimeStampedAngularCoordinates extends AngularCoordinates implements
     public TimeStampedAngularCoordinates subtractOffset(final AngularCoordinates offset,
                                                         final boolean computeSpinDerivatives) {
         return this.addOffset(offset.revert(computeSpinDerivatives), computeSpinDerivatives);
+    }
+
+    /**
+     * Compare this time stamped angular coordinates with another time stamped angular coordinates.
+     * <p>
+     * The time stamped angular coordinates are compared with respect to their dates, by chronological order.<br>
+     * If they are defined at the same date, they are then compared with respect to their hashCode.<br>
+     * This hashCode comparison is arbitrary but allows to be compliant with the equals method, i.e. this method returns
+     * 0 only if the time stamped angular coordinates are equal.
+     * </p>
+     *
+     * @param orientation
+     *        other time stamped angular coordinates to compare the instance to
+     * @return
+     *         <ul>
+     *         <li>a negative integer: when this time stamped angular coordinates is before, or simultaneous with a
+     *         lower hashCode</li>
+     *         <li>zero: when this time stamped angular coordinates is simultaneous and with the same hashCode</li>
+     *         <li>a positive integer: when this time stamped angular coordinates is after, or simultaneous with a
+     *         higher hashCode</li>
+     *         </ul>
+     * @throws IllegalStateException
+     *         if the two compared time stamped angular coordinates have the same date, the same hashCode, but aren't
+     *         equal (very unlikely situation)
+     */
+    @Override
+    public int compareTo(final TimeStampedAngularCoordinates orientation) {
+        final int finalComp;
+        final int dateComp = this.date.compareTo(orientation.date);
+        if (dateComp == 0) {
+            // The two attitudes are defined at the same date, compare their hashCodes
+            final int hashComp = Integer.compare(this.hashCode(), orientation.hashCode());
+            if (hashComp == 0) {
+                if (!this.equals(orientation)) {
+                    // Very unlikely situation but needs to be handled
+                    throw PatriusException.createIllegalStateException(PatriusMessages.SAME_HASHCODE_BUT_NOT_EQUALS);
+                }
+                finalComp = 0;
+            } else {
+                finalComp = hashComp;
+            }
+        } else {
+            // The two time stamped angular coordinates are defined at different dates, return the comparison value
+            finalComp = dateComp;
+        }
+        return finalComp;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(final Object object) {
+        boolean isEqual = false;
+
+        if (object == this) {
+            // Identity
+            isEqual = true;
+        } else if ((object != null) && (object.getClass() == this.getClass())) {
+            // Same object type: check all attributes
+            final TimeStampedAngularCoordinates other = (TimeStampedAngularCoordinates) object;
+
+            // Evaluate the attitudes components
+            isEqual = Objects.equals(this.date, other.date)
+                    && super.equals(object);
+        }
+
+        return isEqual;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        final int res = super.hashCode();
+        return res * HASH_PRIME + this.date.hashCode();
     }
 
     /**

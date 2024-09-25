@@ -3,6 +3,7 @@
  * Licensed to CS Systèmes d'Information (CS) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * HISTORY
+* VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * END-HISTORY
@@ -21,6 +22,8 @@
  */
 package fr.cnes.sirius.patrius.time;
 
+import java.io.Serializable;
+
 /**
  * Interface for time scales.
  * <p>
@@ -32,7 +35,7 @@ package fr.cnes.sirius.patrius.time;
  * @author Luc Maisonobe
  * @see AbsoluteDate
  */
-public interface TimeScale {
+public interface TimeScale extends Serializable {
 
     /**
      * Get the offset to convert locations from {@link TAIScale} to instance.

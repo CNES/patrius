@@ -18,6 +18,11 @@
  * @history created 17/02/17
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3303:22/05/2023:[PATRIUS] Modifications mineures dans UserCelestialBody 
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
@@ -38,6 +43,7 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
+import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader.SpiceJ2000ConventionEnum;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -70,38 +76,34 @@ public class UserCelestialBody extends AbstractCelestialBody {
     private final String bodyString;
 
     /**
-     * Build an instance and the underlying frame.
+     * Constructor.
      * 
      * @param name
      *        name of the body
      * @param aPVCoordinateProvider
      *        Position-Velocity of celestial body. It is recommended that the native frame of aPVCoordinateProvider
      *        should be identical (or near) to the given parentFrame, in order to minimize the frames transformations.
-     * @param gravityModelIn
+     * @param gravityModel
      *        gravitational attraction model
-     * @param iauPole
-     *        IAU pole implementation
+     * @param celestialBodyOrientation
+     *        celestial body orientation
      * @param parentFrame
      *        parent frame (usually it should be the ICRF centered on the parent body)
-     * @param shapeIn body shape
+     * @param shape body shape
+     * @param spiceJ2000Convention Spice convention
      */
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     // Reason: super attributes have been built at this point
-    public UserCelestialBody(final String name, final PVCoordinatesProvider aPVCoordinateProvider,
-                             final GravityModel gravityModelIn, final IAUPole iauPole,
-                             final Frame parentFrame, final BodyShape shapeIn) {
-        super(name, gravityModelIn, iauPole, parentFrame);
+    public UserCelestialBody(final String name,
+            final PVCoordinatesProvider aPVCoordinateProvider,
+            final GravityModel gravityModel,
+            final CelestialBodyOrientation celestialBodyOrientation,
+            final Frame parentFrame,
+            final BodyShape shape,
+            final SpiceJ2000ConventionEnum spiceJ2000Convention) {
+        super(name, gravityModel, celestialBodyOrientation, parentFrame, spiceJ2000Convention,
+                new CelestialBodyEphemeris() {
 
-        // Create user celestial body string
-        final String abstractBodyString = super.toString();
-        final StringBuilder builder = new StringBuilder(abstractBodyString);
-        builder.append("- Ephemeris origin: " + aPVCoordinateProvider.toString() + " ("
-                + aPVCoordinateProvider.getClass() + ")");
-        this.bodyString = builder.toString();
-
-        this.setShape(shapeIn);
-        this.setEphemeris(new CelestialBodyEphemeris() {
-            
             /** Serial UID. */
             private static final long serialVersionUID = -6984943550925347950L;
 
@@ -111,18 +113,56 @@ public class UserCelestialBody extends AbstractCelestialBody {
                     final Frame frame) throws PatriusException {
                 return aPVCoordinateProvider.getPVCoordinates(date, frame);
             }
-            
+
             /** {@inheritDoc} */
             @Override
-            public Frame getNativeFrame(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
-                return aPVCoordinateProvider.getNativeFrame(date, frame);
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+                return aPVCoordinateProvider.getNativeFrame(date);
             }
         });
+
+        // Create user celestial body string
+        final String abstractBodyString = super.toString();
+        final StringBuilder builder = new StringBuilder(abstractBodyString);
+        builder.append("- Ephemeris origin: " + aPVCoordinateProvider.toString() + " ("
+                + aPVCoordinateProvider.getClass() + ")");
+        this.bodyString = builder.toString();
+
+        this.setShape(shape);
     }
 
     /**
-     * Build an instance and the underlying frame.
+     * Constructor.
+     * <p>
+     * SpiceJ2000ConventionEnum is set to ICRF.
+     * </p>
+     * 
+     * @param name
+     *        name of the body
+     * @param aPVCoordinateProvider
+     *        Position-Velocity of celestial body. It is recommended that the native frame of aPVCoordinateProvider
+     *        should be identical (or near) to the given parentFrame, in order to minimize the frames transformations.
+     * @param gravityModel
+     *        gravitational attraction model
+     * @param celestialBodyOrientation
+     *        celestial body orientation
+     * @param parentFrame
+     *        parent frame (usually it should be the ICRF centered on the parent body)
+     * @param shape body shape
+     */
+    public UserCelestialBody(final String name,
+            final PVCoordinatesProvider aPVCoordinateProvider,
+            final GravityModel gravityModel,
+            final CelestialBodyOrientation celestialBodyOrientation,
+            final Frame parentFrame,
+            final BodyShape shape) {
+        // Initial gravity model is required because of gm store for toString() method
+        this(name, aPVCoordinateProvider, gravityModel, celestialBodyOrientation, parentFrame, shape,
+                SpiceJ2000ConventionEnum.ICRF);
+    }
+
+    /**
+     * Constructor.
      * 
      * @param name
      *        name of the body
@@ -131,19 +171,54 @@ public class UserCelestialBody extends AbstractCelestialBody {
      *        should be identical (or near) to the given parentFrame, in order to minimize the frames transformations.
      * @param gm
      *        gravitational attraction coefficient (in m<sup>3</sup>/s<sup>2</sup>)
-     * @param iauPole
-     *        IAU pole implementation
+     * @param celestialBodyOrientation
+     *        celestial body orientation
      * @param parentFrame
      *        parent frame (usually it should be the ICRF centered on the parent body)
-     * @param shapeIn body shape
+     * @param shape body shape
+     * @param spiceJ2000Convention Spice convention
      */
-    public UserCelestialBody(final String name, final PVCoordinatesProvider aPVCoordinateProvider,
-                             final double gm, final IAUPole iauPole, final Frame parentFrame,
-                             final BodyShape shapeIn) {
+    public UserCelestialBody(final String name,
+            final PVCoordinatesProvider aPVCoordinateProvider,
+            final double gm,
+            final CelestialBodyOrientation celestialBodyOrientation,
+            final Frame parentFrame,
+            final BodyShape shape,
+            final SpiceJ2000ConventionEnum spiceJ2000Convention) {
         // Initial gravity model is required because of gm store for toString() method
-        this(name, aPVCoordinateProvider, new NewtonianGravityModel(parentFrame, gm), iauPole, parentFrame, shapeIn);
+        this(name, aPVCoordinateProvider, new NewtonianGravityModel(parentFrame, gm), celestialBodyOrientation,
+                parentFrame, shape, spiceJ2000Convention);
         // Workaround: gravity model in this case is centered on ICRF
         setGravityModel(new NewtonianGravityModel(getICRF(), gm));
+    }
+
+    /**
+     * Constructor.
+     * <p>
+     * SpiceJ2000ConventionEnum is set to ICRF.
+     * </p>
+     * 
+     * @param name
+     *        name of the body
+     * @param aPVCoordinateProvider
+     *        Position-Velocity of celestial body. It is recommended that the native frame of aPVCoordinateProvider
+     *        should be identical (or near) to the given parentFrame, in order to minimize the frames transformations.
+     * @param gm
+     *        gravitational attraction coefficient (in m<sup>3</sup>/s<sup>2</sup>)
+     * @param celestialBodyOrientation
+     *        celestial body orientation
+     * @param parentFrame
+     *        parent frame (usually it should be the ICRF centered on the parent body)
+     * @param shape body shape
+     */
+    public UserCelestialBody(final String name,
+            final PVCoordinatesProvider aPVCoordinateProvider,
+            final double gm,
+            final CelestialBodyOrientation celestialBodyOrientation,
+            final Frame parentFrame,
+            final BodyShape shape) {
+        this(name, aPVCoordinateProvider, gm, celestialBodyOrientation, parentFrame, shape,
+                SpiceJ2000ConventionEnum.ICRF);
     }
 
     /** {@inheritDoc} */

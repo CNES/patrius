@@ -18,6 +18,9 @@
  * @history 29/04/2015
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
+ * à  l'interface DatePolynomialFunctionInterface
+ * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] QuaternionPolynomialSegment plus generique et coherent
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -29,7 +32,11 @@
  */
 package fr.cnes.sirius.patrius.math.analysis.polynomials;
 
+import fr.cnes.sirius.patrius.math.util.ArithmeticUtils;
+import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * This class represents a polynomial function of date.
@@ -44,7 +51,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
  */
 public class DatePolynomialFunction implements DatePolynomialFunctionInterface {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 6399329112266195043L;
 
     /** Origin date for the polynomial development. */
@@ -180,6 +187,68 @@ public class DatePolynomialFunction implements DatePolynomialFunctionInterface {
 
         // Return the primitive
         return new DatePolynomialFunction(this.originDate, this.timeFactor, new PolynomialFunction(primitiveCoeff));
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @throws IllegalArgumentException
+     *         if the time factor is enabled and the new origin date is not strictly anterior to the current origin date
+     *         shifted by the timeFactor
+     */
+    @Override
+    public DatePolynomialFunction copy(final AbsoluteDate newOriginDate) {
+
+        // Check if, when the time factor is enabled, the new origin date is strictly anterior to the origin date of
+        // this shifted by the timeFactor, otherwise raise an exception
+        if ((this.timeFactor != null)
+                && (newOriginDate.durationFrom(this.originDate.shiftedBy(this.timeFactor)) >= 0.)) {
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.DATE_POLYNOMIAL_COPY_INVALID_DATE);
+        }
+
+        // Time shift of the origin date
+        final double dt = newOriginDate.durationFrom(getT0());
+
+        // Time factor for the cloned function
+        Double newTimeFactor = null;
+
+        // Extract the origin coefficients
+        final double[] coeff = getCoefficients();
+
+        // Declare the coefficients for cloned function
+        final double[] newCoeff;
+
+        if (Double.compare(dt, 0.) == 0.) {
+            // The origin date shift is not significant
+            // Output timeFactor and coefficients are equal to those of this
+            newTimeFactor = this.timeFactor;
+            newCoeff = coeff;
+
+        } else if (this.timeFactor == null) {
+            // Real time is used: newTimeFactor remains null
+
+            // The coefficients can simply be shifted
+            newCoeff = PolynomialsUtils.shift(coeff, dt);
+
+        } else {
+            // Reduced time is used
+            newTimeFactor = this.timeFactor - dt;
+
+            newCoeff = new double[coeff.length];
+            // Loop over all coefficients to shift them while incorporating the original and new time factors
+            for (int k = 0; k < coeff.length; k++) {
+
+                // Coefficient initialized to 0
+                newCoeff[k] = 0.;
+                for (int i = k; i < newCoeff.length; i++) {
+                    newCoeff[k] += ((((coeff[i] / MathLib.pow(this.timeFactor, i)) * ArithmeticUtils.factorial(i))
+                            / ArithmeticUtils.factorial(k) / ArithmeticUtils.factorial(i - k)) * MathLib.pow(dt, i - k))
+                            * MathLib.pow(newTimeFactor, k);
+                }
+            }
+        }
+
+        return new DatePolynomialFunction(newOriginDate, newTimeFactor, new PolynomialFunction(newCoeff));
     }
 
     /** {@inheritDoc} */

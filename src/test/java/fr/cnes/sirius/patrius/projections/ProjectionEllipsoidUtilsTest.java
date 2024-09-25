@@ -66,7 +66,7 @@ public class ProjectionEllipsoidUtilsTest {
     }
 
     /** Projection ellipsoid used in the tests. */
-    private static EllipsoidBodyShape ellipsoid;
+    private static OneAxisEllipsoid ellipsoid;
 
     /** Point used in the tests (Toulouse). */
     private static EllipsoidPoint point1;
@@ -864,6 +864,8 @@ public class ProjectionEllipsoidUtilsTest {
     }
 
     /**
+     * @throws PatriusException
+     *         if an error occurs
      * @testType UT
      * 
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
@@ -883,7 +885,7 @@ public class ProjectionEllipsoidUtilsTest {
      * @nonRegressionVersion 3.2
      */
     @Test
-    public void testComputePointAlongOrthodrome() {
+    public void testComputePointAlongOrthodrome() throws PatriusException {
         final double eps = 1E-14;
         Report.printMethodHeader("testComputePointAlongOrthodrome", "Compute point along orthodrome",
             "LibKernel 10.0.0", eps, ComparisonType.RELATIVE);

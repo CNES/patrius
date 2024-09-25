@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
+ * à  l'interface DatePolynomialFunctionInterface
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] Rendre la classe QuaternionPolynomialSegment plus generique et ajouter de la coherence dans le package polynomials
  * VERSION:4.10.2:FA:FA-3290:31/01/2023:[PATRIUS] Erreur dans la methode getChebyshevAbscissas dans DatePolynomialChebyshevFunction
@@ -36,6 +38,8 @@ import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialType;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
+import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 
@@ -420,5 +424,79 @@ public class DatePolynomialChebyshevFunctionTest {
         for (double i = -1; i <= 1.5; i += 0.1) {
             Assert.assertEquals(poly.value(i), polyPrim.derivative().value(date0.shiftedBy(i)), 1E-9);
         }
+    }
+
+    /**
+     * @testType UT
+     * 
+     * @testedFeature {@link features#POLYNOMIAL_FUNCTION}
+     * 
+     * @testedMethod {@link DatePolynomialChebyshevFunction#copy(AbsoluteDate)}
+     * 
+     * @description test copy function
+     * 
+     * @input DatePolynomialChebyshevFunction
+     * 
+     * @output copied function
+     * 
+     * @testPassCriteria copied function is exactly as expected
+     * 
+     * @referenceVersion 4.13
+     * 
+     * @nonRegressionVersion 4.13
+     */
+    @Test
+    public void testCopy() {
+        // Initialization
+        final AbsoluteDate date0 = AbsoluteDate.J2000_EPOCH;
+        final AbsoluteDate date1 = date0.shiftedBy(-10.);
+        final AbsoluteDate date2 = date0.shiftedBy(10.);
+        final double[] coefs = { 2., 3., 4, 5 };
+        final DatePolynomialChebyshevFunction fct = new DatePolynomialChebyshevFunction(date0, date1, date2, coefs);
+
+        // Evaluate same origin date
+        DatePolynomialChebyshevFunction fctCopied = fct.copy(date0);
+        Assert.assertEquals(date0, fctCopied.getT0());
+        Assert.assertEquals(fct.getStart(), fctCopied.getStart());
+        Assert.assertEquals(fct.getEnd(), fctCopied.getEnd());
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Evaluate backward origin date
+        fctCopied = fct.copy(date1);
+        Assert.assertEquals(date1, fctCopied.getT0());
+        Assert.assertEquals(fct.getStart(), fctCopied.getStart());
+        Assert.assertEquals(fct.getEnd(), fctCopied.getEnd());
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+
+        // Evaluate forward origin date
+        fctCopied = fct.copy(date2);
+        Assert.assertEquals(date2, fctCopied.getT0());
+        Assert.assertEquals(fct.getStart(), fctCopied.getStart());
+        Assert.assertEquals(fct.getEnd(), fctCopied.getEnd());
+        Assert.assertTrue(evaluateFunction(fct, fctCopied));
+    }
+
+    /**
+     * Evaluate two {@link DatePolynomialChebyshevFunction} on several dates.
+     * 
+     * @param fct1
+     *        First function (reference, on the interval [T0-20 ; T0+20])
+     * @param fct2
+     *        Second function
+     * @return {@code true} if the two functions generate the same values
+     */
+    private static boolean evaluateFunction(final DatePolynomialChebyshevFunction fct1,
+                                            final DatePolynomialChebyshevFunction fct2) {
+        boolean isEqual = true;
+        final AbsoluteDate start = fct1.getStart();
+        final double duration = fct1.getEnd().durationFrom(start);
+        for (int i = 0; i <= duration && isEqual; i++) {
+            final AbsoluteDate date = start.shiftedBy(i);
+            if (MathLib.abs(fct1.value(date) - fct2.value(date)) > Precision.DOUBLE_COMPARISON_EPSILON) {
+                isEqual = false;
+            }
+
+        }
+        return isEqual;
     }
 }
