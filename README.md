@@ -1,4 +1,4 @@
-![patrius_logo](http://patrius.cnes.fr/resources/assets/wiki.png "Patrius logo") 
+![patrius_logo](https://github.com/CNES/patrius/blob/main/logo_patrius.png) 
 
 
 # PATRIUS Source Code
