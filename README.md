@@ -1,4 +1,4 @@
-<img src="[https://github.com/CNES/patrius/blob/main/logo_patrius.png" width=50% height=50%>
+![patrius_logo](https://github.com/CNES/patrius/blob/main/logo_patrius.png)
 
 
 # PATRIUS Source Code
