@@ -18,6 +18,7 @@
  * @history created 06/08/12
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -102,7 +103,7 @@ public class EarthZoneDetector extends AbstractDetector {
     /**
      * Constructor for the earth zones entering detector with default maxCheck and convergence threshold.
      * <p>
-     * The zones are defined by an array of geodetic points. The points must be given in the right order : from the
+     * The zones are defined by an array of ellipsoid points. The points must be given in the right order : from the
      * point i to the point i + 1, if the associated vector from the center of the earth are v(i) and v(i + 1), the
      * inside of the zone is on the side of the positive cross vector from the earth center v(i) * v(i+1).
      * </p>
@@ -128,7 +129,7 @@ public class EarthZoneDetector extends AbstractDetector {
     /**
      * Constructor for the earth zones entering detector.
      * <p>
-     * The zones are defined by an array of geodetic points. The points must be given in the right order : from the
+     * The zones are defined by an array of ellipsoid points. The points must be given in the right order : from the
      * point i to the point i + 1, if the associated vector from the center of the earth are v(i) and v(i + 1), the
      * inside of the zone is on the side of the positive cross vector from the earth center v(i) * v(i+1).
      * </p>
@@ -165,7 +166,7 @@ public class EarthZoneDetector extends AbstractDetector {
     /**
      * Constructor for the earth zones entering detector.
      * <p>
-     * The zones are defined by an array of geodetic points. The points must be given in the right order : from the
+     * The zones are defined by an array of ellipsoid points. The points must be given in the right order : from the
      * point i to the point i + 1, if the associated vector from the center of the earth are v(i) and v(i + 1), the
      * inside of the zone is on the side of the positive cross vector from the earth center v(i) * v(i+1).
      * </p>
@@ -200,7 +201,7 @@ public class EarthZoneDetector extends AbstractDetector {
     /**
      * Constructor for the earth zones entering detector.
      * <p>
-     * The zones are defined by an array of geodetic points. The points must be given in the right order : from the
+     * The zones are defined by an array of ellipsoid points. The points must be given in the right order : from the
      * point i to the point i + 1, if the associated vector from the center of the earth are v(i) and v(i + 1), the
      * inside of the zone is on the side of the positive cross vector from the earth center v(i) * v(i+1).
      * </p>
@@ -259,7 +260,7 @@ public class EarthZoneDetector extends AbstractDetector {
     /**
      * Constructor for the earth zones entering detector.
      * <p>
-     * The zones are defined by an array of geodetic points. The points must be given in the right order : from the
+     * The zones are defined by an array of ellipsoid points. The points must be given in the right order : from the
      * point i to the point i + 1, if the associated vector from the center of the earth are v(i) and v(i + 1), the
      * inside of the zone is on the side of the positive cross vector from the earth center v(i) * v(i+1).
      * </p>

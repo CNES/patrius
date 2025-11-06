@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-382:25/04/2025:[PATRIUS] Analyse concernant le renvoi 
+ *          des coordonnees d'entree pour EllipsoidPoint 
  * VERSION:4.15:OPENFD-351:21/11/2024:[PATRIUS] Calcul de la dérivée des coordonnées LLH
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -45,7 +47,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * Unit test class for the {@link LLHCoordinatesSystem} class.
- * 
+ *
  * @author Thibaut BONIT
  *
  * @version $Id$
@@ -62,7 +64,7 @@ public class LLHCoordinatesSystemTest {
      * @testedMethod {@link LLHCoordinatesSystem#ELLIPSODETIC}
      * @testedMethod {@link LLHCoordinatesSystem#BODYCENTRIC_RADIAL}
      * @testedMethod {@link LLHCoordinatesSystem#BODYCENTRIC_NORMAL}
-     * 
+     *
      * @testPassCriteria The basic getters return the expected data.
      */
     @Test
@@ -89,9 +91,9 @@ public class LLHCoordinatesSystemTest {
      * ELLIPSODETIC mode.
      * - References for the results: MSLIB (specific implementation with a OneAxisEllipsoid)
      * - Generic implementation evaluation compared to the specific one, using a similar ThreeAxisEllipsoid
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#jacobianToCartesian(BodyPoint)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -123,7 +125,8 @@ public class LLHCoordinatesSystemTest {
         // feature will be used, and compare the two computed jacobians which should produce similar results
         final ThreeAxisEllipsoid earthBis = new ThreeAxisEllipsoid(earth.getARadius(), earth.getARadius(),
             earth.getCRadius(), frame);
-        final EllipsoidPoint nspBis = new EllipsoidPoint(earthBis, LLHCoordinatesSystem.ELLIPSODETIC, lat, lon, alt, "");
+        final EllipsoidPoint nspBis =
+            new EllipsoidPoint(earthBis, LLHCoordinatesSystem.ELLIPSODETIC, lat, lon, alt, "");
         final double[][] computedJacobianBis = LLHCoordinatesSystem.ELLIPSODETIC.jacobianToCartesian(nspBis);
 
         // Check if the computed matrix with the generic implementation (computedJacobianBis) and the one computed with
@@ -134,9 +137,9 @@ public class LLHCoordinatesSystemTest {
     /**
      * Evaluate the jacobianToCartesian feature in BODYCENTRIC_RADIAL & BODYCENTRIC_NORMAL modes against ELLIPSODETIC
      * mode with the generic implementation which is already validated in testJacobianToCartesianEllipsodetic().
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#jacobianToCartesian(BodyPoint)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -161,7 +164,7 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the jacobian to cartesian in BODYCENTRIC_NORMAL mode on the same point and compare it to the ref
         computedJacobian = LLHCoordinatesSystem.BODYCENTRIC_NORMAL.jacobianToCartesian(nsp);
-        checkMatrix(computedJacobian, jacobian, Utils.epsilonTest, 5e-8);
+        checkMatrix(computedJacobian, jacobian, 4e-10, 5e-8);
     }
 
     /**
@@ -169,9 +172,9 @@ public class LLHCoordinatesSystemTest {
      * ELLIPSODETIC mode.
      * - References for the results: MSLIB (specific implementation with a OneAxisEllipsoid)
      * - Generic implementation evaluation compared to the specific one, using a similar ThreeAxisEllipsoid
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#jacobianFromCartesian(BodyPoint)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -182,10 +185,10 @@ public class LLHCoordinatesSystemTest {
         // ELLIPSODETIC mode with an OneAxisEllipsoid (to use the specific implementation)
         // Reference jacobian from MSLIB
         final double[][] jacobian =
-        { { -0.107954488167401 * 1e-6, -0.282449738801487 * 1e-8, 0.114080171824722 * 1e-6 },
-            { -0.563745742240173 * 1e-8, 0.215468009700879 * 1e-6, 0. },
-            { 0.725972822728309, 0.0189941926118555, 0.687461039846560 }
-        };
+            { { -0.107954488167401 * 1e-6, -0.282449738801487 * 1e-8, 0.114080171824722 * 1e-6 },
+                { -0.563745742240173 * 1e-8, 0.215468009700879 * 1e-6, 0. },
+                { 0.725972822728309, 0.0189941926118555, 0.687461039846560 }
+            };
 
         // Build the point and compute the jacobian from cartesian
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -223,7 +226,7 @@ public class LLHCoordinatesSystemTest {
         // #4: Error case, try with a point too close to the ellipsoid center (should fail)
         try {
             final EllipsoidPoint nspPole =
-                    new EllipsoidPoint(earth, new Vector3D(1000., 0., 0.), frame, date, "");
+                new EllipsoidPoint(earth, new Vector3D(1000., 0., 0.), frame, date, "");
             LLHCoordinatesSystem.ELLIPSODETIC.jacobianFromCartesian(nspPole);
             Assert.fail("an exception should have been thrown");
         } catch (final PatriusException e) {
@@ -235,9 +238,9 @@ public class LLHCoordinatesSystemTest {
     /**
      * Evaluate the jacobianFromCartesian feature in BODYCENTRIC_RADIAL & BODYCENTRIC_NORMAL modes against ELLIPSODETIC
      * mode with the generic implementation which is already validated in testJacobianFromCartesianEllipsodetic().
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#jacobianFromCartesian(BodyPoint)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -268,9 +271,9 @@ public class LLHCoordinatesSystemTest {
     /**
      * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
      * {@link OneAxisEllipsoid} using the analytical formula.
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -289,7 +292,7 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the rates using the analytical implementation
         final double[] rates = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+            .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
 
         // Check result
         TestUtils.assertEquals(8.851239240946895E-4, rates[0], Utils.epsilonTest);
@@ -300,9 +303,9 @@ public class LLHCoordinatesSystemTest {
     /**
      * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
      * {@link OneAxisEllipsoid} using the finite differences estimation.
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -322,7 +325,7 @@ public class LLHCoordinatesSystemTest {
         // Compute the rates using the finite differences implementation
         LLHCoordinatesSystem.ELLIPSODETIC.forceFiniteDifference = true;
         final double[] rates = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+            .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
 
         // Check result
         TestUtils.assertEquals(8.851239731405558E-4, rates[0], Utils.epsilonTest);
@@ -333,9 +336,9 @@ public class LLHCoordinatesSystemTest {
     /**
      * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
      * {@link ThreeAxisEllipsoid} using the finite differences estimation.
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -352,28 +355,29 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the rates on using the generic interface
         final double[] rates = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(phobos, orbit.getPVCoordinates(), gcrf, date);
-        
+            .computeLLHRates(phobos, orbit.getPVCoordinates(), gcrf, date);
+
         // Check results
         TestUtils.assertEquals(2.0589672214410548E-5, rates[0], Utils.epsilonTest);
         TestUtils.assertEquals(-6.679475892668041E-5, rates[1], Utils.epsilonTest);
         TestUtils.assertEquals(0.22773075634177076, rates[2], Utils.epsilonTest);
     }
-    
+
     /**
      * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
      * {@link OneAxisEllipsoid} using the finite differences estimation and the analytical formula.
      * The two results must agree within a reasonable tolerance.
-     * The input PV is expressed in GCRF so no further transformation is required during the finite differences computation.
-     * 
+     * The input PV is expressed in GCRF so no further transformation is required during the finite differences
+     * computation.
+     *
      * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
     @Test
     public void testRatesComputationOneAxisEllipsoidAnalyticalVsFiniteDifferencesGCRF()
-            throws PatriusException {
+        throws PatriusException {
         // Create Earth OneAxisEllipsoid
         final double ae = 6378137.0;// GRS80 constant
         final double flattening = 1.0 / 298.257222101;// GRS80 constant
@@ -387,12 +391,12 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the rates using the analytical implementation
         final double[] ratesAnalytical = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+            .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
 
         // Compute the rates using the finite differences implementation
         LLHCoordinatesSystem.ELLIPSODETIC.forceFiniteDifference = true;
         final double[] ratesFiniteDifferences = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+            .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
 
         // Check that the two results agree with sufficient precision
         for (int i = 0; i < 3; i++) {
@@ -405,15 +409,15 @@ public class LLHCoordinatesSystemTest {
      * {@link OneAxisEllipsoid} using the finite differences estimation and the analytical formula.
      * The two results must agree within a reasonable tolerance.
      * The input PV is expressed in ITRF.
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
     @Test
     public void testRatesComputationOneAxisEllipsoidAnalyticalVsFiniteDifferencesITRF()
-            throws PatriusException {
+        throws PatriusException {
         // Create Earth OneAxisEllipsoid
         final double ae = 6378137.0;// GRS80 constant
         final double flattening = 1.0 / 298.257222101;// GRS80 constant
@@ -431,12 +435,12 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the rates using the analytical implementation
         final double[] ratesAnalytical = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, pvItrf, itrf, date);
+            .computeLLHRates(earth, pvItrf, itrf, date);
 
         // Compute the rates using the finite differences implementation
         LLHCoordinatesSystem.ELLIPSODETIC.forceFiniteDifference = true;
         final double[] ratesFiniteDifferences = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, pvItrf, itrf, date);
+            .computeLLHRates(earth, pvItrf, itrf, date);
 
         // Check that the two results agree with sufficient precision
         for (int i = 0; i < 3; i++) {
@@ -449,9 +453,9 @@ public class LLHCoordinatesSystemTest {
      * {@link OneAxisEllipsoid} and a {@link ThreeAxisEllipsoid} using the public interface.
      * This tests is mostly here for coverage purposes. The numerical values are checked in other
      * unit test methods.
-     * 
+     *
      * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
-     * 
+     *
      * @throws PatriusException
      *         if the precession-nutation model data embedded in the library cannot be read
      */
@@ -470,10 +474,10 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the rates using the generic interface
         final double[] ratesOneAxisEllipsoid = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+            .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
 
         // ----------------------------------
-        
+
         // Create Phobos ThreeAxisEllipsoid
         final ThreeAxisEllipsoid phobos = new ThreeAxisEllipsoid(26.8e3, 22.4e3, 18.4e3, itrf);
 
@@ -482,38 +486,44 @@ public class LLHCoordinatesSystemTest {
 
         // Compute the rates on using the generic interface
         final double[] ratesThreeAxisEllipsoid = LLHCoordinatesSystem.ELLIPSODETIC
-                .computeLLHRates(phobos, orbitAroundPhobos.getPVCoordinates(), gcrf, date);
+            .computeLLHRates(phobos, orbitAroundPhobos.getPVCoordinates(), gcrf, date);
     }
 
     /**
      * Creates a new circular Keplerian orbit around the Earth with an altitude of 700 km at the
      * given date.
-     * @param frame Frame in whih the orbit is expressed
-     * @param date Date of the initial bulletin
+     *
+     * @param frame
+     *        Frame in whih the orbit is expressed
+     * @param date
+     *        Date of the initial bulletin
      * @return KeplerianOrbit object
      */
     private KeplerianOrbit createKeplerianEarthOrbit(final CelestialBodyFrame frame,
-            final AbsoluteDate date) {
+                                                     final AbsoluteDate date) {
         final double mu = 3.986005e14;// GRS80 constant
         final double ae = 6378137.0;// GRS80 constant
         return new KeplerianOrbit(ae + 700e3, 0.0, 0.5, 1.2, 1.1, 2.3, PositionAngle.TRUE, frame,
-                date, mu);
+            date, mu);
     }
 
     /**
      * Creates a new circular Keplerian orbit around Phobos with an altitude of around 15 km at the
      * given date.
-     * @param frame Frame in whih the orbit is expressed
-     * @param date Date of the initial bulletin
+     *
+     * @param frame
+     *        Frame in whih the orbit is expressed
+     * @param date
+     *        Date of the initial bulletin
      * @return KeplerianOrbit object
      */
     private KeplerianOrbit createKeplerianPhobosOrbit(final CelestialBodyFrame frame,
-            final AbsoluteDate date) {
+                                                      final AbsoluteDate date) {
         final double muPhobos = 1.072e16 * 6.6743015e-11;// mass * G
         return new KeplerianOrbit(40e3, 0.0, 0.5, 1.2, 1.1, 2.3, PositionAngle.TRUE, frame, date,
-                muPhobos);
+            muPhobos);
     }
-    
+
     /** The following code is executed once before each test: load the resources and set the frames configuration. */
     @Before
     public void setUp() throws PatriusException {
@@ -524,7 +534,7 @@ public class LLHCoordinatesSystemTest {
 
     /**
      * Comparison component by component of the two matrices.
-     * 
+     *
      * @param a
      *        first matrix
      * @param b

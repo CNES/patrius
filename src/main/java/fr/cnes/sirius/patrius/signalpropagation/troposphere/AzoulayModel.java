@@ -18,6 +18,7 @@
  * @history created 23/05/12
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
@@ -134,7 +135,7 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
     /** Provider for the meteorological conditions. */
     private final MeteorologicalConditionsProvider meteoConditionsProvider;
 
-    /** The ground point geodetic altitude. */
+    /** The ground point ellipsoid altitude. */
     private final double inAltitude;
 
     /**
@@ -149,12 +150,12 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
      *
      * @param meteoConditionsProvider
      *        Provider for the meteorological conditions
-     * @param geodeticAltitude
-     *        The ground point geodetic altitude [m]
+     * @param ellipsoidAltitude
+     *        The ground point ellipsoid altitude [m]
      */
     public AzoulayModel(final MeteorologicalConditionsProvider meteoConditionsProvider,
-                        final double geodeticAltitude) {
-        this(meteoConditionsProvider, geodeticAltitude, true);
+                        final double ellipsoidAltitude) {
+        this(meteoConditionsProvider, ellipsoidAltitude, true);
     }
 
     /**
@@ -162,16 +163,16 @@ public final class AzoulayModel implements TroposphericCorrection, AngularCorrec
      *
      * @param meteoConditionsProvider
      *        Provider for the meteorological conditions
-     * @param geodeticAltitude
-     *        The ground point geodetic altitude [m]
+     * @param ellipsoidAltitude
+     *        The ground point ellipsoid altitude [m]
      * @param isGeometricElevation
      *        {@code true} if the computed correction is used to get the apparent elevation from the geometric elevation
      *        value, {@code false} if it is used to get the geometric elevation from the apparent elevation value
      */
     public AzoulayModel(final MeteorologicalConditionsProvider meteoConditionsProvider,
-                        final double geodeticAltitude, final boolean isGeometricElevation) {
+                        final double ellipsoidAltitude, final boolean isGeometricElevation) {
         this.meteoConditionsProvider = meteoConditionsProvider;
-        this.inAltitude = geodeticAltitude;
+        this.inAltitude = ellipsoidAltitude;
         this.inIsGeometricElevation = isGeometricElevation;
     }
 

@@ -18,6 +18,7 @@
  * @history creation 17/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-485:25/04/2025:Methode intesectUSide de RectangleField mal orthographiee
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14.1:OPENFD-396:10/09/2024:[PATRIUS] Erreurs et oublis dans les classes issues de IGeometricFieldOfView
  * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
@@ -575,11 +576,11 @@ public class RectangleFieldTest {
      * @testType UT
      * 
      * 
-     * @testedMethod {@link RectangleField#intesectUSide(double)}
+     * @testedMethod {@link RectangleField#intersectUSide(double)}
      * 
      * 
      * @objective Ensure that the method
-     *            {@link RectangleField#intesectUSide(double)} is correct. In particular, this test aims at validating
+     *            {@link RectangleField#intersectUSide(double)} is correct. In particular, this test aims at validating
      *            the calculation diagOpening = Math.atan2(tanV, tanU) without explicitly referencing at it. This test
      *            is an extension of {@link RectangleFieldTest#testDirectionalDistance2()}
      * 
@@ -614,20 +615,20 @@ public class RectangleFieldTest {
         final RectangleField field = new RectangleField(fovName, mainDir, uDirection, uOpening, vOpening);
 
         // Test in proximity of the first quadrant's diagonal
-        assertTrue(field.intesectUSide(Math.toRadians(44.99)));
-        assertTrue(!field.intesectUSide(Math.toRadians(45.01)));
+        assertTrue(field.intersectUSide(Math.toRadians(44.99)));
+        assertTrue(!field.intersectUSide(Math.toRadians(45.01)));
 
         // Test in proximity of the second quadrant's diagonal
-        assertTrue(!field.intesectUSide(Math.toRadians(134.99)));
-        assertTrue(field.intesectUSide(Math.toRadians(135.01)));
+        assertTrue(!field.intersectUSide(Math.toRadians(134.99)));
+        assertTrue(field.intersectUSide(Math.toRadians(135.01)));
 
         // Test in proximity of the third quadrant's diagonal
-        assertTrue(!field.intesectUSide(Math.toRadians(-134.99)));
-        assertTrue(field.intesectUSide(Math.toRadians(-135.01)));
+        assertTrue(!field.intersectUSide(Math.toRadians(-134.99)));
+        assertTrue(field.intersectUSide(Math.toRadians(-135.01)));
 
         // Test in proximity of the fourth quadrant's diagonal
-        assertTrue(!field.intesectUSide(Math.toRadians(-45.01)));
-        assertTrue(field.intesectUSide(Math.toRadians(-44.99)));
+        assertTrue(!field.intersectUSide(Math.toRadians(-45.01)));
+        assertTrue(field.intersectUSide(Math.toRadians(-44.99)));
 
     }
 

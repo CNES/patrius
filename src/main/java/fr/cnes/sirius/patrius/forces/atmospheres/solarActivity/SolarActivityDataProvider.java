@@ -17,6 +17,7 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:FA:FA-3009:15/11/2021:[PATRIUS] IllegalArgumentException SolarActivityToolbox
@@ -125,7 +126,7 @@ public interface SolarActivityDataProvider extends Serializable {
                                                     final AbsoluteDate date2) throws PatriusException;
 
     /**
-     * Get Ap value at given user date
+     * Get Geomagnetic activity Ap value at given user date
      * 
      * @param date
      *        user date

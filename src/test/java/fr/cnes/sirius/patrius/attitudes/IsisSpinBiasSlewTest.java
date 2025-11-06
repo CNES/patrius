@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-481:25/04/2025:[PATRIUS] Problemes de codage IsisSpinBiasSlewCalculator
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.15:OPENFD-350:21/11/2024:[PATRIUS] IsisSpinBiasSlew - Renvoi d'un
  * message lorsque le nombre max d'itérations est atteint
@@ -55,24 +57,25 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Test class for the ISIS spin bias slew.
- * 
+ *
  * @author Emmanuel Bignon
- * 
+ *
  * @version $Id: IsisSpinBiasSlewTest.java 17910 2017-09-11 11:58:16Z bignon $
- * 
+ *
  * @since 3.3
- * 
+ *
  */
 public class IsisSpinBiasSlewTest {
-    
 
     /** Logger for this class */
     private static final Logger LOGGER = Logger.getLogger(IsisSpinBiasSlewComputer.class.getName());
@@ -81,9 +84,9 @@ public class IsisSpinBiasSlewTest {
     public enum features {
         /**
          * @featureTitle Spin bias slew tests
-         * 
+         *
          * @featureDescription Tests with the spin bias slew computation
-         * 
+         *
          * @coveredRequirements
          */
         ISIS_SPIN_BIAS_SLEW
@@ -96,24 +99,24 @@ public class IsisSpinBiasSlewTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
-     * 
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#getAttitude(Orbit)}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#getAttitude(Orbit)}
+     *
      * @description This test checks ISIS spin bias slew first case (no constant velocity phase)
-     * 
-     * @input {@link IsisAnalyticalSpinBiasSlew} data (both numerical and analytical)
-     * 
+     *
+     * @input {@link IsisSpinBiasSlewComputer} data (both numerical and analytical)
+     *
      * @output the computed slews
-     * 
+     *
      * @testPassCriteria quaternion difference on the whole ephemeris between the two slews is small (absolute
      *                   tolerance: 1E-3)
      *                   Slew duration is as expected (tolerance: 0.)
      *                   Acceleration has the expected profile (tolerance: 1E-7)
-     * 
+     *
      * @referenceVersion 3.3
-     * 
+     *
      * @nonRegressionVersion 3.3
      */
     @Test
@@ -141,10 +144,10 @@ public class IsisSpinBiasSlewTest {
         final double tranquillisationTime = 15.;
 
         final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
-                dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
-                rwMatrix, tranquillisationTime, 25);
-        final TabulatedSlew slewAnalytical = computer.computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
-        final TabulatedSlew slewNumerical = computer.computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+            dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
+            rwMatrix, tranquillisationTime, 25, null, initialLaw, initialDate, finalLaw, null);
+        final TabulatedSlew slewAnalytical = computer.computeAnalytical();
+        final TabulatedSlew slewNumerical = computer.computeNumerical();
         slewAnalytical.setSpinDerivativesComputation(true);
         slewNumerical.setSpinDerivativesComputation(true);
 
@@ -164,7 +167,7 @@ public class IsisSpinBiasSlewTest {
         Assert.assertEquals(0., Rotation.distance(attitude1.getRotation(), attitude2.getRotation()), 1E-2);
 
         // Check slew duration
-        Assert.assertEquals(50.568256, computer.computeDuration(null, initialLaw, initialDate, finalLaw, null), 1E-5);
+        Assert.assertEquals(50.568256, computer.getDuration(), 1E-5);
 
         // Check acceleration is constant by phase
         for (int i = 1; i < 18; i++) {
@@ -211,25 +214,25 @@ public class IsisSpinBiasSlewTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
-     * 
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#getAttitude(Orbit)}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#getAttitude(Orbit)}
+     *
      * @description This test checks ISIS spin bias slew second case (with constant velocity phase)
-     * 
-     * @input {@link IsisAnalyticalSpinBiasSlew} data (both numerical and analytical)
-     * 
+     *
+     * @input {@link IsisSpinBiasSlewComputer} data (both numerical and analytical)
+     *
      * @output the computed slews
-     * 
+     *
      * @testPassCriteria quaternion difference on the whole ephemeris between the two slews is small (absolute
      *                   tolerance: 1E-3)
      *                   Slew duration is as expected (tolerance: 0.)
      *                   Acceleration has the expected profile (tolerance: 1E-7, 1E-14 between the two phases
      *                   where acceleration is null)
-     * 
+     *
      * @referenceVersion 3.3
-     * 
+     *
      * @nonRegressionVersion 3.3
      */
     @Test
@@ -258,12 +261,14 @@ public class IsisSpinBiasSlewTest {
         };
         final double tranquillisationTime = 15.;
 
-        final TabulatedSlew slewAnalytical = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
-        final TabulatedSlew slewNumerical = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+        final TabulatedSlew slewAnalytical =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeAnalytical();
+        final TabulatedSlew slewNumerical =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeNumerical();
         slewAnalytical.setSpinDerivativesComputation(true);
         slewNumerical.setSpinDerivativesComputation(true);
 
@@ -277,12 +282,16 @@ public class IsisSpinBiasSlewTest {
         }
 
         // Check slew duration
-        Assert.assertEquals(177.040490, new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+        Assert.assertEquals(177.040490,
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                 inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                tranquillisationTime).computeDuration(null, initialLaw, initialDate, finalLaw, null), 1E-5);
-        Assert.assertEquals(177.040490, new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).getDuration(),
+            1E-5);
+        Assert.assertEquals(177.040490,
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                 inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                tranquillisationTime).computeDuration(null, initialLaw, initialDate, finalLaw, null), 1E-5);
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).getDuration(),
+            1E-5);
 
         // Check acceleration is constant by phase
         double acc01 = slewAnalytical.getAttitude(null, initialDate.shiftedBy(1), FramesFactory.getGCRF())
@@ -355,8 +364,8 @@ public class IsisSpinBiasSlewTest {
                 0.012245429363755191),
             new Vector3D(0.004779062499135403, 0.004779062499135403, 0.004779062499135403),
             new Vector3D(4.779063154475612E-4, 4.779063154475612E-4, 4.779063154475612E-4)));
-        this.checkAttitudes(act1, ref1);
-        this.checkAttitudes(act2, ref2);
+        checkAttitudes(act1, ref1);
+        checkAttitudes(act2, ref2);
         Report.printToReport("Analytical - Rotation", act1.getRotation(), ref1.getRotation());
         Report.printToReport("Numerical - Rotation", act2.getRotation(), ref2.getRotation());
         Report.printToReport("Analytical - Spin", act1.getSpin(), ref1.getSpin());
@@ -369,7 +378,7 @@ public class IsisSpinBiasSlewTest {
 
     /**
      * Check attitudes (non-regression)
-     * 
+     *
      * @param attitude1
      *        attitude 1
      * @param attitude2
@@ -392,25 +401,25 @@ public class IsisSpinBiasSlewTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
-     * 
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#getAttitude(Orbit)}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#getAttitude(Orbit)}
+     *
      * @description This test checks ISIS spin bias slew third case (with constant velocity phase)
-     * 
-     * @input {@link IsisAnalyticalSpinBiasSlew} data (both numerical and analytical)
-     * 
+     *
+     * @input {@link IsisSpinBiasSlewComputer} data (both numerical and analytical)
+     *
      * @output the computed slews
-     * 
+     *
      * @testPassCriteria quaternion difference on the whole ephemeris between the two slews is small (absolute
      *                   tolerance: 1E-3)
      *                   Slew duration is as expected (tolerance: 0.)
      *                   Acceleration has the expected profile (tolerance: 1E-7, 1E-13 between the two phases
      *                   where acceleration is null))
-     * 
+     *
      * @referenceVersion 3.3
-     * 
+     *
      * @nonRegressionVersion 3.3
      */
     @Test
@@ -438,12 +447,14 @@ public class IsisSpinBiasSlewTest {
         };
         final double tranquillisationTime = 15.;
 
-        final TabulatedSlew slewAnalytical = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
-        final TabulatedSlew slewNumerical = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+        final TabulatedSlew slewAnalytical =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeAnalytical();
+        final TabulatedSlew slewNumerical =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeNumerical();
         slewAnalytical.setSpinDerivativesComputation(true);
         slewNumerical.setSpinDerivativesComputation(true);
 
@@ -457,12 +468,16 @@ public class IsisSpinBiasSlewTest {
         }
 
         // Check slew duration
-        Assert.assertEquals(128.690518, new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+        Assert.assertEquals(128.690518,
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                 inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                tranquillisationTime).computeDuration(null, initialLaw, initialDate, finalLaw, null), 5E-4);
-        Assert.assertEquals(128.690518, new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).getDuration(),
+            5E-4);
+        Assert.assertEquals(128.690518,
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                 inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                tranquillisationTime).computeDuration(null, initialLaw, initialDate, finalLaw, null), 5E-4);
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).getDuration(),
+            5E-4);
 
         // Check acceleration is constant by phase
         double acc01 = slewAnalytical.getAttitude(null, initialDate.shiftedBy(1), FramesFactory.getGCRF())
@@ -524,27 +539,27 @@ public class IsisSpinBiasSlewTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
-     * 
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#getAttitude(Orbit)}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#getAttitude(Orbit)}
+     *
      * @description This test checks ISIS spin bias slew third case (with constant velocity phase) returns same
      *              ephemeris wether it is used
      *              with initial date or with final date (= initial date + slew duration) (both numerical and analytical
      *              versions)
-     * 
-     * @input {@link IsisAnalyticalSpinBiasSlew} data (both numerical and analytical)
-     * 
+     *
+     * @input {@link IsisSpinBiasSlewComputer} data (both numerical and analytical)
+     *
      * @output the computed slews
-     * 
+     *
      * @testPassCriteria attitude (rotation/spin/acceleration) difference on the whole ephemeris between the two slews
      *                   is 1E-3 (both for numerical and analytical slews)
      *                   (accuracy is driven by dtConvergenceThreshold = 0.1s value). A lower value will result in
      *                   closer ephemeris
-     * 
+     *
      * @referenceVersion 3.4
-     * 
+     *
      * @nonRegressionVersion 3.4
      */
     @Test
@@ -577,18 +592,22 @@ public class IsisSpinBiasSlewTest {
         };
         final double tranquillisationTime = 15.;
 
-        final TabulatedSlew slewAnalyticalRef = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
-        final TabulatedSlew slewNumericalRef = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
-        final TabulatedSlew slewAnalyticalAct = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeAnalytical(null, initialLaw, null, finalLaw, finalDate);
-        final TabulatedSlew slewNumericalAct = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeNumerical(null, initialLaw, null, finalLaw, finalDate);
+        final TabulatedSlew slewAnalyticalRef =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeAnalytical();
+        final TabulatedSlew slewNumericalRef =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeNumerical();
+        final TabulatedSlew slewAnalyticalAct =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, null, finalLaw, finalDate).computeAnalytical();
+        final TabulatedSlew slewNumericalAct =
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+                inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+                tranquillisationTime, null, initialLaw, null, finalLaw, finalDate).computeNumerical();
         slewAnalyticalRef.setSpinDerivativesComputation(true);
         slewNumericalRef.setSpinDerivativesComputation(true);
         slewAnalyticalAct.setSpinDerivativesComputation(true);
@@ -596,17 +615,19 @@ public class IsisSpinBiasSlewTest {
 
         // Check slew duration (accuracy driven by dtConvergenceThreshold accuracy)
         Assert.assertEquals(new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+            tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).getDuration(),
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                 inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                tranquillisationTime).computeDuration(null, initialLaw, initialDate, finalLaw, null),
-                new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-                        inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                        tranquillisationTime).computeDuration(null, initialLaw, null, finalLaw, finalDate), 1E-1);
+                tranquillisationTime, null, initialLaw, null, finalLaw, finalDate).getDuration(),
+            1E-1);
         Assert.assertEquals(new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+            inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
+            tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).getDuration(),
+            new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                 inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                tranquillisationTime).computeDuration(null, initialLaw, initialDate, finalLaw, null),
-                new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
-                        inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                        tranquillisationTime).computeDuration(null, initialLaw, null, finalLaw, finalDate), 1E-1);
+                tranquillisationTime, null, initialLaw, null, finalLaw, finalDate).getDuration(),
+            1E-1);
 
         // Check results are identical (accuracy driven by dtConvergenceThreshold accuracy)
         for (int i = 1; i < 128; i++) {
@@ -629,11 +650,13 @@ public class IsisSpinBiasSlewTest {
             Assert.assertEquals(
                 0.,
                 attitudeAnalyticalRef.getRotationAcceleration()
-                    .subtract(attitudeAnalyticalAct.getRotationAcceleration()).getNorm(), 5E-4);
+                    .subtract(attitudeAnalyticalAct.getRotationAcceleration()).getNorm(),
+                5E-4);
             Assert.assertEquals(
                 0.,
                 attitudeNumericalRef.getRotationAcceleration()
-                    .subtract(attitudeNumericalAct.getRotationAcceleration()).getNorm(), 5E-4);
+                    .subtract(attitudeNumericalAct.getRotationAcceleration()).getNorm(),
+                5E-4);
         }
 
         // Non-regression tests
@@ -647,8 +670,8 @@ public class IsisSpinBiasSlewTest {
             new Rotation(false, 0.9817824289638493, 0.10970150740052718, 0.10970150740052718, 0.10970150740052718),
             new Vector3D(0.003783984927412917, 0.003783984927412917, 0.003783984927412917),
             new Vector3D(5.628588204722161E-4, 5.628588204722161E-4, 5.628588204722161E-4)));
-        this.checkAttitudes(act1, ref1);
-        this.checkAttitudes(act2, ref2);
+        checkAttitudes(act1, ref1);
+        checkAttitudes(act2, ref2);
         Report.printToReport("Analytical - Rotation", act1.getRotation(), ref1.getRotation());
         Report.printToReport("Numerical - Rotation", act2.getRotation(), ref2.getRotation());
         Report.printToReport("Analytical - Spin", act1.getSpin(), ref1.getSpin());
@@ -678,21 +701,21 @@ public class IsisSpinBiasSlewTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
-     * 
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#getAttitude(Orbit)}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#getAttitude(Orbit)}
+     *
      * @description This test checks an exception is raised if required angular rate is too high
-     * 
-     * @input {@link IsisAnalyticalSpinBiasSlew} data
-     * 
+     *
+     * @input {@link IsisSpinBiasSlewComputer} data
+     *
      * @output exception
-     * 
+     *
      * @testPassCriteria an exception is thrown
-     * 
+     *
      * @referenceVersion 3.3
-     * 
+     *
      * @nonRegressionVersion 3.3
      */
     @Test
@@ -721,9 +744,10 @@ public class IsisSpinBiasSlewTest {
 
         // Slew too fast
         try {
-            final Slew slewAnalytical = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
+            final Slew slewAnalytical =
+                new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax, dtConvergenceThreshold,
                     inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-                    tranquillisationTime).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
+                    tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeAnalytical();
             slewAnalytical.getAttitude(null, initialDate, FramesFactory.getGCRF());
             Assert.fail();
         } catch (final PatriusException e) {
@@ -734,7 +758,7 @@ public class IsisSpinBiasSlewTest {
         final Slew slew2 = new IsisSpinBiasSlewComputer(
             dtSCAO, MathLib.toRadians(179), durationMax, dtConvergenceThreshold,
             inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc, rwMatrix,
-            tranquillisationTime).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
+            tranquillisationTime, null, initialLaw, initialDate, finalLaw, null).computeAnalytical();
         try {
             slew2.getAttitude(null, initialDate.shiftedBy(-10), FramesFactory.getGCRF());
             Assert.fail();
@@ -745,25 +769,25 @@ public class IsisSpinBiasSlewTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature none
-     * 
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#IsisAnalyticalSpinBiasSlew(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double)}
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#IsisAnalyticalSpinBiasSlew(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double, int)}
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#IsisAnalyticalSpinBiasSlew(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double, String)}
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#IsisAnalyticalSpinBiasSlew(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double, int, String)}
-     * @testedMethod {@link IsisAnalyticalSpinBiasSlew#getNature()}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#IsisSpinBiasSlewComputer(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double)}
+     * @testedMethod {@link IsisSpinBiasSlewComputer#IsisSpinBiasSlewComputer(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double, int)}
+     * @testedMethod {@link IsisSpinBiasSlewComputer#IsisSpinBiasSlewComputer(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double, String)}
+     * @testedMethod {@link IsisSpinBiasSlewComputer#IsisSpinBiasSlewComputer(AttitudeProvider, AttitudeProvider, AbsoluteDate, TypeOfDate, double, double, double, double, double[][], double, double, double, double[][], double, int, String)}
+     * @testedMethod {@link IsisSpinBiasSlewComputer#getNature()}
+     *
      * @description Test the new constructors which add the "nature" attribute
-     * 
+     *
      * @input parameters
-     * 
+     *
      * @output AbstractIsisSpinBiasSlew
-     * 
+     *
      * @testPassCriteria The nature attribute is well managed
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -801,19 +825,23 @@ public class IsisSpinBiasSlewTest {
         final String DEFAULT_NATURE2 = "ATTITUDE_ISIS_SPIN_BIAS_SLEW";
         final String nature = "testNature";
 
-        // Test all the 4 constructors of IsisAnalyticalSpinBiasSlew class
+        // Test all the 4 constructors of IsisSpinBiasSlewComputer class
         final TabulatedSlew slewAnalytical1 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, null, initialLaw, initialDate,
+            finalLaw, null).computeAnalytical();
         final TabulatedSlew slewAnalytical2 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn, null,
+            initialLaw, initialDate, finalLaw, null).computeAnalytical();
         final TabulatedSlew slewAnalytical3 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, nature).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, nature, null, initialLaw,
+            initialDate, finalLaw, null).computeAnalytical();
         final TabulatedSlew slewAnalytical4 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn, nature).computeAnalytical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn, nature, null,
+            initialLaw, initialDate, finalLaw, null).computeAnalytical();
 
         Assert.assertEquals(slewAnalytical1.getNature(), DEFAULT_NATURE1);
         Assert.assertEquals(slewAnalytical2.getNature(), DEFAULT_NATURE1);
@@ -823,45 +851,48 @@ public class IsisSpinBiasSlewTest {
         // Test all the 4 constructors of IsisNumericalSpinBiasSlew class
         final TabulatedSlew slewNumerical1 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, null, initialLaw, initialDate,
+            finalLaw, null).computeNumerical();
         final TabulatedSlew slewNumerical2 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn, null,
+            initialLaw, initialDate, finalLaw, null).computeNumerical();
         final TabulatedSlew slewNumerical3 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, nature).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, nature, null, initialLaw,
+            initialDate, finalLaw, null).computeNumerical();
         final TabulatedSlew slewNumerical4 = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel,
-            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn, nature).computeNumerical(null, initialLaw, initialDate, finalLaw, null);
+            rwDeltaMomentumAlloc, rwMatrix, tranquillisationTime, maxIterationsNumberIn, nature, null,
+            initialLaw, initialDate, finalLaw, null).computeNumerical();
 
         Assert.assertEquals(slewNumerical1.getNature(), DEFAULT_NATURE2);
         Assert.assertEquals(slewNumerical2.getNature(), DEFAULT_NATURE2);
         Assert.assertEquals(slewNumerical3.getNature(), nature);
         Assert.assertEquals(slewNumerical4.getNature(), nature);
     }
-    
+
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
-     * 
-     * @testedMethod {@link IsisSpinBiasSlewComputer#computeDuration(PVCoordinatesProvider,AttitudeProvider,
-     *               AbsoluteDate, AttitudeProvider, AbsoluteDate)}
-     * 
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#computeDuration()}
+     *
      * @description This test checks an exception is raised due to no convergence and that the exception is not
      *              raised but a WARNING message is displayed when the attribute setThrowExceptionOnMaxIterations is set
      *              to false.
-     * 
+     *
      * @input {@link IsisSpinBiasSlewComputer} data
-     * 
+     *
      * @output exception + duration
-     * 
+     *
      * @testPassCriteria an exception is thrown at first, then, the good value is returned with a WARNING message at the
      *                   console
-     * 
+     *
      * @referenceVersion 4.15
-     * 
+     *
      * @nonRegressionVersion 4.15
      */
     @Test
@@ -891,25 +922,113 @@ public class IsisSpinBiasSlewTest {
         final double tranquillisationTime = 100.;
 
         // Max iterations is set to 1 so it cannot converge
-        final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
-            dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
-            rwMatrix, tranquillisationTime, 1);
-
         // First check if the correct warning message is displayed
         try {
-            computer.computeDuration(null, initialLaw, initialDate, finalLaw, null);
+            final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
+                dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
+                rwMatrix, tranquillisationTime, 1, "ATTITUDE_ISIS_SPIN_BIAS_SLEW", null, initialLaw, initialDate,
+                finalLaw, null);
+
             Assert.fail();
-        } catch (PatriusException e) {
+        } catch (final PatriusException e) {
             Assert.assertEquals("Exception message is not the expected one!", e.getMessage(),
                 "Failed to converge after 1 iterations");
         }
 
         // Now change the boolean and test that we get what is calculated in the first iteration
-        computer.setThrowExceptionOnMaxIterations(false);
+        final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
+            dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
+            rwMatrix, tranquillisationTime, 1, "ATTITUDE_ISIS_SPIN_BIAS_SLEW", null, initialLaw, initialDate, finalLaw,
+            null, false);
+
         // Activate the logger of the IsisSpinBiasSlewComputer to the WARNING level to have the message
         LOGGER.setLevel(Level.WARNING);
-        Assert.assertEquals(153.33818, computer.computeDuration(null, initialLaw, initialDate, finalLaw, null),
-            1.E-5);
+        Assert.assertEquals(153.33818484323444, computer.getDuration(), Precision.DOUBLE_COMPARISON_EPSILON);
+    }
+
+    /**
+     * @throws PatriusException
+     * @testType UT
+     *
+     * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
+     *
+     * @testedMethod {@link IsisSpinBiasSlewComputer#computeDuration()}
+     *
+     * @description This test checks an exception is raised when the computation dates are inconsistent
+     *
+     * @input {@link IsisSpinBiasSlewComputer} data
+     *
+     * @output exception
+     *
+     * @testPassCriteria The INCONSISTENT_DATE_IN_SLEW_CALCULATION exception is thrown
+     *
+     * @referenceVersion 4.16
+     *
+     * @nonRegressionVersion 4.16
+     */
+    @Test
+    public void testIncoherentDatesException() throws PatriusException {
+        // Setting the Locale
+        Locale.setDefault(new Locale("ENG"));
+
+        // Initialization
+        final AttitudeLaw initialLaw = new ConstantAttitudeLaw(FramesFactory.getEME2000(), new Rotation(new Vector3D(
+            1., 0., 1.), MathLib.toRadians(20.)));
+        final AttitudeLaw finalLaw = new ConstantAttitudeLaw(FramesFactory.getEME2000(), new Rotation(new Vector3D(1.,
+            2., 2.), MathLib.toRadians(50.)));
+        final double dtSCAO = 0.250;
+        final double thetaMaxAllowed = MathLib.toRadians(179);
+        final double durationMax = 200;
+        final double dtConvergenceThreshold = 0.1;
+        final double[][] inertiaMatrix = { { 305, 0, 0 }, { 0, 315, 0 }, { 0, 0, 90 } };
+        final double rwTorqueAllocAccel = 0.15;
+        final double rwTorqueAllocDecel = 0.15;
+        final double rwDeltaMomentumAlloc = 4.2;
+        final double[][] rwMatrix = {
+            { -0.6830127, -0.6830127, -0.6830127, -0.6830127 },
+            { -0.6830127, 0.6830127, -0.6830127, 0.6830127 },
+            { -0.258819, -0.258819, 0.258819, 0.258819 }
+        };
+        final double tranquillisationTime = 100.;
+
+        // Max iterations is set to 1 so it cannot converge
+        // First check if the correct warning message is displayed
+        try {
+
+            // Both dates are null
+            final AbsoluteDate initialDate = null;
+            final AbsoluteDate finalDate = null;
+
+            final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
+                dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
+                rwMatrix, tranquillisationTime, 1, "ATTITUDE_ISIS_SPIN_BIAS_SLEW", null, initialLaw, initialDate,
+                finalLaw, finalDate);
+
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertEquals(PatriusMessages.INCONSISTENT_DATE_IN_SLEW_CALCULATION.getSourceString(),
+                e.getMessage());
+        }
+
+        // Max iterations is set to 1 so it cannot converge
+        // First check if the correct warning message is displayed
+        try {
+
+            // Both dates are not null
+            final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+            final AbsoluteDate finalDate = AbsoluteDate.J2000_EPOCH.shiftedBy(10.0);
+
+            final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
+                dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
+                rwMatrix, tranquillisationTime, 1, "ATTITUDE_ISIS_SPIN_BIAS_SLEW", null, initialLaw, initialDate,
+                finalLaw, finalDate);
+
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertEquals(PatriusMessages.INCONSISTENT_DATE_IN_SLEW_CALCULATION.getSourceString(),
+                e.getMessage());
+        }
+
     }
 
     @Before

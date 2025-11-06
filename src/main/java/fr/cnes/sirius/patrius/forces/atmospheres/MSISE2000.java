@@ -26,6 +26,7 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
  * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -171,22 +172,22 @@ public class MSISE2000 implements ExtendedAtmosphere {
     /** Calendar (internal variable, set there for computation time saving). */
     private final Calendar calendar;
 
-    /** Cache mecanism - Output pressure. */
+    /** Cache mechanism - Output pressure. */
     private double cachedPressure;
 
-    /** Cache mecanism - Output temperature. */
+    /** Cache mechanism - Output temperature. */
     private double cachedTemperature;
 
-    /** Cache mecanism - Output atmosphere data. */
+    /** Cache mechanism - Output atmosphere data. */
     private transient AtmosphereData cachedOutputData;
 
-    /** Cache mecanism - Input date. */
+    /** Cache mechanism - Input date. */
     private AbsoluteDate cachedDate;
 
-    /** Cache mecanism - Input frame. */
+    /** Cache mechanism - Input frame. */
     private Frame cachedFrame;
 
-    /** Cache mecanism - Input position. */
+    /** Cache mechanism - Input position. */
     private Vector3D cachedPosition;
 
     /**

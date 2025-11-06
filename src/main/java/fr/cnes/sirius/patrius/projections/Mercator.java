@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
@@ -304,11 +305,11 @@ public class Mercator extends AbstractProjection {
 
     /**
      * {@inheritDoc} This is the inverse transformation process to convert two dimensional map coordinates into
-     * geodetics one. The iterative method used is a Newton-Raphson iterative process. We're searching the solution of
+     * ellipsoids one. The iterative method used is a Newton-Raphson iterative process. We're searching the solution of
      * F(phi) = 0. At each iterations, we compute a new value of phi : phi' = phi - F(phi)/F'(phi) where phi is the
      * trial value, F(phi) = y(phi) - phi, with y(phi) the direct Mercator transformation, and F'(phi) the derive
      * function of y(phi). The stop condition is satisfied when F(phi) < epsilon (here equal at 1E-14). This method
-     * returns geodetic coordinates. The iterative process stop if the iteration's number is bigger than 100.
+     * returns ellipsoid coordinates. The iterative process stop if the iteration's number is bigger than 100.
      */
     @Override
     public EllipsoidPoint applyInverseTo(final double x, final double y) throws PatriusException {

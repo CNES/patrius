@@ -18,6 +18,7 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
  * les polynemes de Chebyshev des fichiers JPL historiques
@@ -367,7 +368,7 @@ public class MSISE2000Test {
         final double alt1 = this.computeZ(20E3);
         final double alt2 = this.computeZ(40E3);
 
-        // Geodetic point
+        // Ellipsoid point
         final EllipsoidPoint point1 = new EllipsoidPoint(this.earth, this.earth.getLLHCoordinatesSystem(), 0, 0, alt1,
             "");
         final EllipsoidPoint point2 = new EllipsoidPoint(this.earth, this.earth.getLLHCoordinatesSystem(), 0, 0, alt2,
@@ -408,7 +409,7 @@ public class MSISE2000Test {
     }
 
     /**
-     * Geodetic altitude from geopotential altitude
+     * Ellipsoid altitude from geopotential altitude
      * 
      * @param h
      *        Geopotential altitude
@@ -771,7 +772,7 @@ public class MSISE2000Test {
     }
 
     /**
-     * Convert a geodetical point to cartesian components.
+     * Convert a ellipsoidal point to cartesian components.
      * 
      * @param lat
      *        latitude.

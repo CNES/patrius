@@ -18,6 +18,8 @@
  * @history Created 08/01/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
  * du centralTermContribution dans ThirdBodyAttraction
@@ -76,7 +78,6 @@ import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
 import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
-import fr.cnes.sirius.patrius.forces.gravity.AbstractHarmonicGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.DrozinerGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
@@ -115,7 +116,7 @@ import junit.framework.Assert;
 /**
  * Calcul de visibilités de satellites GPS - Mise en évidence de problème pour la détection
  * d'événements lors d'une discontinuité d'attitude.
- * 
+ *
  * @author François DESCLAUX
  */
 
@@ -125,18 +126,18 @@ public class MainSingleGpsVisisTest {
     public enum features {
         /**
          * @featureTitle Test computation of GPS visibility with attitude discontinuity
-         * 
+         *
          * @featureDescription
-         * 
+         *
          * @coveredRequirements
          */
         SINGLE_GPS_VISIS,
 
         /**
          * @featureTitle Test computation of GPS visibility with attitude discontinuity on DV impulse
-         * 
+         *
          * @featureDescription
-         * 
+         *
          * @coveredRequirements
          */
         ATTITUDE_DISCONTINUITY_IMPULSE_DV
@@ -147,28 +148,29 @@ public class MainSingleGpsVisisTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SINGLE_GPS_VISIS}
-     * 
+     *
      * @testedMethod {@link NumericalPropagator#addEventDetector(fr.cnes.sirius.patrius.events.EventDetector)}
      * @testedMethod {@link NumericalPropagator#propagate(AbsoluteDate)}
-     * 
+     *
      * @description Propagation with eclipse detection. Particular case.
-     * 
+     *
      * @input a numerical propagator with an input eclipse detector and an input attitude discontinuity
-     * 
+     *
      * @output eclipse detection
-     * 
+     *
      * @testPassCriteria 2 eclipse in + 2 eclipse out should be detected
-     * 
+     *
      * @comments FA 374
-     * 
+     *
      * @referenceVersion 2.3.1
-     * 
+     *
      * @nonRegressionVersion 2.3.1
      */
     @Test
-    public void testEclipseDetection() throws PatriusException,
+    public void testEclipseDetection()
+        throws PatriusException,
         IOException, ParseException {
 
         // Initialization
@@ -192,8 +194,8 @@ public class MainSingleGpsVisisTest {
         final AttitudeLaw earthPointingAtt = new BodyCenterPointing(itrf);
         final NumericalPropagator propagator = new NumericalPropagator(dop);
         propagator.setInitialState(initialState);
-        addForceAndAttitude(initialOrbit, earthPointingAtt, propagator, initialState);
-        final MyEclipseDetector detector = this.myEclipseDetector();
+        addForceAndAttitude(initialOrbit, earthPointingAtt, propagator);
+        final MyEclipseDetector detector = myEclipseDetector();
         propagator.addEventDetector(detector);
 
         // Propagation
@@ -212,8 +214,8 @@ public class MainSingleGpsVisisTest {
      * Add force and attitude to propagator.
      */
     private static void addForceAndAttitude(final Orbit initialOrbit,
-                                     final AttitudeProvider attProv, final NumericalPropagator prop,
-                                     final SpacecraftState initialState) throws IOException, ParseException,
+                                            final AttitudeProvider attProv, final NumericalPropagator prop)
+        throws IOException, ParseException,
         PatriusException {
         /*
          * 3) Ajout des forces naturelles
@@ -336,7 +338,7 @@ public class MainSingleGpsVisisTest {
 
         @Override
         public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                    final boolean forward) throws PatriusException {
+                                    final boolean forward) {
             // ATTENTION g positif hors éclipse, donc increasing en sortie d'éclipse
             if (!increasing) {
                 this.enterDate.add(s.getDate().toString());
@@ -360,7 +362,7 @@ public class MainSingleGpsVisisTest {
 
     /**
      * Returns a spherical spacecraft with parameters allowing to compute drag and SRP accelerations
-     * 
+     *
      * @param mass
      *        vehicle mass
      * @param radius
@@ -379,7 +381,8 @@ public class MainSingleGpsVisisTest {
      * @throws PatriusException
      */
     private static Assembly getSphericalVehicle(final double mass, final double radius, final double dragCoef,
-                                         final double ka, final double ks, final double kd) throws PatriusException {
+                                                final double ka, final double ks, final double kd)
+        throws PatriusException {
 
         final AssemblyBuilder builder = new AssemblyBuilder();
 
@@ -403,23 +406,23 @@ public class MainSingleGpsVisisTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ATTITUDE_DISCONTINUITY_IMPULSE_DV}
-     * 
+     *
      * @testedMethod {@link AbstractPropagator#propagate(AbsoluteDate)}
-     * 
+     *
      * @description Propagation with attitude discontinuity on DV impulse with analytical propagator.
-     * 
+     *
      * @input a analytical propagator with DV maneuver and discontinuous attitude laws
-     * 
+     *
      * @output attitude
-     * 
+     *
      * @testPassCriteria change of attitude law properly performed
-     * 
+     *
      * @comments FA 415
-     * 
+     *
      * @referenceVersion 3.0
-     * 
+     *
      * @nonRegressionVersion 3.0
      */
     @Test
@@ -462,9 +465,10 @@ public class MainSingleGpsVisisTest {
             private static final long serialVersionUID = -1226937944843750359L;
 
             @Override
-            public Action
-                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public
+                Action
+                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
+                        throws PatriusException {
                 MainSingleGpsVisisTest.this.res = true;
                 return Action.CONTINUE;
             }

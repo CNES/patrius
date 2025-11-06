@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history creation 10/06/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -99,13 +101,13 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * Test class for {@link EclipseDetector}
- * 
+ *
  * @see EclipseDetector
- * 
+ *
  * @author Rami Houdroge
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.2
  */
 public class EllipsoidEclipseDetectorTest {
@@ -163,9 +165,9 @@ public class EllipsoidEclipseDetectorTest {
     public enum features {
         /**
          * @featureTitle Ellipsoid eclipse detector
-         * 
+         *
          * @featureDescription Test the detector of eclipse from ellipsoids
-         * 
+         *
          * @coveredRequirements DV-MOD_310
          */
         ELLIPSOID_ECLIPSE
@@ -173,22 +175,22 @@ public class EllipsoidEclipseDetectorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @testedMethod {@link EclipseDetector#g(SpacecraftState)}
-     * 
+     *
      * @description Test the robustness of the detection algorithm with a very thin Earth
-     * 
+     *
      * @input a spheroid celestial body shape (occulting body), some points of space (propagated satellite) and the sun
      *        (occulted body)
-     * 
+     *
      * @output eclipse event times
-     * 
+     *
      * @testPassCriteria the total duration of the penumbra must be equal to 33 s ± 10 s
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.3
      */
     @Test
@@ -226,23 +228,23 @@ public class EllipsoidEclipseDetectorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @testedMethod {@link EclipseDetector#g(SpacecraftState)}
-     * 
+     *
      * @description Test the correctness of the detection algorithm when the ellipsoid is such that the polar radius is
      *              equal to the spherical equatorial radius
-     * 
+     *
      * @input a spheroid celestial body shape (occulting body), some points of space (propagated satellite) and the sun
      *        (occulted body)
-     * 
+     *
      * @output eclipse event times
-     * 
+     *
      * @testPassCriteria the event times must be the same as that of the sphere eclipse events. Tolerance is set to 1
      *                   ms.
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.3
      */
     @Test
@@ -295,23 +297,23 @@ public class EllipsoidEclipseDetectorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @testedMethod {@link EclipseDetector#g(SpacecraftState)}
-     * 
+     *
      * @description Test the correctness of the detection algorithm with a standard ellipsoid (GRIM5C1 equatorial radius
      *              and earth flattening)
-     * 
+     *
      * @input a spheroid celestial body shape (occulting body), some points of space (propagated satellite) and the sun
      *        (occulted body)
-     * 
+     *
      * @output eclipse event times
-     * 
+     *
      * @testPassCriteria the event times must be 6.822 s from the sphere eclipse events. Tolerance is set to 1 ms.
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.3
      */
     @Test
@@ -365,24 +367,24 @@ public class EllipsoidEclipseDetectorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @testedMethod {@link EclipseDetector#g(SpacecraftState)}
-     * 
+     *
      * @description Test the correctness of the detection algorithm with a standard ellipsoid (GRIM5C1 equatorial radius
      *              and 0 flattening)
-     * 
+     *
      * @input a spheroid celestial body shape (occulting body), some points of space (propagated satellite) and the sun
      *        (occulted body)
-     * 
+     *
      * @output eclipse event times
-     * 
+     *
      * @testPassCriteria the event times must be the same as that of the sphere eclipse events. Tolerance is set to 1
      *                   µs.
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.3
      */
     @Test
@@ -431,25 +433,25 @@ public class EllipsoidEclipseDetectorTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @testedMethod {@link EclipseDetector#g(SpacecraftState)}
-     * 
+     *
      * @description Test the correctness of the detection algorithm with a standard ellipsoid (GRIM5C1 equatorial radius
      *              and 0 flattening) when the occulting body is behind the occulted body. To do this the central body
      *              is the occulting one,
      *              and the occulted body is a small sphere fixed between vehicle and central body.
-     * 
+     *
      * @input a spheroid celestial body shape (occulting body), an equinoxial orbit (the vehicle) and an occulted body
      *        fixed to a distance between the vehicle and the occulting body
-     * 
+     *
      * @output the same number of eclipses are detected with two different EclipseDetectos
-     * 
+     *
      * @testPassCriteria
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.2
      */
     @Test
@@ -484,9 +486,9 @@ public class EllipsoidEclipseDetectorTest {
                 private static final long serialVersionUID = 5517074173806946111L;
 
                 @Override
-                public Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                        throws PatriusException {
+                public
+                    Action
+                        eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                     return Action.CONTINUE;
                 }
             };
@@ -499,9 +501,9 @@ public class EllipsoidEclipseDetectorTest {
                     private static final long serialVersionUID = 6620631510133215806L;
 
                     @Override
-                    public Action
-                        eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                            throws PatriusException {
+                    public
+                        Action
+                            eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                         return Action.CONTINUE;
                     }
                 };
@@ -554,25 +556,25 @@ public class EllipsoidEclipseDetectorTest {
      * @throws PatriusException
      *         if fail
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @testedMethod {@link EclipseDetector#getOcculted()}
      * @testedMethod {@link EclipseDetector#getOccultedRadius()}
      * @testedMethod {@link EclipseDetector#getOcculting()}
-     * 
+     *
      * @description Test the correctness of the getters
-     * 
+     *
      * @input a spheroid celestial body shape (occulting body), some points of space (propagated satellite) and the sun
      *        (occulted body)
-     * 
+     *
      * @output eclipse event times
-     * 
+     *
      * @testPassCriteria the event times must be the same as that of the sphere eclipse events. Tolerance is set to 1
      *                   µs.
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.3
      */
     @Test
@@ -594,22 +596,22 @@ public class EllipsoidEclipseDetectorTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedMethod {@link ELLIPSOID_ECLIPSE}
-     * 
+     *
      * @description test the EclipseDetector during propagation for a spheroidal occulting body.
      *              This test does not use numerical references to validate the detector, it only qualitatively shows
      *              that the detector of umbra/penumbra does detect events when using a spheroidal occulting body
      *              and a lighting ratio.
-     * 
+     *
      * @input an equatorial orbit, a fictitious Sun and Moon
-     * 
+     *
      * @output the events detected during a half-orbit propagation
-     * 
+     *
      * @testPassCriteria four events should be detected: two umbra and two penumbra events.
-     * 
+     *
      * @referenceVersion 2.3.1
-     * 
+     *
      * @nonRegressionVersion 2.3.1
      */
     @Test
@@ -646,10 +648,10 @@ public class EllipsoidEclipseDetectorTest {
             private static final long serialVersionUID = 5334262898117182432L;
 
             @Override
-            public fr.cnes.sirius.patrius.events.EventDetector.Action
-                eventOccurred(
-                              final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public
+                fr.cnes.sirius.patrius.events.EventDetector.Action
+                    eventOccurred(
+                                  final SpacecraftState s, final boolean increasing, final boolean forward) {
                 if (!increasing) {
                     events.put(EllipsoidEclipseDetectorTest.this.umbra + "IN", s);
                 } else {
@@ -665,10 +667,10 @@ public class EllipsoidEclipseDetectorTest {
             private static final long serialVersionUID = 5334262898117182432L;
 
             @Override
-            public fr.cnes.sirius.patrius.events.EventDetector.Action
-                eventOccurred(
-                              final SpacecraftState s, final boolean increasing, final boolean forward)
-                    throws PatriusException {
+            public
+                fr.cnes.sirius.patrius.events.EventDetector.Action
+                    eventOccurred(
+                                  final SpacecraftState s, final boolean increasing, final boolean forward) {
                 if (!increasing) {
                     events.put(EllipsoidEclipseDetectorTest.this.penumbra + "IN", s);
                 } else {
@@ -691,7 +693,7 @@ public class EllipsoidEclipseDetectorTest {
         this.propagator.addEventDetector(detectorPenumbra);
         final SpacecraftState initialState = new SpacecraftState(orbit);
         this.propagator.resetInitialState(initialState);
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(initialState.getMu())));
+        this.propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(initialState.getMu())));
         // Propagate over a half orbit period :
         final double time = 0.5 * orbit.getKeplerianPeriod();
         this.propagator.propagate(date.shiftedBy(time));
@@ -700,7 +702,7 @@ public class EllipsoidEclipseDetectorTest {
 
     /**
      * Setup class
-     * 
+     *
      * @throws PatriusException
      *         if failure
      */
@@ -753,7 +755,7 @@ public class EllipsoidEclipseDetectorTest {
 
         /**
          * new detector
-         * 
+         *
          * @param occulted
          *        body
          * @param occultedRadius
@@ -772,12 +774,12 @@ public class EllipsoidEclipseDetectorTest {
         @Override
         public Action eventOccurred(final SpacecraftState s,
                                     final boolean increasing,
-                                    final boolean forward) throws PatriusException {
+                                    final boolean forward) {
 
             this.mapNew.put(
                 s.getDate(),
                 new Double[] {
-                    this.getOccultingRadiusProvider().getApparentRadius(s.getOrbit(),
+                    getOccultingRadiusProvider().getApparentRadius(s.getOrbit(),
                         s.getDate(), EllipsoidEclipseDetectorTest.this.sun, PropagationDelayType.INSTANTANEOUS),
                     s.getLv(), increasing ? 0. : 1. });
             return Action.CONTINUE;
@@ -785,7 +787,7 @@ public class EllipsoidEclipseDetectorTest {
 
         /**
          * Returns logged data
-         * 
+         *
          * @return data map
          */
         public TreeMap<AbsoluteDate, Double[]> getData() {
@@ -806,7 +808,7 @@ public class EllipsoidEclipseDetectorTest {
 
         /**
          * new detector
-         * 
+         *
          * @param occulted
          *        body
          * @param occultedRadius
@@ -826,16 +828,16 @@ public class EllipsoidEclipseDetectorTest {
         }
 
         @Override
-        public Action
-            eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                throws PatriusException {
+        public
+            Action
+                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
             this.mapNewOld.put(s.getDate(), new Double[] { (double) A, s.getLv(), increasing ? 0. : 1. });
             return Action.CONTINUE;
         }
 
         /**
          * Returns logged data
-         * 
+         *
          * @return data map
          */
         public TreeMap<AbsoluteDate, Double[]> getData() {

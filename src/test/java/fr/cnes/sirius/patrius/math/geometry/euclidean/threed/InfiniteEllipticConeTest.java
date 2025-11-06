@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history Created on 12/10/2011
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -29,33 +31,28 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
  * Test class for {@link InfiniteEllipticCone}
  * </p>
- * 
+ *
  * @see InfiniteEllipticCone
- * 
+ *
  * @author Rami Houdroge
- * 
+ *
  * @version $Id: InfiniteEllipticConeTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class InfiniteEllipticConeTest {
 
@@ -70,9 +67,9 @@ public class InfiniteEllipticConeTest {
 
         /**
          * @featureTitle InfiniteEllipticCone shape
-         * 
+         *
          * @featureDescription Creation of a cone, computation of distances and intersections with lines and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_40, DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120,
          *                      DV-GEOMETRIE_130
          */
@@ -80,9 +77,9 @@ public class InfiniteEllipticConeTest {
 
         /**
          * @featureTitle InfiniteEllipticCone getters
-         * 
+         *
          * @featureDescription Test cone getters.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_40, DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120,
          *                      DV-GEOMETRIE_130
          */
@@ -90,9 +87,9 @@ public class InfiniteEllipticConeTest {
 
         /**
          * @featureTitle InfiniteEllipticCone transformations
-         * 
+         *
          * @featureDescription Test cone basis transformations.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_40, DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120,
          *                      DV-GEOMETRIE_130
          */
@@ -100,9 +97,9 @@ public class InfiniteEllipticConeTest {
 
         /**
          * @featureTitle InfiniteEllipticCone intersections
-         * 
+         *
          * @featureDescription Test cone intersection algorithms.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_40, DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120,
          *                      DV-GEOMETRIE_130, DV-GEOMETRIE_140
          */
@@ -110,9 +107,9 @@ public class InfiniteEllipticConeTest {
 
         /**
          * @featureTitle InfiniteEllipticCone distance
-         * 
+         *
          * @featureDescription Test cone distance computation algorithms.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_40, DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120,
          *                      DV-GEOMETRIE_130
          */
@@ -120,9 +117,9 @@ public class InfiniteEllipticConeTest {
 
         /**
          * @featureTitle InfiniteEllipticCone ToString
-         * 
+         *
          * @featureDescription ToString method test.
-         * 
+         *
          * @coveredRequirements NA
          */
         INFINITE_ELLIPTIC_CONE_TO_STRING
@@ -130,16 +127,16 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#InfiniteEllipticCone (Vector3D, Vector3D, Vector3D, double, double)}
-     * 
+     *
      * @description Test InfiniteEllipticCone Constructor
      *              {@link InfiniteEllipticCone#InfiniteEllipticCone(Vector3D, Vector3D, Vector3D, double, double)} Here
      *              we check the correctness of the Spheroid class constructor. Nominal case as well as degraded
      *              cases are checked. Once the test is passed, the method is considered correct and used afterwards.
-     * 
+     *
      * @input Nominal case
      *        <p>
      *        apex = (1,2,3)
@@ -169,16 +166,16 @@ public class InfiniteEllipticConeTest {
      *        <p>
      *        Incorrect axis specified : Cone and perpendicular axis not perpendicular
      *        </p>
-     * 
+     *
      * @output InfiniteEllipticCone
-     * 
+     *
      * @testPassCriteria No exception is raised for the nominal cases and the returned elements are the same as the user
      *                   specified ones (with an epsilon of 1e-16 due to the machine errors only : we check that the
      *                   elements are indeed the ones given at the construction), an IllegalArgumentException is raised
      *                   for degraded cases.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -277,25 +274,25 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_PROPS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#getOrigin()}
-     * 
+     *
      * @description Test cone getters.
-     * 
+     *
      * @input apex = (1, 2, 3)
      * @input axis = (0, 0, 1)
      * @input axisU = (1, 0, 0)
      * @input alpha = PI/4 and beta = PI/5
-     * 
+     *
      * @output Vector3D containing the cone apex
-     * 
+     *
      * @testPassCriteria The returned origin is the same as the user specified origin (with an epsilon of 1e-16 due to
      *                   the machine errors : we check if the origin is indeed the one given at the construction).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -319,30 +316,30 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_PROPS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#getAngleX()}
      * @testedMethod {@link InfiniteEllipticCone#getAngleY()}
      * @testedMethod {@link InfiniteEllipticCone#getApertureX()}
      * @testedMethod {@link InfiniteEllipticCone#getApertureY()}
      * @testedMethod {@link InfiniteEllipticCone#getSemiAxisX()}
      * @testedMethod {@link InfiniteEllipticCone#getSemiAxisY()}
-     * 
+     *
      * @description Test InfiniteEllipticCone getters.
-     * 
+     *
      * @input apex = (1, 2, 3)
      * @input axis = (0, 0, 1)
      * @input axisU = (1, 0, 0)
      * @input alpha = PI/4 and beta = PI/5
-     * 
+     *
      * @output doubles
-     * 
+     *
      * @testPassCriteria returned values are the same as the specified values (with an epsilon of 1e-16 due to the
      *                   machine errors : we check if the elements are indeed the ones given at the construction).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -368,27 +365,27 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#getLocalBasisTransform()}
      * @testedMethod {@link InfiniteEllipticCone#getStandardBasisTransform()}
-     * 
+     *
      * @description Test Cone basis transformations.
-     * 
+     *
      * @input apex = (1, 2, 3)
      * @input axis = (4, 5, 6)
      * @input axisU = (1, 0, 0)
      * @input alpha = PI/4 and beta = PI/5
-     * 
+     *
      * @output Matrix3D containing coordinates of target basis expressed in current basis
-     * 
+     *
      * @testPassCriteria The local basis transform matrix contains the coordinates of the standard basis vectors
      *                   expressed in the local basis. The product of both matrices must equal the identity matrix. All
      *                   with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -447,24 +444,24 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#getVectorialLocalExpression(Vector3D)}
      * @testedMethod {@link InfiniteEllipticCone#getVectorialStandardExpression(Vector3D)}
-     * 
+     *
      * @description Test cone basis transformations.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D expressed in target basis
-     * 
+     *
      * @testPassCriteria For a vector expressed in the standard basis, the vector expressed in the local basis must be
      *                   the same as the predicted one, and the transformation into the standard basis must yield the
      *                   same result with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -501,24 +498,24 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#getAffineLocalExpression(Vector3D)}
      * @testedMethod {@link InfiniteEllipticCone#getAffineStandardExpression(Vector3D)}
-     * 
+     *
      * @description Test cone basis transformations.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D expressed in target basis
-     * 
+     *
      * @testPassCriteria For a vector expressed in the standard basis, the vector expressed in the local basis must be
      *                   the same as the predicted one, and the transformation into the standard basis must yield the
      *                   same result with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -555,21 +552,21 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_INTERSECTIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#intersects(Line)}
-     * 
+     *
      * @description Test cone intersections algorithm.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Boolean set to true if the user specified line intersects the cone
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -626,21 +623,21 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#isStrictlyInside(Vector3D)}
-     * 
+     *
      * @description Test if a point is strictly inside the cone.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output boolean true if is strictly inside false otherwise
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one.
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test
@@ -672,22 +669,22 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_INTERSECTIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Test cone intersections algorithm.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] array with intersections points. Empty if none.
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -779,22 +776,22 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#closestPointTo(Vector3D)}
-     * 
+     *
      * @description Test cone distance computation algorithms
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -859,7 +856,7 @@ public class InfiniteEllipticConeTest {
         result = myCone.closestPointTo(myPoint);
         exp = new Vector3D(1 + MathLib.sin(FastMath.PI / 4) * MathLib.sin(FastMath.PI / 4), 0, 1
                 + MathLib.sin(FastMath.PI / 4)
-                * MathLib.cos(FastMath.PI / 4));
+                        * MathLib.cos(FastMath.PI / 4));
         Assert.assertEquals(exp.getX(), result.getX(), this.comparisonEpsilon);
         Assert.assertEquals(exp.getY(), result.getY(), this.comparisonEpsilon);
         Assert.assertEquals(exp.getZ(), result.getZ(), this.comparisonEpsilon);
@@ -920,22 +917,22 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#closestPointTo(Vector3D)}
-     * 
+     *
      * @description Test cone distance computation algorithms. Test part 2 only to keep part 1 under 100 lines.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -951,8 +948,9 @@ public class InfiniteEllipticConeTest {
         final Vector3D myPoint = myCone.getAffineStandardExpression(new Vector3D(0, 2, 1));
         final Vector3D result = myCone.closestPointTo(myPoint);
         final Vector3D exp = myCone.getAffineStandardExpression(new Vector3D(0, 1 / MathLib.sqrt(3)
-                + (2 - 1 / MathLib.sqrt(3)) / 2 * MathLib.sin(FastMath.PI / 6), 1 + (2 - 1 / MathLib.sqrt(3)) / 2
-                * MathLib.cos(FastMath.PI / 6)));
+                + (2 - 1 / MathLib.sqrt(3)) / 2 * MathLib.sin(FastMath.PI / 6),
+            1 + (2 - 1 / MathLib.sqrt(3)) / 2
+                    * MathLib.cos(FastMath.PI / 6)));
         Assert.assertEquals(exp.getX(), result.getX(), this.comparisonEpsilon);
         Assert.assertEquals(exp.getY(), result.getY(), this.comparisonEpsilon);
         Assert.assertEquals(exp.getZ(), result.getZ(), this.comparisonEpsilon);
@@ -960,21 +958,21 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#distanceTo(Vector3D)}
-     * 
+     *
      * @description Test cone distance computation algorithms : inside or outside of the cone?
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output boolean
-     * 
+     *
      * @testPassCriteria The point is in the predicted zone (inside or outside).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1023,23 +1021,23 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#closestPointTo(Line)}
      * @testedMethod {@link InfiniteEllipticCone#distanceTo(Line)}
-     * 
+     *
      * @description Test cone distance computation algorithms
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1140,22 +1138,22 @@ public class InfiniteEllipticConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITE_ELLIPTIC_CONE_TO_STRING}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCone#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1173,7 +1171,7 @@ public class InfiniteEllipticConeTest {
         final String result = myCone.toString();
 
         final String expected =
-            "InfiniteEllipticCone{Origin{0; 0; 0},Direction{0; 0; 1},U vector{1; 0; 0},Angle on U{0.7853981633974483},Angle on V{0.5235987755982988}}";
+            "InfiniteEllipticCone{Origin{0.0; 0.0; 0.0},Direction{0.0; 0.0; 1.0},U vector{1.0; 0.0; 0.0},Angle on U{0.7853981633974483},Angle on V{0.5235987755982988}}";
         Assert.assertEquals(expected, result);
     }
 

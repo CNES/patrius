@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-382:25/04/2025:[PATRIUS] Analyse concernant le renvoi 
+ *          des coordonnees d'entree pour EllipsoidPoint 
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -29,44 +32,30 @@
 package fr.cnes.sirius.patrius.projections;
 
 import java.util.ArrayList;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
-import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.ComparisonType;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link ProjectionEllipsoidUtils}.
- * 
+ *
  * @author Thomas Galpin
  * @version $Id$
- * 
+ *
  */
 public class ProjectionEllipsoidUtilsTest {
 
@@ -74,9 +63,9 @@ public class ProjectionEllipsoidUtilsTest {
     public enum features {
         /**
          * @featureTitle Validate the utility methods of {@link ProjectionEllipsoid} class
-         * 
+         *
          * @featureDescription Validate the the utility methods of {@link ProjectionEllipsoid} class
-         * 
+         *
          * @coveredRequirements DV-CARTO_20
          */
         PROJECTION_ELLIPSOID
@@ -153,21 +142,21 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeBearing(EllipsoidPoint, EllipsoidPoint)}
-     * 
+     *
      * @description test computation of bearing
-     * 
-     * @input ellipsoid, two geodetic points
-     * 
-     * @output bearing between the two geodetic points
-     * 
+     *
+     * @input ellipsoid, two ellipsoid points
+     *
+     * @output bearing between the two ellipsoid points
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 4.8
-     * 
+     *
      * @nonRegressionVersion 4.8
      */
     @Test
@@ -186,10 +175,10 @@ public class ProjectionEllipsoidUtilsTest {
 
         final double expeted1 = 2.6119068833311587;
         final double expeted2 = 5.753499536920952;
-        final double expeted3 = 2.6432768067025294;
+        final double expeted3 = 2.643276806702529;
         final double expeted4 = 5.784869460292322;
         final double expeted5 = 5.723192810516977;
-        final double expeted6 = 2.581600156927184;
+        final double expeted6 = 2.5816001569271845;
         final double expeted11 = 5.495274586201312;
 
         Assert.assertEquals(actual1, expeted1, eps);
@@ -214,7 +203,7 @@ public class ProjectionEllipsoidUtilsTest {
             0.0261405281982074, 256., "");
         final double actual7 = ProjectionEllipsoidUtils.computeBearing(point1, point5);
         final double actual8 = ProjectionEllipsoidUtils.computeBearing(point1, point6);
-        final double expeted7 = 6.283185307179586; // = 2PI, the value before normalization on [0;2PI] is -5e-17
+        final double expeted7 = 0.0; // = 2PI
         final double expeted8 = 3.141592653589793;
         Assert.assertEquals(actual7, expeted7, eps);
         Assert.assertEquals(actual8, expeted8, eps);
@@ -256,21 +245,21 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeSphericalAzimuth(EllipsoidPoint, EllipsoidPoint)}
-     * 
-     * @description test computation of spherical azimuth between two geodetic points
-     * 
-     * @input ellipsoid, two geodetic points
-     * 
-     * @output computation of spherical azimuth between the two geodetic points
-     * 
+     *
+     * @description test computation of spherical azimuth between two ellipsoid points
+     *
+     * @input ellipsoid, two ellipsoid points
+     *
+     * @output computation of spherical azimuth between the two ellipsoid points
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -312,21 +301,21 @@ public class ProjectionEllipsoidUtilsTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeMercatorLatitude(double)}
-     * 
+     *
      * @description test computation Mercator Latitude
-     * 
-     * @input ellipsoid, geodetic latitude
-     * 
+     *
+     * @input ellipsoid, ellipsoid latitude
+     *
      * @output Mercator latitude
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -335,24 +324,10 @@ public class ProjectionEllipsoidUtilsTest {
             "LibKernel 10.0.0", 0, ComparisonType.RELATIVE);
 
         final double[] refMercatorLatitude = {
-            -1.1102230246251565E-16
-            , 0.10421074576230559
-            , 0.2095933545574732
-            , 0.3173854932677744
-            , 0.42896580509513527
-            , 0.5459504012025171
-            , 0.670328990535307
-            , 0.804672411915078
-            , 0.952471956903105
-            , 1.118735643260533
-            , 1.3111274301053137
-            , 1.5423886733563723
-            , 1.8363052496450072
-            , 2.2461678493890607
-            , 2.9418719621825664
-            , 11.642420045994898
-            , 11.642420046045785
-            , 11.642420046045785 };
+            -1.1102230246251565E-16, 0.10421074576230559, 0.2095933545574732, 0.3173854932677744, 0.42896580509513527,
+            0.5459504012025171, 0.670328990535307, 0.804672411915078, 0.952471956903105, 1.118735643260533,
+            1.3111274301053137, 1.5423886733563723, 1.8363052496450072, 2.2461678493890607, 2.9418719621825664,
+            11.642420045994898, 11.642420046045785, 11.642420046045785 };
 
         final double step = Mercator.MAX_LATITUDE * MathUtils.RAD_TO_DEG / 15;
         int countRef = 0;
@@ -361,7 +336,8 @@ public class ProjectionEllipsoidUtilsTest {
             // assert + ptint report
             Assert.assertEquals(refMercatorLatitude[countRef],
                 ProjectionEllipsoidUtils.computeMercatorLatitude(i * MathUtils.DEG_TO_RAD,
-                    ellipsoid), 0.);
+                    ellipsoid),
+                0.);
             if (i == step) {
                 Report.printToReport("Mercator lat (" + MathLib.rint(i) + " deg)",
                     refMercatorLatitude[countRef],
@@ -375,35 +351,38 @@ public class ProjectionEllipsoidUtilsTest {
         Assert.assertEquals(refMercatorLatitude[16],
             ProjectionEllipsoidUtils.computeMercatorLatitude(Mercator.MAX_LATITUDE, ellipsoid), 0.);
         Report.printToReport("Mercator lat (" + Mercator.MAX_LATITUDE * MathUtils.RAD_TO_DEG
-                + " deg)", refMercatorLatitude[16],
+                + " deg)",
+            refMercatorLatitude[16],
             ProjectionEllipsoidUtils.computeMercatorLatitude(Mercator.MAX_LATITUDE, ellipsoid));
 
         // input latitude = Mercator.MAX_LATITUDE + PI/360
         Assert.assertEquals(refMercatorLatitude[17],
             ProjectionEllipsoidUtils.computeMercatorLatitude(
-                Mercator.MAX_LATITUDE + FastMath.PI / 360, ellipsoid), 0.);
+                Mercator.MAX_LATITUDE + FastMath.PI / 360, ellipsoid),
+            0.);
         Report.printToReport("Mercator lat (" + (Mercator.MAX_LATITUDE + FastMath.PI / 360)
-                * MathUtils.RAD_TO_DEG + " deg)", refMercatorLatitude[17], ProjectionEllipsoidUtils
-            .computeMercatorLatitude(Mercator.MAX_LATITUDE + FastMath.PI / 360, ellipsoid));
+                * MathUtils.RAD_TO_DEG + " deg)",
+            refMercatorLatitude[17], ProjectionEllipsoidUtils
+                .computeMercatorLatitude(Mercator.MAX_LATITUDE + FastMath.PI / 360, ellipsoid));
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeRadiusEastWest(double)}
-     * 
+     *
      * @description test computation of radius east/west
-     * 
-     * @input ellipsoid, geodetic latitude
-     * 
+     *
+     * @input ellipsoid, ellipsoid latitude
+     *
      * @output radius east/west
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -412,27 +391,10 @@ public class ProjectionEllipsoidUtilsTest {
             "LibKernel 10.0.0", 0, ComparisonType.RELATIVE);
 
         final double[] refRadius = {
-            6399593.625758493
-            , 6399065.957420465
-            , 6397535.342997051
-            , 6395153.541201456
-            , 6392156.08040758
-            , 6388838.290121148
-            , 6385525.660683886
-            , 6382541.71120694
-            , 6380176.6103943195
-            , 6378659.507412074
-            , 6378137.0
-            , 6378659.507412074
-            , 6380176.6103943195
-            , 6382541.71120694
-            , 6385525.660683886
-            , 6388838.290121148
-            , 6392156.08040758
-            , 6395153.541201456
-            , 6397535.342997051
-            , 6399065.957420465
-            , 6399593.625758493 };
+            6399593.625758493, 6399065.957420465, 6397535.342997051, 6395153.541201456, 6392156.08040758,
+            6388838.290121148, 6385525.660683886, 6382541.71120694, 6380176.6103943195, 6378659.507412074, 6378137.0,
+            6378659.507412074, 6380176.6103943195, 6382541.71120694, 6385525.660683886, 6388838.290121148,
+            6392156.08040758, 6395153.541201456, 6397535.342997051, 6399065.957420465, 6399593.625758493 };
 
         final double step = FastMath.PI / 20;
         int countRef = 0;
@@ -453,22 +415,22 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeLoxodromicDistance(EllipsoidPoint, EllipsoidPoint)}
-     * 
+     *
      * @description test computation loxodromic distance between two points
-     * 
-     * @input two geodetic points
-     * 
+     *
+     * @input two ellipsoid points
+     *
      * @output a loxodromic distance
-     * 
+     *
      * @testPassCriteria loxodromic distance is identical to reference (reference : LibKernel library 10.0.0, tolerance:
      *                   5E-16)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -501,14 +463,8 @@ public class ProjectionEllipsoidUtilsTest {
             ProjectionEllipsoidUtils.computeLoxodromicDistance(point7, point8) };
 
         // ref
-        final double[] loxRef = { 4105994.0401493986
-            , 4105994.0401493986
-            , 1867447.6851144924
-            , 1867447.6851144924
-            , 2246051.708688264
-            , 2246051.7086882642
-            , 636511.770303472
-            , 46391.75346512364 };
+        final double[] loxRef = { 4105994.0401493986, 4105994.0401493986, 1867447.6851144924, 1867447.6851144924,
+            2246051.708688264, 2246051.7086882642, 636511.770303472, 46391.75346512364 };
 
         // assert + ptint report
         for (int i = 0; i < lox.length; i++) {
@@ -535,21 +491,21 @@ public class ProjectionEllipsoidUtilsTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeMeridionalDistance(double)}
-     * 
+     *
      * @description test computation meridional distance
-     * 
+     *
      * @input ellipsoid, latitude
-     * 
+     *
      * @output meridional distance
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -559,27 +515,10 @@ public class ProjectionEllipsoidUtilsTest {
 
         // ref
         final double[] refMeridionalDist = {
-            -1.0001965729528552E7
-            , -8996803.073579784
-            , -7992129.355847894
-            , -6988384.569753045
-            , -5985916.028950047
-            , -4984944.378231887
-            , -3985542.6704830388
-            , -2987630.294689997
-            , -1990981.9348791367
-            , -995250.277395647
-            , 0.0
-            , 995250.277395647
-            , 1990981.9348791367
-            , 2987630.294689997
-            , 3985542.6704830388
-            , 4984944.378231887
-            , 5985916.028950047
-            , 6988384.569753045
-            , 7992129.355847894
-            , 8996803.073579784
-            , 1.0001965729528552E7 };
+            -1.0001965729528552E7, -8996803.073579784, -7992129.355847894, -6988384.569753045, -5985916.028950047,
+            -4984944.378231887, -3985542.6704830388, -2987630.294689997, -1990981.9348791367, -995250.277395647, 0.0,
+            995250.277395647, 1990981.9348791367, 2987630.294689997, 3985542.6704830388, 4984944.378231887,
+            5985916.028950047, 6988384.569753045, 7992129.355847894, 8996803.073579784, 1.0001965729528552E7 };
 
         final double step = FastMath.PI / 20;
         int countRef = 0;
@@ -598,21 +537,21 @@ public class ProjectionEllipsoidUtilsTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeInverseMeridionalDistance(double)}
-     * 
+     *
      * @description test computation inverse meridional distance at a latitude
-     * 
+     *
      * @input ellipsoid, latitude
-     * 
+     *
      * @output inverse meridional distance
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -622,27 +561,11 @@ public class ProjectionEllipsoidUtilsTest {
 
         // ref
         final double[] refInverseMeridionalDist = {
-            -0.1578291544856476
-            , -0.14204846915147412
-            , -0.1262670828409429
-            , -0.11048507162655401
-            , -0.09470251221843526
-            , -0.07891948188621338
-            , -0.06313605838025765
-            , -0.04735231985238414
-            , -0.03156834477610906
-            , -0.015784211866540734
-            , 0.0
-            , 0.015784211866540734
-            , 0.03156834477610906
-            , 0.04735231985238414
-            , 0.06313605838025765
-            , 0.07891948188621338
-            , 0.09470251221843526
-            , 0.11048507162655401
-            , 0.1262670828409429
-            , 0.14204846915147412
-            , 0.1578291544856476
+            -0.1578291544856476, -0.14204846915147412, -0.1262670828409429, -0.11048507162655401, -0.09470251221843526,
+            -0.07891948188621338, -0.06313605838025765, -0.04735231985238414, -0.03156834477610906,
+            -0.015784211866540734, 0.0, 0.015784211866540734, 0.03156834477610906, 0.04735231985238414,
+            0.06313605838025765, 0.07891948188621338, 0.09470251221843526, 0.11048507162655401, 0.1262670828409429,
+            0.14204846915147412, 0.1578291544856476
         };
 
         final double step = 2e6 / 20;
@@ -665,21 +588,21 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computePointAlongLoxodrome(EllipsoidPoint, double, double)}
-     * 
+     *
      * @description test compute point along a loxodrome
-     * 
+     *
      * @input ellipsoid, initial point, distance along the rhumb line, azimuth
-     * 
-     * @output geodetic point
-     * 
+     *
+     * @output ellipsoid point
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 1E-15)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -719,7 +642,7 @@ public class ProjectionEllipsoidUtilsTest {
             actualPoints.add(ProjectionEllipsoidUtils.computePointAlongLoxodrome(p0, d1, azimuth));
         }
         // check
-        checkListGeodeticPoint(refPoints, actualPoints, eps);
+        checkListEllipsoidPoint(refPoints, actualPoints, eps);
 
         // exceptions :
         try {
@@ -742,21 +665,21 @@ public class ProjectionEllipsoidUtilsTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeInverseRectifyingLatitude(double)}
-     * 
+     *
      * @description test computation inverse rectifying latitude
-     * 
+     *
      * @input ellipsoid, latitude
-     * 
+     *
      * @output inverse rectifying latitude
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -766,22 +689,10 @@ public class ProjectionEllipsoidUtilsTest {
 
         // ref
         final double[] refInverseRectifyingLat = {
-            -3.141592653589793
-            , -2.7208380951196665
-            , -2.3013303609906366
-            , -1.8834785757729071
-            , -1.466598764222742
-            , -1.0493757139052782
-            , -0.6307162481238062
-            , -0.21046676675010437
-            , 0.2104667667501043
-            , 0.6307162481238062
-            , 1.0493757139052782
-            , 1.466598764222742
-            , 1.8834785757729071
-            , 2.3013303609906366
-            , 2.7208380951196665
-            , 3.141592653589793
+            -3.141592653589793, -2.7208380951196665, -2.3013303609906366, -1.8834785757729071, -1.466598764222742,
+            -1.0493757139052782, -0.6307162481238062, -0.21046676675010437, 0.2104667667501043, 0.6307162481238062,
+            1.0493757139052782, 1.466598764222742, 1.8834785757729071, 2.3013303609906366, 2.7208380951196665,
+            3.141592653589793
         };
 
         final double step = 2 * FastMath.PI / 15;
@@ -804,24 +715,24 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computeOrthodromicDistance(EllipsoidPoint, EllipsoidPoint)}
      * @testedMethod {@link ProjectionEllipsoid#computeOrthodromicDistance(double, double, double, double)}
-     * 
-     * @description test the computation of orthodromic distance between two geodetic points
-     * 
+     *
+     * @description test the computation of orthodromic distance between two ellipsoid points
+     *
      * @input ellipsoid
-     * 
+     *
      * @output orthodromic distance
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 3E-14)
      *                   specials cases are considered : the two points have same latitude or same longitude, same
      *                   latitude and same longitude
-     * 
+     *
      * @referenceVersion 3.3
-     * 
+     *
      * @nonRegressionVersion 3.3
      */
     @Test
@@ -884,21 +795,21 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#computePointAlongOrthodrome(EllipsoidPoint, double, double)}
-     * 
+     *
      * @description test the computation of point along an orthodrome
-     * 
+     *
      * @input ellipsoid
-     * 
-     * @output geodetic coordinates
-     * 
+     *
+     * @output ellipsoid coordinates
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 1E-14)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -913,7 +824,8 @@ public class ProjectionEllipsoidUtilsTest {
             MathLib.toRadians(43.528364978062925), MathLib.toRadians(1.5709556155153825), 0., "");
 
         Assert.assertEquals(0., (expected.getLLHCoordinates().getLatitude() - actual.getLLHCoordinates().getLatitude())
-                / expected.getLLHCoordinates().getLatitude(), eps);
+                / expected.getLLHCoordinates().getLatitude(),
+            eps);
         Assert.assertEquals(0., (expected.getLLHCoordinates().getLongitude() - actual.getLLHCoordinates()
             .getLongitude()) / expected.getLLHCoordinates().getLongitude(), eps);
         Assert.assertEquals(expected.getLLHCoordinates().getHeight(), actual.getLLHCoordinates().getHeight(), eps);
@@ -929,21 +841,21 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#discretizeGreatCircle(EllipsoidPoint, EllipsoidPoint, double)}
-     * 
+     *
      * @description test the discretization along a Great Circle
-     * 
+     *
      * @input ellipsoid
-     * 
-     * @output geodetic coordinates
-     * 
+     *
+     * @output ellipsoid coordinates
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 3E-13)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -979,30 +891,30 @@ public class ProjectionEllipsoidUtilsTest {
         expected3.add(new EllipsoidPoint(ellipsoid, ellipsoid.getLLHCoordinatesSystem(), MathLib
             .toRadians(11.459155902616466), MathLib.toRadians(22.918311805232932), 1234., ""));
 
-        checkListGeodeticPoint(expected1, actual1, eps);
-        checkListGeodeticPoint(expected2, actual2, eps);
-        checkListGeodeticPoint(expected3, actual3, eps);
+        checkListEllipsoidPoint(expected1, actual1, eps);
+        checkListEllipsoidPoint(expected2, actual2, eps);
+        checkListEllipsoidPoint(expected3, actual3, eps);
     }
 
     /**
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#discretizeRhumbLine(EllipsoidPoint, EllipsoidPoint, double)}
-     * 
+     *
      * @description test the discretization along a Rhumb line
-     * 
+     *
      * @input ellipsoid
-     * 
-     * @output geodetic coordinates
-     * 
+     *
+     * @output ellipsoid coordinates
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 3E-13)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -1036,28 +948,28 @@ public class ProjectionEllipsoidUtilsTest {
         expected3.add(new EllipsoidPoint(ellipsoid, ellipsoid.getLLHCoordinatesSystem(), MathLib
             .toRadians(11.459155902616466), MathLib.toRadians(22.918311805232932), 1234., ""));
 
-        checkListGeodeticPoint(expected1, actual1, eps);
-        checkListGeodeticPoint(expected2, actual2, eps);
-        checkListGeodeticPoint(expected3, actual3, eps);
+        checkListEllipsoidPoint(expected1, actual1, eps);
+        checkListEllipsoidPoint(expected2, actual2, eps);
+        checkListEllipsoidPoint(expected3, actual3, eps);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#getEccentricity()}
-     * 
+     *
      * @description Check the ellipsoid eccentricity computation
-     * 
+     *
      * @input ellipsoid
-     * 
+     *
      * @output ellipsoid eccentricity
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -1073,21 +985,21 @@ public class ProjectionEllipsoidUtilsTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoid#getSeries()}
-     * 
+     *
      * @description Check the ellipsoid series computation
-     * 
+     *
      * @input ellipsoid
-     * 
+     *
      * @output series
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 2E-16)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -1123,7 +1035,7 @@ public class ProjectionEllipsoidUtilsTest {
 
     /**
      * Check list of EllipsoidPoint.
-     * 
+     *
      * @param expected
      *        expected list
      * @param actual
@@ -1131,21 +1043,23 @@ public class ProjectionEllipsoidUtilsTest {
      * @param eps
      *        comparison epsilon (relative)
      */
-    private static void checkListGeodeticPoint(final List<EllipsoidPoint> expected, final List<EllipsoidPoint> actual,
-                                               final double eps) {
+    private static void checkListEllipsoidPoint(final List<EllipsoidPoint> expected, final List<EllipsoidPoint> actual,
+                                                final double eps) {
         Assert.assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++) {
             if (expected.get(i).getLLHCoordinates().getLatitude() != 0) {
                 Assert.assertEquals(0., (expected.get(i).getLLHCoordinates().getLatitude() - actual.get(i)
                     .getLLHCoordinates().getLatitude())
-                        / expected.get(i).getLLHCoordinates().getLatitude(), eps);
+                        / expected.get(i).getLLHCoordinates().getLatitude(),
+                    eps);
             } else {
                 Assert.assertEquals(0., actual.get(i).getLLHCoordinates().getLatitude(), eps);
             }
             if (expected.get(i).getLLHCoordinates().getLongitude() != 0) {
                 Assert.assertEquals(0., (expected.get(i).getLLHCoordinates().getLongitude() - actual.get(i)
                     .getLLHCoordinates().getLongitude())
-                        / expected.get(i).getLLHCoordinates().getLongitude(), eps);
+                        / expected.get(i).getLLHCoordinates().getLongitude(),
+                    eps);
             } else {
                 Assert.assertEquals(0., actual.get(i).getLLHCoordinates().getLongitude(), eps);
             }
@@ -1164,21 +1078,21 @@ public class ProjectionEllipsoidUtilsTest {
      * @throws PatriusException
      *         if an error occurs
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PROJECTION_ELLIPSOID}
-     * 
+     *
      * @testedMethod {@link ProjectionEllipsoidUtils#computeCenterPointAlongLoxodrome(EllipsoidPoint, EllipsoidPoint, EllipsoidBodyShape)}
-     * 
+     *
      * @description test computation center between two points along a loxodrome
-     * 
-     * @input ellipsoid, two geodetic points
-     * 
-     * @output Geodetic point
-     * 
+     *
+     * @input ellipsoid, two ellipsoid points
+     *
+     * @output Ellipsoid point
+     *
      * @testPassCriteria result is identical to reference (reference : Math, tolerance: 0)
-     * 
+     *
      * @referenceVersion 4.5
-     * 
+     *
      * @nonRegressionVersion 4.5
      */
     @Test

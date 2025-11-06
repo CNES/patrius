@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-475:25/04/2025:[PATRIUS] Reliquat OPENFD
 * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
 * VERSION:4.15:OPENFD-359:21/11/2024:[PATRIUS] BodyCenterPointing est erroné lorsque 
@@ -52,7 +53,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 /**
  * This class handles body center pointing attitude provider.
  * <p>
- * This class represents the attitude provider where the satellite z axis is pointing to the body frame center.
+ * This class represents the attitude provider where the satellite z axis is pointing to a body center.
  * </p>
  * <p>
  * The object <code>BodyCenterPointing</code> is guaranteed to be immutable.
@@ -74,7 +75,7 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
     private static final PVCoordinates PLUS_K = new PVCoordinates(Vector3D.PLUS_K, Vector3D.ZERO,
         Vector3D.ZERO);
 
-    /** Body frame. */
+    /** Body center that defined the pointing. */
     private final PVCoordinatesProvider bodyCenter;
 
     /**
@@ -90,8 +91,7 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
     /**
      * Creates new instance.
      * 
-     * @param bodyCenter This PVCoordinatesProvider's frame is the pivot in the transformation from
-     *        an actual frame to the local orbital frame.
+     * @param bodyCenter Body center that define the pointing.
      */
     public BodyCenterPointing(final PVCoordinatesProvider bodyCenter) {
         this(bodyCenter, true);
@@ -100,8 +100,7 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
     /**
      * Creates new instance.
      * 
-     * @param bodyCenter This PVCoordinatesProvider's frame is the pivot in the transformation from
-     *        an actual frame to the local orbital frame.
+     * @param bodyCenter Body center that define the pointing.
      * @param computeKeplerianJerk This boolean indicates if the keplerian jerk is to be computed in
      *        the getAtttiude method or
      *        if it has to be zero regardless of the acceleration value
@@ -116,13 +115,11 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
     /**
      * Creates new instance.
      * <p>
-     * The GCRF frame is used as pivot in the transformation from an actual frame to the local orbital frame.
+     * Earth is used as default body.
      * </p>
      */
     public BodyCenterPointing() {
-        super();
-        this.bodyCenter = FramesFactory.getGCRF();
-        this.computeKeplerianJerk = true;
+        this(FramesFactory.getGCRF(), true);
     }
 
     /** {@inheritDoc} */

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
  * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
@@ -733,7 +734,7 @@ public class BodyShapeFitter {
         final double[] sinLat = new double[vertices.size()];
         int i = 0;
         for (final Vertex v : vertices.values()) {
-            // Geodetic point
+            // Ellipsoid point
             Vector3D normedPoint = Vector3D.ZERO;
             if (v.getPosition().getNorm() > 0) {
                 normedPoint = v.getPosition().normalize();
@@ -741,7 +742,7 @@ public class BodyShapeFitter {
             final double latitude = MathLib.asin(normedPoint.getZ());
             final double longitude = MathLib.atan2(normedPoint.getY(), normedPoint.getX());
 
-            // cos/sin for given geodetic point
+            // cos/sin for given ellipsoid point
             final double[] sincosLon = MathLib.sinAndCos(longitude);
             sinLon[i] = sincosLon[0];
             cosLon[i] = sincosLon[1];
@@ -802,7 +803,7 @@ public class BodyShapeFitter {
         final double[] sinLat = new double[vertices.size()];
         int i = 0;
         for (final Vertex v : vertices.values()) {
-            // Geodetic point
+            // Ellipsoid point
             Vector3D normedPoint = Vector3D.ZERO;
             if (v.getPosition().getNorm() > 0) {
                 normedPoint = v.getPosition().normalize();
@@ -810,7 +811,7 @@ public class BodyShapeFitter {
             final double latitude = MathLib.asin(normedPoint.getZ());
             final double longitude = MathLib.atan2(normedPoint.getY(), normedPoint.getX());
 
-            // cos/sin for given geodetic point
+            // cos/sin for given ellipsoid point
             final double[] sincosLon = MathLib.sinAndCos(longitude);
             sinLon[i] = sincosLon[0];
             cosLon[i] = sincosLon[1];
@@ -934,7 +935,7 @@ public class BodyShapeFitter {
         final double[] sinLat = new double[vertices.size()];
         int i = 0;
         for (final Vertex v : vertices.values()) {
-            // Geodetic point
+            // Ellipsoid point
             Vector3D normedPoint = Vector3D.ZERO;
             if (v.getPosition().getNorm() > 0) {
                 normedPoint = v.getPosition().normalize();
@@ -942,7 +943,7 @@ public class BodyShapeFitter {
             final double latitude = MathLib.asin(normedPoint.getZ());
             final double longitude = MathLib.atan2(normedPoint.getY(), normedPoint.getX());
 
-            // cos/sin for given geodetic point
+            // cos/sin for given ellipsoid point
             final double[] sincosLon = MathLib.sinAndCos(longitude);
             sinLon[i] = sincosLon[0];
             cosLon[i] = sincosLon[1];

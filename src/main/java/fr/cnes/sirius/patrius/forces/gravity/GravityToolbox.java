@@ -17,7 +17,7 @@
  * @history Created 19/07/2012
  *
  * HISTORY
- * VERSION:4.15.3:OPENFD-567:02/07/2025:[PATRIUS] Terme (1,1) dans le modèle de gravité de Balmino
+ * VERSION:4.16:OPENFD-567:25/04/2025:[PATRIUS] Terme (1,1) dans le modele de gravite de Balmino
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -41,13 +41,13 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Toolbox for tides.
- * 
+ *
  * @concurrency immutable
- * 
+ *
  * @author Julie Anton, Gerald Mercadier, Rami Houdroge
- * 
+ *
  * @version $Id: GravityToolbox.java 18082 2017-10-02 16:54:17Z bignon $
- * 
+ *
  * @since 1.2
  */
 public final class GravityToolbox {
@@ -78,7 +78,7 @@ public final class GravityToolbox {
 
     /**
      * Method to compute the acceleration, from Balmino algorithm (see {@link BalminoGravityModel}).
-     * 
+     *
      * @param positionInBodyFrame
      *        Position of the spacecraft in the body frame
      * @param coefficientsC
@@ -95,12 +95,13 @@ public final class GravityToolbox {
      *        Number of tesseral coefficients
      * @param helm
      *        Helmholtz polynomial
-     * 
+     *
      * @return acceleration vector
-     * 
+     *
      */
-    public static Vector3D
-        computeBalminoAcceleration(final Vector3D positionInBodyFrame,
+    public static
+        Vector3D
+            computeBalminoAcceleration(final Vector3D positionInBodyFrame,
                                        final double[][] coefficientsC, final double[][] coefficientsS,
                                        final double muc, final double eqRadius,
                                        final int degree, final int order, final HelmholtzPolynomial helm) {
@@ -172,9 +173,9 @@ public final class GravityToolbox {
                 auxp = aux * phelm[l][m];
                 dtr -= (l + 1) * auxp;
                 dkez[0] += m * asr[l] * phelm[l][m] *
-                    (coefficientsC[l][m] * gamma[m - 1] + coefficientsS[l][m] * sigma[m - 1]);
+                        (coefficientsC[l][m] * gamma[m - 1] + coefficientsS[l][m] * sigma[m - 1]);
                 dkez[1] -= m * asr[l] * phelm[l][m] *
-                    (coefficientsC[l][m] * sigma[m - 1] - coefficientsS[l][m] * gamma[m - 1]);
+                        (coefficientsC[l][m] * sigma[m - 1] - coefficientsS[l][m] * gamma[m - 1]);
                 dkez[2] += aux * dpphelm[l][m];
             }
         }
@@ -204,7 +205,7 @@ public final class GravityToolbox {
 
     /**
      * Method to compute the acceleration, from Droziner algorithm (see {@link DrozinerGravityModel}).
-     * 
+     *
      * @param positionInBodyFrame
      *        Position of the spacecraft in the body frame
      * @param coefficientsC
@@ -223,16 +224,18 @@ public final class GravityToolbox {
      *        Number of tesseral coefficients
      * @throws PatriusException
      *         if an Orekit error occurs
-     * 
+     *
      * @return acceleration vector
-     * 
+     *
      */
     // CHECKSTYLE: stop MethodLength check
     // CHECKSTYLE: stop NestedBlockDepth check
     // Reason: Orekit code kept as such
     public static Vector3D computeDrozinerAcceleration(final Vector3D positionInBodyFrame,
-            final double[][] coefficientsC, final double[][] coefficientsS, final double muc, final double eqRadius,
-            final double threshold, final int degree, final int order) throws PatriusException {
+                                                       final double[][] coefficientsC, final double[][] coefficientsS,
+                                                       final double muc, final double eqRadius,
+                                                       final double threshold, final int degree, final int order)
+        throws PatriusException {
         // CHECKSTYLE: resume MethodLength check
         // Droziner algorithm (see DrozinerAttractionModel class)
 
@@ -325,7 +328,7 @@ public final class GravityToolbox {
                         if (j <= (k - 2)) {
                             // General case
                             bkj = aeOnr * (zOnr * bkm1j * (2.0 * k + 1.0) / (k - j) -
-                                aeOnr * bkm2j * (k + j) / (k - 1 - j));
+                                    aeOnr * bkm2j * (k + j) / (k - 1 - j));
                             akj = aeOnr * bkm1j * (k + 1.0) / (k - j) - zOnr * bkj;
                         } else if (j == (k - 1)) {
                             // n - 1 case
@@ -379,9 +382,9 @@ public final class GravityToolbox {
      * The reason is that for the validation context, we do not want to set up an instance of the SpacecraftState object
      * to avoid the inertial frame of the spacecraft orbit.
      * </p>
-     * 
+     *
      * Method taken from {@link CunninghamGravityModel}
-     * 
+     *
      * @param positionInBodyFrame
      *        Position of the spacecraft in the body frame
      * @param equatorialRadius
@@ -396,9 +399,9 @@ public final class GravityToolbox {
      *        order
      * @param mu
      *        gravitation constant
-     * 
+     *
      * @return acceleration vector
-     * 
+     *
      * @see CunninghamGravityModel
      */
     // CHECKSTYLE: stop MethodLength check
@@ -512,19 +515,19 @@ public final class GravityToolbox {
                     gradZVrn = equatorialRadius * gradZVrd;
                     gradZVin = equatorialRadius * gradZVid;
                     final double tmpGradXVrd = (cx + dx) * gradXVrd - (cy + dy) * gradXVid + (dcxdx + ddxdx) * vrd -
-                        (dcxdy + ddxdy) * vid;
+                            (dcxdy + ddxdy) * vid;
                     gradXVid = (cy + dy) * gradXVrd + (cx + dx) * gradXVid + (dcxdy + ddxdy) * vrd + (dcxdx + ddxdx) *
-                        vid;
+                            vid;
                     gradXVrd = tmpGradXVrd;
                     final double tmpGradYVrd = (cx + dx) * gradYVrd - (cy + dy) * gradYVid + (dcxdy + ddxdy) * vrd -
-                        (dcydy + ddydy) * vid;
+                            (dcydy + ddydy) * vid;
                     gradYVid = (cy + dy) * gradYVrd + (cx + dx) * gradYVid + (dcydy + ddydy) * vrd + (dcxdy + ddxdy) *
-                        vid;
+                            vid;
                     gradYVrd = tmpGradYVrd;
                     final double tmpGradZVrd = (cx + dx) * gradZVrd - (cy + dy) * gradZVid + (dcxdz + ddxdz) * vrd -
-                        (dcydz + ddydz) * vid;
+                            (dcydz + ddydz) * vid;
                     gradZVid = (cy + dy) * gradZVrd + (cx + dx) * gradZVid + (dcydz + ddydz) * vrd + (dcxdz + ddxdz) *
-                        vid;
+                            vid;
                     gradZVrd = tmpGradZVrd;
                     final double tmpVrd = (cx + dx) * vrd - (cy + dy) * vid;
                     vid = (cy + dy) * vrd + (cx + dx) * vid;
@@ -546,17 +549,17 @@ public final class GravityToolbox {
                     vrn = (cz * vrn1 - coeff * rEq2OnR2 * vrn2) * inv;
                     vin = (cz * vin1 - coeff * rEq2OnR2 * vin2) * inv;
                     gradXVrn = (cz * gradXVrn1 - coeff * rEq2OnR2 * gradXVrn2 + dcxdz * vrn1 -
-                        coeff * donr2dx * vrn2) * inv;
+                            coeff * donr2dx * vrn2) * inv;
                     gradXVin = (cz * gradXVin1 - coeff * rEq2OnR2 * gradXVin2 + dcxdz * vin1 -
-                        coeff * donr2dx * vin2) * inv;
+                            coeff * donr2dx * vin2) * inv;
                     gradYVrn = (cz * gradYVrn1 - coeff * rEq2OnR2 * gradYVrn2 + dcydz * vrn1 -
-                        coeff * donr2dy * vrn2) * inv;
+                            coeff * donr2dy * vrn2) * inv;
                     gradYVin = (cz * gradYVin1 - coeff * rEq2OnR2 * gradYVin2 + dcydz * vin1 -
-                        coeff * donr2dy * vin2) * inv;
+                            coeff * donr2dy * vin2) * inv;
                     gradZVrn = (cz * gradZVrn1 - coeff * rEq2OnR2 * gradZVrn2 + dczdz * vrn1 -
-                        coeff * donr2dz * vrn2) * inv;
+                            coeff * donr2dz * vrn2) * inv;
                     gradZVin = (cz * gradZVin1 - coeff * rEq2OnR2 * gradZVin2 + dczdz * vin1 -
-                        coeff * donr2dz * vin2) * inv;
+                            coeff * donr2dz * vin2) * inv;
                 }
 
                 // increment variables
@@ -613,10 +616,10 @@ public final class GravityToolbox {
 
     /**
      * Denormalize an array of coefficients.
-     * 
+     *
      * @param tab
      *        normalized coefficients array
-     * 
+     *
      * @comments works up to degree + order = 179
      * @return unnormalized coefficients array
      */
@@ -657,10 +660,10 @@ public final class GravityToolbox {
 
     /**
      * Normalize an array of coefficients.
-     * 
+     *
      * @param tab
      *        normalized coefficients array
-     * 
+     *
      * @comments works up to degree + order = 179
      * @return unnormalized coefficients array
      */
@@ -702,7 +705,7 @@ public final class GravityToolbox {
 
     /**
      * Unnormalize a coefficients array.
-     * 
+     *
      * @param normalized
      *        normalized coefficients array
      * @return unnormalized array
@@ -741,7 +744,7 @@ public final class GravityToolbox {
 
     /**
      * Sanity check for r1.
-     * 
+     *
      * @param r1
      *        must not be under THRESHOLD
      * @param threshold
@@ -758,7 +761,7 @@ public final class GravityToolbox {
 
     /**
      * Compute the partial derivatives of the acceleration (Cunningham algorithm) with respect to the position.
-     * 
+     *
      * @param positionInBodyFrame
      *        Position of the spacecraft in the body frame
      * @param equatorialRadius
@@ -770,12 +773,12 @@ public final class GravityToolbox {
      * @param s
      *        S coefficients
      * @return array of the partial derivatives
-     * 
+     *
      *         See the following article :
      *         "On the computation of spherical harmonic terms needed during the numerical integration of
      *         the orbital motion of an artifical satellite"
      *         , Leland E. Cunningham
-     * 
+     *
      */
     // CHECKSTYLE: stop MethodLength check
     // CHECKSTYLE: stop CyclomaticComplexity check
@@ -860,12 +863,12 @@ public final class GravityToolbox {
         tmpNplus3M[1][4] = 5 * zOnR2 * equatorialRadius * vnn[1][2];
         // v31
         tmpNplus3M[0][3] = TWO_POINT_FIVE * zOnR2 * equatorialRadius * tmpNplus2M[0][3]
-            - ONE_POINT_FIVE * ae2OnR2 * vnn[0][1];
+                - ONE_POINT_FIVE * ae2OnR2 * vnn[0][1];
         tmpNplus3M[1][3] = TWO_POINT_FIVE * zOnR2 * equatorialRadius * tmpNplus2M[1][3]
-            - ONE_POINT_FIVE * ae2OnR2 * vnn[1][1];
+                - ONE_POINT_FIVE * ae2OnR2 * vnn[1][1];
         // v30
         tmpNplus3M[0][2] = 1 / 3. * (5 * zOnR2 * equatorialRadius * tmpNplus2M[0][2] - 2 * ae2OnR2 * zOnR2 *
-            equatorialRadius * vnn[0][0]);
+                equatorialRadius * vnn[0][0]);
         /*
          * Loop on the order m
          */
@@ -979,7 +982,7 @@ public final class GravityToolbox {
 
     /**
      * Formulae to compute the partial second derivatives of Vnm wrt the position.
-     * 
+     *
      * @param der
      *        array of the partial derivatives of the acceleration wrt the position which will be updated
      * @param vnm
@@ -996,7 +999,7 @@ public final class GravityToolbox {
      *        C coefficients
      * @param sCoefs
      *        S coefficients
-     * 
+     *
      *        See the article
      *        "On the computation of spherical harmonic terms needed during the numerical integration of the
      *        orbital motion of an artifical satellite"
@@ -1016,23 +1019,23 @@ public final class GravityToolbox {
 
         // Derivatives
         der[0][0] += ZERO_POINT_TWENTYFIVE * muOnAe2 *
-            (vnm[0][4] * c + vnm[1][4] * s - 2 * c2 * (vnm[0][2] * c + vnm[1][2] * s) + c4 *
-                (vnm[0][0] * c + vnm[1][0] * s));
+                (vnm[0][4] * c + vnm[1][4] * s - 2 * c2 * (vnm[0][2] * c + vnm[1][2] * s) + c4 *
+                        (vnm[0][0] * c + vnm[1][0] * s));
         der[1][0] += ZERO_POINT_TWENTYFIVE * muOnAe2 * (vnm[1][4] * c - vnm[0][4] * s + c4 * (-vnm[1][0] * c
-            + vnm[0][0] * s));
+                + vnm[0][0] * s));
         der[2][0] += ZERO_POINT_FIVE * muOnAe2 *
-            ((n - m + 1) * (vnm[0][3] * c + vnm[1][3] * s) - c3 * (vnm[0][1] * c + vnm[1][1] * s));
+                ((n - m + 1) * (vnm[0][3] * c + vnm[1][3] * s) - c3 * (vnm[0][1] * c + vnm[1][1] * s));
         der[1][1] += -ZERO_POINT_TWENTYFIVE * muOnAe2 *
-            (vnm[0][4] * c + vnm[1][4] * s + 2 * c2 * (vnm[0][2] * c + vnm[1][2] * s) + c4 *
-                (vnm[0][0] * c + vnm[1][0] * s));
+                (vnm[0][4] * c + vnm[1][4] * s + 2 * c2 * (vnm[0][2] * c + vnm[1][2] * s) + c4 *
+                        (vnm[0][0] * c + vnm[1][0] * s));
         der[2][1] += ZERO_POINT_FIVE * muOnAe2 *
-            ((n - m + 1) * (c * vnm[1][3] - s * vnm[0][3]) + c3 * (vnm[1][1] * c - vnm[0][1] * s));
+                ((n - m + 1) * (c * vnm[1][3] - s * vnm[0][3]) + c3 * (vnm[1][1] * c - vnm[0][1] * s));
         der[2][2] += c2 * muOnAe2 * (c * vnm[0][2] + s * vnm[1][2]);
     }
 
     /**
      * Formulae to compute the partial second derivatives of Vn0 wrt the position.
-     * 
+     *
      * @param der
      *        array of the partial derivatives of the acceleration wrt the position which will be updated
      * @param vnm
@@ -1045,7 +1048,7 @@ public final class GravityToolbox {
      *        gravitational parameter
      * @param cCoefs
      *        C coefficients
-     * 
+     *
      *        See the article
      *        "On the computation of spherical harmonic terms needed during the numerical
      *        integration of the orbital motion of an artifical satellite"
@@ -1071,7 +1074,7 @@ public final class GravityToolbox {
 
     /**
      * Formulae to compute the partial second derivatives of Vn1 wrt the position.
-     * 
+     *
      * @param der
      *        : array of the partial derivatives of the acceleration wrt the position which will be updated
      * @param vnm
@@ -1086,7 +1089,7 @@ public final class GravityToolbox {
      *        C coefficients
      * @param sCoefs
      *        S coefficients
-     * 
+     *
      *        See the article
      *        "On the computation of spherical harmonic terms needed during the numerical
      *        integration of the orbital motion of an artifical satellite"
@@ -1100,28 +1103,28 @@ public final class GravityToolbox {
         final double s = sCoefs[1][n];
         // d²vn1/dx² term
         der[0][0] += ZERO_POINT_TWENTYFIVE * muOnAe2 *
-            (c * vnm[0][4] + s * vnm[1][4] - n * (n + 1) * (3 * c * vnm[0][2] + s * vnm[1][2]));
+                (c * vnm[0][4] + s * vnm[1][4] - n * (n + 1) * (3 * c * vnm[0][2] + s * vnm[1][2]));
         // d²vn1/dxdy term
         der[1][0] += ZERO_POINT_TWENTYFIVE * muOnAe2 * (vnm[1][4]
-            * c - vnm[0][4] * s - n * (n + 1) * (c * vnm[1][2] + s * vnm[0][2]));
+                * c - vnm[0][4] * s - n * (n + 1) * (c * vnm[1][2] + s * vnm[0][2]));
         // d²vn1/dxdz
         der[2][0] += ZERO_POINT_FIVE * muOnAe2 *
-            (n * (vnm[0][3] * c + vnm[1][3] * s) - n * (n + 1) * (n + 2) * (c * vnm[0][1] + s * vnm[1][1]));
+                (n * (vnm[0][3] * c + vnm[1][3] * s) - n * (n + 1) * (n + 2) * (c * vnm[0][1] + s * vnm[1][1]));
         // d²vn1/dy²
         der[1][1] += -ZERO_POINT_TWENTYFIVE * muOnAe2 *
-            (c * vnm[0][4] + s * vnm[1][4] + n * (n + 1) * (c * vnm[0][2] + 3 * s * vnm[1][2]));
+                (c * vnm[0][4] + s * vnm[1][4] + n * (n + 1) * (c * vnm[0][2] + 3 * s * vnm[1][2]));
         // d²vn1/dydz
         der[2][1] += ZERO_POINT_FIVE * muOnAe2 *
-            (n * (c * vnm[1][3] - s * vnm[0][3]) + n * (n + 1) * (n + 2) * (c * vnm[1][1] - s * vnm[0][1]));
+                (n * (c * vnm[1][3] - s * vnm[0][3]) + n * (n + 1) * (n + 2) * (c * vnm[1][1] - s * vnm[0][1]));
         // d²vn1/dz²
         der[2][2] += n * (n + 1) * muOnAe2 * (vnm[0][2] * c + s * vnm[1][2]);
     }
 
     /**
      * Recurrence relation to compute Vn,k from Vn-1,k and Vn-2,m (with m-2 <= k <= m+2).
-     * 
+     *
      * (n-m) Vnm = (2n-1) z / r2 * Req * Vn-1,m - (n+m-1) / r2 * Req * Vn-2,m
-     * 
+     *
      * @param n
      *        degree
      * @param m
@@ -1145,29 +1148,29 @@ public final class GravityToolbox {
         final double k = n - m;
         // Vn+2_m-2
         newtmpline[0][0] = 1 / (k + 2.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][0] - (n + m - 3) * ae2OnR2 * v1nm[0][0]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][0] - (n + m - 3) * ae2OnR2 * v1nm[0][0]);
         newtmpline[1][0] = 1 / (k + 2.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][0] - (n + m - 3) * ae2OnR2 * v1nm[1][0]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][0] - (n + m - 3) * ae2OnR2 * v1nm[1][0]);
         // Vn+2_m-1
         newtmpline[0][1] = 1 / (k + 1.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][1] - (n + m - 2) * ae2OnR2 * v1nm[0][1]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][1] - (n + m - 2) * ae2OnR2 * v1nm[0][1]);
         newtmpline[1][1] = 1 / (k + 1.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][1] - (n + m - 2) * ae2OnR2 * v1nm[1][1]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][1] - (n + m - 2) * ae2OnR2 * v1nm[1][1]);
         // Vn+2_m
         newtmpline[0][2] = 1 / k *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][2] - (n + m - 1) * ae2OnR2 * v1nm[0][2]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][2] - (n + m - 1) * ae2OnR2 * v1nm[0][2]);
         newtmpline[1][2] = 1 / k *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][2] - (n + m - 1) * ae2OnR2 * v1nm[1][2]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][2] - (n + m - 1) * ae2OnR2 * v1nm[1][2]);
         // Vn+2_m+1
         newtmpline[0][3] = 1 / (k - 1.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][3] - (n + m) * ae2OnR2 * v1nm[0][3]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][3] - (n + m) * ae2OnR2 * v1nm[0][3]);
         newtmpline[1][3] = 1 / (k - 1.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][3] - (n + m) * ae2OnR2 * v1nm[1][3]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][3] - (n + m) * ae2OnR2 * v1nm[1][3]);
         // Vn+2_m+2
         newtmpline[0][4] = 1 / (k - 2.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][4] - (n + m + 1) * ae2OnR2 * v1nm[0][4]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[0][4] - (n + m + 1) * ae2OnR2 * v1nm[0][4]);
         newtmpline[1][4] = 1 / (k - 2.) *
-            ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][4] - (n + m + 1) * ae2OnR2 * v1nm[1][4]);
+                ((2 * n - 1) * zOnR2 * equatorialRadius * v2nm[1][4] - (n + m + 1) * ae2OnR2 * v1nm[1][4]);
 
         for (int i = 0; i < 5; i++) {
             v1nm[0][i] = v2nm[0][i];

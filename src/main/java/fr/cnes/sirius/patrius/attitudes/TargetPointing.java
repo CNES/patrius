@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -97,15 +98,15 @@ public class TargetPointing extends AbstractAttitudeLaw {
     }
 
     /**
-     * Creates a new instance from body shape and target expressed in geodetic coordinates.
+     * Creates a new instance from body shape and target expressed in ellipsoid coordinates.
      * 
      * @param targetGeo
-     *        target defined as a geodetic point in body shape frame
+     *        target defined as a ellipsoid point in body shape frame
      */
     public TargetPointing(final BodyPoint targetGeo) {
         super();
         this.bodyFrame = targetGeo.getBodyShape().getBodyFrame();
-        // Transform target from geodetic coordinates to position-velocity coordinates
+        // Transform target from ellipsoid coordinates to position-velocity coordinates
         this.target = new PVCoordinates(targetGeo.getPosition(), Vector3D.ZERO);
     }
 

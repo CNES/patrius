@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.14:OPENFD-316:22/08/2024:[Patrius] TargetGroundPointing - Restauration de 
  *          l'ancienne methode getTargetPosition() 
@@ -487,7 +488,7 @@ public class TargetPointingTest {
         // TargetGroundPointing law
         // *************************
 
-        // Target definition as a geodetic point AND as a position/velocity vector
+        // Target definition as a ellipsoid point AND as a position/velocity vector
         final EllipsoidPoint targetITRF2005C = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
             MathLib.toRadians(43.36), MathLib.toRadians(1.26), 600., "");
         final Vector3D pTargetITRF2005C = targetITRF2005C.getPosition();

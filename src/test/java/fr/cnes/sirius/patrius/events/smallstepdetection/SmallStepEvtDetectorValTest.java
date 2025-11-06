@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
@@ -86,12 +88,12 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 /**
  * Validation test for a propagation getting very short integration steps; we
  * check no events are lost, validating the varying event convergence.
- * 
+ *
  * @author cardosop
- * 
+ *
  * @version $Id: SmallStepEvtDetectorValTest.java 7379 2013-01-18 13:24:00Z
  *          CardosoP $
- * 
+ *
  * @since 2.1
  */
 public class SmallStepEvtDetectorValTest {
@@ -101,11 +103,11 @@ public class SmallStepEvtDetectorValTest {
         /**
          * @featureTitle Event detection with a dynamicaly varying event
          *               convergence
-         * 
+         *
          * @featureDescription Event detection with a dynamically varying event
          *                     convergence when the integration step becomes too
          *                     small.
-         * 
+         *
          * @coveredRequirements DV-EVT_63
          */
         DYNAMIC_CONVERGENCE
@@ -138,7 +140,7 @@ public class SmallStepEvtDetectorValTest {
 
     /**
      * Method used to compute the reference values.
-     * 
+     *
      * @throws PatriusException
      *         should not happen
      * @throws IOException
@@ -148,7 +150,8 @@ public class SmallStepEvtDetectorValTest {
      * @throws URISyntaxException
      *         should not happen
      */
-    public void createRefs() throws PatriusException, IOException,
+    public void createRefs()
+        throws PatriusException, IOException,
         ParseException, URISyntaxException {
 
         // Integrator and propagator
@@ -160,7 +163,7 @@ public class SmallStepEvtDetectorValTest {
         propagator.setInitialState(this.initialState);
 
         // Forces
-        this.addForcesToPropagator(propagator);
+        addForcesToPropagator(propagator);
 
         // Event detector
         final EclipseDetectorWrapper ew = new EclipseDetectorWrapper(60., 1e-5,
@@ -181,26 +184,26 @@ public class SmallStepEvtDetectorValTest {
 
     /**
      * @testType TVT
-     * 
+     *
      * @testedFeature {@link features#DYNAMIC_CONVERGENCE}
-     * 
+     *
      * @testedMethod misc
-     * 
+     *
      * @description runs event detection on a propagation that gets a very small
      *              integration step at some point, which triggers a dynamic
      *              decrease for the event's convergence parameter. No event
      *              shall be lost in this case.
-     * 
+     *
      * @input integration parameters : initial orbit, forces ...
-     * 
+     *
      * @output list of event dates
-     * 
+     *
      * @testPassCriteria the events are close to those generated with an
      *                   extrapolation where the integration step remains
      *                   greater than convergence.
-     * 
+     *
      * @referenceVersion 1.3
-     * 
+     *
      * @throws PatriusException
      *         should not happen
      * @throws IOException
@@ -211,7 +214,8 @@ public class SmallStepEvtDetectorValTest {
      *         should not happen
      */
     @Test
-    public void testEclipseToleranceBiggerThanSRP() throws PatriusException, IOException,
+    public void testEclipseToleranceBiggerThanSRP()
+        throws PatriusException, IOException,
         ParseException, URISyntaxException {
 
         final AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(
@@ -222,7 +226,7 @@ public class SmallStepEvtDetectorValTest {
         propagator.setInitialState(this.initialState);
         propagator.setMassProviderEquation(this.mass);
         // Forces
-        this.addForcesToPropagator(propagator);
+        addForcesToPropagator(propagator);
 
         // Event detector (100 * 0.001 -> 0.1 s de tolérance)
         final EclipseDetectorWrapper ew = new EclipseDetectorWrapper(10.,
@@ -242,7 +246,8 @@ public class SmallStepEvtDetectorValTest {
     }
 
     @Test
-    public void testEclipseToleranceSmallerThanSRP() throws PatriusException, IOException,
+    public void testEclipseToleranceSmallerThanSRP()
+        throws PatriusException, IOException,
         ParseException {
 
         final AdaptiveStepsizeIntegrator integrator = new DormandPrince853Integrator(
@@ -253,7 +258,7 @@ public class SmallStepEvtDetectorValTest {
         propagator.setInitialState(this.initialState);
         propagator.setMassProviderEquation(this.mass);
         // Forces
-        this.addForcesToPropagator(propagator);
+        addForcesToPropagator(propagator);
 
         // Event detector (0.1 * 0.001 -> 0.0001 s de tolérance)
         final EclipseDetectorWrapper ew = new EclipseDetectorWrapper(10.,
@@ -274,10 +279,10 @@ public class SmallStepEvtDetectorValTest {
 
     /**
      * Adds all forces to a propagator.
-     * 
+     *
      * @param p
      *        numerical propagator
-     * 
+     *
      * @throws IOException
      *         should not happen
      * @throws ParseException
@@ -318,7 +323,7 @@ public class SmallStepEvtDetectorValTest {
 
     /**
      * Setup.
-     * 
+     *
      * @throws IOException
      *         snh
      * @throws PatriusException
@@ -378,7 +383,7 @@ public class SmallStepEvtDetectorValTest {
 
     /**
      * Teardown.
-     * 
+     *
      * @throws IOException
      *         snh
      * @throws URISyntaxException
@@ -429,7 +434,7 @@ public class SmallStepEvtDetectorValTest {
 
                 @Override
                 public Action eventOccurred(final SpacecraftState s,
-                                            final boolean increasing, final boolean forward) throws PatriusException {
+                                            final boolean increasing, final boolean forward) {
                     // return increasing ? Action.CONTINUE : Action.STOP;
 
                     // System.err.println("UMBRA " + inout + " (user eclipse detector)\t"+s.getDate());
@@ -455,9 +460,10 @@ public class SmallStepEvtDetectorValTest {
         }
 
         @Override
-        public Action
-            eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                throws PatriusException {
+        public
+            Action
+                eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
+                    throws PatriusException {
             final double pseudoDate = s.getDate().durationFrom(
                 AbsoluteDate.J2000_EPOCH);
             final List<Double> eventDates = increasing ? this.outEventDates
@@ -510,8 +516,9 @@ public class SmallStepEvtDetectorValTest {
         /** {@inheritDoc} */
         @Override
         public boolean filterEvent(final SpacecraftState state,
-                final boolean increasing,
-                final boolean forward) throws PatriusException {
+                                   final boolean increasing,
+                                   final boolean forward)
+            throws PatriusException {
             // Do nothing by default, event is not filtered
             return false;
         }

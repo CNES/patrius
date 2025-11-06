@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Copyright 2002-2011 CS Communication & Systèmes
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -57,7 +59,6 @@ public class EventsLoggerTest {
     private SpacecraftState initialState;
     private NumericalPropagator propagator;
     private EventDetector umbraDetector;
-    private EventDetector penumbraDetector;
 
     private EventDetector buildDetector(final boolean totalEclipse) throws PatriusException {
         return new EclipseDetector(CelestialBodyFactory.getSun(), 696000000, CelestialBodyFactory.getEarth(), 6400000,
@@ -68,9 +69,8 @@ public class EventsLoggerTest {
 
             @Override
             public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                Action
+                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -99,8 +99,7 @@ public class EventsLoggerTest {
             integrator.setInitialStepSize(60);
             this.propagator = new NumericalPropagator(integrator);
             this.propagator.setInitialState(this.initialState);
-            this.umbraDetector = this.buildDetector(true);
-            this.penumbraDetector = this.buildDetector(false);
+            this.umbraDetector = buildDetector(true);
         } catch (final PatriusException oe) {
             Assert.fail(oe.getLocalizedMessage());
         }
@@ -112,7 +111,6 @@ public class EventsLoggerTest {
         this.initialState = null;
         this.propagator = null;
         this.umbraDetector = null;
-        this.penumbraDetector = null;
     }
 
     /*
@@ -126,9 +124,9 @@ public class EventsLoggerTest {
     public enum features {
         /**
          * @featureTitle Validation of the events logger
-         * 
+         *
          * @featureDescription Validation of the events logger
-         * 
+         *
          * @coveredRequirements DV-INTEG_70
          */
         VALIDATION_EVENTS_LOGGER;
@@ -136,23 +134,23 @@ public class EventsLoggerTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VALIDATION_EVENTS_LOGGER}
-     * 
+     *
      * @testedMethod {@link EventsLogger#monitorDetector(EventDetector)}
-     * 
+     *
      * @description test for code coverage of the EventsLogger class
-     * 
+     *
      * @input constructor parameters for a detector
-     * 
+     *
      * @output EventsLogger and associated detector
-     * 
+     *
      * @testPassCriteria call on resetState of the detector wrapper successful
-     * 
+     *
      * @referenceVersion 1.1
-     * 
+     *
      * @nonRegressionVersion 1.1
-     * 
+     *
      * @throws PatriusException
      *         should never happen
      */

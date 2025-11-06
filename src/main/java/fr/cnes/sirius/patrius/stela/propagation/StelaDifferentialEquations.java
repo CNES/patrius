@@ -18,6 +18,7 @@
  * @history created 21/01/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-391:25/04/2025:[STELA-PATRIUS] Implementation zonaux par recurrence
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
@@ -47,9 +48,9 @@ import fr.cnes.sirius.patrius.stela.forces.AbstractStelaLagrangeContribution;
 import fr.cnes.sirius.patrius.stela.forces.StelaForceModel;
 import fr.cnes.sirius.patrius.stela.forces.StelaLagrangeEquations;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaAtmosphericDrag;
+import fr.cnes.sirius.patrius.stela.forces.gravity.AbstractStelaZonalAttraction;
 import fr.cnes.sirius.patrius.stela.forces.gravity.SolidTidesAcc;
 import fr.cnes.sirius.patrius.stela.forces.gravity.StelaTesseralAttraction;
-import fr.cnes.sirius.patrius.stela.forces.gravity.StelaZonalAttraction;
 import fr.cnes.sirius.patrius.stela.forces.noninertial.NonInertialContribution;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
@@ -255,9 +256,9 @@ public class StelaDifferentialEquations implements FirstOrderDifferentialEquatio
             }
 
             // J2² part of zonal perturbation is not to be multiplied by Lagrange equations
-            if (lagrange.getClass().equals(StelaZonalAttraction.class)
-                && ((StelaZonalAttraction) lagrange).isJ2SquareComputed()) {
-                final double[] j2Square = ((StelaZonalAttraction) lagrange).computeJ2Square(orbit);
+            if (lagrange instanceof AbstractStelaZonalAttraction
+                    && ((AbstractStelaZonalAttraction) lagrange).isJ2SquareComputed()) {
+                final double[] j2Square = ((AbstractStelaZonalAttraction) lagrange).computeJ2Square(orbit);
                 for (int i = 0; i < j2Square.length; i++) {
                     yLagrange[i] += j2Square[i];
                 }

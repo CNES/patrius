@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
  * car l'orientation n'est pas forcement IAU
@@ -165,10 +167,12 @@ public class SolarRadiationPressureTest {
     /**
      * @testType UT
      *
-     * @description check SRP (through {@link SolarRadiationPressure}) and Eclipse events (through {@link EclipseDetector} 
-     *              are synchronized 
+     * @description check SRP (through {@link SolarRadiationPressure}) and Eclipse events (through
+     *              {@link EclipseDetector}
+     *              are synchronized
      *
-     * @testPassCriteria SRP before exiting total eclipse is 0. SRP after exiting total eclipse (at start of penumbra) is not 0 
+     * @testPassCriteria SRP before exiting total eclipse is 0. SRP after exiting total eclipse (at start of penumbra)
+     *                   is not 0
      *
      * @referenceVersion 4.13
      *
@@ -180,7 +184,8 @@ public class SolarRadiationPressureTest {
         // Initialization
         // Simple Sun as an orbit around Earth for analytical results
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
-        final PVCoordinatesProvider sun = new KeplerianOrbit(150E9, 0, 0, 0, 0, MathLib.PI, PositionAngle.TRUE, FramesFactory.getGCRF(), date, Constants.WGS84_EARTH_MU);
+        final PVCoordinatesProvider sun = new KeplerianOrbit(150E9, 0, 0, 0, 0, MathLib.PI, PositionAngle.TRUE,
+            FramesFactory.getGCRF(), date, Constants.WGS84_EARTH_MU);
         final double sunRadius = 0;
         final BodyShape earth = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
 
@@ -195,32 +200,41 @@ public class SolarRadiationPressureTest {
         final MassProvider massModel = new MassModel(assembly);
 
         // PRS
-        final SolarRadiationPressure prs = new SolarRadiationPressure(Constants.SEIDELMANN_UA, Constants.CONST_SOL_N_M2, sun, sunRadius, earth, new DirectRadiativeModel(assembly));
+        final SolarRadiationPressure prs = new SolarRadiationPressure(Constants.SEIDELMANN_UA, Constants.CONST_SOL_N_M2,
+            sun, sunRadius, earth, new DirectRadiativeModel(assembly));
 
         // Eclipse detector
         final double lr = 0.;
-        final EclipseDetector detector = new EclipseDetector(sun, sunRadius, earth, lr, 60, 1E-3, Action.STOP, Action.STOP, false, false) {
-            @Override
-            public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                    final boolean forward) throws PatriusException {
-                // Initially satellite is in total eclipse
-                // 1ms before exiting umbra (start of penumbra): total eclipse
-                Assert.assertEquals(0., prs.computeAcceleration(s.shiftedBy(-1E-3)).getNorm(), 0.);
-                // 1ms after exiting umbra (start of penumbra): partial eclipse starts, prs is not null anymore
-                Assert.assertTrue(prs.computeAcceleration(s.shiftedBy(1E-3)).getNorm() > 0);
-                return super.eventOccurred(s, increasing, forward);
+        final EclipseDetector detector =
+            new EclipseDetector(sun, sunRadius, earth, lr, 60, 1E-3, Action.STOP, Action.STOP, false, false){
+                @Override
+                public Action eventOccurred(final SpacecraftState s, final boolean increasing,
+                                            final boolean forward) {
+                    // Initially satellite is in total eclipse
+                    // 1ms before exiting umbra (start of penumbra): total eclipse
+                    try {
+                        Assert.assertEquals(0., prs.computeAcceleration(s.shiftedBy(-1E-3)).getNorm(), 0.);
+                        // 1ms after exiting umbra (start of penumbra): partial eclipse starts, prs is not null anymore
+                        Assert.assertTrue(prs.computeAcceleration(s.shiftedBy(1E-3)).getNorm() > 0);
+                    } catch (final PatriusException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+
+                    return super.eventOccurred(s, increasing, forward);
+                };
             };
-        };
-        
+
         // Signal propagation
         detector.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
         prs.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
 
         // Initial state
-        final Orbit orbit = new KeplerianOrbit(7000000 * 100, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getGCRF(), date, Constants.WGS84_EARTH_MU);
+        final Orbit orbit = new KeplerianOrbit(7000000 * 100, 0, 0, 0, 0, 0, PositionAngle.TRUE,
+            FramesFactory.getGCRF(), date, Constants.WGS84_EARTH_MU);
         final Attitude attitude = new Attitude(date, FramesFactory.getGCRF(), AngularCoordinates.IDENTITY);
         final SpacecraftState state = new SpacecraftState(orbit, attitude, massModel);
-        
+
         // Propagator
         final NumericalPropagator propagator = new NumericalPropagator(new ClassicalRungeKuttaIntegrator(10.));
         propagator.setAttitudeProvider(new ConstantAttitudeLaw(FramesFactory.getGCRF(), Rotation.IDENTITY));
@@ -291,7 +305,7 @@ public class SolarRadiationPressureTest {
     @BeforeClass
     public static void setUpBeforeClass() {
         Report.printClassHeader(SolarRadiationPressureTest.class.getSimpleName(),
-                "Patrius solar radiation pressure force");
+            "Patrius solar radiation pressure force");
     }
 
     /**
@@ -308,9 +322,10 @@ public class SolarRadiationPressureTest {
      * @return an assembly
      * @throws PatriusException
      */
-    private Assembly
+    private
+        Assembly
             createAssemblySphereAndFacets(final double mass, final double ka, final double ks, final double kd)
-                    throws PatriusException {
+                throws PatriusException {
         // Assembly
         final AssemblyBuilder builder = new AssemblyBuilder();
         final String mainPart = "Satellite";
@@ -363,9 +378,12 @@ public class SolarRadiationPressureTest {
      * @throws PatriusException
      */
     private Assembly createAssemblySphereAndFacets(final Parameter massMain, final Parameter mass1,
-            final Parameter mass2, final Parameter kaMain, final Parameter ksMain, final Parameter kdMain,
-            final Parameter ka1, final Parameter ks1, final Parameter kd1, final Parameter ka2, final Parameter ks2,
-            final Parameter kd2) throws PatriusException {
+                                                   final Parameter mass2, final Parameter kaMain,
+                                                   final Parameter ksMain, final Parameter kdMain,
+                                                   final Parameter ka1, final Parameter ks1, final Parameter kd1,
+                                                   final Parameter ka2, final Parameter ks2,
+                                                   final Parameter kd2)
+        throws PatriusException {
         // Assembly
         final AssemblyBuilder builder = new AssemblyBuilder();
         final String mainPart = "Satellite";
@@ -405,30 +423,31 @@ public class SolarRadiationPressureTest {
         final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
         final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final MassProvider massModel = new SimpleMassModel(1500., DEFAULT);
-        final BodyShape moonModel = new OneAxisEllipsoid(1500000, 0, moon.getRotatingFrame(IAUPoleModelType.TRUE), "Moon");
+        final BodyShape moonModel =
+            new OneAxisEllipsoid(1500000, 0, moon.getRotatingFrame(IAUPoleModelType.TRUE), "Moon");
 
         /*
          * CIRCULAR
          */
         SolarRadiationPressure srp = new SolarRadiationPressure(sun, 1500000,
-                moon.getInertialFrame(IAUPoleModelType.CONSTANT),
-                new SphericalSpacecraft(50.0, 0.5, 1, 0., 0., DEFAULT), false);
+            moon.getInertialFrame(IAUPoleModelType.CONSTANT),
+            new SphericalSpacecraft(50.0, 0.5, 1, 0., 0., DEFAULT), false);
 
         // Case 1: occulting body = Moon, state centered on Moon, state hidden behind Moon: acc = 0
         Vector3D pos1 = sun
-                .getPVCoordinates(AbsoluteDate.J2000_EPOCH, moon.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition().scalarMultiply(-0.001);
+            .getPVCoordinates(AbsoluteDate.J2000_EPOCH, moon.getInertialFrame(IAUPoleModelType.CONSTANT))
+            .getPosition().scalarMultiply(-0.001);
         SpacecraftState state1 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos1, Vector3D.ZERO),
-                moon.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            moon.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         Vector3D actualAcc = srp.computeAcceleration(state1);
         Assert.assertEquals(0, actualAcc.getNorm(), 0.);
 
         // Case 2: occulting body = Moon, state centered on Earth, state hidden behind Moon: acc = 0
         Vector3D pos2 = moon.getInertialFrame(IAUPoleModelType.CONSTANT)
-                .getTransformTo(FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH).transformPosition(pos1);
+            .getTransformTo(FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH).transformPosition(pos1);
         SpacecraftState state2 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos2, Vector3D.ZERO),
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU), massModel);
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU), massModel);
         Vector3D actualAcc2 = srp.computeAcceleration(state2);
         Assert.assertEquals(0, actualAcc2.getNorm(), 0.);
 
@@ -439,20 +458,20 @@ public class SolarRadiationPressureTest {
 
         // Case 1: occulting body = Moon, state centered on Moon, state hidden behind Moon: acc = 0
         pos1 = sun.getPVCoordinates(AbsoluteDate.J2000_EPOCH, moon.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition()
-                .scalarMultiply(-0.001);
+            .getPosition()
+            .scalarMultiply(-0.001);
         state1 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos1, Vector3D.ZERO),
-                moon.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            moon.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         actualAcc = srp.computeAcceleration(state1);
         Assert.assertEquals(0, actualAcc.getNorm(), 0.);
 
         // Case 2: occulting body = Moon, state centered on Earth, state hidden behind Moon: acc = 0
         pos2 = moon.getInertialFrame(IAUPoleModelType.CONSTANT)
-                .getTransformTo(FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH)
-                .transformPosition(pos1);
+            .getTransformTo(FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH)
+            .transformPosition(pos1);
         state2 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos2, Vector3D.ZERO),
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU), massModel);
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU), massModel);
         actualAcc2 = srp.computeAcceleration(state2);
         Assert.assertEquals(0, actualAcc2.getNorm(), 0.);
     }
@@ -484,51 +503,51 @@ public class SolarRadiationPressureTest {
          * CIRCULAR
          */
         SolarRadiationPressure srp = new SolarRadiationPressure(sun, 6378000, new SphericalSpacecraft(50.0, 0.5, 1, 0.,
-                0., DEFAULT));
+            0., DEFAULT));
         srp.addOccultingBody(new OneAxisEllipsoid(1500000, 0, body2.getInertialFrame(IAUPoleModelType.CONSTANT),
-                "Body2"));
+            "Body2"));
 
         // Case 1: state behind first body: acc = 0
         Vector3D pos1 = sun
-                .getPVCoordinates(AbsoluteDate.J2000_EPOCH, body1.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition().scalarMultiply(-0.001);
+            .getPVCoordinates(AbsoluteDate.J2000_EPOCH, body1.getInertialFrame(IAUPoleModelType.CONSTANT))
+            .getPosition().scalarMultiply(-0.001);
         SpacecraftState state1 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos1, Vector3D.ZERO),
-                body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         Vector3D actualAcc = srp.computeAcceleration(state1);
         Assert.assertEquals(0, actualAcc.getNorm(), 0.);
 
         // Case 2: state behind second body: acc = 0
         Vector3D pos2 = sun
-                .getPVCoordinates(AbsoluteDate.J2000_EPOCH, body2.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition().scalarMultiply(-0.001);
+            .getPVCoordinates(AbsoluteDate.J2000_EPOCH, body2.getInertialFrame(IAUPoleModelType.CONSTANT))
+            .getPosition().scalarMultiply(-0.001);
         SpacecraftState state2 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos2, Vector3D.ZERO),
-                body2.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body2.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         Vector3D actualAcc2 = srp.computeAcceleration(state2);
         Assert.assertEquals(0, actualAcc2.getNorm(), 0.);
 
         // Case 3: state not behind any body: acc != 0
         Vector3D pos3 = Vector3D.PLUS_I.scalarMultiply(1E8);
         SpacecraftState state3 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos3, Vector3D.ZERO),
-                body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         Vector3D actualAcc3 = srp.computeAcceleration(state3);
         Assert.assertFalse(actualAcc3.getNorm() == 0);
 
         // Case 4: state behind two bodies (same body): acc = 0
         IAUCelestialBody body3 = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         SolarRadiationPressure srp2 = new SolarRadiationPressure(sun, 6378000, new SphericalSpacecraft(50.0, 0.5, 1,
-                0., 0., DEFAULT));
+            0., 0., DEFAULT));
         srp.addOccultingBody(new OneAxisEllipsoid(6378000, 0, body3.getInertialFrame(IAUPoleModelType.CONSTANT),
-                "Body3"));
+            "Body3"));
 
         Vector3D pos4 = sun
-                .getPVCoordinates(AbsoluteDate.J2000_EPOCH, body1.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition().scalarMultiply(-0.001);
+            .getPVCoordinates(AbsoluteDate.J2000_EPOCH, body1.getInertialFrame(IAUPoleModelType.CONSTANT))
+            .getPosition().scalarMultiply(-0.001);
         SpacecraftState state4 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos4, Vector3D.ZERO),
-                body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         Vector3D actualAcc4 = srp2.computeAcceleration(state4);
         Assert.assertEquals(0, actualAcc4.getNorm(), 0.);
 
@@ -537,33 +556,33 @@ public class SolarRadiationPressureTest {
          */
         srp = new SolarRadiationPressure(sun, body1Model, new SphericalSpacecraft(50.0, 0.5, 1, 0., 0., DEFAULT));
         srp.addOccultingBody(new OneAxisEllipsoid(1500000, 0, body2.getInertialFrame(IAUPoleModelType.CONSTANT),
-                "Body2"));
+            "Body2"));
 
         // Case 1: state behind first body: acc = 0
         pos1 = sun.getPVCoordinates(AbsoluteDate.J2000_EPOCH, body1.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition()
-                .scalarMultiply(-0.001);
+            .getPosition()
+            .scalarMultiply(-0.001);
         state1 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos1, Vector3D.ZERO),
-                body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         actualAcc = srp.computeAcceleration(state1);
         Assert.assertEquals(0, actualAcc.getNorm(), 0.);
 
         // Case 2: state behind second body: acc = 0
         pos2 = sun.getPVCoordinates(AbsoluteDate.J2000_EPOCH, body2.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition()
-                .scalarMultiply(-0.001);
+            .getPosition()
+            .scalarMultiply(-0.001);
         state2 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos2, Vector3D.ZERO),
-                body2.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body2.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         actualAcc2 = srp.computeAcceleration(state2);
         Assert.assertEquals(0, actualAcc2.getNorm(), 0.);
 
         // Case 3: state not behind any body: acc != 0
         pos3 = Vector3D.PLUS_I.scalarMultiply(1E8);
         state3 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos3, Vector3D.ZERO),
-                body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         actualAcc3 = srp.computeAcceleration(state3);
         Assert.assertFalse(actualAcc3.getNorm() == 0);
 
@@ -571,14 +590,14 @@ public class SolarRadiationPressureTest {
         body3 = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         srp2 = new SolarRadiationPressure(sun, body1Model, new SphericalSpacecraft(50.0, 0.5, 1, 0., 0., DEFAULT));
         srp2.addOccultingBody(new OneAxisEllipsoid(6378000, 0, body3.getInertialFrame(IAUPoleModelType.CONSTANT),
-                "Body2"));
+            "Body2"));
 
         pos4 = sun.getPVCoordinates(AbsoluteDate.J2000_EPOCH, body1.getInertialFrame(IAUPoleModelType.CONSTANT))
-                .getPosition()
-                .scalarMultiply(-0.001);
+            .getPosition()
+            .scalarMultiply(-0.001);
         state4 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(pos4, Vector3D.ZERO),
-                body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
-                massModel);
+            body1.getInertialFrame(IAUPoleModelType.CONSTANT), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU),
+            massModel);
         actualAcc4 = srp2.computeAcceleration(state4);
         Assert.assertEquals(0, actualAcc4.getNorm(), 0.);
     }
@@ -594,16 +613,15 @@ public class SolarRadiationPressureTest {
         final IAUCelestialBody body2 = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final SolarRadiationPressure srp = new SolarRadiationPressure(Constants.SEIDELMANN_UA,
             Constants.CONST_SOL_N_M2, sun, this.sunRadius, 6378000, new SphericalSpacecraft(50.0, 0.5, 1, 0., 0.,
-                        DEFAULT));
+                DEFAULT));
         srp.addOccultingBody(new OneAxisEllipsoid(1500000, 0, body2.getInertialFrame(IAUPoleModelType.CONSTANT),
-                "Body2"));
+            "Body2"));
         final MassProvider massModel = new SimpleMassModel(1500., DEFAULT);
-
 
         final AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
         final Orbit initialOrbit = new KeplerianOrbit(150E9, 0, 0, 0, 0, 0, PositionAngle.TRUE,
-                sun.getInertialFrame(IAUPoleModelType.CONSTANT), initialDate,
-                Constants.IERS92_SUN_GRAVITATIONAL_PARAMETER);
+            sun.getInertialFrame(IAUPoleModelType.CONSTANT), initialDate,
+            Constants.IERS92_SUN_GRAVITATIONAL_PARAMETER);
         final SpacecraftState initialState = new SpacecraftState(initialOrbit, massModel);
         final NumericalPropagator propagator = new NumericalPropagator(new ClassicalRungeKuttaIntegrator(30.),
             initialState.getFrame(), OrbitType.CARTESIAN, PositionAngle.TRUE);
@@ -621,9 +639,9 @@ public class SolarRadiationPressureTest {
         // Initialization
 
         final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
-                new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
+            new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
         final SolarRadiationPressure srp2 = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
-                new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
+            new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
         srp2.setEclipsesComputation(false);
         Assert.assertFalse(srp2.isEclipseComputation());
         Assert.assertEquals(1, srp.getParameters().size());
@@ -669,43 +687,43 @@ public class SolarRadiationPressureTest {
     public void testLightingAlignment() throws PatriusException {
         // Initialization
         final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
-                new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
+            new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
 
         // Define aligned spacecraft (Earth exactly between Sun and satellite)
         final Vector3D sunPos =
-                this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF()).getPosition();
+            this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF()).getPosition();
 
         // Case 1: Total eclipse
         // Check lighting ratio is equal to 0
         final Vector3D satPos1 = this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF())
-                .getPosition().negate().scalarMultiply(1E-3);
+            .getPosition().negate().scalarMultiply(1E-3);
         final ConstantPVCoordinatesProvider satPv1 =
-                new ConstantPVCoordinatesProvider(satPos1, FramesFactory.getGCRF());
+            new ConstantPVCoordinatesProvider(satPos1, FramesFactory.getGCRF());
         Assert.assertEquals(0,
-                srp.getLightingRatio(null, this.earth, satPv1, FramesFactory.getGCRF(), this.date),
-                0.);
+            srp.getLightingRatio(null, this.earth, satPv1, FramesFactory.getGCRF(), this.date),
+            0.);
 
         // Case 2: Partial eclipse
         // Check lighting ratio is equal to expected value
         final Vector3D satPos2 = this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF())
-                .getPosition().negate().scalarMultiply(1E-2);
+            .getPosition().negate().scalarMultiply(1E-2);
         final ConstantPVCoordinatesProvider satPv2 =
-                new ConstantPVCoordinatesProvider(satPos2, FramesFactory.getGCRF());
+            new ConstantPVCoordinatesProvider(satPos2, FramesFactory.getGCRF());
         final double sunApparentRadius = Constants.SUN_RADIUS / satPos2.distance(sunPos);
         final double earthApprarentRadius = this.earth.getCRadius() / satPos2.getNorm();
         final double expectedLightingRatio =
-                1 - MathLib.pow(earthApprarentRadius / sunApparentRadius, 2);
+            1 - MathLib.pow(earthApprarentRadius / sunApparentRadius, 2);
         Assert.assertEquals(expectedLightingRatio,
-                srp.getLightingRatio(null, this.earth, satPv2, FramesFactory.getGCRF(), this.date),
-                1e-6);
+            srp.getLightingRatio(null, this.earth, satPv2, FramesFactory.getGCRF(), this.date),
+            1e-6);
 
         // Check lighting ratio is equal to 1 because eclipses are not computed
         srp.setEclipsesComputation(false);
         Assert.assertEquals(1.,
-                srp.getLightingRatio(null, this.earth,
-                        new ConstantPVCoordinatesProvider(satPos1, FramesFactory.getGCRF()),
-                        FramesFactory.getGCRF(), this.date),
-                0.);
+            srp.getLightingRatio(null, this.earth,
+                new ConstantPVCoordinatesProvider(satPos1, FramesFactory.getGCRF()),
+                FramesFactory.getGCRF(), this.date),
+            0.);
         Assert.assertFalse(srp.isEclipseComputation());
     }
 
@@ -716,7 +734,7 @@ public class SolarRadiationPressureTest {
         final SphericalSpacecraft spacecraft = new SphericalSpacecraft(10.0, 1.7, 0, 0, 0, DEFAULT);
         final Parameter kRef = new Parameter("toto", 1.);
         final SolarRadiationPressure srp = new SolarRadiationPressure(kRef, this.sun, this.earth.getARadius(),
-                spacecraft);
+            spacecraft);
         srp.addDAccDParam(null, kRef, new double[] {});
         Assert.assertFalse(srp.supportsJacobianParameter(kRef));
     }
@@ -873,7 +891,7 @@ public class SolarRadiationPressureTest {
 
         // SRP
         final SolarRadiationPressure srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
-                this.earth, sc);
+            this.earth, sc);
 
         this.pos = new Vector3D(-3051443.873181594, 0.08004112908428662, -6299896.119758646);
         this.vel = new Vector3D(6791.335823416453, 4.623958780615747E-5, -3289.4796714774893);
@@ -881,7 +899,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-0.0, -0.0, -0.0);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, this.eps);
+        assertEqualsVector3D(expected, result, this.eps);
 
         Report.printToReport("Acceleration (shadow)", expected, result);
 
@@ -891,7 +909,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-0.0, -0.0, -0.0);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, this.eps);
+        assertEqualsVector3D(expected, result, this.eps);
 
         this.pos = new Vector3D(-2983354.527822928, 0.08049909171346586, -6332424.227323494);
         this.vel = new Vector3D(6826.401370304048, 4.535187542297378E-5, -3216.0788398278287);
@@ -899,7 +917,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-0.0, -0.0, -0.0);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, this.eps);
+        assertEqualsVector3D(expected, result, this.eps);
 
         this.pos = new Vector3D(-2949179.349378623, 0.08072473615900333, -6348412.5574760055);
         this.vel = new Vector3D(6843.636911578195, 4.4905640058221286E-5, -3179.237737799262);
@@ -908,7 +926,7 @@ public class SolarRadiationPressureTest {
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
         Report.printToReport("Acceleration (light)", expected, result);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2914918.49008138, 0.08094814549656688, -6364216.450760323);
         this.vel = new Vector3D(6860.67362850433, 4.445783422729028E-5, -3142.304271161838);
@@ -916,7 +934,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-2.893565907654407E-9, -1.4220166119104913E-12, -7.222957840073693E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2880572.9452927453, 0.08116931190443193, -6379835.448034807);
         this.vel = new Vector3D(6877.511026124235, 4.4008470313641964E-5, -3105.279512922826);
@@ -924,7 +942,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.6103324586755545E-9, -1.7775876307772434E-12, -9.030350220816393E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2846143.712834581, 0.0813882276246434, -6395269.095529501);
         this.vel = new Vector3D(6894.148615271639, 4.355756136776451E-5, -3068.16453874174);
@@ -932,7 +950,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.610334007328543E-9, -1.7809110225098502E-12, -9.048499352435866E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2811631.792960075, 0.08160488496501007, -6410516.944859311);
         this.vel = new Vector3D(6910.5859125853185, 4.310512055443129E-5, -3030.960426899085);
@@ -940,7 +958,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.6103355599893424E-9, -1.7842343947634942E-12, -9.066603386144998E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2777038.1883246796, 0.0818192762987035, -6425578.553037031);
         this.vel = new Vector3D(6926.822440522512, 4.265116084505521E-5, -2993.6682582650337);
@@ -948,7 +966,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.610337116607478E-9, -1.787557800982937E-12, -9.084662446218315E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2742363.903956986, 0.08203139406334341, -6440453.482486216);
         this.vel = new Vector3D(6942.857727372894, 4.219569506360693E-5, -2956.2891162680216);
@@ -956,7 +974,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.610338677135245E-9, -1.7908812144162532E-12, -9.102676310547437E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2707609.9472295274, 0.0822412307604966, -6455141.301053894);
         this.vel = new Vector3D(6958.691307272457, 4.1738735976655487E-5, -2918.824086863274);
@@ -964,7 +982,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.6103402415248136E-9, -1.7942046083110903E-12, -9.120644758335267E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
 
         this.pos = new Vector3D(-2672777.327829512, 0.08244877895554736, -6469641.582023118);
         this.vel = new Vector3D(6974.322720217183, 4.128029635339913E-5, -2881.274258501254);
@@ -972,7 +990,7 @@ public class SolarRadiationPressureTest {
         expected = new Vector3D(-3.610341809725377E-9, -1.7975280361112809E-12, -9.138567917791417E-13);
         scs = new SpacecraftState(new CartesianOrbit(pv, this.cirf, this.date, this.mu), massProvider);
         result = srp.computeAcceleration(scs);
-        this.assertEqualsVector3D(expected, result, 1E-8);
+        assertEqualsVector3D(expected, result, 1E-8);
     }
 
     /**
@@ -1003,12 +1021,12 @@ public class SolarRadiationPressureTest {
     @Test
     public void testEvents() throws PatriusException, IOException {
 
-        this.setupClassic();
+        setupClassic();
 
         final AssemblySphericalSpacecraft sc = new AssemblySphericalSpacecraft(FastMath.PI, 2.2, 1., 0., 0., "Main");
 
         final SolarRadiationPressure srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
-                this.earth, sc);
+            this.earth, sc);
 
         Assert.assertEquals(5, sc.getJacobianParameters().size());
         Assert.assertEquals(6, srp.getParameters().size());
@@ -1073,7 +1091,7 @@ public class SolarRadiationPressureTest {
         final PVCoordinates pv = new PVCoordinates(this.pos, this.vel);
         final Orbit orbit = new CartesianOrbit(pv, this.cirf, this.date, this.mu);
         final Attitude attitude = new LofOffset(orbit.getFrame(), LOFType.LVLH).getAttitude(orbit, orbit.getDate(),
-                orbit.getFrame());
+            orbit.getFrame());
         final SpacecraftState scs = new SpacecraftState(orbit, attitude, massProvider);
 
         final Parameter massMain = new Parameter("mass", mass / 3);
@@ -1090,7 +1108,7 @@ public class SolarRadiationPressureTest {
         final Parameter kd2 = new Parameter("kd", 0.6);
 
         final Assembly assembly = this.createAssemblySphereAndFacets(massMain, mass1, mass2, kaMain, ksMain, kdMain,
-                ka1, ks1, kd1, ka2, ks2, kd2);
+            ka1, ks1, kd1, ka2, ks2, kd2);
         assembly.initMainPartFrame(scs);
         final Parameter k0 = new Parameter("k0", 1.);
         final DirectRadiativeModel sc = new DirectRadiativeModel(assembly, k0);
@@ -1116,10 +1134,10 @@ public class SolarRadiationPressureTest {
         SolarRadiationPressure srp = new SolarRadiationPressure(refFlux, this.sun, this.earth, sc);
         SolarRadiationPressure srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
             this.earth,
-                sc1);
+            sc1);
         SolarRadiationPressure srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
             this.earth,
-                sc2);
+            sc2);
 
         srp.addDAccDParam(new SpacecraftState(orbit, attitude, new MassModel(assembly)), kaMain, dAccdParam);
         srp.addDAccDParam(new SpacecraftState(orbit, attitude, new MassModel(assembly)), ka1, dAccdParam);
@@ -1129,7 +1147,7 @@ public class SolarRadiationPressureTest {
         Vector3D acc1 = srp1.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly1)));
         Vector3D acc2 = srp2.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly2)));
         final double[] damFabs = { (acc2.getX() - acc1.getX()) / diff, (acc2.getY() - acc1.getY()) / diff,
-                (acc2.getZ() - acc1.getZ()) / diff };
+            (acc2.getZ() - acc1.getZ()) / diff };
         // partial derivatives wrt absorption coefficient:
         Assert.assertArrayEquals(damFabs, dAccdParam, this.epsFD);
 
@@ -1157,7 +1175,7 @@ public class SolarRadiationPressureTest {
         acc1 = srp1.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly1)));
         acc2 = srp2.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly2)));
         final double[] damFspec = { (acc2.getX() - acc1.getX()) / diff, (acc2.getY() - acc1.getY()) / diff,
-                (acc2.getZ() - acc1.getZ()) / diff };
+            (acc2.getZ() - acc1.getZ()) / diff };
         // partial derivatives wrt specular coefficient:
         Assert.assertArrayEquals(damFspec, dAccdParam, this.epsFD);
 
@@ -1186,7 +1204,7 @@ public class SolarRadiationPressureTest {
         acc1 = srp1.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly1)));
         acc2 = srp2.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly2)));
         final double[] damFdiff = { (acc2.getX() - acc1.getX()) / diff, (acc2.getY() - acc1.getY()) / diff,
-                (acc2.getZ() - acc1.getZ()) / diff };
+            (acc2.getZ() - acc1.getZ()) / diff };
 
         // partial derivatives wrt diffuse coefficient:
         Assert.assertArrayEquals(damFdiff, dAccdParam, 1E-8);
@@ -1219,7 +1237,7 @@ public class SolarRadiationPressureTest {
         acc1 = srp1.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly)));
         acc2 = srp2.computeAcceleration(new SpacecraftState(orbit, attitude, new MassModel(assembly)));
         final double[] damFK0 = { (acc2.getX() - acc1.getX()) / diff, (acc2.getY() - acc1.getY()) / diff,
-                (acc2.getZ() - acc1.getZ()) / diff };
+            (acc2.getZ() - acc1.getZ()) / diff };
 
         // partial derivatives wrt diffuse coefficient:
         Assert.assertArrayEquals(damFK0, dAccdParam, 1E-8);
@@ -1259,13 +1277,14 @@ public class SolarRadiationPressureTest {
 
             @Override
             public Vector3D radiationPressureAcceleration(final SpacecraftState state, final Vector3D flux)
-                    throws PatriusException {
+                throws PatriusException {
                 return Vector3D.ZERO;
             }
 
             @Override
             public void addDSRPAccDParam(final SpacecraftState s, final Parameter param, final double[] dAccdParam,
-                    final Vector3D satSunVector) throws PatriusException {
+                                         final Vector3D satSunVector)
+                throws PatriusException {
                 dAccdParam[0] = 1.0;
                 dAccdParam[1] = 2.0;
                 dAccdParam[2] = 3.0;
@@ -1273,7 +1292,8 @@ public class SolarRadiationPressureTest {
 
             @Override
             public void addDSRPAccDState(final SpacecraftState s, final double[][] dAccdPos, final double[][] dAccdVel,
-                    final Vector3D satSunVector) throws PatriusException {
+                                         final Vector3D satSunVector)
+                throws PatriusException {
                 dAccdPos[0][0] = 1.0;
                 dAccdPos[0][1] = 0.1;
                 dAccdVel[0][0] = 1.0;
@@ -1291,7 +1311,7 @@ public class SolarRadiationPressureTest {
 
         final MockRadiationSensitive spacecraft = new MockRadiationSensitive();
         final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
-                spacecraft);
+            spacecraft);
         final double[] dAccdParam = new double[3];
         srp.addDAccDParam(new SpacecraftState(this.orbit), KA, dAccdParam);
         Assert.assertTrue(KA.getName().contains(ABSORPTION_COEFFICIENT));
@@ -1382,15 +1402,15 @@ public class SolarRadiationPressureTest {
         final EllipsoidBodyShape body = new OneAxisEllipsoid(6378000, 0.001, FramesFactory.getITRF(), "Earth");
         final SolarRadiationPressure srp = new SolarRadiationPressure(new Parameter("toto", 1.), this.sun,
             this.sunRadius,
-                body, spacecraft, false);
+            body, spacecraft, false);
         final SolarRadiationPressure srp2 = new SolarRadiationPressure(this.sun, body, spacecraft, false);
         final SolarRadiationPressure srp3 = new SolarRadiationPressure(1, 1, this.sun, this.sunRadius, body,
             spacecraft,
-                false);
+            false);
 
         // Spacecraft state
         final Orbit orbit = new KeplerianOrbit(7E7, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getGCRF(),
-                this.date, Constants.EGM96_EARTH_MU);
+            this.date, Constants.EGM96_EARTH_MU);
         final SpacecraftState state = new SpacecraftState(orbit);
 
         // Check partial derivatives are not computed
@@ -1454,7 +1474,7 @@ public class SolarRadiationPressureTest {
         // Computation
         final Vector3D actual = srp.getSolarFlux(state);
         final Vector3D expectedRelPos = state.getPVCoordinates().getPosition()
-                .subtract(sun.getPVCoordinates(this.orbit.getDate(), this.orbit.getFrame()).getPosition());
+            .subtract(sun.getPVCoordinates(this.orbit.getDate(), this.orbit.getFrame()).getPosition());
         final double expectedDistance = expectedRelPos.getNorm();
         final Vector3D expectedDirection = expectedRelPos.normalize();
         final double expectedCst = Constants.CONST_SOL_N_M2 * Constants.SEIDELMANN_UA * Constants.SEIDELMANN_UA
@@ -1488,11 +1508,11 @@ public class SolarRadiationPressureTest {
     public void testGetters() throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
         final EllipsoidBodyShape earthBody = new OneAxisEllipsoid(Constants.CNES_STELA_AE,
-                Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getCIRF(), "earth");
+            Constants.GRIM5C1_EARTH_FLATTENING, FramesFactory.getCIRF(), "earth");
         SolarActivityDataFactory.addSolarActivityDataReader(new ACSOLFormatReader("ACSOL.act"));
         final RadiationSensitive spacecraft = new PatriusSphericalSpacecraft(20, 0.3, 0.4, 0.1, 0.1, "mainpart");
         final SolarRadiationPressure SolarRadiationPressure = new SolarRadiationPressure(CelestialBodyFactory.getSun(),
-                earthBody, spacecraft);
+            earthBody, spacecraft);
         Assert.assertTrue(earthBody.equals(SolarRadiationPressure.getOccultingBodies().get(0)));
         Assert.assertTrue(CelestialBodyFactory.getSun().equals(SolarRadiationPressure.getSunBody()));
 
@@ -1518,8 +1538,10 @@ public class SolarRadiationPressureTest {
 
         builder2.addMainPart(mainPart);
 
-        builder2.addPart(array1, mainPart, new Transform(AbsoluteDate.J2000_EPOCH, new Rotation(Vector3D.PLUS_I, 0.25)));
-        builder2.addPart(array2, mainPart, new Transform(AbsoluteDate.J2000_EPOCH, new Rotation(Vector3D.PLUS_K, 0.18)));
+        builder2.addPart(array1, mainPart,
+            new Transform(AbsoluteDate.J2000_EPOCH, new Rotation(Vector3D.PLUS_I, 0.25)));
+        builder2.addPart(array2, mainPart,
+            new Transform(AbsoluteDate.J2000_EPOCH, new Rotation(Vector3D.PLUS_K, 0.18)));
         builder2.addProperty(new MassProperty(10), array1);
         builder2.addProperty(new RadiativeProperty(0.4, 0.3, 0.5), array2);
         builder2.addProperty(new RadiativeCrossSectionProperty(new Sphere(new Vector3D(1, 2, 3), 15)), array2);
@@ -1531,7 +1553,7 @@ public class SolarRadiationPressureTest {
 
         final IAUCelestialBody body2 = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final OneAxisEllipsoid moon = new OneAxisEllipsoid(1500000, 0,
-                body2.getInertialFrame(IAUPoleModelType.CONSTANT), "Body2");
+            body2.getInertialFrame(IAUPoleModelType.CONSTANT), "Body2");
         srp2.addOccultingBody(moon);
 
         final SolarRadiationPressure srp3 = new SolarRadiationPressure(srp2, assembly);
@@ -1559,9 +1581,10 @@ public class SolarRadiationPressureTest {
         // Initialization with occulting body = Moon
         final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
         final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
-        final BodyShape moonModel = new OneAxisEllipsoid(1500000, 0, moon.getRotatingFrame(IAUPoleModelType.TRUE), "Moon");
+        final BodyShape moonModel =
+            new OneAxisEllipsoid(1500000, 0, moon.getRotatingFrame(IAUPoleModelType.TRUE), "Moon");
         final SolarRadiationPressure forceModel = new SolarRadiationPressure(sun, moonModel, new SphericalSpacecraft(
-                50.0, 0.5, 1, 0., 0., DEFAULT));
+            50.0, 0.5, 1, 0., 0., DEFAULT));
 
         // Check that the force model has some parameters (otherwise this test isn't needed and the
         // enrichParameterDescriptors method shouldn't be called in the force model)
@@ -1605,18 +1628,18 @@ public class SolarRadiationPressureTest {
         // PV of satellite in GCRF on the Earth-Sun axis, but the distance is 1% behind Earth
         final double ratioDistSatEarthSatSun = 1E-2;
         final PVCoordinatesProvider pvProv = new ConstantPVCoordinatesProvider(
-                earthSunPos.scalarMultiply(-ratioDistSatEarthSatSun), FramesFactory.getGCRF());
+            earthSunPos.scalarMultiply(-ratioDistSatEarthSatSun), FramesFactory.getGCRF());
 
         // A slight shift off the axis for the Sun position so the satellite is in penumbra
         final double shiftFromAxis = 1E7;
         // Sat-Sun vector is giving the Sun actual position for the computation of the lighting
         // ratio
         final Vector3D satSunVector = earthSunPos.scalarMultiply(1 + ratioDistSatEarthSatSun).add(
-                new Vector3D(0, 0, shiftFromAxis));
+            new Vector3D(0, 0, shiftFromAxis));
         final double ratio1 = srp1.getLightingRatio(satSunVector, this.earth, pvProv, FramesFactory.getGCRF(),
-                this.date);
+            this.date);
         final double ratio2 = srp2.getLightingRatio(satSunVector, this.earth, pvProv, FramesFactory.getGCRF(),
-                this.date);
+            this.date);
 
         Assert.assertNotEquals(ratio2, ratio1, Precision.DOUBLE_COMPARISON_EPSILON);
 
@@ -1657,10 +1680,11 @@ public class SolarRadiationPressureTest {
         this.earth = new OneAxisEllipsoid(6378136.46, 1.0 / 298.25765, FramesFactory.getITRF());
 
         this.date = new AbsoluteDate(new DateComponents(2003, 3, 21), new TimeComponents(13, 59, 27.816),
-                TimeScalesFactory.getUTC());
+            TimeScalesFactory.getUTC());
         this.orbit = new EquinoctialOrbit(42164000, 10e-3, 10e-3, MathLib.tan(0.001745329)
-                * MathLib.cos(2 * FastMath.PI / 3), MathLib.tan(0.001745329) * MathLib.sin(2 * FastMath.PI / 3), 0.1,
-                PositionAngle.TRUE, FramesFactory.getEME2000(), this.date, this.mu);
+                * MathLib.cos(2 * FastMath.PI / 3),
+            MathLib.tan(0.001745329) * MathLib.sin(2 * FastMath.PI / 3), 0.1,
+            PositionAngle.TRUE, FramesFactory.getEME2000(), this.date, this.mu);
     }
 
     /**

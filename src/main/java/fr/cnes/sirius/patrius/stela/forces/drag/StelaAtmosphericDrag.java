@@ -18,6 +18,8 @@
  * @history created 18/02/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-388:25/04/2025:[STELA-PATRIUS] Coefficients de frottement Cook, tabule
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
@@ -326,13 +328,13 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
 
         // No short periods if not in the atmosphere
         if (ve != 0 || vs != 0) {
-            final double deltavi = (vs - ve) / (squaringPoints - 1);
+            final double deltavi = (vs - ve) / (this.squaringPoints - 1);
 
             // Get list of Squaring Points
-            final double[][] resSquaring = squaring.computeSquaringPoints(squaringPoints, orbitCIRF, ve, vs);
+            final double[][] resSquaring = squaring.computeSquaringPoints(this.squaringPoints, orbitCIRF, ve, vs);
 
             // Compute ksi (2nd value in squaring points)
-            final double[] ksi = new double[squaringPoints];
+            final double[] ksi = new double[this.squaringPoints];
             int i = 0;
             for (final double[] entry : resSquaring) {
                 ksi[i] = entry[1];
@@ -341,14 +343,14 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
 
             // Computation of coefficients
             final double[][] dOrbParams = computeDOrbParams(orbitCIRF, bounds, converter);
-            final List<double[][]> coeffs = computeSPDragCoefficients(orbitCIRF, dOrbParams, squaringPoints, ksi,
+            final List<double[][]> coeffs = computeSPDragCoefficients(orbitCIRF, dOrbParams, this.squaringPoints, ksi,
                     deltavi);
 
             // Mean Longitude xi
             final double xi = orbitCIRF.getLM();
 
             // Short periods Drag through evaluation of Fourier series
-            sp = evaluateFS(coeffs, orderFS, xi);
+            sp = evaluateFS(coeffs, this.orderFS, xi);
         }
 
         return sp;
@@ -549,10 +551,10 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
         final double sma = orbitCIRF.getA();
         final double sma2 = sma * sma;
         final double meanMvt = MathLib.sqrt(Constants.CNES_STELA_MU / (sma * sma2));
-        final List<double[][][]> listQuadElements = computeQuadElements(dOrbParams, ksi, orderFS, nSquaringPointsDrag);
+        final List<double[][][]> listQuadElements = computeQuadElements(dOrbParams, ksi, this.orderFS, nSquaringPointsDrag);
 
         // Return coefficients
-        return computeCoeffs(listQuadElements, orderFS, nSquaringPointsDrag, meanMvt, deltavi);
+        return computeCoeffs(listQuadElements, this.orderFS, nSquaringPointsDrag, meanMvt, deltavi);
     }
 
     /**
@@ -569,7 +571,7 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
             final OrbitNatureConverter converter) throws PatriusException {
 
         // initialization
-        final double[][] dOrbParamsComputed = new double[6][squaringPoints];
+        final double[][] dOrbParamsComputed = new double[6][this.squaringPoints];
         final Frame frame = orbit.getFrame();
 
         // True anomaly (lower bound):
@@ -636,7 +638,7 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
      */
     private OrbitNatureConverter getConverterWithoutDrag(final OrbitNatureConverter converter) {
         // Deactivate drag short periods for avoiding recursive infinite loop
-        final List<StelaForceModel> forceModelsNoDrag = new ArrayList<StelaForceModel>();
+        final List<StelaForceModel> forceModelsNoDrag = new ArrayList<>();
         for (final StelaForceModel model : converter.getForceModels()) {
             if (model != this) {
                 forceModelsNoDrag.add(model);

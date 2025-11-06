@@ -18,6 +18,7 @@
  * @history created 18/02/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
@@ -346,7 +347,7 @@ public final class Squaring {
             }
 
             // Build list of [date, mean anomalies, eccentric anomalies]
-            final List<double[]> list = new ArrayList<double[]>();
+            final List<double[]> list = new ArrayList<>();
             for (int i = 0; i <= numPoints - 1; i++) {
                 final double eccAnomaly = startPoint + i * deltaEi;
                 final double meanAnomaly = eccAnomaly - e * MathLib.sin(eccAnomaly);

@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -41,11 +42,11 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 public interface IProjection extends Serializable {
 
     /**
-     * Returns a boolean depending if the geodetic point can be map with the selected projection method.
+     * Returns a boolean depending if the ellipsoid point can be map with the selected projection method.
      * 
      * @param point
      *        point to test if representable
-     * @return true if the geodetic point can be represented on the map with the chosen projection method
+     * @return true if the ellipsoid point can be represented on the map with the chosen projection method
      */
     boolean canMap(final EllipsoidPoint point);
 
@@ -75,13 +76,13 @@ public interface IProjection extends Serializable {
 
     /**
      * Inverse projection.<br>
-     * Returns geodetic coordinates.
+     * Returns ellipsoid coordinates.
      * 
      * @param x
      *        abscissa coordinate
      * @param y
      *        ordinate coordinate
-     * @return geodetic coordinates
+     * @return ellipsoid coordinates
      * @throws PatriusException
      *         if inverse projection could not be computed
      */

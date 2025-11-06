@@ -15,8 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.15.1:OPENFD-487:28/01/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
+ * VERSION:4.16:OPENFD-487:25/04/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14.2:OPENFD-487:10/12/2024:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub

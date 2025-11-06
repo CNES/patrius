@@ -16,7 +16,6 @@
  * Copyright 2002-2011 CS Communication & Systèmes
  *
  * HISTORY
- * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
  * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
  * les polynemes de Chebyshev des fichiers JPL historiques
@@ -31,7 +30,9 @@
  */
 package fr.cnes.sirius.patrius.cnesmerge.propagation.events;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -272,7 +273,8 @@ public class AlignmentDetectorTest {
         this.propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.initialState.getMu())));
         final double alignAngle = MathLib.toRadians(90.);
         final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
-        final AlignmentDetector alignDetector = new AlignmentDetector(this.initialState.getOrbit(), sun, alignAngle);
+        final AlignmentDetector alignDetector =
+            new AlignmentDetector(this.initialState.getOrbit(), sun, alignAngle);
         this.propagator.addEventDetector(alignDetector);
         final SpacecraftState finalState = this.propagator.propagate(this.iniDate.shiftedBy(6000));
         Assert.assertEquals(4820.3648, finalState.getDate().durationFrom(this.iniDate), this.timeEpsilon);
@@ -297,20 +299,21 @@ public class AlignmentDetectorTest {
         // Orbit with a non-inertial frame
         final Orbit orbit = new EquinoctialOrbit(new PVCoordinates(position, velocity),
             FramesFactory.getITRF(), date, mu);
-        Assert.assertFalse(orbit.getFrame().isPseudoInertial());
+        assertFalse(orbit.getFrame().isPseudoInertial());
 
         // Verification of the correct value for potential future evolutions
         final SpacecraftState state = new SpacecraftState(orbit);
         assertFalse(state.getFrame().isPseudoInertial());
         final AlignmentDetector detector = new AlignmentDetector(orbit, sun, MathUtils.DEG_TO_RAD * 25);
-        Assert.assertEquals(0.027257325440910564, detector.g(state), Precision.DOUBLE_COMPARISON_EPSILON);
+        assertEquals(-0.0023543884372337373, detector.g(state), Precision.DOUBLE_COMPARISON_EPSILON);
 
         // Orbit with an inertial frame
         final Orbit orbitInertial = new EquinoctialOrbit(new PVCoordinates(position, velocity),
             FramesFactory.getEME2000(), date, mu);
         assertTrue(orbitInertial.getFrame().isPseudoInertial());
         final SpacecraftState stateInertial = new SpacecraftState(orbitInertial);
-        Assert.assertTrue(stateInertial.getFrame().isPseudoInertial());
-        Assert.assertNotEquals(detector.g(state), detector.g(stateInertial));
+        assertTrue(stateInertial.getFrame().isPseudoInertial());
+        assertNotEquals(detector.g(state), detector.g(stateInertial));
     }
-}
+    }
+

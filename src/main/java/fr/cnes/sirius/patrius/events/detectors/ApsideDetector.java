@@ -18,7 +18,6 @@
 /*
  *
  * HISTORY
- * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
 * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
 * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
 * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
@@ -269,12 +268,12 @@ public class ApsideDetector extends AbstractDetector {
     @Override
     @SuppressWarnings("PMD.ShortMethodName")
     public double g(final SpacecraftState state) throws PatriusException {
-        // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
         PVCoordinates pv = state.getPVCoordinates();
         final Frame stateFrame = state.getFrame();
         if (!stateFrame.isPseudoInertial()) {
             final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
-            final Transform t = stateFrame.getTransformTo(workFrame, state.getDate());
+            final Transform t =
+                stateFrame.getTransformTo(workFrame, state.getDate());
             pv = t.transformPVCoordinates(pv);
         }
         return Vector3D.dotProduct(pv.getPosition(), pv.getVelocity());

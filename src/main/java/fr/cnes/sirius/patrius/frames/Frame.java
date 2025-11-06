@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-426:25/04/2025:[PATRIUS] Rendre Frame immutable et suppression de la notion de referentiel
  * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
  * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -101,7 +102,13 @@ public class Frame implements PVCoordinatesProvider {
     /** Indicator for pseudo-inertial frames. */
     private final boolean pseudoInertial;
 
-    /** Referential of the frame. */
+    /**
+     * Referential of the frame.
+     *
+     * @deprecated since 4.16, erroneous variable since the referential frame moves with respect to the frame.<br>
+     *             Better use {@link #getFrozenFrame(Frame, String)} method.
+     */
+    @Deprecated
     private Frame referential = this;
 
     /**
@@ -568,6 +575,36 @@ public class Frame implements PVCoordinatesProvider {
             reference.isPseudoInertial());
     }
 
+
+    /**
+     * Get a new version of the instance, frozen with respect to a reference frame.
+     * <p>
+     * Freezing a frame consist in computing its position and orientation with respect to another frame at some freezing
+     * date and fixing them so they do not depend on time anymore. This means the frozen frame is fixed with respect to
+     * the reference frame.
+     * </p>
+     * <p>
+     * One typical use of this method is to compute an inertial launch reference frame by freezing a
+     * {@link TopocentricFrame topocentric frame} at launch date with respect to an inertial frame. Another use is to
+     * freeze an equinox-related celestial frame at a reference epoch date.
+     * </p>
+     * <p>
+     * Only the frame returned by this method is frozen, the instance by itself is not affected by calling this method
+     * and still moves freely.
+     * </p>
+     *
+     * @param reference
+     *        frame with respect to which the instance will be frozen
+     * @param frozenName
+     *        name of the frozen frame
+     * @return a frozen version of the instance
+     * @exception PatriusException
+     *            if transform between reference frame and instance cannot be computed at freezing frame
+     */
+    public Frame getFrozenFrame(final Frame reference, final String frozenName) throws PatriusException {
+        return new FrozenFrame(this, reference, frozenName);
+    }
+
     /**
      * Compute the Jacobian from current frame to target frame at provided date.
      * 
@@ -606,7 +643,7 @@ public class Frame implements PVCoordinatesProvider {
     public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
         return this.getTransformTo(frame, date).transformPVCoordinates(PVCoordinates.ZERO);
     }
-	
+    
     /** {@inheritDoc} */
     @Override
     public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
@@ -623,9 +660,15 @@ public class Frame implements PVCoordinatesProvider {
     
     /**
      * Set the referential of the frame.
-     * 
-     * @param referentialIn referential of the frame to set
+     *
+     * @param referentialIn
+     *        referential of the frame to set
+     *
+     * @deprecated since 4.16, the concept of referential frame is erroneous. All methods using it should be avoided.
+     *             The referential frame moves with respect to the frame. To continue to use the ideas behind the notion
+     *             of a referential frame, better use the {@link #getFrozenFrame(Frame, String)} method.
      */
+    @Deprecated
     public void setReferential(final Frame referentialIn) {
         this.referential = referentialIn;
     }

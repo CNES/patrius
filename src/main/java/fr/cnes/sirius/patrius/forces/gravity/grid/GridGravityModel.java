@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-474:25/04/2025:[PATRIUS] Ameliorations de GridGravityModel
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le
@@ -59,7 +61,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * <p>
  * Partial derivatives are not available.
  * </p>
- * 
+ *
  * @author Emmanuel Bignon
  *
  * @since 4.7
@@ -74,21 +76,25 @@ public class GridGravityModel extends AbstractGravityModel {
 
     /** Back-up model used if requested point out of boundaries. */
     private final GravityModel backupModel;
-    
+
     /** Interpolating function for acceleration. */
     private final TrivariateFunction[] fA;
-    
+
     /** Interpolating function for potential. */
     private final TrivariateFunction fPotential;
 
     /**
      * Constructor.
-     * 
-     * @param attractionProvider attraction data provider
-     * @param interpolator 3D interpolator using for interpolating acceleration and potential
-     * @param backupModel back-up model used if requested point out of boundaries. Beware that this model should not
+     *
+     * @param attractionProvider
+     *        attraction data provider
+     * @param interpolator
+     *        3D interpolator using for interpolating acceleration and potential
+     * @param backupModel
+     *        back-up model used if requested point out of boundaries. Beware that this model should not
      *        include multiplicative coefficient
-     * @param bodyFrameIn body-centered frame in which grid and accelerations are expressed.
+     * @param bodyFrameIn
+     *        body-centered frame in which grid and accelerations are expressed.
      *        Frame shall be centered on body center of mass, not on grid system
      */
     public GridGravityModel(final GridAttractionProvider attractionProvider,
@@ -103,11 +109,11 @@ public class GridGravityModel extends AbstractGravityModel {
         final double[] yArray = this.data.getGrid().getYArray();
         final double[] zArray = this.data.getGrid().getZArray();
         final TrivariateFunction fAx = interpolator.interpolate(xArray, yArray, zArray, this.data
-                .getGrid().getAccXArray());
+            .getGrid().getAccXArray());
         final TrivariateFunction fAy = interpolator.interpolate(xArray, yArray, zArray, this.data
-                .getGrid().getAccYArray());
+            .getGrid().getAccYArray());
         final TrivariateFunction fAz = interpolator.interpolate(xArray, yArray, zArray, this.data
-                .getGrid().getAccZArray());
+            .getGrid().getAccZArray());
         this.fA = new TrivariateFunction[] { fAx, fAy, fAz };
         this.fPotential = interpolator.interpolate(xArray, yArray, zArray, this.data.getGrid().getPotentialArray());
     }
@@ -144,24 +150,28 @@ public class GridGravityModel extends AbstractGravityModel {
      * <p>
      * If state position is out of grid boundaries, potential is approximated to central body potential.
      * </p>
-     * 
-     * @param pos position of the spacecraft
-     * @param frame frame in which the position of the spacecraft is given
-     * @param date date
+     *
+     * @param pos
+     *        position of the spacecraft
+     * @param frame
+     *        frame in which the position of the spacecraft is given
+     * @param date
+     *        date
      * @return the potential due to the body attraction
-     * @throws PatriusException thrown if position is out of grid boundaries
+     * @throws PatriusException
+     *         thrown if position is out of grid boundaries
      */
     public double computePotential(final Vector3D pos, final Frame frame, final AbsoluteDate date)
         throws PatriusException {
         // Get position in body frame / grid system
-        final Transform t = frame.getTransformTo(this.getBodyFrame(), date);
+        final Transform t = frame.getTransformTo(getBodyFrame(), date);
         final Vector3D position = t.transformPosition(pos);
         // Convert to grid system
         final double[] coords = this.data.getGrid().getCoordinates(position);
 
         // Check if position is within grid
         final boolean isWithin = this.data.getGrid().isInsideGrid(position);
-        
+
         // Compute acceleration
         if (isWithin) {
             // Interpolation
@@ -190,5 +200,16 @@ public class GridGravityModel extends AbstractGravityModel {
     @Override
     public void setMu(final double muIn) {
         this.data.setGM(muIn);
+        this.backupModel.setMu(muIn);
     }
+
+    /**
+     * Getter for the backup model
+     *
+     * @return the backup model
+     */
+    public GravityModel getBackupModel() {
+        return this.backupModel;
+    }
+
 }

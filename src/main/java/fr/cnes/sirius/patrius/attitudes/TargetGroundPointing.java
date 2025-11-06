@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-316:22/08/2024:[Patrius] TargetGroundPointing - Restauration de
  * l'ancienne methode getTargetPosition()
  * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
@@ -88,7 +89,7 @@ public class TargetGroundPointing extends AbstractGroundPointing {
     }
 
     /**
-     * Creates a new instance from body shape and target expressed in geodetic coordinates.
+     * Creates a new instance from body shape and target expressed in ellipsoid coordinates.
      *
      * @param targetPointIn
      *        Target point

@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-382:25/04/2025:[PATRIUS] Analyse concernant le renvoi 
+ *          des coordonnees d'entree pour EllipsoidPoint 
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -30,39 +33,27 @@
 package fr.cnes.sirius.patrius.projections;
 
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.ComparisonType;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.Vector2D;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.Utils;
 import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link Mercator}.
- * 
+ *
  * @author Emmanuel Bignon
  * @version $Id$
- * 
+ *
  */
 public class MercatorTest {
 
@@ -70,9 +61,9 @@ public class MercatorTest {
     public enum features {
         /**
          * @featureTitle Validate the Mercator projection
-         * 
+         *
          * @featureDescription Validate the Mercator projection
-         * 
+         *
          * @coveredRequirements DV-CARTO_20
          */
         MERCATOR_PROJECTION
@@ -112,21 +103,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#canMap(EllipsoidPoint)}
-     * 
+     *
      * @description Check the Mercator projection can map provided points
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output boolean
-     * 
+     *
      * @testPassCriteria Toulouse: true, North pole: false (reference : LibKernel library 10.0.0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -139,24 +130,24 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#applyTo(EllipsoidPoint)}
      * @testedMethod {@link Mercator#applyTo(double, double)}
-     * 
+     *
      * @description test application of the projection (Toulouse, North pole, 2 different projections)
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output projected point
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
      *                   result has slightly changed since 4.12 due to numerical conversion with the new coordinates
      *                   system
-     * 
+     *
      * @referenceVersion 4.12
-     * 
+     *
      * @nonRegressionVersion 4.12
      */
     @Test
@@ -169,7 +160,7 @@ public class MercatorTest {
             .getLLHCoordinates().getLongitude());
 
         final double eps = 0.;
-        final double expectedX = 166727.87010053065;
+        final double expectedX = 166727.87010052995;
         final double expectedY = 5348402.564373465;
 
         Assert.assertEquals(expectedX, actual.getX(), eps);
@@ -183,7 +174,7 @@ public class MercatorTest {
         // Other cases (North pole)
         final Vector2D actual2 = projection1.applyTo(point2.getLLHCoordinates().getLatitude(), point2
             .getLLHCoordinates().getLongitude());
-        final double expectedX2 = 166727.8701005306;
+        final double expectedX2 = 166727.87010052995;
         final double expectedY2 = 7.425695006522633E7;
 
         Assert.assertEquals(expectedX2, actual2.getX(), eps);
@@ -194,8 +185,8 @@ public class MercatorTest {
         // Specific projection (Toulouse)
         final Vector2D actual3 = projection2.applyTo(point1.getLLHCoordinates().getLatitude(), point1
             .getLLHCoordinates().getLongitude());
-        final double expectedX3 = -3217015.7348985383;
-        final double expectedY3 = 3587210.7558377897;
+        final double expectedX3 = -3217015.7348985393;
+        final double expectedY3 = 3587210.75583779;
 
         Assert.assertEquals(expectedX3, actual3.getX(), eps);
         Assert.assertEquals(expectedY3, actual3.getY(), eps);
@@ -205,24 +196,24 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#applyInverseTo(EllipsoidPoint)}
      * @testedMethod {@link Mercator#applyInverseTo(double, double)}
-     * 
+     *
      * @description test inverse application of the projection (Toulouse, 2 different projections)
-     * 
+     *
      * @input ellipsoid, projection
-     * 
-     * @output geodetic coordinates
-     * 
+     *
+     * @output ellipsoid coordinates
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 1E-15)
      *                   result has slightly changed since 4.12 due to numerical conversion with the new coordinates
      *                   system
-     * 
+     *
      * @referenceVersion 4.12
-     * 
+     *
      * @nonRegressionVersion 4.12
      */
     @Test
@@ -315,21 +306,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#isConformal()}
-     * 
+     *
      * @description Check the Mercator projection is conformal
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output boolean
-     * 
+     *
      * @testPassCriteria true (reference : LibKernel library 10.0.0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -339,21 +330,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#isEquivalent()}
-     * 
+     *
      * @description Check the Mercator projection is not equivalent
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output boolean
-     * 
+     *
      * @testPassCriteria false (reference : LibKernel library 10.0.0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -363,21 +354,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getLineProperty()}
-     * 
+     *
      * @description Check the projection line property is straight rhumb line
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output line property
-     * 
+     *
      * @testPassCriteria line property is straight rhumb line (reference : LibKernel library 10.0.0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -387,21 +378,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getMaximumLatitude()}
-     * 
+     *
      * @description Check the Mercator projection maximum latitude
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output maximum latitude
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -414,21 +405,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getMaximumEastingValue()}
-     * 
+     *
      * @description Check the Mercator projection maximum easting value
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output maximum easting value
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -441,21 +432,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getAzimuth()}
-     * 
+     *
      * @description Check the Mercator projection azimuth value
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output azimuth value
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -467,21 +458,21 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getMaximumNorthingValue()}
-     * 
+     *
      * @description Check the Mercator projection maximum northing value
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output maximum northing value
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 3.2
-     * 
+     *
      * @nonRegressionVersion 3.2
      */
     @Test
@@ -494,27 +485,27 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getScaleFactor(double)}
-     * 
+     *
      * @description Check the Mercator scale factor
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output scale factor
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 4.12
-     * 
+     *
      * @nonRegressionVersion 4.12
      */
     @Test
     public void testScaleFactor() {
         Report.printMethodHeader("testScaleFactor", "Scale factor", "LibKernel 10.0.0", 0., ComparisonType.RELATIVE);
-        final double expected = 0.7273558637126116;
+        final double expected = 0.7273558637126115;
         final double actual = projection1.getScaleFactor(point1.getLLHCoordinates().getLatitude());
         Assert.assertEquals(expected, actual, 0.);
         Report.printToReport("Scale factor", expected, actual);
@@ -522,28 +513,28 @@ public class MercatorTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#MERCATOR_PROJECTION}
-     * 
+     *
      * @testedMethod {@link Mercator#getDistortionFactor(double)}
-     * 
+     *
      * @description Check the Mercator distorsion factor
-     * 
+     *
      * @input ellipsoid, projection
-     * 
+     *
      * @output distorsion factor
-     * 
+     *
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 0)
-     * 
+     *
      * @referenceVersion 4.12
-     * 
+     *
      * @nonRegressionVersion 4.12
      */
     @Test
     public void testDistorsionFactor() {
         Report.printMethodHeader("testDistorsionFactor", "Distorsion factor", "LibKernel 10.0.0", 0.,
             ComparisonType.RELATIVE);
-        final double expected = 1.3748428381339257;
+        final double expected = 1.3748428381339262;
         final double actual = projection1.getDistortionFactor(point1.getLLHCoordinates().getLatitude());
         Assert.assertEquals(expected, actual, 0.);
         Report.printToReport("Distorsion factor", expected, actual);

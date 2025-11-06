@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-382:25/04/2025:[PATRIUS] Analyse concernant le renvoi 
+ *          des coordonnees d'entree pour EllipsoidPoint 
  * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
@@ -55,6 +57,12 @@ public abstract class AbstractBodyPoint implements BodyPoint {
     /** Serializable UID. */
     private static final long serialVersionUID = -3424485348634647971L;
 
+    /**
+     * Custom precision of LAT/LON body point comparison. 1e-10 radians correspond to about 1mm in latitude. This
+     * precision is chosen to minimize the possible recomputations of the input latitude/longitude
+     */
+    private static final double LAT_LON_PRECISION = 1e-10;
+
     /** Associated body shape. */
     private final BodyShape bodyShape;
 
@@ -80,7 +88,7 @@ public abstract class AbstractBodyPoint implements BodyPoint {
     private transient BodyPoint radialProjectionOnShape;
 
     /** Input LLH coordinates (may be <code>null</code> if this is defined from its position) */
-    private LLHCoordinates inputCoord;
+    private final LLHCoordinates inputCoord;
 
     /** Map of LLH coordinates for all coordinates systems. */
     private final EnumMap<LLHCoordinatesSystem, LLHCoordinates> coordinatesMap;
@@ -157,6 +165,7 @@ public abstract class AbstractBodyPoint implements BodyPoint {
         this.position = position;
         // Note: in this constructor, inputCoord isn't initialized (null), but it's not an issue as the position is
         // already "initialized" so it won't be called in the getPosition() method
+        this.inputCoord = null;
 
         // Map of LLH coordinates
         this.coordinatesMap = new EnumMap<>(LLHCoordinatesSystem.class);
@@ -380,22 +389,6 @@ public abstract class AbstractBodyPoint implements BodyPoint {
     }
 
     /**
-     * Getter for the input LLHCoordinates. It enables to get LLHCoordinates without recomputing it to the correct
-     * LLHCoordinatesSystem as in {@link AbstractBodyPoint#getLLHCoordinates(LLHCoordinatesSystem)}.
-     * <p>
-     * <b>WARN</b> : if the input coordinates for the point have not been initialized an exception is thrown.
-     * 
-     * @return the input LLH coordinates in the same system they were provided.
-     * @throws PatriusException
-     */
-    public LLHCoordinates getInputLLHCoordinates() throws PatriusException {
-        if (inputCoord == null) {
-            throw new PatriusException(PatriusMessages.NO_LLHCOORDINATES_DEFINED);
-        }
-        return inputCoord;
-    }
-
-    /**
      * {@inheritDoc}
      *
      * <p>
@@ -403,37 +396,58 @@ public abstract class AbstractBodyPoint implements BodyPoint {
      * {@link LLHCoordinatesSystem#BODYCENTRIC_NORMAL} system.
      * </p>
      *
+     * @param coordSystem
+     *        requested coordinates system
+     *
      * @throws IllegalArgumentException
      *         if {@link LLHCoordinatesSystem#ELLIPSODETIC} with a not ellipsoidal body shape
      */
     @Override
     public final LLHCoordinates getLLHCoordinates(final LLHCoordinatesSystem coordSystem) {
 
-        // Compute the coordinates if not computed yet
-        if (this.coordinatesMap.get(coordSystem) == null) {
-
-            // initialize output
-            LLHCoordinates coord = null;
-            switch (coordSystem) {
-
-                case ELLIPSODETIC:
-                    coord = computeEllipsodeticNormalLLHCoordinates();
-                    break;
-
-                case BODYCENTRIC_NORMAL:
-                    coord = computeBodycentricNormalLLHCoordinates();
-                    break;
-
-                case BODYCENTRIC_RADIAL:
-                    coord = computeBodycentricRadialLLHCoordinates();
-                    break;
-
-                default:
-                    // NOTEST
+        return this.coordinatesMap.computeIfAbsent(coordSystem, cs -> {
+            LLHCoordinates coord = computeLLHCoordinates(coordSystem);
+            // Check if inputCoord is close to the result. If so, return the inputCoord to avoid numerical issues
+            if (this.inputCoord != null && coordSystem == this.inputCoord.getLLHCoordinatesSystem() &&
+                    Math.abs(coord.getLatitude() - this.inputCoord.getLatitude()) < AbstractBodyPoint.LAT_LON_PRECISION
+                    && Math.abs(coord.getLongitude()
+                            - this.inputCoord.getLongitude()) < AbstractBodyPoint.LAT_LON_PRECISION) {
+                coord = this.inputCoord;
             }
-            this.coordinatesMap.put(coordSystem, coord);
+            return coord;
+        });
+    }
+
+    /**
+     * Recompute coordinates
+     *
+     * @param coordSystem
+     *        coordinate system for the coordinates (requested coordinates system)
+     *
+     * @return the recomputed coordinates
+     */
+    private LLHCoordinates computeLLHCoordinates(final LLHCoordinatesSystem coordSystem) {
+
+        final LLHCoordinates coord;
+        switch (coordSystem) {
+
+            case ELLIPSODETIC:
+                coord = computeEllipsodeticNormalLLHCoordinates();
+                break;
+
+            case BODYCENTRIC_NORMAL:
+                coord = computeBodycentricNormalLLHCoordinates();
+                break;
+
+            case BODYCENTRIC_RADIAL:
+                coord = computeBodycentricRadialLLHCoordinates();
+                break;
+
+            default:
+                // NOTEST
+                throw new PatriusRuntimeException(PatriusMessages.INTERNAL_ERROR, null);
         }
-        return this.coordinatesMap.get(coordSystem);
+        return coord;
     }
 
     /**
@@ -531,43 +545,12 @@ public abstract class AbstractBodyPoint implements BodyPoint {
     public String toString() {
         return toString(this.bodyShape.getLLHCoordinatesSystem());
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public String toString(final LLHCoordinatesSystem coordSystem) {
         return String.format("%s: name='%s', %s, body='%s'", getClass().getSimpleName(), getName(),
             getLLHCoordinates(coordSystem).toString(), getBodyShape().getName());
-    }
-
-    /**
-     * @return Returns a String with the LLHCoordinatesSystem used but based directly on the provided input coordinates
-     *         without recomputation. Throws an exception if inputCoord are null.
-     * @throws PatriusException
-     */
-    public String toStringWithInputCoords() throws PatriusException {
-        if (inputCoord == null) {
-            throw new PatriusException(PatriusMessages.NO_LLHCOORDINATES_DEFINED);
-        }
-        return String.format("%s: name='%s', %s, body='%s'", getClass().getSimpleName(), getName(),
-            inputCoord.toString(), getBodyShape().getName());
-    }
-
-    /**
-     * <strong>WARNING</strong> : if the coordinates system provided in input is equal to the coordinates system of
-     * inputCoord, results are recomputed. Please use this method just if you want to transform inputCoord in another
-     * coordinates system and display it in a String format.
-     * 
-     * @return Returns a String with the LLHCoordinatesSystem used but based on the coordinate system provided. Beware
-     *         computation are made here to transform the coordinate system. Throws an exception if inputCoord are null.
-     * 
-     * 
-     * @throws PatriusException
-     */
-    public String toStringWithInputCoords(final LLHCoordinatesSystem coordSystem) throws PatriusException {
-        if (inputCoord == null) {
-            throw new PatriusException(PatriusMessages.NO_LLHCOORDINATES_DEFINED);
-        }
-        return toString(coordSystem);
     }
 
     /**

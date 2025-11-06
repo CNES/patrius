@@ -14,7 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.15.2:OPENFD-547:25/02/2025:[PATRIUS] Mauvaise gestion de computeSpinDerivatives dans BSPEphemerisLoader
+ * VERSION:4.16:OPENFD-547:25/04/2025:[PATRIUS] Mauvaise gestion de computeSpinDerivatives dans BSPEphemerisLoader
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-378:25/04/2025:[PATRIUS] Utiliser l'ID Spice plutot que le nom Spice pour la lecture des bsp
  * VERSION:4.15:OPENFD-428:21/11/2024:[PATRIUS] Robustesse aux bsp contenant l'échelle TDB
  * VERSION:4.14:OPENFD-:22/08/2024:
  * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
@@ -46,7 +48,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 import fr.cnes.sirius.patrius.bodies.BSPCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
@@ -175,8 +176,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         ICRF;
     }
 
-    /** BSP ephemeris (Body name, BSPCelestialBodyEphemeris), one per segment. */
-    private final Map<String, BSPCelestialBodyEphemeris> ephemeris;
+    /** BSP ephemeris (Body ID, BSPCelestialBodyEphemeris), one per segment. */
+    private final Map<Integer, BSPCelestialBodyEphemeris> ephemeris;
 
     /** Supported file names. */
     private final String supportedNames;
@@ -204,8 +205,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
      * @throws IOException
      *         if there is a problem tempting to read the first record
      */
-    private Map<String, BSPCelestialBodyEphemeris> readSegments(final String bspFile)
-        throws PatriusException, IOException {
+    private Map<Integer, BSPCelestialBodyEphemeris> readSegments(final String bspFile)
+            throws PatriusException, IOException {
         // Initialization of SPK reading by getting the initial handle
         final int[] handle = new int[1];
         final boolean loaded = DafHandle.isLoaded(bspFile, handle);
@@ -261,11 +262,10 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
      * @throws PatriusException
      *         if reading failed
      */
-    private Map<String, BSPCelestialBodyEphemeris> readSegments(final int nd, final int ni) throws PatriusException {
+    private Map<Integer, BSPCelestialBodyEphemeris> readSegments(final int nd, final int ni) throws PatriusException {
 
         // Segment list to return
-        final Map<String, BSPCelestialBodyEphemeris> ephemerisList =
-            new ConcurrentHashMap<>();
+        final Map<Integer, BSPCelestialBodyEphemeris> ephemerisList = new HashMap<>();
 
         // Find the next array to read its data
         boolean found = FindArraysDAF.findNextArray();
@@ -286,8 +286,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
             final int centerID = ic[1];
             final int frameID = ic[2];
             final DAFSegment segment = new DAFSegment(targetID, centerID, frameID);
-            final String name = SpiceBody.bodyCode2Name(targetID);
-            ephemerisList.put(name, new BSPCelestialBodyEphemeris(segment));
+            ephemerisList.put(targetID, new BSPCelestialBodyEphemeris(segment));
 
             // Testing if there is a next array and iterating if so
             found = FindArraysDAF.findNextArray();
@@ -296,10 +295,10 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         // Link parent/children for all segments
         for (final BSPCelestialBodyEphemeris e : ephemerisList.values()) {
             // Set parent
-            final String observerName = e.segment.observerName;
+            final int observerID = e.segment.observerID;
             for (final BSPCelestialBodyEphemeris ephemeris2 : ephemerisList.values()) {
-                final String targetName2 = ephemeris2.segment.targetName;
-                if (targetName2.equals(observerName)) {
+                final int targetID2 = ephemeris2.segment.targetID;
+                if (targetID2 == observerID) {
                     // Set parent
                     e.segment.parent = ephemeris2.segment;
                     break;
@@ -307,10 +306,10 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
             }
 
             // Set children
-            final String targetName = e.segment.targetName;
+            final int targetID = e.segment.targetID;
             for (final BSPCelestialBodyEphemeris ephemeris2 : ephemerisList.values()) {
-                final String observerName2 = ephemeris2.segment.observerName;
-                if (targetName.equals(observerName2)) {
+                final int observerID2 = ephemeris2.segment.observerID;
+                if (targetID == observerID2) {
                     // Add child
                     e.segment.children.add(ephemeris2.segment);
                 }
@@ -338,71 +337,19 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
             }
         }
 
-        // Retrieve the bsp name
+        // Retrieve the bsp ID
         final String bspName = BSPCelestialBodyLoader.toSpiceName(patriusName);
-        // Get body ephemeris
-        CelestialBodyEphemeris res = this.ephemeris.get(bspName);
-        if (res == null) {
+        final boolean[] found = { false };
+        final int bspID = SpiceBody.bodyString2Code(bspName, found);
 
-            // Update ephemeris if necessary based on provided bsp name
-            updateEphemeris(bspName);
-
-            res = this.ephemeris.get(bspName);
-            if (res == null) {
-                // Body not in file
-                throw new PatriusException(PatriusMessages.BODY_NOT_AVAILABLE_IN_BSP_FILE, bspName,
-                    this.supportedNames);
-            }
+        if (!found[0] || this.ephemeris.get(bspID) == null) {
+            throw new PatriusException(PatriusMessages.BODY_NOT_AVAILABLE_IN_BSP_FILE, bspName,
+                this.supportedNames);
         }
-        return res;
+
+        return this.ephemeris.get(bspID);
     }
 
-    /**
-     * Updates map of BSPCelestialBodyEphemeris based on eventual elements added on the BodyCodeNameMapping.
-     *
-     * @param bspName
-     *        the name of the bsp to be verified
-     */
-    private void updateEphemeris(final String bspName) {
-
-        // Check if the BodyCodeNameMapping contains the bsp name provided
-        if (SpiceBody.getBodycodenamemapping().containsValue(bspName)) {
-
-            final Map<String, BSPCelestialBodyEphemeris> compEphem = new ConcurrentHashMap<>();
-            final List<String> ephemWithoutName = new ArrayList<>();
-
-            // Go over the elements of the current map of BSPCelestialEphemeris
-            for (final Entry<String, BSPCelestialBodyEphemeris> emphemsEntry : this.ephemeris.entrySet()) {
-
-                // Check if the ephemeris name is empty
-                final String ephemName = emphemsEntry.getKey();
-                if (ephemName.isEmpty()) {
-                    final BSPCelestialBodyEphemeris ephem = emphemsEntry.getValue();
-                    final int targetID = ephem.segment.targetID;
-
-                    // Build the complementary ephemeris based on the BodyCodeNameMapping
-                    for (final Integer entry : SpiceBody.getBodycodenamemapping().keySet()) {
-                        if (entry.equals(targetID)) {
-                            ephemWithoutName.add(emphemsEntry.getKey());
-                            compEphem.put(bspName, ephem);
-                        }
-                    }
-                }
-            }
-
-            // Remove the ephemeris without name
-            for (final String str : ephemWithoutName) {
-                this.ephemeris.remove(str);
-            }
-
-            // Add the ephemeris with the updated name coming from the BodyCodeNameMapping and set the target name of
-            // the associated segment
-            for (final Entry<String, BSPCelestialBodyEphemeris> compEphemsEntry : compEphem.entrySet()) {
-                this.ephemeris.put(compEphemsEntry.getKey(), compEphemsEntry.getValue());
-                this.ephemeris.get(compEphemsEntry.getKey()).segment.setTargetName(compEphemsEntry.getKey());
-            }
-        }
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -431,7 +378,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         final int rootID = getRootID();
         final DAFSegment rootSegment = new DAFSegment(rootID, rootID, 0);
         final BSPCelestialBodyEphemeris rootEphem = new BSPCelestialBodyEphemeris(rootSegment);
-        this.ephemeris.put(SpiceBody.bodyCode2Name(rootID), rootEphem);
+        this.ephemeris.put(rootID, rootEphem);
     }
 
     /**
@@ -451,8 +398,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
      */
     private void manageSpecialSegments() {
         // Manage special segments
-        final List<String> keysToBeRemoved = new ArrayList<>();
-        for (final Entry<String, BSPCelestialBodyEphemeris> ephemEntry : this.ephemeris.entrySet()) {
+        final List<Integer> keysToBeRemoved = new ArrayList<>();
+        for (final Entry<Integer, BSPCelestialBodyEphemeris> ephemEntry : this.ephemeris.entrySet()) {
 
             final DAFSegment segment = ephemEntry.getValue().segment;
             // Special segment for TT-TDB
@@ -462,7 +409,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         }
 
         // Remove special segments
-        for (final String key : keysToBeRemoved) {
+        for (final Integer key : keysToBeRemoved) {
             this.ephemeris.remove(key);
         }
     }
@@ -478,8 +425,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
             // Get first segment
             DAFSegment segment = this.ephemeris.entrySet().iterator().next().getValue().segment;
             // Find root observer (should be unique)
-            while (this.ephemeris.get(segment.observerName) != null) {
-                segment = this.ephemeris.get(segment.observerName).segment;
+            while (this.ephemeris.get(segment.observerID) != null) {
+                segment = this.ephemeris.get(segment.observerID).segment;
             }
             res = segment.observerID;
         }
@@ -719,6 +666,12 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         /** Serializable UID. */
         private static final long serialVersionUID = -167437426470074431L;
 
+        /** Target identifier */
+        private final int targetID;
+        
+        /** Target name. */
+        private final String targetName;
+        
         /** Observer ID. */
         private final int observerID;
 
@@ -728,9 +681,6 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         /** Observer frame name. */
         private final String observerFrameName;
 
-        /** Target name. */
-        private String targetName;
-
         /** Children segments (may be empty) - Set after construction. */
         private final List<DAFSegment> children;
 
@@ -739,9 +689,6 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
         /** Parent segment (null if root segment) - Set after construction. */
         private DAFSegment parent;
-
-        /** Target identifier */
-        private final int targetID;
 
         /**
          * Constructor.
@@ -756,9 +703,9 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
          *         if conversion failed
          */
         public DAFSegment(final int targetID, final int centerID, final int frameID) throws PatriusException {
-            this.observerID = centerID;
-            this.targetName = SpiceBody.bodyCode2Name(targetID);
             this.targetID = targetID;
+            this.targetName = SpiceBody.bodyCode2Name(targetID);
+            this.observerID = centerID;
             this.observerName = SpiceBody.bodyCode2Name(centerID);
             this.observerFrameName = SpiceFrame.frameId2Name(frameID);
             this.children = new ArrayList<>();
@@ -824,23 +771,13 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         }
 
         /**
-         * Setter for the target name. It is used in case the ephemeris are updated based on new information provided on
-         * the bodyCodeNameMapping.
-         *
-         * @param targetName
-         */
-        private void setTargetName(final String targetName) {
-            this.targetName = targetName;
-        }
-
-        /**
          * Build full observer frame name.
          *
          * @return full observer frame name
          */
         private String buildFullObserverFrameName() {
-            final String space = " ";
-            return this.observerName + space + BSPEphemerisLoader.this.convention + space
+            final String SPACE = " ";
+            return this.observerName + SPACE + BSPEphemerisLoader.this.convention + SPACE
                     + BSPEphemerisLoader.this.supportedNames;
         }
 
@@ -876,8 +813,10 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 }
 
                 // Segment associated to BSP body link
-                final DAFSegment bspBodyLinkSegment = BSPEphemerisLoader.this.ephemeris
-                    .get(BSPEphemerisLoader.this.bspBodyLink).segment;
+                final boolean[] found = {false};
+                final int bspBodyID = SpiceBody.bodyName2Code(BSPEphemerisLoader.this.bspBodyLink, found);
+
+                final DAFSegment bspBodyLinkSegment = BSPEphemerisLoader.this.ephemeris.get(bspBodyID).segment;
 
                 // Check if current observer name is on the ancestors path of BSP body link segment observers
                 // (until ICRF if required)
@@ -886,7 +825,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 final List<DAFSegment> segments = new ArrayList<>();
                 while (currentS != null && !isOnPathBSPLinkToICRF) {
                     segments.add(currentS);
-                    isOnPathBSPLinkToICRF = currentS.observerName.equals(this.observerName);
+                    isOnPathBSPLinkToICRF = currentS.observerID == this.observerID;
                     currentS = currentS.parent;
                 }
 
@@ -914,17 +853,19 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
                     // Check if BSP body link is an ancestor of current observer
                     // Find children on path from current observer to link body starting from link body
-                    String currentTargetName = BSPEphemerisLoader.this.bspBodyLink;
-                    int index = childOf(currentTargetName);
+                    final String currentTargetName = BSPEphemerisLoader.this.bspBodyLink;
+                    int currentTargetID = SpiceBody.bodyName2Code(currentTargetName, found);
+
+                    int index = childOf(currentTargetID);
                     while (index == -1) {
                         final DAFSegment currentSegment =
-                            BSPEphemerisLoader.this.ephemeris.get(currentTargetName).segment;
+                                BSPEphemerisLoader.this.ephemeris.get(currentTargetID).segment;
                         if (currentSegment.parent == null) {
                             // BSP SSB has been reached
                             break;
                         }
-                        currentTargetName = currentSegment.parent.targetName;
-                        index = childOf(currentTargetName);
+                        currentTargetID = currentSegment.parent.targetID;
+                        index = childOf(currentTargetID);
                     }
 
                     if (index == -1) {
@@ -958,7 +899,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                     throw new PatriusException(PatriusMessages.EME2000_CONVENTION_NOT_SUPPORTED);
                 }
             } else {
-                final DAFSegment parentSegment = BSPEphemerisLoader.this.ephemeris.get(this.observerName).segment;
+                final DAFSegment parentSegment = BSPEphemerisLoader.this.ephemeris.get(this.observerID).segment;
                 // Regular transform, no inversion
                 final TransformProvider transformProvider = getTransformProvider(parentSegment, false);
                 // Recursive algorithm: build parent segment observer frame if not existent
@@ -968,20 +909,26 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         }
 
         /**
-         * Find position of body name in children segments.
+         * Find position of body ID in children segments.
          *
          * @param target
-         *        a body name
-         * @return position of body name in children segments if found, -1 otherwise
+         *        a body ID
+         * @return position of body ID in children segments if found, -1 otherwise
          */
-        private int childOf(final String target) {
+        private int childOf(final int target) {
+
+            // Not found
+            int child = -1;
+
+            // Look for it
             for (int i = 0; i < this.children.size(); i++) {
-                if (this.children.get(i).targetName.equals(target)) {
-                    return i;
+                if (this.children.get(i).targetID == target) {
+                    child = i;
+                    break;
                 }
             }
-            // Not found
-            return -1;
+
+            return child;
         }
 
         /**
@@ -1010,8 +957,13 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 @Override
                 public Transform getTransform(final AbsoluteDate date, final boolean computeSpinDerivatives)
                     throws PatriusException {
-                    final Transform t = new Transform(date, segment.getRawPVCoordinates(date));
-                    return isInverted ? t.getInverse(computeSpinDerivatives) : t;
+                    Transform t = new Transform(date, segment.getRawPVCoordinates(date));
+
+                    if (isInverted) {
+                        t = t.getInverse(computeSpinDerivatives);
+                    }
+
+                    return t;
                 }
 
                 /** {@inheritDoc} */

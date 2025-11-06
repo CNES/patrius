@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au
@@ -216,19 +218,19 @@ public abstract class AbstractDTM implements ExtendedAtmosphere {
      */
     protected final double[] akp = new double[5];
 
-    /** Geodetic altitude in km (minimum altitude: 120 km). */
+    /** Ellipsoid altitude in km (minimum altitude: 120 km). */
     protected double cachedAlti;
 
     /** Local solar time (rad). */
     protected double cachedHl;
 
-    /** Geodetic Latitude (rad). */
+    /** Ellipsoid Latitude (rad). */
     protected double alat;
 
-    /** Geodetic longitude (rad). */
+    /** Ellipsoid longitude (rad). */
     protected double xlon;
 
-    /** Cache mecanism - Temperature at altitude z (K). */
+    /** Cache mechanism - Temperature at altitude z (K). */
     @SuppressWarnings("PMD.AvoidUsingVolatile")
     protected volatile double cachedTemperature;
 
@@ -332,16 +334,16 @@ public abstract class AbstractDTM implements ExtendedAtmosphere {
     /** Earth body shape. */
     protected final EllipsoidBodyShape earth;
 
-    /** Cache mecanism - Output atmosphere data. */
+    /** Cache mechanism - Output atmosphere data. */
     private AtmosphereData cachedOutputData;
 
-    /** Cache mecanism - Input date. */
+    /** Cache mechanism - Input date. */
     private AbsoluteDate cachedDate;
 
-    /** Cache mecanism - Input frame. */
+    /** Cache mechanism - Input frame. */
     private Frame cachedFrame;
 
-    /** Cache mecanism - Input position. */
+    /** Cache mechanism - Input position. */
     private Vector3D cachedPosition;
 
     /** Resources text file. */
@@ -695,7 +697,7 @@ public abstract class AbstractDTM implements ExtendedAtmosphere {
             // compute the correct parameter day number in current year
             // (float value instead of an integer)
             final double ndays = day + (hour * 3600 + min * 60 + sec + msec * 1E-3) / 86400 - 1;
-            // compute geodetic position
+            // compute ellipsoid position
             final EllipsoidPoint inBody = this.earth.buildPoint(position, frame, date, BodyPointName.DEFAULT);
             final double lat = inBody.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude();
             final double lon = inBody.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLongitude();

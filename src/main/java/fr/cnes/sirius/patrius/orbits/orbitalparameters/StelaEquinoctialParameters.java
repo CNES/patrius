@@ -17,6 +17,8 @@
  * @history creation 16/03/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -37,6 +39,7 @@ import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
+import fr.cnes.sirius.patrius.stela.JavaMathAdapter;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
@@ -295,44 +298,44 @@ public class StelaEquinoctialParameters extends AbstractOrbitalParameters {
         // Compute cos(Raan) and sin(Raan)
         final double cosRaan;
         final double sinRaan;
-        if (raan == raansvg) {
-            cosRaan = cosRaansvg;
-            sinRaan = sinRaansvg;
+        if (Double.compare(raan, this.raansvg) == 0) {
+            cosRaan = this.cosRaansvg;
+            sinRaan = this.sinRaansvg;
         } else {
             final double[] sincosRaan = MathLib.sinAndCos(raan);
             sinRaan = sincosRaan[0];
             cosRaan = sincosRaan[1];
-            cosRaansvg = cosRaan;
-            sinRaansvg = sinRaan;
-            raansvg = raan;
+            this.cosRaansvg = cosRaan;
+            this.sinRaansvg = sinRaan;
+            this.raansvg = raan;
         }
 
         // Compute cos(w) and sin(w)
         final double cosW;
         final double sinW;
-        if (pa == wsvg) {
-            cosW = coswsvg;
-            sinW = sinwsvg;
+        if (Double.compare(pa, this.wsvg) == 0) {
+            cosW = this.coswsvg;
+            sinW = this.sinwsvg;
         } else {
             cosW = MathLib.cos(pa);
             sinW = MathLib.sin(pa);
-            coswsvg = cosW;
-            sinwsvg = sinW;
-            wsvg = pa;
+            this.coswsvg = cosW;
+            this.sinwsvg = sinW;
+            this.wsvg = pa;
         }
 
         // Compute cos(incl) and sin(incl)
         final double cosI;
         final double sinI;
-        if (i == inclsvg) {
-            cosI = cosInclsvg;
-            sinI = sinInclsvg;
+        if (Double.compare(i, this.inclsvg) == 0) {
+            cosI = this.cosInclsvg;
+            sinI = this.sinInclsvg;
         } else {
             cosI = MathLib.cos(i);
             sinI = MathLib.sin(i);
-            cosInclsvg = cosI;
-            sinInclsvg = sinI;
-            inclsvg = i;
+            this.cosInclsvg = cosI;
+            this.sinInclsvg = sinI;
+            this.inclsvg = i;
         }
 
         // Intermediate variables
@@ -374,23 +377,10 @@ public class StelaEquinoctialParameters extends AbstractOrbitalParameters {
         final double e = MathLib.sqrt(this.ex * this.ex + this.ey * this.ey);
         final double value = MathLib.sqrt(this.ix * this.ix + this.iy * this.iy);
         final double i = 2. * MathLib.asin(MathLib.min(1.0, value));
-        final double raan = mod(MathLib.atan2(this.iy, this.ix), 2. * FastMath.PI);
-        final double pa = mod(MathLib.atan2(this.ey, this.ex) - raan, 2. * FastMath.PI);
-        final double m = mod(this.lM - pa - raan, 2. * FastMath.PI);
+        final double raan = JavaMathAdapter.mod(MathLib.atan2(this.iy, this.ix), 2. * FastMath.PI);
+        final double pa = JavaMathAdapter.mod(MathLib.atan2(this.ey, this.ex) - raan, 2. * FastMath.PI);
+        final double m = JavaMathAdapter.mod(this.lM - pa - raan, 2. * FastMath.PI);
         return new KeplerianParameters(this.a, e, i, pa, raan, m, PositionAngle.MEAN, this.getMu());
-    }
-
-    /**
-     * Computes "x" modulo "mod".
-     * 
-     * @param x
-     *        value to modulate
-     * @param mod
-     *        modulo (for instance &pi;)
-     * @return "x" modulo "mod"
-     */
-    private static double mod(final double x, final double mod) {
-        return ((x % mod) + mod) % mod;
     }
 
     /** {@inheritDoc} */

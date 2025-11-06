@@ -18,6 +18,7 @@
  * @history creation 27/09/2011
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -132,7 +133,7 @@ public class TopocentricFrameTest {
         // Elliptic earth shape
         this.earthSpheric = new OneAxisEllipsoid(6378136.460, 0., this.frameITRF2005);
 
-        // Geodetic point at which to attach the frame
+        // Ellipsoid point at which to attach the frame
         final EllipsoidPoint point = new EllipsoidPoint(this.earthSpheric, this.earthSpheric.getLLHCoordinatesSystem(),
             MathLib.toRadians(0.), MathLib.toRadians(30.), 0., "");
 
@@ -163,13 +164,13 @@ public class TopocentricFrameTest {
      * 
      * @testedMethod {@link TopocentricFrame#TopocentricFrame(EllipsoidPoint, String)}
      * 
-     * @description two topocentric frames are generated, the origins of these frames are two geodetic points with
+     * @description two topocentric frames are generated, the origins of these frames are two ellipsoid points with
      *              opposite latitude. We check here if these topocentric frames are coherent ie that their East axis
      *              are collinear, their North axis are perpendicular and their Zenith axis are perdendicular.
      * 
-     * @input GeodeticPoint point1 = (45°, 30°, 0 m)
+     * @input EllipsoidPoint point1 = (45°, 30°, 0 m)
      *        <p>
-     *        GeodeticPoint point2 = (-45°, 30°, 0 m)
+     *        EllipsoidPoint point2 = (-45°, 30°, 0 m)
      *        </p>
      * 
      * @output TopocentricFrame
@@ -212,15 +213,15 @@ public class TopocentricFrameTest {
      * 
      * @testedMethod {@link TopocentricFrame#TopocentricFrame(EllipsoidPoint, String)}
      * 
-     * @description two topocentric frames are generated, the origins of these frames are two geodetic points with
+     * @description two topocentric frames are generated, the origins of these frames are two ellipsoid points with
      *              opposite latitude wrt the equator and opposite longitude wrt the center of the Earth. We check here
      *              if these topocentric frames are consistent with the theory ie that their East axis are collinear
      *              with the same direction, their North axis are collinear with the same direction and their Zenith
      *              axis are also collinear but with opposite directions.
      * 
-     * @input GeodeticPoint point1 = (45°,30°,0 m)
+     * @input EllipsoidPoint point1 = (45°,30°,0 m)
      *        <p>
-     *        GeodeticPoint point2 = (-45°, 210°, 0 m)
+     *        EllipsoidPoint point2 = (-45°, 210°, 0 m)
      *        </p>
      * 
      * @output TopocentricFrame
@@ -277,9 +278,9 @@ public class TopocentricFrameTest {
      *              singular north and south poles. We check here
      *              if these topocentric frames are well defined.
      * 
-     * @input GeodeticPoint point1 = (90°,30°,0 m)
+     * @input EllipsoidPoint point1 = (90°,30°,0 m)
      *        <p>
-     *        GeodeticPoint point2 = (-90°, 30°, 0 m)
+     *        EllipsoidPoint point2 = (-90°, 30°, 0 m)
      *        </p>
      * 
      * @output TopocentricFrame
@@ -349,10 +350,10 @@ public class TopocentricFrameTest {
      *        topocentric frame is a topocentric frame shifted by an angle larger than 2PI wrt the North topocentric
      *        frame
      *        <p>
-     *        GeodeticPoint satPoint = (28°,30°,800000 m) : satellite position
+     *        EllipsoidPoint satPoint = (28°,30°,800000 m) : satellite position
      *        </p>
      *        <p>
-     *        GeodeticPoint satPoint = (28°,-30°,800000 m) : satellite position
+     *        EllipsoidPoint satPoint = (28°,-30°,800000 m) : satellite position
      *        </p>
      * 
      * @output azimuth of the satellite (double)

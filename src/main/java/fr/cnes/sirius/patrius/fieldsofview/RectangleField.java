@@ -18,6 +18,7 @@
  * @history creation 16/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-485:25/04/2025:Methode intesectUSide de RectangleField mal orthographiee
  * VERSION:4.14.1:OPENFD-396:10/09/2024:[PATRIUS] Erreurs et oublis dans les classes issues de IGeometricFieldOfView
  * VERSION:4.14.1:OPENFD-292:10/09/2024:Implémentation de multi-propagateurs mixtes
  * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
@@ -299,7 +300,7 @@ public class RectangleField implements IGeometricFieldOfView {
             // theta = 0 when directionIn is aligned to U
             final double theta = Math.atan2(vComponent, uComponent);
 
-            if (this.intesectUSide(theta)) {
+            if (this.intersectUSide(theta)) {
                 // First possibility: the intersection occurs over one of the two sides parallel to V-direction
                 // (so-called
                 // U-sides)
@@ -340,7 +341,7 @@ public class RectangleField implements IGeometricFieldOfView {
      * @return true if the direction defined by theta intersects the FOV on a U-side (small side defining pointed by
      *         U-axis)
      */
-    public boolean intesectUSide(final double theta) {
+    public boolean intersectUSide(final double theta) {
 
         // Check if the theta value is out of allowed bounds
         if (theta < -MathLib.PI || theta > MathLib.PI) {

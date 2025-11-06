@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
  * car l'orientation n'est pas forcement IAU
@@ -204,14 +206,20 @@ public class FacetBodyShapeTest {
     /**
      * Build spherical model with a possible flattening and write it in file
      *
-     * @param modelFile output model file name
-     * @param latitudeNumber number of latitude points (should be odd)
-     * @param longitudeNumber number longitude points
-     * @param radius equatorial body radius (km)
-     * @param flattening the flattening of the sphere
+     * @param modelFile
+     *        output model file name
+     * @param latitudeNumber
+     *        number of latitude points (should be odd)
+     * @param longitudeNumber
+     *        number longitude points
+     * @param radius
+     *        equatorial body radius (km)
+     * @param flattening
+     *        the flattening of the sphere
      */
     private static void writeBodyFile(final String modelFile, final int latitudeNumber, final int longitudeNumber,
-                                      final double radius, final double flattening) throws IOException {
+                                      final double radius, final double flattening)
+        throws IOException {
         // Initialization, open resources
         final FileOutputStream fileOutputStream = new FileOutputStream(modelFile);
         final OutputStreamWriter fileWriter = new OutputStreamWriter(fileOutputStream, Charset.forName("UTF-8")
@@ -258,18 +266,22 @@ public class FacetBodyShapeTest {
         for (int i = 0; i < latitudeNumber - 3; i++) {
             for (int j = 0; j < longitudeNumber - 1; j++) {
                 printWriter.println(String.format(Locale.US, "f %10d%10d%10d", i * longitudeNumber + 2 + j, i
-                        * longitudeNumber + 2 + j + 1, (i + 1) * longitudeNumber + 2 + j));
+                        * longitudeNumber + 2 + j + 1,
+                    (i + 1) * longitudeNumber + 2 + j));
 
                 printWriter.println(String.format(Locale.US, "f %10d%10d%10d", i * longitudeNumber + 2 + j + 1, (i + 1)
-                        * longitudeNumber + 2 + j + 1, (i + 1)
-                        * longitudeNumber + 2 + j));
+                        * longitudeNumber + 2 + j + 1,
+                    (i + 1)
+                            * longitudeNumber + 2 + j));
             }
             printWriter.println(String.format(Locale.US, "f %10d%10d%10d", i * longitudeNumber + 2 + longitudeNumber
-                    - 1, i * longitudeNumber + 2, (i + 1) * longitudeNumber + 2 + longitudeNumber - 1));
+                    - 1,
+                i * longitudeNumber + 2, (i + 1) * longitudeNumber + 2 + longitudeNumber - 1));
 
             printWriter.println(String.format(Locale.US, "f %10d%10d%10d", i * longitudeNumber + 2, (i + 1)
-                    * longitudeNumber + 2, (i + 1)
-                    * longitudeNumber + 2 + longitudeNumber - 1));
+                    * longitudeNumber + 2,
+                (i + 1)
+                        * longitudeNumber + 2 + longitudeNumber - 1));
         }
 
         // North pole
@@ -505,7 +517,8 @@ public class FacetBodyShapeTest {
      *
      * @description Checks intersection between a line and an ellipsoid at a given altitude on two cases:
      *              <ul>
-     *              <li>Intersection at altitude = 100m: altitude of computed points should be 100m (accuracy: 1E-3m)</li>
+     *              <li>Intersection at altitude = 100m: altitude of computed points should be 100m (accuracy:
+     *              1E-3m)</li>
      *              <li>Intersection at altitude = 0m: altitude of computed points should be 0m (accuracy: 0m)</li>
      *              </ul>
      *
@@ -546,9 +559,13 @@ public class FacetBodyShapeTest {
     /**
      * @testType UT
      *
-     * @description check that eclipse is properly detected for various configurations: <li>In eclipse</li> <li>
-     *              Satellite between Sun and Body (no eclipse)</li> <li>Satellite outside of segment [Sun, Body] (no
-     *              eclipse)</li> </ul>
+     * @description check that eclipse is properly detected for various configurations:
+     *              <li>In eclipse</li>
+     *              <li>
+     *              Satellite between Sun and Body (no eclipse)</li>
+     *              <li>Satellite outside of segment [Sun, Body] (no
+     *              eclipse)</li>
+     *              </ul>
      *
      * @testPassCriteria eclipse is properly detected for various configurations (reference: math)
      *
@@ -582,9 +599,9 @@ public class FacetBodyShapeTest {
     /**
      * @testType UT
      *
-     * @description check that cartesian - geodetic coordinates are properly performed.
+     * @description check that cartesian - ellipsoid coordinates are properly performed.
      *
-     * @testPassCriteria cartesian - geodetic coordinates are properly performed (reference:
+     * @testPassCriteria cartesian - ellipsoid coordinates are properly performed (reference:
      *                   OneAxisEllipsoid, threshold: 1E-11, limited because file does contain numbers with only 11
      *                   digits)
      *
@@ -596,14 +613,14 @@ public class FacetBodyShapeTest {
     public void transformTest() throws PatriusException {
         // builds the map of the ellipsoid type and the expected BodyShape
         final Map<EllipsoidType, EllipsoidBodyShape> map = new HashMap<>();
-        map.put(EllipsoidType.SPHERE_INNER, (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER));
-        map.put(EllipsoidType.SPHERE_OUTER, (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER));
+        map.put(EllipsoidType.SPHERE_INNER, this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER));
+        map.put(EllipsoidType.SPHERE_OUTER, this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER));
         map.put(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER,
-            (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER));
+            this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER));
         map.put(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER,
-            (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER));
+            this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER));
         map.put(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED,
-            (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED));
+            this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED));
 
         // Initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -618,7 +635,7 @@ public class FacetBodyShapeTest {
             // reference ellipsoid
             final EllipsoidBodyShape ellipsoid = entry.getValue();
 
-            // Check cartesian => geodetic coordinates
+            // Check cartesian => ellipsoid coordinates
             final FacetPoint actual1 = bodyShape.buildPoint(position, frame, date, "");
             final EllipsoidPoint expected1 = ellipsoid.buildPoint(position, frame, date, "");
             Assert.assertEquals(expected1.getLLHCoordinates().getLatitude(), actual1.getLLHCoordinates().getLatitude(),
@@ -628,7 +645,7 @@ public class FacetBodyShapeTest {
             Assert.assertEquals(0., (expected1.getLLHCoordinates().getHeight() - actual1.getLLHCoordinates()
                 .getHeight()) / expected1.getLLHCoordinates().getHeight(), 1e-3);
 
-            // Check geodetic coordinates => cartesian
+            // Check ellipsoid coordinates => cartesian
             final Vector3D actual2 = actual1.getPosition();
             final Vector3D expected2 = expected1.getPosition();
             Assert.assertEquals(0., Vector3D.distance(expected2, actual2), EPS);
@@ -830,7 +847,7 @@ public class FacetBodyShapeTest {
         // getNeighbors(Vector3D, order)
 
         // Max distance = 0 order: only closest triangle is included
-        // Pos is exactly the same as GeodeticPoint(-Pi / 2, 0, 10). Exact value should be (0, 0,
+        // Pos is exactly the same as EllipsoidPoint(-Pi / 2, 0, 10). Exact value should be (0, 0,
         // -10010)
         final Vector3D point19 = new Vector3D(6.1293572297325E-13, 0, -10009.999999999996);
         final List<Triangle> actual19 = this.body.getNeighbors(point19, 0);
@@ -941,7 +958,7 @@ public class FacetBodyShapeTest {
      *              multiple cases: a contour vertex can have 0, 1, 2, ..., up to 4 neighbors.<br>
      *              Then, extract the computed contour and check it is the same as expected (the expected contour
      *              vertices are defined from an external analysis).
-     * 
+     *
      * @testPassCriteria returned the expected contour
      *
      * @referenceVersion 4.11.1
@@ -1021,11 +1038,13 @@ public class FacetBodyShapeTest {
         for (final FacetPoint contour1 : contour) {
             boolean equals = false;
             for (final FacetPoint contour2 : expectedContour) {
-                if (Math.abs(contour1.getLLHCoordinates().getLatitude() - contour2.getLLHCoordinates().getLatitude()) < EPS
+                if (Math
+                    .abs(contour1.getLLHCoordinates().getLatitude() - contour2.getLLHCoordinates().getLatitude()) < EPS
                         && Math.abs(contour1.getLLHCoordinates().getLongitude()
                                 - contour2.getLLHCoordinates().getLongitude()) < EPS
                         && Math
-                            .abs(contour1.getLLHCoordinates().getHeight() - contour2.getLLHCoordinates().getHeight()) < EPS) {
+                            .abs(contour1.getLLHCoordinates().getHeight()
+                                    - contour2.getLLHCoordinates().getHeight()) < EPS) {
                     equals = true;
                     break;
                 }
@@ -1039,7 +1058,7 @@ public class FacetBodyShapeTest {
      *
      * @description Build a FieldData with four vertices / two triangles.
      *              Then check the contour is well built with a continuous chain.
-     * 
+     *
      * @testPassCriteria returned the expected contour
      *
      * @referenceVersion 4.13
@@ -1118,7 +1137,7 @@ public class FacetBodyShapeTest {
         for (int i = 0; i < 1; i++) {
             final Orbit orbit = new KeplerianOrbit(20000E3, 0, MathLib.PI / 2., 0, 0, MathLib.PI / 2.,
                 PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU)
-                .shiftedBy(i);
+                    .shiftedBy(i);
             final Attitude attitude = attitudeProvider.getAttitude(orbit);
             statesList.add(new SpacecraftState(orbit, attitude));
         }
@@ -1149,7 +1168,8 @@ public class FacetBodyShapeTest {
         final List<SpacecraftState> statesList3 = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             final Orbit orbit = new KeplerianOrbit(20000E3, 0, MathLib.PI / 2., 0, 0, MathLib.PI / 2. + MathLib.PI / 2.
-                    * i, PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU);
+                    * i,
+                PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU);
             final Attitude attitude = attitudeProvider.getAttitude(orbit);
             statesList3.add(new SpacecraftState(orbit, attitude));
         }
@@ -1188,7 +1208,7 @@ public class FacetBodyShapeTest {
         for (int i = 0; i < 1; i++) {
             final Orbit orbit = new KeplerianOrbit(20000E3, 0, MathLib.PI / 2., 0, 0, MathLib.PI / 2.,
                 PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU)
-                .shiftedBy(i);
+                    .shiftedBy(i);
             final Attitude attitude = attitudeProvider.getAttitude(orbit);
             statesList.add(new SpacecraftState(orbit, attitude));
             datesList.add(orbit.getDate());
@@ -1243,7 +1263,8 @@ public class FacetBodyShapeTest {
         final List<AbsoluteDate> datesList3 = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             final Orbit orbit = new KeplerianOrbit(20000E3, 0, MathLib.PI / 2., 0, 0, MathLib.PI / 2. + MathLib.PI / 2.
-                    * i, PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH.shiftedBy(i),
+                    * i,
+                PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH.shiftedBy(i),
                 Constants.CNES_STELA_MU);
             final Attitude attitude = attitudeProvider.getAttitude(orbit);
             statesList3.add(new SpacecraftState(orbit, attitude));
@@ -1309,7 +1330,7 @@ public class FacetBodyShapeTest {
         for (int i = 0; i < 1; i++) {
             final Orbit orbit = new KeplerianOrbit(20000E3, 0, MathLib.PI / 2., 0, 0, MathLib.PI / 2.,
                 PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.CNES_STELA_MU)
-                .shiftedBy(i);
+                    .shiftedBy(i);
             final Attitude attitude = attitudeProvider.getAttitude(orbit);
             statesList.add(new SpacecraftState(orbit, attitude));
         }
@@ -1461,7 +1482,7 @@ public class FacetBodyShapeTest {
         }
         try {
             new StarConvexFacetBodyShape("", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-                new GeodeticMeshLoader("Dummy.tab"));
+                new EllipsoidMeshLoader("Dummy.tab"));
             Assert.fail();
         } catch (final PatriusException e) {
             Assert.assertTrue(true);
@@ -1471,25 +1492,27 @@ public class FacetBodyShapeTest {
     /**
      * @testType UT
      *
-     * @description check that the ID of the triangles from a geodetic mesh are as expected.
+     * @description check that the ID of the triangles from a ellipsoid mesh are as expected.
      *
-     * @testPassCriteria the ID of the triangles from a geodetic mesh are as expected.
+     * @testPassCriteria the ID of the triangles from a ellipsoid mesh are as expected.
      *
-     * @throws URISyntaxException if the URL is not formatted strictly according to to RFC2396 and
+     * @throws URISyntaxException
+     *         if the URL is not formatted strictly according to to RFC2396 and
      *         cannot be converted to a URI.
-     * @throws PatriusException if the loading of the geodetic mesh fails
+     * @throws PatriusException
+     *         if the loading of the ellipsoid mesh fails
      *
      * @referenceVersion 4.11
      *
      * @nonRegressionVersion 4.11
      */
     @Test
-    public void geodeticMeshTriangleIdTest() throws URISyntaxException, PatriusException {
-        // Load geodetic mesh
+    public void ellipsoidMeshTriangleIdTest() throws URISyntaxException, PatriusException {
+        // Load ellipsoid mesh
         final String modelFile = "mnt" + File.separator + "m1phobos.tab";
         final String fullName = StarConvexFacetBodyShape.class.getClassLoader().getResource(modelFile).toURI()
             .getPath();
-        final GeodeticMeshLoader loader = new GeodeticMeshLoader(fullName);
+        final EllipsoidMeshLoader loader = new EllipsoidMeshLoader(fullName);
 
         Assert.assertEquals(32070, loader.getTriangles().length);
         Assert.assertEquals(1, loader.getTriangles()[0].getID());
@@ -1530,8 +1553,7 @@ public class FacetBodyShapeTest {
             private static final long serialVersionUID = -129410259435002540L;
 
             @Override
-            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 referenceDates.add(s.getDate());
                 return super.eventOccurred(s, increasing, forward);
             }
@@ -1547,8 +1569,7 @@ public class FacetBodyShapeTest {
             private static final long serialVersionUID = 1756731750080967659L;
 
             @Override
-            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                throws PatriusException {
+            public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 actualDates.add(s.getDate());
                 return super.eventOccurred(s, increasing, forward);
             }
@@ -1686,7 +1707,8 @@ public class FacetBodyShapeTest {
      *
      * @nonRegressionVersion 4.9
      *
-     * @throws PatriusException if the margin value is invalid
+     * @throws PatriusException
+     *         if the margin value is invalid
      */
     @Test
     public void resizeTest() throws PatriusException {
@@ -1724,46 +1746,64 @@ public class FacetBodyShapeTest {
         final FacetBodyShape body6 = this.body.resize(MarginType.SCALE_FACTOR, marginValue6);
         final BodyShapeFitter fitter6 = new BodyShapeFitter(body6);
         checkTriangles(body6.getTriangles(), MarginType.SCALE_FACTOR, marginValue6);
-        Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius() * marginValue6,
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius(), EPS);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(),
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(), EPS);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius() * marginValue6,
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius(), EPS);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(),
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(), EPS);
         Assert.assertEquals(
-            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius() * marginValue6,
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius(), EPS_OPTIMIZER);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(),
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(), EPS);
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius()
+                    * marginValue6,
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(), EPS);
         Assert.assertEquals(
-            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius() * marginValue6,
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius(), EPS);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(),
-            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(), EPS);
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius()
+                    * marginValue6,
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius()
+                    * marginValue6,
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius(),
+            EPS_OPTIMIZER);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius()
+                    * marginValue6,
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius(),
+            EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(), EPS);
         // Case with a positive margin scale factor larger than 1
         final double marginValue7 = 2.;
         final FacetBodyShape body7 = this.body.resize(MarginType.SCALE_FACTOR, marginValue7);
         final BodyShapeFitter fitter7 = new BodyShapeFitter(body7);
         checkTriangles(body7.getTriangles(), MarginType.SCALE_FACTOR, marginValue7);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius() * marginValue7,
-        ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius()
+                    * marginValue7,
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius(), EPS);
         Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(),
             ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(), EPS);
-        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius() * marginValue7,
-        ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius()
+                    * marginValue7,
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius(), EPS);
         Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(),
             ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(), EPS);
         Assert.assertEquals(
-            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius() * marginValue7,
-            ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius(), EPS_OPTIMIZER);
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius()
+                    * marginValue7,
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius(),
+            EPS_OPTIMIZER);
         Assert.assertEquals(
             ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(),
             ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(), EPS);
         Assert.assertEquals(
-            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius() * marginValue7,
-            ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius(), EPS);
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius()
+                    * marginValue7,
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius(),
+            EPS);
         Assert.assertEquals(
             ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(),
             ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(), EPS);
@@ -1783,7 +1823,7 @@ public class FacetBodyShapeTest {
      * @description check that the returned apparent radius is as expected.
      *
      * @testPassCriteria returned apparent radius coincides with the radius of the outer sphere (reference math),
-     *                   no exception thrown in case of spacecrat below body surface 
+     *                   no exception thrown in case of spacecrat below body surface
      *
      * @referenceVersion 4.9
      *
@@ -1840,17 +1880,17 @@ public class FacetBodyShapeTest {
             PropagationDelayType.LIGHT_SPEED);
         // Check that the apparent radius coincides with the radius of the outer sphere
         Assert.assertEquals(0., (apparentRadius2 - expectedRadius) / expectedRadius, EPS);
-        
+
         // Test case of spacecraft below body surface (no exception thrown)
         try {
-        this.body.getApparentRadius(
+            this.body.getApparentRadius(
                 new ConstantPVCoordinatesProvider(Vector3D.PLUS_I, frame), date, pvCoordinatesCel,
                 PropagationDelayType.LIGHT_SPEED);
-        Assert.assertTrue(true);
+            Assert.assertTrue(true);
         } catch (final ArithmeticException e) {
             Assert.fail();
         }
-        
+
     }
 
     /**
@@ -1863,15 +1903,16 @@ public class FacetBodyShapeTest {
      * @param maxDistance
      *        max distance
      */
-    private static void
-        checkTriangles(final List<Triangle> triangles, final Triangle triangle, final double maxDistance) {
+    private static
+        void
+            checkTriangles(final List<Triangle> triangles, final Triangle triangle, final double maxDistance) {
         for (final Triangle t : triangles) {
             Assert.assertTrue(t.getCenter().distance(triangle.getCenter()) <= maxDistance);
         }
     }
 
     /**
-     * Check that provided list of triangles is within provided distance of provided geodetic point.
+     * Check that provided list of triangles is within provided distance of provided ellipsoid point.
      *
      * @param triangles
      *        triangles list to check
@@ -1898,8 +1939,9 @@ public class FacetBodyShapeTest {
      * @param maxDistance
      *        max distance
      */
-    private static void
-        checkTriangles(final List<Triangle> triangles, final Vector3D position, final double maxDistance) {
+    private static
+        void
+            checkTriangles(final List<Triangle> triangles, final Vector3D position, final double maxDistance) {
         for (final Triangle t : triangles) {
             Assert.assertTrue(t.getCenter().distance(position) <= maxDistance);
         }
@@ -1934,7 +1976,8 @@ public class FacetBodyShapeTest {
                                     .normalize()
                                     .scalarMultiply(
                                         originalVertices[indexVertex].getPosition().getNorm() + marginValue)
-                                    .getNorm(), 1E-12);
+                                    .getNorm(),
+                        1E-12);
                 }
             }
         } else {
@@ -1946,19 +1989,22 @@ public class FacetBodyShapeTest {
                 for (int indexVertex = 0; indexVertex < modifiedVertices.length; indexVertex++) {
                     if (originalVertices[indexVertex].getPosition().getX() != 0) {
                         Assert.assertEquals(marginValue, modifiedVertices[indexVertex].getPosition().getX()
-                                / originalVertices[indexVertex].getPosition().getX(), 1E-12);
+                                / originalVertices[indexVertex].getPosition().getX(),
+                            1E-12);
                     } else {
                         Assert.assertEquals(0., modifiedVertices[indexVertex].getPosition().getX(), 1E-12);
                     }
                     if (originalVertices[indexVertex].getPosition().getY() != 0) {
                         Assert.assertEquals(marginValue, modifiedVertices[indexVertex].getPosition().getY()
-                                / originalVertices[indexVertex].getPosition().getY(), 1E-12);
+                                / originalVertices[indexVertex].getPosition().getY(),
+                            1E-12);
                     } else {
                         Assert.assertEquals(0., modifiedVertices[indexVertex].getPosition().getY(), 1E-12);
                     }
                     if (originalVertices[indexVertex].getPosition().getZ() != 0) {
                         Assert.assertEquals(marginValue, modifiedVertices[indexVertex].getPosition().getZ()
-                                / originalVertices[indexVertex].getPosition().getZ(), 1E-12);
+                                / originalVertices[indexVertex].getPosition().getZ(),
+                            1E-12);
                     } else {
                         Assert.assertEquals(0., modifiedVertices[indexVertex].getPosition().getZ(), 1E-12);
                     }
@@ -2067,7 +2113,8 @@ public class FacetBodyShapeTest {
      *
      * @nonRegressionVersion 4.10
      *
-     * @throws PatriusException if an error occurs with line transformation
+     * @throws PatriusException
+     *         if an error occurs with line transformation
      */
     @Test
     public void closestPointToTest() throws PatriusException {
@@ -2114,7 +2161,8 @@ public class FacetBodyShapeTest {
      *
      * @nonRegressionVersion 4.11
      *
-     * @throws PatriusException if an error occurs with line transformation
+     * @throws PatriusException
+     *         if an error occurs with line transformation
      */
     @Test
     public void closestPointToNoFrameNoDateTest() throws PatriusException {
@@ -2128,9 +2176,11 @@ public class FacetBodyShapeTest {
         final BodyPoint[] actual1 = this.body.closestPointTo(lineOfSight1);
         final FacetPoint[] reference1 = this.body.closestPointTo(lineOfSight1, frame, date);
         Assert.assertEquals(0., Vector3D.distance(reference1[0].getPosition(), actual1[0].getPosition())
-                / reference1[0].getPosition().getNorm(), 1E-3);
+                / reference1[0].getPosition().getNorm(),
+            1E-3);
         Assert.assertEquals(0., Vector3D.distance(reference1[1].getPosition(), actual1[1].getPosition())
-                / reference1[1].getPosition().getNorm(), 1E-3);
+                / reference1[1].getPosition().getNorm(),
+            1E-3);
 
         // Case 2: same as case 1 with semi-finite line, min abscissa before intersection (points
         // shall be the same)
@@ -2138,9 +2188,11 @@ public class FacetBodyShapeTest {
         final BodyPoint[] actual2 = this.body.closestPointTo(lineOfSight2);
         final FacetPoint[] reference2 = this.body.closestPointTo(lineOfSight2, frame, date);
         Assert.assertEquals(0., Vector3D.distance(reference2[0].getPosition(), actual2[0].getPosition())
-                / reference2[0].getPosition().getNorm(), 1E-3);
+                / reference2[0].getPosition().getNorm(),
+            1E-3);
         Assert.assertEquals(0., Vector3D.distance(reference2[1].getPosition(), actual2[1].getPosition())
-                / reference2[1].getPosition().getNorm(), 1E-3);
+                / reference2[1].getPosition().getNorm(),
+            1E-3);
 
         // Case 3: same as case 1 with inverted semi-finite line, no intersection due to min
         // abscissa

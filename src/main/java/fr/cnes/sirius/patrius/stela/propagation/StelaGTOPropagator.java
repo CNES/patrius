@@ -18,6 +18,7 @@
  * @history created 18/01/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
@@ -114,10 +115,10 @@ public class StelaGTOPropagator extends StelaAbstractPropagator {
     /** Size of the state vector. */
     private static final int STATE_SIZE = 6;
 
-    /** Was the exception mecanism triggered already */
+    /** Was the exception mechanism triggered already */
     protected boolean wasException;
 
-    /** Max date after which simulation has to fail if exception mecanism was triggered */
+    /** Max date after which simulation has to fail if exception mechanism was triggered */
     protected AbsoluteDate maxDate;
 
     /** Step counter for drag computation. */
@@ -998,7 +999,7 @@ public class StelaGTOPropagator extends StelaAbstractPropagator {
             final String message = exception.getMessage();
 
             if (e.getMessage().equalsIgnoreCase(message)) {
-                // Mecanism to deal with last step propagation reducing the stepsize
+                // mechanism to deal with last step propagation reducing the stepsize
 
                 if (!this.wasException) {
                     this.maxDate = state.getDate().shiftedBy(this.maxShift * stepSize);

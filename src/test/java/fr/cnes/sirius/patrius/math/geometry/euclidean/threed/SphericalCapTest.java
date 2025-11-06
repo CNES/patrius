@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history creation 06/10/11
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -27,29 +29,24 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@link SphericalCap}.
- * 
+ *
  * @author cardosop
- * 
+ *
  * @version $Id: SphericalCapTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class SphericalCapTest {
 
@@ -57,10 +54,10 @@ public class SphericalCapTest {
     public enum features {
         /**
          * @featureTitle Spherical cap shape
-         * 
+         *
          * @featureDescription Creation of a spherical cap shape, computation of distances and intersections with lines
          *                     and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_130, DV-GEOMETRIE_140
          */
         SPHERICAL_CAP_SHAPE
@@ -90,27 +87,27 @@ public class SphericalCapTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERICAL_CAP_SHAPE}
-     * 
+     *
      * @testedMethod {@link SphericalCap#closestPointTo(Line)}
      * @testedMethod {@link SphericalCap#distanceTo(Line)}
      * @testedMethod {@link SphericalCap#getIntersectionPoints(Line)}
      * @testedMethod {@link SphericalCap#intersects(Line)}
-     * 
+     *
      * @description Test case 1 : hemisphere
-     * 
+     *
      * @input Misc
-     * 
+     *
      * @output Misc
-     * 
+     *
      * @testPassCriteria Everything as expected. When the result of the method {@link SphericalCap#distanceTo(Line)} is
      *                   tested, if the line intersects the spherical cap the result returned by the method is exactly 0
      *                   so in that case the epsilon is 0 ; the epsilon equals 1e-14 if there is no intersection, this
      *                   last epsilon takes into account the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -227,28 +224,28 @@ public class SphericalCapTest {
         final Vector3D[] zInterVec = hemisphere01.getIntersectionPoints(zLine);
         Assert.assertEquals(2, zInterVec.length);
         // Which one is the bottom one? Don't know yet...
-        Assert.assertTrue(this.closeVectors(zInterVec[0], Vector3D.ZERO)
-            || this.closeVectors(zInterVec[1], Vector3D.ZERO));
-        Assert.assertTrue(this.closeVectors(zInterVec[0], ZUV) || this.closeVectors(zInterVec[1], ZUV));
+        Assert.assertTrue(closeVectors(zInterVec[0], Vector3D.ZERO)
+                || closeVectors(zInterVec[1], Vector3D.ZERO));
+        Assert.assertTrue(closeVectors(zInterVec[0], ZUV) || closeVectors(zInterVec[1], ZUV));
         // - intersection with the Line oriented by the x unit vector
         // the intersection points are (1,0,0) and (-1,0,0)
         final Vector3D[] xInterVec = hemisphere01.getIntersectionPoints(xLine);
         Assert.assertEquals(2, xInterVec.length);
-        Assert.assertTrue(this.closeVectors(xInterVec[0], XUV) || this.closeVectors(xInterVec[1], XUV));
-        Assert.assertTrue(this.closeVectors(xInterVec[0], XUV.negate())
-            || this.closeVectors(xInterVec[1], XUV.negate()));
+        Assert.assertTrue(closeVectors(xInterVec[0], XUV) || closeVectors(xInterVec[1], XUV));
+        Assert.assertTrue(closeVectors(xInterVec[0], XUV.negate())
+                || closeVectors(xInterVec[1], XUV.negate()));
         // - intersection with the Line oriented by the y unit vector
         // the intersection points are (0,1,0) and (0,-1,0)
         final Vector3D[] yInterVec = hemisphere01.getIntersectionPoints(yLine);
         Assert.assertEquals(2, yInterVec.length);
-        Assert.assertTrue(this.closeVectors(yInterVec[0], YUV) || this.closeVectors(yInterVec[1], YUV));
-        Assert.assertTrue(this.closeVectors(yInterVec[0], YUV.negate())
-            || this.closeVectors(yInterVec[1], YUV.negate()));
+        Assert.assertTrue(closeVectors(yInterVec[0], YUV) || closeVectors(yInterVec[1], YUV));
+        Assert.assertTrue(closeVectors(yInterVec[0], YUV.negate())
+                || closeVectors(yInterVec[1], YUV.negate()));
         // - intersection with a Line parallel to the xy plane and at the z unit vector
         // one point intersection only at the z unit vector
         final Vector3D[] anxyInterVec = hemisphere01.getIntersectionPoints(anXyParallelLine);
         Assert.assertEquals(1, anxyInterVec.length);
-        Assert.assertTrue(this.closeVectors(anxyInterVec[0], ZUV));
+        Assert.assertTrue(closeVectors(anxyInterVec[0], ZUV));
         // - intersection with a Line parallel to the xy plane and slightly above the z unit vector
         // (does not intersect)
         final Vector3D[] anOtherXyInterVec = hemisphere01.getIntersectionPoints(anOtherXyParallelLine);
@@ -257,7 +254,7 @@ public class SphericalCapTest {
         // (one point intersection only : (0,1,0)
         final Vector3D[] ypzInterVec = hemisphere01.getIntersectionPoints(yPlusZLine);
         Assert.assertEquals(1, ypzInterVec.length);
-        Assert.assertTrue(this.closeVectors(ypzInterVec[0], YUV));
+        Assert.assertTrue(closeVectors(ypzInterVec[0], YUV));
         // - intersection with a Line oriented by (z unit + more than y unit) and passing through (- z unit)
         // (does not intersect)
         final Vector3D[] ympInterVec = hemisphere01.getIntersectionPoints(yMorePlusZLine);
@@ -266,29 +263,29 @@ public class SphericalCapTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERICAL_CAP_SHAPE}
-     * 
+     *
      * @testedMethod {@link SphericalCap#closestPointTo(Line)}
      * @testedMethod {@link SphericalCap#distanceTo(Line)}
      * @testedMethod {@link SphericalCap#getIntersectionPoints(Line)}
      * @testedMethod {@link SphericalCap#intersects(Line)}
-     * 
+     *
      * @description Test case 1 : small spherical cap<br>
      *              Test method for a small spherical cap. The sphere is centered at the origin, radius 1.5. The plane
      *              is parallel to zy, goes through xUnit.
-     * 
+     *
      * @input Misc
-     * 
+     *
      * @output Misc
-     * 
+     *
      * @testPassCriteria everything as expected. When the result of the method {@link SphericalCap#distanceTo(Line)} is
      *                   tested, if the line intersects the spherical cap the result returned by the method is exactly 0
      *                   so in that case the epsilon is 0 ; the epsilon equals 1e-14 if there is no intersection, this
      *                   last epsilon takes into account the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -411,10 +408,10 @@ public class SphericalCapTest {
         boolean b2;
         boolean b3;
         boolean b4;
-        b1 = this.closeVectors(interVecs[0], XUV);
-        b2 = this.closeVectors(interVecs[0], XUV.scalarMultiply(1.5));
-        b3 = this.closeVectors(interVecs[1], XUV);
-        b4 = this.closeVectors(interVecs[1], XUV.scalarMultiply(1.5));
+        b1 = closeVectors(interVecs[0], XUV);
+        b2 = closeVectors(interVecs[0], XUV.scalarMultiply(1.5));
+        b3 = closeVectors(interVecs[1], XUV);
+        b4 = closeVectors(interVecs[1], XUV.scalarMultiply(1.5));
         // note : ^ is XOR
         Assert.assertTrue(((b1 && b4) ^ (b2 && b3)));
         // - intersection with the Line oriented by the y unit vector passing thru xUnit
@@ -423,22 +420,22 @@ public class SphericalCapTest {
         Assert.assertEquals(2, interVecs.length);
         final Vector3D vecsmin = new Vector3D(1., -0.5 * MathLib.sqrt(5), 0.);
         final Vector3D vecsplu = new Vector3D(1., 0.5 * MathLib.sqrt(5), 0.);
-        b1 = this.closeVectors(interVecs[0], vecsmin);
-        b2 = this.closeVectors(interVecs[0], vecsplu);
-        b3 = this.closeVectors(interVecs[1], vecsmin);
-        b4 = this.closeVectors(interVecs[1], vecsplu);
+        b1 = closeVectors(interVecs[0], vecsmin);
+        b2 = closeVectors(interVecs[0], vecsplu);
+        b3 = closeVectors(interVecs[1], vecsmin);
+        b4 = closeVectors(interVecs[1], vecsplu);
         Assert.assertTrue(((b1 && b4) ^ (b2 && b3)));
         // - intersection with the Line oriented by the y unit vector passing thru xUnit * 1.5
         // does intersect by a single point (xUnit * 1.5)
         interVecs = smallCap01.getIntersectionPoints(yDir15XThruLine);
         Assert.assertEquals(1, interVecs.length);
-        Assert.assertTrue(this.closeVectors(interVecs[0], XUV.scalarMultiply(1.5)));
+        Assert.assertTrue(closeVectors(interVecs[0], XUV.scalarMultiply(1.5)));
         // - intersection with the Line oriented by the y unit vector passing thru ( xUnit * 1.25
         // + zUnit * sqrt( 1.5 - (1.25)^2 ) )
         // does intersect by a single point! : (1.25, 0 , sqrt(1.5 - 1.25^2) )
         interVecs = smallCap01.getIntersectionPoints(yDirThruEtcLine);
         Assert.assertEquals(1, interVecs.length);
-        Assert.assertTrue(this.closeVectors(interVecs[0], passEtcVec));
+        Assert.assertTrue(closeVectors(interVecs[0], passEtcVec));
         // - Line oriented by the z unit vector
         // no intersection
         interVecs = smallCap01.getIntersectionPoints(zLine);
@@ -464,29 +461,29 @@ public class SphericalCapTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERICAL_CAP_SHAPE}
-     * 
+     *
      * @testedMethod {@link SphericalCap#closestPointTo(Line)}
      * @testedMethod {@link SphericalCap#distanceTo(Line)}
      * @testedMethod {@link SphericalCap#getIntersectionPoints(Line)}
      * @testedMethod {@link SphericalCap#intersects(Line)}
-     * 
+     *
      * @description Test case 1 : huge spherical cap<br>
      *              Test method for a huge spherical cap. The sphere is centered at (-2,-1,-1), radius 2. The plane
      *              contains (0,-1,-1) , normal (-zunit - x unit).
-     * 
+     *
      * @input Misc
-     * 
+     *
      * @output Misc
-     * 
+     *
      * @testPassCriteria everything as expected. When the result of the method {@link SphericalCap#distanceTo(Line)} is
      *                   tested, if the line intersects the spherical cap the result returned by the method is exactly 0
      *                   so in that case the epsilon is 0 ; the epsilon equals 1e-14 if there is no intersection, this
      *                   last epsilon takes into account the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -577,50 +574,50 @@ public class SphericalCapTest {
         // - intersection with the Line oriented by the x unit vector
         Vector3D[] interVecs = hugeCap01.getIntersectionPoints(xLine);
         Assert.assertEquals(2, interVecs.length);
-        b1 = this.closeVectors(interVecs[0], XUV.scalarMultiply(-1.));
-        b2 = this.closeVectors(interVecs[0], XUV.scalarMultiply(-(2. + MathLib.sqrt(2.))));
-        b3 = this.closeVectors(interVecs[1], XUV.scalarMultiply(-1.));
-        b4 = this.closeVectors(interVecs[1], XUV.scalarMultiply(-(2. + MathLib.sqrt(2.))));
+        b1 = closeVectors(interVecs[0], XUV.scalarMultiply(-1.));
+        b2 = closeVectors(interVecs[0], XUV.scalarMultiply(-(2. + MathLib.sqrt(2.))));
+        b3 = closeVectors(interVecs[1], XUV.scalarMultiply(-1.));
+        b4 = closeVectors(interVecs[1], XUV.scalarMultiply(-(2. + MathLib.sqrt(2.))));
         Assert.assertTrue(((b1 && b4) ^ (b2 && b3)));
         // - intersection with the Line oriented by the (x unit - z unit) vector
         // going through (0,-1,-1)
         interVecs = hugeCap01.getIntersectionPoints(xmzLine);
         Assert.assertEquals(2, interVecs.length);
         final Vector3D otv = new Vector3D(-2., -1., 1.);
-        b1 = this.closeVectors(interVecs[0], zommVec);
-        b2 = this.closeVectors(interVecs[0], otv);
-        b3 = this.closeVectors(interVecs[1], zommVec);
-        b4 = this.closeVectors(interVecs[1], otv);
+        b1 = closeVectors(interVecs[0], zommVec);
+        b2 = closeVectors(interVecs[0], otv);
+        b3 = closeVectors(interVecs[1], zommVec);
+        b4 = closeVectors(interVecs[1], otv);
         Assert.assertTrue(((b1 && b4) ^ (b2 && b3)));
         // - intersection with the Line oriented by the (x unit + z unit) vector
         // going through (-1,-1,0)
         interVecs = hugeCap01.getIntersectionPoints(xzmmoLine);
         Assert.assertEquals(2, interVecs.length);
         final Vector3D otv2 = new Vector3D(-(2. + MathLib.sqrt(2)), -1., -(1. + MathLib.sqrt(2)));
-        b1 = this.closeVectors(interVecs[0], mmoVec);
-        b2 = this.closeVectors(interVecs[0], otv2);
-        b3 = this.closeVectors(interVecs[1], mmoVec);
-        b4 = this.closeVectors(interVecs[1], otv2);
+        b1 = closeVectors(interVecs[0], mmoVec);
+        b2 = closeVectors(interVecs[0], otv2);
+        b3 = closeVectors(interVecs[1], mmoVec);
+        b4 = closeVectors(interVecs[1], otv2);
         Assert.assertTrue(((b1 && b4) ^ (b2 && b3)));
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERICAL_CAP_SHAPE}
-     * 
+     *
      * @testedMethod {@link SphericalCap#SphericalCap(Sphere, Plane)}
-     * 
+     *
      * @description Error case : invalid spherical cap.
-     * 
+     *
      * @input misc
-     * 
+     *
      * @output IllegalArgumentException
-     * 
+     *
      * @testPassCriteria IllegalArgumentException
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test(expected = IllegalArgumentException.class)
@@ -634,7 +631,7 @@ public class SphericalCapTest {
 
     /**
      * Returns true when vectors are "quite close"
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -647,23 +644,23 @@ public class SphericalCapTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERICAL_CAP_SHAPE}
-     * 
+     *
      * @testedMethod {@link SphericalCap#closestPointTo(Line)}
-     * 
+     *
      * @description Compute the point of the spherical cap the shortest distance to a line of space, and the associated
      *              point of the line.
-     * 
+     *
      * @input Points of space (Vector3D)
-     * 
+     *
      * @output Vector3D[]
-     * 
+     *
      * @testPassCriteria The output vector must be the one of the shape and the one of the line realizing the shortest
      *                   distance with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -744,22 +741,22 @@ public class SphericalCapTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERICAL_CAP_SHAPE}
-     * 
+     *
      * @testedMethod {@link SphericalCap#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -777,10 +774,9 @@ public class SphericalCapTest {
         final String result = cap.toString();
 
         final String expected =
-            "SphericalCap{Sphere center{0; 0; 0},Sphere radius{2.0},Plane origin{-0; -0; 1},Plane normal{0; 0; -1}}";
+            "SphericalCap{Sphere center{0.0; 0.0; 0.0},Sphere radius{2.0},Plane origin{-0.0; -0.0; 1.0},Plane normal{0.0; 0.0; -1.0}}";
         Assert.assertEquals(expected, result);
     }
-
 
     @Before
     public void setUp() {

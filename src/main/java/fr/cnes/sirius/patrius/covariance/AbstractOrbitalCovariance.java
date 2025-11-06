@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-447:25/04/2025:[PATRIUS] Non prise en compte 
+ *          du cadre interplanetaire dans OrbitalCovariance et MultiOrbitalCovariance 
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -34,6 +37,9 @@ import java.util.List;
 import java.util.Objects;
 
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.frames.LOFType;
+import fr.cnes.sirius.patrius.frames.LocalOrbitalFrame;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrixFormat;
 import fr.cnes.sirius.patrius.math.linear.SymmetricPositiveMatrix;
@@ -47,11 +53,13 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.CartesianCoordinate;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.KeplerianCoordinate;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.OrbitalCoordinate;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.time.TimeStamped;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -71,14 +79,17 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @author Pierre Seimandi (GMV)
  */
 public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovariance<T>> implements
-        TimeStamped, Serializable {
+    TimeStamped, Serializable {
 
     /** Number of orbital parameters. */
     protected static final int ORBIT_DIMENSION = SpacecraftState.ORBIT_DIMENSION;
 
     /** Field descriptor used to describe the orbital coordinates. */
-    protected static final FieldDescriptor<OrbitalCoordinate> ORBITAL_COORDINATE_DESCRIPTOR = 
-            StandardFieldDescriptors.ORBITAL_COORDINATE;
+    protected static final FieldDescriptor<OrbitalCoordinate> ORBITAL_COORDINATE_DESCRIPTOR =
+        StandardFieldDescriptors.ORBITAL_COORDINATE;
+
+    /** Exception message if the compatibility mode is unsupported. */
+    private static final String UNSUPPORTED_MODE_EXCEPTION = "Unsupported compatibility mode : ";
 
     /** Serializable UID. */
     private static final long serialVersionUID = 8671810074857107460L;
@@ -129,7 +140,8 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         if any of the provided argument is {@code null}
      */
     public AbstractOrbitalCovariance(final SymmetricPositiveMatrix covarianceIn,
-            final Frame frameIn, final OrbitType orbitTypeIn, final PositionAngle positionAngleIn) {
+                                     final Frame frameIn, final OrbitType orbitTypeIn,
+                                     final PositionAngle positionAngleIn) {
         this.covariance = new Covariance(requireNonNull(covarianceIn, COVARIANCE_MATRIX));
         this.frame = requireNonNull(frameIn, FRAME);
         this.orbitType = requireNonNull(orbitTypeIn, ORBIT_TYPE);
@@ -152,7 +164,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         if any of the provided argument is {@code null}
      */
     public AbstractOrbitalCovariance(final Covariance covarianceIn, final Frame frameIn,
-            final OrbitType orbitTypeIn, final PositionAngle positionAngleIn) {
+                                     final OrbitType orbitTypeIn, final PositionAngle positionAngleIn) {
         this.covariance = requireNonNull(covarianceIn, COVARIANCE);
         this.frame = requireNonNull(frameIn, FRAME);
         this.orbitType = requireNonNull(orbitTypeIn, ORBIT_TYPE);
@@ -234,7 +246,8 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         and position angle type
      */
     public abstract T transformTo(final Frame destFrame, final OrbitType destOrbitType,
-            final PositionAngle destPositionAngle) throws PatriusException;
+                                  final PositionAngle destPositionAngle)
+        throws PatriusException;
 
     /**
      * Transforms this orbital covariance to the specified frame, orbit type.
@@ -253,7 +266,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         if the orbital covariance cannot be transformed to the specified frame and orbit type
      */
     public T transformTo(final Frame destFrame, final OrbitType destOrbitType)
-            throws PatriusException {
+        throws PatriusException {
         return this.transformTo(destFrame, destOrbitType, this.positionAngle);
     }
 
@@ -275,7 +288,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         position angle type
      */
     public T transformTo(final OrbitType destOrbitType, final PositionAngle destPositionAngle)
-            throws PatriusException {
+        throws PatriusException {
         return this.transformTo(this.frame, destOrbitType, destPositionAngle);
     }
 
@@ -313,6 +326,102 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      */
     public T transformTo(final OrbitType destOrbitType) throws PatriusException {
         return this.transformTo(this.frame, destOrbitType, this.positionAngle);
+    }
+
+    /**
+     * Transforms this orbital covariance to a local orbital frame centered on a given orbit.
+     * <p>
+     * <em>The reference orbit must be defined at the same date as the covariance.</em>
+     * </p>
+     * <p>
+     * The local orbital frame is defined relative to the closest pseudo-inertial frame of the reference orbit.
+     * </p>
+     * <p>
+     * <b>Important:</b><br>
+     * The returned covariance is defined in {@linkplain OrbitType#CARTESIAN Cartesian coordinates},
+     * in the specified {@linkplain LOFType}. Note that the local orbital frame uses the reference
+     * orbit as its {@linkplain PVCoordinatesProvider}, which relies on a simple Keplerian model for
+     * the propagation. The LOF built is therefore only valid at the date of the reference orbit,
+     * unless it is frozen at this date (the LOF then becomes an inertial frame which can be used at
+     * other dates).
+     * </p>
+     *
+     * @param referenceOrbit
+     *        the orbit used to build the local orbital frame
+     * @param lofType
+     *        the type of the local orbital frame
+     * @param frozenLof
+     *        whether or not the local orbital frame built should be frozen at the date of the
+     *        reference orbit
+     * @return the transformed orbital covariance
+     * @throws PatriusException
+     *         if the orbital covariance cannot be transformed to the specified local orbital frame
+     */
+    public T transformTo(final Orbit referenceOrbit, final LOFType lofType,
+                         final boolean frozenLof)
+        throws PatriusException {
+        // Ensure the reference orbit is not null and defined at the same date as the covariance
+        checkOrbit(referenceOrbit);
+
+        // Initialize the reference pseudo inertial frame
+        final Frame pseudoInertialFrame;
+
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case MIXED_MODELS:
+            case OLD_MODELS:
+                // Previous implementation
+                if (this.getFrame().isPseudoInertial()) {
+                    pseudoInertialFrame = this.getFrame();
+                } else if (referenceOrbit.getFrame().isPseudoInertial()) {
+                    pseudoInertialFrame = referenceOrbit.getFrame();
+                } else {
+                    pseudoInertialFrame = FramesFactory.getGCRF();
+                }
+                break;
+            case NEW_MODELS:
+                pseudoInertialFrame = referenceOrbit.getFrame().getFirstPseudoInertialAncestor();
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
+
+        // Check if the reference orbit frame is pseudo-inertial, otherwise convert the orbit in the
+        // pseudo-inertial frame
+        // This allows to be able to use the lof frame at different dates (with keplerian propagation hypothesis)
+        final Orbit orbit;
+        if (referenceOrbit.getFrame().isPseudoInertial()) {
+            orbit = referenceOrbit;
+        } else {
+            orbit = referenceOrbit.getType().convertOrbit(referenceOrbit, pseudoInertialFrame);
+        }
+
+        Frame lofFrame;
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case MIXED_MODELS:
+            case OLD_MODELS:
+                // Build the LOF frame and freeze it if requested
+                lofFrame = new LocalOrbitalFrame(pseudoInertialFrame, lofType, orbit, lofType.name());
+                if (frozenLof) {
+                    lofFrame = lofFrame.getFrozenFrame(pseudoInertialFrame, orbit.getDate(), "Frozen_"
+                            + lofType.name());
+                }
+                break;
+            case NEW_MODELS:
+                // Build the LOF frame and freeze it if requested
+                final String lofName = lofType.name() + "_" + pseudoInertialFrame.getName();
+                lofFrame = new LocalOrbitalFrame(pseudoInertialFrame, lofType, orbit, lofName);
+                if (frozenLof) {
+                    lofFrame = lofFrame.getFrozenFrame(pseudoInertialFrame, orbit.getDate(), "Frozen_" + lofName);
+                }
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
+
+        // Return the orbital covariance transformed in the expected frame
+        return this.transformTo(lofFrame, OrbitType.CARTESIAN, this.getPositionAngle());
     }
 
     /**
@@ -378,7 +487,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      */
     public String toString(final RealMatrixFormat realMatrixFormat, final TimeScale timeScale) {
         return this.toString(realMatrixFormat, timeScale, Covariance.DEFAULT_NAME_SEPARATOR,
-                Covariance.DEFAULT_FIELD_SEPARATOR, true, false);
+            Covariance.DEFAULT_FIELD_SEPARATOR, true, false);
     }
 
     /**
@@ -402,8 +511,8 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      * @return string representation of this instance
      */
     public String toString(final RealMatrixFormat realMatrixFormat, final TimeScale timeScale,
-            final String nameSeparator, final String fieldSeparator, final boolean printClassName,
-            final boolean reverseOrder) {
+                           final String nameSeparator, final String fieldSeparator, final boolean printClassName,
+                           final boolean reverseOrder) {
         // Separators
         final String semicolon = ";";
         final String whitespace = " ";
@@ -421,7 +530,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
         }
 
         // Frame, orbit type and position angle type
-        builder.append(this.getDate().toString(timeScale));
+        builder.append(getDate().toString(timeScale));
         builder.append(whitespace);
         builder.append(timeScale);
         builder.append(separator);
@@ -434,10 +543,10 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
 
         // Parameter descriptors
         final List<ParameterDescriptor> parameterDescriptors = this.covariance
-                .getParameterDescriptors();
+            .getParameterDescriptors();
         builder.append("Parameters: ");
         builder.append(ParameterUtils.concatenateParameterDescriptorNames(parameterDescriptors,
-                nameSeparator, fieldSeparator, reverseOrder));
+            nameSeparator, fieldSeparator, reverseOrder));
 
         // Covariance matrix
         if (realMatrixFormat != null) {
@@ -482,7 +591,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
             final AbstractOrbitalCovariance<?> other = (AbstractOrbitalCovariance<?>) object;
 
             isEqual = true;
-            isEqual &= Objects.equals(this.getDate(), other.getDate());
+            isEqual &= Objects.equals(getDate(), other.getDate());
             isEqual &= Objects.equals(this.covariance, other.covariance);
             isEqual &= Objects.equals(this.frame, other.frame);
             isEqual &= Objects.equals(this.orbitType, other.orbitType);
@@ -495,8 +604,8 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        return Objects.hash(this.getDate(), this.covariance, this.frame, this.orbitType,
-                this.positionAngle);
+        return Objects.hash(getDate(), this.covariance, this.frame, this.orbitType,
+            this.positionAngle);
     }
 
     /**
@@ -515,7 +624,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
     protected static <T> T requireNonNull(final T object, final String description) {
         if (object == null) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.NULL_NOT_ALLOWED_DESCRIPTION, description);
+                PatriusMessages.NULL_NOT_ALLOWED_DESCRIPTION, description);
         }
         return object;
     }
@@ -534,14 +643,14 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         if the collection is {@code null} or if the collection is empty
      */
     protected static <T extends Collection<?>> T requireNonEmpty(final T collection,
-            final String description) {
+                                                                 final String description) {
         if (collection == null) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.NULL_COLLECTION_NOT_ALLOWED, description);
+                PatriusMessages.NULL_COLLECTION_NOT_ALLOWED, description);
         }
         if (collection.isEmpty()) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.EMPTY_COLLECTION_NOT_ALLOWED, description);
+                PatriusMessages.EMPTY_COLLECTION_NOT_ALLOWED, description);
         }
         return collection;
     }
@@ -558,11 +667,11 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      */
     protected void checkOrbit(final Orbit orbit) {
         final AbsoluteDate orbitDate = requireNonNull(orbit, ORBIT).getDate();
-        if (!this.getDate().equals(orbitDate)) {
+        if (!getDate().equals(orbitDate)) {
             throw PatriusException
-                    .createIllegalArgumentException(
-                            PatriusMessages.INVALID_ORBIT_DATE_COVARIANCE_MATRIX, orbitDate,
-                            this.getDate());
+                .createIllegalArgumentException(
+                    PatriusMessages.INVALID_ORBIT_DATE_COVARIANCE_MATRIX, orbitDate,
+                    getDate());
         }
     }
 
@@ -589,7 +698,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
         final int minSize = nbOrbits * ORBIT_DIMENSION;
         if (size < minSize) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.INVALID_COVARIANCE_MATRIX, nbOrbits, minSize, size);
+                PatriusMessages.INVALID_COVARIANCE_MATRIX, nbOrbits, minSize, size);
         }
     }
 
@@ -622,11 +731,12 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      *         descriptor, or if it does, but it is mapped to an orbital coordinate with a wrong
      *         state vector index
      */
-    protected void
+    protected
+        void
             checkParameterDescriptors(final int startIndex, final OrbitType expectedOrbitType) {
         // Parameter descriptors and orbital coordinate descriptor
         final List<ParameterDescriptor> parameterDescriptors = this.covariance
-                .getParameterDescriptors();
+            .getParameterDescriptors();
         final FieldDescriptor<OrbitalCoordinate> fieldDescriptor = ORBITAL_COORDINATE_DESCRIPTOR;
 
         // Check the parameter descriptors related to the orbital parameters
@@ -635,26 +745,26 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
             MatrixUtils.checkRowIndex(this.getCovarianceMatrix(), index);
             final ParameterDescriptor parameterDescriptor = parameterDescriptors.get(index);
             final OrbitalCoordinate orbitalCoordinate = parameterDescriptor
-                    .getFieldValue(fieldDescriptor);
+                .getFieldValue(fieldDescriptor);
 
             if (orbitalCoordinate == null) {
                 // Throw an exception if the parameter descriptor is
                 // not associated with an orbital coordinate descriptor
                 throw PatriusException.createIllegalArgumentException(
-                        PatriusMessages.NO_ORBITAL_COORDINATE_DESCRIPTOR, index);
+                    PatriusMessages.NO_ORBITAL_COORDINATE_DESCRIPTOR, index);
             } else if (!orbitalCoordinate.getOrbitType().equals(expectedOrbitType)) {
                 // Throw an exception if the mapped value is not for the expected orbit type
                 throw PatriusException.createIllegalArgumentException(
-                        PatriusMessages.INVALID_ORBITAL_COORDINATE_DESCRIPTOR_WRONG_ORBIT_TYPE,
-                        index, orbitalCoordinate, orbitalCoordinate.getOrbitType(),
-                        expectedOrbitType);
+                    PatriusMessages.INVALID_ORBITAL_COORDINATE_DESCRIPTOR_WRONG_ORBIT_TYPE,
+                    index, orbitalCoordinate, orbitalCoordinate.getOrbitType(),
+                    expectedOrbitType);
             } else if (orbitalCoordinate.getStateVectorIndex() != i) {
                 // Throw an exception if the mapped value is not for the correct state vector index
                 throw PatriusException
-                        .createIllegalArgumentException(
-                                PatriusMessages.INVALID_ORBITAL_COORDINATE_DESCRIPTOR_WRONG_STATE_VECTOR_INDEX,
-                                index, orbitalCoordinate, orbitalCoordinate.getStateVectorIndex(),
-                                i);
+                    .createIllegalArgumentException(
+                        PatriusMessages.INVALID_ORBITAL_COORDINATE_DESCRIPTOR_WRONG_STATE_VECTOR_INDEX,
+                        index, orbitalCoordinate, orbitalCoordinate.getStateVectorIndex(),
+                        i);
             }
         }
     }
@@ -687,7 +797,7 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
     protected void initParameterDescriptors(final int startIndex, final boolean replaceDescriptors) {
         // Parameter descriptors and orbital coordinate descriptor
         final List<ParameterDescriptor> parameterDescriptors = this.covariance
-                .getParameterDescriptors();
+            .getParameterDescriptors();
         final FieldDescriptor<OrbitalCoordinate> fieldDescriptor = ORBITAL_COORDINATE_DESCRIPTOR;
 
         // Check the parameter descriptors related to the orbital parameters
@@ -696,9 +806,9 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
             MatrixUtils.checkRowIndex(this.getCovarianceMatrix(), index);
             final ParameterDescriptor parameterDescriptor = parameterDescriptors.get(index);
             final OrbitalCoordinate orbitalCoordinate = parameterDescriptor
-                    .getFieldValue(fieldDescriptor);
+                .getFieldValue(fieldDescriptor);
             final OrbitalCoordinate expectedCoordinate = this.orbitType.getCoordinateType(i,
-                    this.positionAngle);
+                this.positionAngle);
 
             if (orbitalCoordinate == null) {
                 // If the parameter descriptor is not already associated with an
@@ -712,9 +822,9 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
                     // Throw an exception if a value is already mapped to the orbital
                     // coordinate descriptor, but it's not the expected coordinate
                     throw PatriusException
-                            .createIllegalArgumentException(
-                                    PatriusMessages.INVALID_ORBITAL_COORDINATE_DESCRIPTOR_ROW_ALREADY_MAPPED,
-                                    index, orbitalCoordinate);
+                        .createIllegalArgumentException(
+                            PatriusMessages.INVALID_ORBITAL_COORDINATE_DESCRIPTOR_ROW_ALREADY_MAPPED,
+                            index, orbitalCoordinate);
                 }
             }
         }
@@ -734,25 +844,26 @@ public abstract class AbstractOrbitalCovariance<T extends AbstractOrbitalCovaria
      * @return the updated list of parameter descriptors
      */
     protected static List<ParameterDescriptor> convertParameterDescriptors(
-            final Collection<ParameterDescriptor> parameterDescriptors,
-            final OrbitType destOrbitType, final PositionAngle destPositionAngle) {
+                                                                           final Collection<ParameterDescriptor> parameterDescriptors,
+                                                                           final OrbitType destOrbitType,
+                                                                           final PositionAngle destPositionAngle) {
         // Orbital coordinate descriptor
         final FieldDescriptor<OrbitalCoordinate> fieldDescriptor = ORBITAL_COORDINATE_DESCRIPTOR;
 
         // Build the list of updated parameter descriptors
         final List<ParameterDescriptor> newParameterDescriptors = new ArrayList<>(
-                parameterDescriptors.size());
+            parameterDescriptors.size());
 
         for (final ParameterDescriptor parameterDescriptor : parameterDescriptors) {
             final OrbitalCoordinate orbitalCoordinate = parameterDescriptor
-                    .getFieldValue(fieldDescriptor);
+                .getFieldValue(fieldDescriptor);
 
             if (orbitalCoordinate == null) {
                 newParameterDescriptors.add(parameterDescriptor);
             } else {
                 final ParameterDescriptor newParameterDescriptor = parameterDescriptor.copy();
                 newParameterDescriptor.replaceField(fieldDescriptor,
-                        orbitalCoordinate.convertTo(destOrbitType, destPositionAngle));
+                    orbitalCoordinate.convertTo(destOrbitType, destPositionAngle));
                 newParameterDescriptors.add(newParameterDescriptor);
             }
         }

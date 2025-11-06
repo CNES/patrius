@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -24,31 +26,27 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
- * @description <p>
+ * @description
+ *              <p>
  *              Validation tests for the object Sphere.
  *              </p>
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id: SphereTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class SphereTest {
 
@@ -57,10 +55,10 @@ public class SphereTest {
 
         /**
          * @featureTitle Sphere shape
-         * 
+         *
          * @featureDescription Creation of a spherical shape, computation of distances and intersections with lines and
          *                     points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -75,23 +73,23 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#Sphere(Vector3D, double)}
-     * 
+     *
      * @description instantiation of a sphere from its center and radius.
-     * 
+     *
      * @input a point center, several double as radiuses (positive, negative, null)
-     * 
+     *
      * @output Sphere
-     * 
+     *
      * @testPassCriteria The sphere can be created only if the radius is positive or null, an exception is thrown
      *                   otherwise. We check the returned elements with the ones given at the construction with an
      *                   epsilon of 1e-16 which takes into account the machine error only.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -142,23 +140,23 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#distanceTo(Vector3D)}
-     * 
+     *
      * @description Compute the shortest distance between the surface of the sphere and any point of space.
-     * 
+     *
      * @input Points of space
-     * 
+     *
      * @output doubles : the distances
-     * 
+     *
      * @testPassCriteria The output doubles must be the right distance with an epsilon of 1e-14 due to the computation
      *                   errors, positive if the point is outside the sphere, zero if the point belongs to the surface,
      *                   negative if the point is inside the sphere.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -185,22 +183,22 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#distanceTo(Line)}
-     * 
+     *
      * @description Compute the shortest distance between the surface of the sphere and a Line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output doubles : the distances
-     * 
+     *
      * @testPassCriteria The output doubles must be the right distance with an epsilon of 1e-14 due to the computation
      *                   errors, positive if the line does not intersect the surface, zero otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -245,27 +243,27 @@ public class SphereTest {
         distance = sphere.distanceTo(line);
 
         final Vector3D pointOnSphere = center.add(minAbsP.subtract(center).normalize());
-        Assert.assertEquals(distance, pointOnSphere.distance(minAbsP));
+        Assert.assertEquals(distance, pointOnSphere.distance(minAbsP), Precision.DOUBLE_COMPARISON_EPSILON);
 
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#intersects(Line)}
-     * 
+     *
      * @description Test the intersection between the sphere and a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output booleans
-     * 
+     *
      * @testPassCriteria The output boolean must be true if the line intersects the surface, false otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -304,22 +302,22 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Compute the intersection points with a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output Vector3D
-     * 
+     *
      * @testPassCriteria The result array is empty if there is no intersection point. The points have the expected
      *                   coordinates otherwise with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -436,22 +434,22 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Special case of intersection points computation : line origin too close from the center of the
      *              sphere.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output Vector3D
-     * 
+     *
      * @testPassCriteria Correct intersection points with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -476,23 +474,23 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#closestPointTo(Line)}
-     * 
+     *
      * @description Compute the point of the elliptic realizing the shortest distance to a line of space, and the
      *              associated point of the line.
-     * 
+     *
      * @input Points of space (Vector3D)
-     * 
+     *
      * @output Vector3D[]
-     * 
+     *
      * @testPassCriteria The output vector must be the one of the elliptic shape and the one of the line realizing the
      *                   shortest distance.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -553,7 +551,7 @@ public class SphereTest {
         Assert.assertEquals(closestPoints[0].getY(), 1.0 + MathLib.sin(FastMath.PI / 3.0), this.comparisonEpsilon);
         Assert.assertEquals(closestPoints[0].getZ(), 1.0, this.comparisonEpsilon);
 
-        this.assertEq(closestPoints[1], closestPoints[0]);
+        assertEq(closestPoints[1], closestPoints[0]);
 
         // Semi-finite line intersects in only one point: line's min abscissa point is within the sphere
         lineOrig = new Vector3D(1.5, 5.0, 1.0);
@@ -565,7 +563,7 @@ public class SphereTest {
         Assert.assertEquals(closestPoints[0].getY(), 1.0 - MathLib.sin(FastMath.PI / 3.0), this.comparisonEpsilon);
         Assert.assertEquals(closestPoints[0].getZ(), 1.0, this.comparisonEpsilon);
 
-        this.assertEq(closestPoints[1], closestPoints[0]);
+        assertEq(closestPoints[1], closestPoints[0]);
 
         // Semi-finite line does not intersect
         lineOrig = new Vector3D(1.5, 5.0, 1.0);
@@ -574,10 +572,10 @@ public class SphereTest {
         line = new Line(lineOrig, lineOrig.add(lineDir), minAbsP);
         closestPoints = sphere.closestPointTo(line);
 
-        this.assertEq(minAbsP, closestPoints[0]);
+        assertEq(minAbsP, closestPoints[0]);
 
         Vector3D closestPointOnSphere = center.add(minAbsP.subtract(center).normalize());
-        this.assertEq(closestPointOnSphere, closestPoints[1]);
+        assertEq(closestPointOnSphere, closestPoints[1]);
 
         // New test case with semi-finite line
         // Sphere is centered on zero
@@ -590,33 +588,31 @@ public class SphereTest {
         line = new Line(sphere2.getCenter(), minAbsP, minAbsP);
         closestPoints = sphere2.closestPointTo(line);
 
-        this.assertEq(Vector3D.ZERO, line.getOrigin());
-        this.assertEq(minAbsP, closestPoints[0]);
+        assertEq(Vector3D.ZERO, line.getOrigin());
+        assertEq(minAbsP, closestPoints[0]);
         closestPointOnSphere = sphere2.getCenter().add(minAbsP.subtract(sphere2.getCenter()).normalize());
-        this.assertEq(closestPointOnSphere, closestPoints[1]);
-        
-        
+        assertEq(closestPointOnSphere, closestPoints[1]);
 
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -628,27 +624,27 @@ public class SphereTest {
         // string creation
         final String result = sphere.toString();
 
-        final String expected = "Sphere{Center{1; 1; 1},Radius{1.0}}";
+        final String expected = "Sphere{Center{1.0; 1.0; 1.0},Radius{1.0}}";
         Assert.assertEquals(expected, result);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHERE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#getCrossSection(Vector3D)}
-     * 
+     *
      * @description Creates a sphere, and gets the cross section.
-     * 
+     *
      * @input a sphere.
-     * 
+     *
      * @output a double : the cross section
-     * 
+     *
      * @testPassCriteria The cross section must be equal to PI * R * R, whatever the direction vector is.
-     * 
+     *
      * @referenceVersion 1.1
-     * 
+     *
      * @nonRegressionVersion 1.1
      */
     @Test
@@ -669,19 +665,19 @@ public class SphereTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @description Test the getters of a class.
-     * 
+     *
      * @input the class parameters
-     * 
+     *
      * @output the class parameters
-     * 
+     *
      * @testPassCriteria the parameters of the class are the same in input and
      *                   output
-     * 
+     *
      * @referenceVersion 4.1
-     * 
+     *
      * @nonRegressionVersion 4.1
      */
     @Test
@@ -697,7 +693,7 @@ public class SphereTest {
 
     /**
      * Test equality of vectors
-     * 
+     *
      * @param v1
      *        expected
      * @param v2
@@ -710,7 +706,6 @@ public class SphereTest {
         Assert.assertEquals(v1.getZ(), v2.getZ(), this.comparisonEpsilon);
 
     }
-
 
     @Before
     public void setUp() {

@@ -18,8 +18,6 @@
  * @history created 12/04/12
  *
  * HISTORY
- * VERSION:4.15.5:OPENFD-668:23/07/2025:[PATRIUS] Suite problème de Frame dans SolarTimeAngleDetector
- * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
  * VERSION:4.15:OPENFD-307:21/11/2024:[Patrius] Repère de la vitesse non inertiel (suite)
  * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
@@ -323,43 +321,37 @@ public class SolarTimeAngleDetector extends AbstractSignalPropagationDetector {
         // Recovery of the event date
         final AbsoluteDate sunDate = getSignalEmissionDate(state);
         // Creation of the different 3D Vectors
-        final PVCoordinates pv;
+        final Vector3D sat;
         final Vector3D sunP;
+        final Vector3D n;
         if (this.frame == null) {
-            // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
-            final PVCoordinates sPV = state.getPVCoordinates();
+            PVCoordinates sPV = state.getPVCoordinates();
             final Frame stateFrame = state.getFrame();
-            if (stateFrame.isPseudoInertial()) {
-                // Getting the satellite and sun positions in the spacecraft reference frame
-                pv = sPV;
-                sunP = this.sun.getPVCoordinates(sunDate, stateFrame).getPosition();
-            } else {
+            if (!stateFrame.isPseudoInertial()) {
                 final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
-                final Transform t = stateFrame.getTransformTo(workFrame, sunDate);
-                // Getting the satellite and sun positions in the first pseudo-inertial ancestor of the spacecraft
-                // reference frame
-                pv = t.transformPVCoordinates(sPV);
-                sunP = this.sun.getPVCoordinates(sunDate, workFrame).getPosition();
+                final Transform t =
+                    stateFrame.getTransformTo(workFrame, sunDate);
+                sPV = t.transformPVCoordinates(sPV);
             }
+            // Getting satellite position in the spacecraft reference frame
+            sat = sPV.getPosition();
+            // Getting the position of the sun:
+            sunP = this.sun.getPVCoordinates(sunDate, state.getFrame()).getPosition();
+            n = sPV.getMomentum().normalize();
         } else {
-
-            // Verify if the detector frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
-            final PVCoordinates sPV = state.getPVCoordinates(this.frame);
-            if (this.frame.isPseudoInertial()) {
-                // Getting the satellite and sun positions in the detector frame
-                pv = sPV;
-                sunP = this.sun.getPVCoordinates(sunDate, this.frame).getPosition();
-            } else {
+            PVCoordinates sPV = state.getPVCoordinates(this.frame);
+            if (!this.frame.isPseudoInertial()) {
                 final Frame workFrame = this.frame.getFirstPseudoInertialAncestor();
-                final Transform t = this.frame.getTransformTo(workFrame, sunDate);
-                // Getting the satellite and sun positions in the first pseudo-inertial ancestor of the detector frame
-                pv = t.transformPVCoordinates(sPV);
-                sunP = this.sun.getPVCoordinates(sunDate, workFrame).getPosition();
+                final Transform t =
+                    this.frame.getTransformTo(workFrame, sunDate);
+                sPV = t.transformPVCoordinates(sPV);
             }
+            // Getting satellite position in the right frame
+            sat = sPV.getPosition();
+            // Getting the position of the sun in the right frame:
+            sunP = this.sun.getPVCoordinates(sunDate, this.frame).getPosition();
+            n = sPV.getMomentum().normalize();
         }
-
-        final Vector3D sat = pv.getPosition();
-        final Vector3D n = pv.getMomentum().normalize();
         final Vector3D sunPj = sunP.subtract(n.scalarMultiply(Vector3D.dotProduct(sunP, n)));
         // Computing the angle between the satellite and the sun projection over the orbital plane:
         double angle = Vector3D.angle(sunPj, sat);

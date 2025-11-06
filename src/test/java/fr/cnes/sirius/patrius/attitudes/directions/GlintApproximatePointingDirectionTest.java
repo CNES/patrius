@@ -18,6 +18,7 @@
  * @history creation 15/10/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
  * des reperes predefinis et des corps predefinis
@@ -559,9 +560,9 @@ public class GlintApproximatePointingDirectionTest {
 
         // final Vector3D close = pvCoord.getPVCoordinates(date, bodyShape.getBodyFrame()).getPosition();
         // final Line line = direction.getLine(pvCoord, date, bodyShape.getBodyFrame());
-        // final GeodeticPoint geodeticPoint = bodyShape.getIntersectionPoint(line, close, bodyShape.getBodyFrame(),
+        // final EllipsoidPoint ellipsoidPoint = bodyShape.getIntersectionPoint(line, close, bodyShape.getBodyFrame(),
         // date);
-        // Vector3D glint = bodyShape.transform(geodeticPoint);
+        // Vector3D glint = bodyShape.transform(ellipsoidPoint);
         final Vector3D pos = pvCoord.getPVCoordinates(date, bodyShape.getBodyFrame()).getPosition();
         final Vector3D sunPos = sunPV.getPVCoordinates(date, bodyShape.getBodyFrame()).getPosition();
         Vector3D glint = direction.getGlintPosition(pos, sunPos, date);

@@ -38,11 +38,14 @@ import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 
 /**
- * A 6th order Runge-Kutta Integrators
+ * A 6th order Runge-Kutta Integrators.
+ * 
  * <p>
  * Implementation of a sixth order Runge-Kutta integrator for STELA.
+ * </p>
+ * 
  * <p>
- * Butcher array :
+ * Butcher array : from <i>Butcher (2016) Numerical methods for ordinary differential equations</i>
  * 
  * <pre>
  *     0  |     0        0        0        0        0        0        0
@@ -55,17 +58,16 @@ import fr.cnes.sirius.patrius.math.util.FastMath;
  *        |----------------------------------------------------------------
  *        |   13/200     0      11/40    11/40     4/25     4/25    13/200
  * </pre>
- * 
  * </p>
  * 
  * <p>
- * <b>Warning:</b> This interpolator currently performs a 2nd order interpolation issued from article <i>Dense output
+ * <b>Warning:</b> This interpolator currently performs a 6th order interpolation issued from article <i>Dense output
  * for strong stability preserving Runge–Kutta methods, D. Ketcheson, 2016</i>. <br/>
  * Accuracy is however below 1m for standard timestep.
  * </p>
  * 
  * @see RungeKuttaIntegrator
- * 
+ *
  * @concurrency not thread-safe
  * 
  * @author Cedric Dental
@@ -85,7 +87,7 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
     private static final double[][] STATIC_A = { { 1. / 3. }, { 0., 2. / 3. }, { 1. / 12., 1. / 3., -1. / 12. },
         { 25. / 48., -55. / 24., 35. / 48., 15. / 8. }, { 3. / 20., -11. / 24., -1. / 8., 1. / 2., 1. / 10. },
         { -261. / 260., 33. / 13., 43. / 156., -118. / 39., 32. / 195., 80. / 39. } };
-    
+
     /** Full internal weights Butcher array (RK6). */
     private static final double[][] STATIC_A_FULL = {
         { 0.0 }, { 1. / 3., 0.0 }, { 0., 2. / 3., 0.0 },
@@ -99,36 +101,43 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
 
     /** Time steps Butcher array. */
     private static final double[] STATIC_C = { 1. / 3., 2. / 3., 1. / 3., 5. / 6., 1. / 6., 1.0 };
+
+    /** Sixth-order Runge-Kutta integrator. */
+    private static final RungeKutta6StepInterpolator RUNGE_KUTTA_6_STEP_INTERPOLATOR =
+        buildRK6StepInterpolator(STATIC_A_FULL, STATIC_B.length, 6);
+
     /**
-     * Simple constructor.
-     * Build a sixth-order Runge-Kutta integrator with the given
-     * step.
+     * Simple constructor.<br>
+     * Build a sixth-order Runge-Kutta integrator with the given step.
      * 
      * @param step
      *        integration step
      */
     public RungeKutta6Integrator(final double step) {
-        super("Runge-Kutta 6", STATIC_C, STATIC_A, STATIC_B,
-            buildRK6StepInterpolator(STATIC_A_FULL, STATIC_B.length, 6), step);
+        super("Runge-Kutta 6", STATIC_C, STATIC_A, STATIC_B, RUNGE_KUTTA_6_STEP_INTERPOLATOR, step);
     }
-    
+
     /**
-     * Build a Runge-Kutta step interpolator of order interpolatorOrder,
-     * based on the integrator data.
+     * Build a Runge-Kutta step interpolator of order interpolatorOrder, based on the integrator data.<br>
      * Note that the required configuration may have no solution.
-     * @param a Runge Kutta A butcher array
-     * @param stagesNumber integrator stages number
-     * @param interpolatorOrder interpolator order
+     * 
+     * @param a
+     *        Runge-Kutta A butcher array
+     * @param stagesNumber
+     *        integrator stages number
+     * @param interpolatorOrder
+     *        interpolator order
      * @return Runge-Kutta step interpolator of required order
      */
     public static RungeKutta6StepInterpolator buildRK6StepInterpolator(final double[][] a,
-            final int stagesNumber, final int interpolatorOrder) {
-        
-     // Build combinations for required interpolator order
+                                                                       final int stagesNumber,
+                                                                       final int interpolatorOrder) {
+
+        // Build combinations for required interpolator order
         final List<Tree[]> trees = buildCombinations(interpolatorOrder);
         // Compute number of trees for this combination
         final int treeNumber = card(trees);
-        
+
         // Build Phi
         final double[][] phi = new double[treeNumber][stagesNumber];
         int row = 0;
@@ -159,52 +168,57 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
         // Compute polynomial terms (matrix inversion)
         // Built matrix if not singular is well-conditioned
         final RealMatrix bMatrix = new QRDecomposition(phiMatrix).getSolver().solve(gammaMatrix);
-        
+
         // Build interpolator
         return new RungeKutta6StepInterpolator(bMatrix.getData());
-        
     }
-    
+
     /**
      * Build all necessary tree combinations.
-     * @param interpolatorOrder interpolator order
+     * 
+     * @param interpolatorOrder
+     *        interpolator order
      * @return all necessary tree combinations
      */
     private static List<Tree[]> buildCombinations(final int interpolatorOrder) {
         // Currently until order 6
-        final List<Tree[]> res = new ArrayList<Tree[]>();
-        
+        final List<Tree[]> res = new ArrayList<>();
+
         // First order
         if (interpolatorOrder >= 1) {
-            // Taken from Shampine book
+            // Taken from Hairer, Wanner, Norsett (1993) Solving ordinary differential equations I -
+            // Nonstiff problems book
             final Tree[] trees1 = { new Tree(null, 1, 1) };
             res.add(trees1);
         }
 
         // Second order
         if (interpolatorOrder >= 2) {
-            // Taken from Shampine book
-            final int[][] indices21 = { { 0, 1} };
+            // Taken from Hairer, Wanner, Norsett (1993) Solving ordinary differential equations I -
+            // Nonstiff problems book
+            final int[][] indices21 = { { 0, 1 } };
             final Tree[] trees2 = { new Tree(indices21, 2, 2) };
             res.add(trees2);
         }
 
         // Third order
         if (interpolatorOrder >= 3) {
-            // Taken from Shampine book
-            final int[][] indices31 = { { 0, 1}, { 0, 2} };
-            final int[][] indices32 = { { 0, 1}, { 1, 2} };
+            // Taken from Hairer, Wanner, Norsett (1993) Solving ordinary differential equations I -
+            // Nonstiff problems book
+            final int[][] indices31 = { { 0, 1 }, { 0, 2 } };
+            final int[][] indices32 = { { 0, 1 }, { 1, 2 } };
             final Tree[] trees3 = { new Tree(indices31, 3, 3), new Tree(indices32, 6, 3) };
             res.add(trees3);
         }
 
         // Fourth order
         if (interpolatorOrder >= 4) {
-            // Taken from Shampine book
-            final int[][] indices41 = { { 0, 1}, { 0, 2}, { 0, 3} };
-            final int[][] indices42 = { { 0, 1}, { 0, 2}, { 2, 3} };
-            final int[][] indices43 = { { 0, 1}, { 1, 2}, { 1, 3} };
-            final int[][] indices44 = { { 0, 1}, { 1, 2}, { 2, 3} };
+            // Taken from Hairer, Wanner, Norsett (1993) Solving ordinary differential equations I -
+            // Nonstiff problems book
+            final int[][] indices41 = { { 0, 1 }, { 0, 2 }, { 0, 3 } };
+            final int[][] indices42 = { { 0, 1 }, { 0, 2 }, { 2, 3 } };
+            final int[][] indices43 = { { 0, 1 }, { 1, 2 }, { 1, 3 } };
+            final int[][] indices44 = { { 0, 1 }, { 1, 2 }, { 2, 3 } };
             final Tree[] trees4 = { new Tree(indices41, 4, 4), new Tree(indices42, 8, 4),
                 new Tree(indices43, 12, 4), new Tree(indices44, 24, 4) };
             res.add(trees4);
@@ -212,16 +226,17 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
 
         // Fifth order
         if (interpolatorOrder >= 5) {
-            // Taken from Shampine book
-            final int[][] indices51 = { { 0, 1}, { 0, 2}, { 0, 3}, { 0, 4} };
-            final int[][] indices52 = { { 0, 1}, { 0, 2}, { 0, 3}, { 3, 4} };
-            final int[][] indices53 = { { 0, 1}, { 0, 2}, { 2, 3}, { 2, 4} };
-            final int[][] indices54 = { { 0, 1}, { 0, 2}, { 2, 3}, { 3, 4} };
-            final int[][] indices55 = { { 0, 1}, { 1, 2}, { 0, 3}, { 3, 4} };
-            final int[][] indices56 = { { 0, 1}, { 1, 2}, { 1, 3}, { 1, 4} };
-            final int[][] indices57 = { { 0, 1}, { 1, 2}, { 1, 3}, { 3, 4} };
-            final int[][] indices58 = { { 0, 1}, { 1, 2}, { 2, 3}, { 2, 4} };
-            final int[][] indices59 = { { 0, 1}, { 1, 2}, { 2, 3}, { 3, 4} };
+            // Taken from Hairer, Wanner, Norsett (1993) Solving ordinary differential equations I -
+            // Nonstiff problems book
+            final int[][] indices51 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 } };
+            final int[][] indices52 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 3, 4 } };
+            final int[][] indices53 = { { 0, 1 }, { 0, 2 }, { 2, 3 }, { 2, 4 } };
+            final int[][] indices54 = { { 0, 1 }, { 0, 2 }, { 2, 3 }, { 3, 4 } };
+            final int[][] indices55 = { { 0, 1 }, { 1, 2 }, { 0, 3 }, { 3, 4 } };
+            final int[][] indices56 = { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 } };
+            final int[][] indices57 = { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 3, 4 } };
+            final int[][] indices58 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 2, 4 } };
+            final int[][] indices59 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 4 } };
             final Tree[] trees5 = { new Tree(indices51, 5, 5), new Tree(indices52, 10, 5),
                 new Tree(indices53, 15, 5), new Tree(indices54, 30, 5),
                 new Tree(indices55, 20, 5), new Tree(indices56, 20, 5),
@@ -234,31 +249,31 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
         // Built by hand
         if (interpolatorOrder >= 6) {
             // 5 roots legs
-            final int[][] indices61 = { { 0, 1}, { 0, 2}, { 0, 3}, { 0, 4}, { 0, 5} };
+            final int[][] indices61 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 5 } };
             // 4 roots legs
-            final int[][] indices62 = { { 0, 1}, { 0, 2}, { 0, 3}, { 0, 4}, { 4, 5} };
+            final int[][] indices62 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 4, 5 } };
             // 3 roots legs
-            final int[][] indices63 = { { 0, 1}, { 0, 2}, { 0, 3}, { 3, 4}, { 4, 5} };
-            final int[][] indices64 = { { 0, 1}, { 0, 2}, { 0, 3}, { 3, 4}, { 3, 5} };
-            final int[][] indices65 = { { 0, 1}, { 0, 2}, { 0, 3}, { 2, 4}, { 3, 5} };
+            final int[][] indices63 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 3, 4 }, { 4, 5 } };
+            final int[][] indices64 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 3, 4 }, { 3, 5 } };
+            final int[][] indices65 = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 2, 4 }, { 3, 5 } };
             // 2 roots legs
-            final int[][] indices66 = { { 0, 1}, { 0, 2}, { 2, 3}, { 3, 4}, { 4, 5} };
-            final int[][] indices67 = { { 0, 1}, { 0, 2}, { 2, 3}, { 2, 4}, { 2, 5} };
-            final int[][] indices68 = { { 0, 1}, { 1, 2}, { 0, 3}, { 3, 4}, { 4, 5} };
-            final int[][] indices69 = { { 0, 1}, { 0, 2}, { 2, 3}, { 2, 4}, { 4, 5} };
-            final int[][] indices610 = { { 0, 1}, { 0, 2}, { 2, 3}, { 3, 4}, { 3, 5} };
-            final int[][] indices611 = { { 0, 1}, { 1, 2}, { 0, 3}, { 3, 4}, { 3, 5} };
+            final int[][] indices66 = { { 0, 1 }, { 0, 2 }, { 2, 3 }, { 3, 4 }, { 4, 5 } };
+            final int[][] indices67 = { { 0, 1 }, { 0, 2 }, { 2, 3 }, { 2, 4 }, { 2, 5 } };
+            final int[][] indices68 = { { 0, 1 }, { 1, 2 }, { 0, 3 }, { 3, 4 }, { 4, 5 } };
+            final int[][] indices69 = { { 0, 1 }, { 0, 2 }, { 2, 3 }, { 2, 4 }, { 4, 5 } };
+            final int[][] indices610 = { { 0, 1 }, { 0, 2 }, { 2, 3 }, { 3, 4 }, { 3, 5 } };
+            final int[][] indices611 = { { 0, 1 }, { 1, 2 }, { 0, 3 }, { 3, 4 }, { 3, 5 } };
 
             // 1 root legs
-            final int[][] indices612 = { { 0, 1}, { 1, 2}, { 1, 3}, { 1, 4}, { 1, 5} };
-            final int[][] indices613 = { { 0, 1}, { 1, 2}, { 1, 3}, { 1, 4}, { 4, 5} };
-            final int[][] indices614 = { { 0, 1}, { 1, 2}, { 1, 3}, { 3, 4}, { 3, 5} };
-            final int[][] indices615 = { { 0, 1}, { 1, 2}, { 1, 3}, { 3, 4}, { 4, 5} };
-            final int[][] indices616 = { { 0, 1}, { 1, 2}, { 2, 3}, { 1, 4}, { 4, 5} };
-            final int[][] indices617 = { { 0, 1}, { 1, 2}, { 2, 3}, { 2, 4}, { 2, 5} };
-            final int[][] indices618 = { { 0, 1}, { 1, 2}, { 2, 3}, { 2, 4}, { 4, 5} };
-            final int[][] indices619 = { { 0, 1}, { 1, 2}, { 2, 3}, { 3, 4}, { 3, 5} };
-            final int[][] indices620 = { { 0, 1}, { 1, 2}, { 2, 3}, { 3, 4}, { 4, 5} };
+            final int[][] indices612 = { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 1, 5 } };
+            final int[][] indices613 = { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 4, 5 } };
+            final int[][] indices614 = { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 3, 4 }, { 3, 5 } };
+            final int[][] indices615 = { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 3, 4 }, { 4, 5 } };
+            final int[][] indices616 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 1, 4 }, { 4, 5 } };
+            final int[][] indices617 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 2, 4 }, { 2, 5 } };
+            final int[][] indices618 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 2, 4 }, { 4, 5 } };
+            final int[][] indices619 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 4 }, { 3, 5 } };
+            final int[][] indices620 = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 4 }, { 4, 5 } };
 
             final Tree[] trees6 = {
                 new Tree(indices61, 6, 6), new Tree(indices62, 12, 6),
@@ -277,12 +292,16 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
         // Return result
         return res;
     }
-    
+
     /**
      * Compute phi.
-     * @param tree labeled tree
-     * @param j column
-     * @param a integrator A butcher array
+     * 
+     * @param tree
+     *        labeled tree
+     * @param j
+     *        column
+     * @param a
+     *        integrator A butcher array
      * @return phi<sub>j</sub>(t(i)), t(i) being t for corresponding i
      */
     @SuppressWarnings("PMD.EmptyCatchBlock")
@@ -298,7 +317,7 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
                 indices[k] = remain % a.length;
                 remain /= a.length;
             }
-            
+
             try {
                 // Compute current term
                 double term = 1;
@@ -327,11 +346,13 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
         }
         return sum;
     }
-    
+
     /**
      * Computes cardinal of label trees up to integrator order.
-     * @param trees list of trees
-     * @return total cardinal of label trees up to integrator order. 
+     * 
+     * @param trees
+     *        list of trees
+     * @return total cardinal of label trees up to integrator order
      */
     private static int card(final List<Tree[]> trees) {
         int res = 0;
@@ -340,27 +361,32 @@ public class RungeKutta6Integrator extends RungeKuttaIntegrator {
         }
         return res;
     }
-    
+
     /**
-     * Labeled tree as defined in Shampine book.
+     * Labeled tree as defined in Hairer, Wanner, Norsett (1993) Solving ordinary differential equations I -
+     * Nonstiff problems book.
      */
     @SuppressWarnings("PMD.ShortClassName")
     private static class Tree {
-        
+
         /** Indices. */
         private final int[][] indices;
-        
+
         /** Gamma value. */
         private final double gamma;
-        
+
         /** Tree order. */
         private final int order;
-       
+
         /**
          * Constructor.
-         * @param indices indicies
-         * @param gamma gamma
-         * @param order order
+         * 
+         * @param indices
+         *        indices
+         * @param gamma
+         *        gamma
+         * @param order
+         *        order
          */
         public Tree(final int[][] indices, final int gamma, final int order) {
             this.indices = indices;

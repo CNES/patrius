@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -24,29 +26,26 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
- * @description <p>
+ * @description
+ *              <p>
  *              Validation tests for the object RectangleCone.
  *              </p>
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id: RectangleConeTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class RectangleConeTest {
     /** Features description. */
@@ -54,10 +53,10 @@ public class RectangleConeTest {
 
         /**
          * @featureTitle Rectangle cone shape
-         * 
+         *
          * @featureDescription Creation of an rectangle cone shape, computation of distances and intersections with
          *                     lines and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -72,25 +71,25 @@ public class RectangleConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RECTANGLE_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link RectangleCone#RectangleCone(Vector3D, Vector3D, Vector3D, double, double, double)}
-     * 
+     *
      * @description Instantiation of a an infinite right circular cone from its origin, axis' direction, height and
      *              basis dimensions.
-     * 
+     *
      * @input A point origin, a vector direction, a vector U, several doubles as dimensions (correct, negative, zero)
-     * 
+     *
      * @output RectangleCone
-     * 
+     *
      * @testPassCriteria The cone can be created only if the direction's norm, the U vector's norm and the dimensions
      *                   are strictly positive, and if the u vector and the direction are not parallel. We check the
      *                   returned elements with the ones given at the construction with an epsilon of 1e-16 which takes
      *                   into account the machine error only. An exception is thrown otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -211,22 +210,22 @@ public class RectangleConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RECTANGLE_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link RectangleCone#distanceTo(Line)}
-     * 
+     *
      * @description Compute the shortest distance between the surface of the cone and a Line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output doubles : the distances
-     * 
+     *
      * @testPassCriteria The output doubles must be the right distance, positive if the line does not intersect the
      *                   surface, zero otherwise with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -266,21 +265,21 @@ public class RectangleConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RECTANGLE_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link RectangleCone#intersects(Line)}
-     * 
+     *
      * @description Test the intersection between the cone and a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output booleans
-     * 
+     *
      * @testPassCriteria The output boolean must be true if the line intersects the surface, false otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -319,22 +318,22 @@ public class RectangleConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RECTANGLE_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link RectangleCone#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Compute the intersection points with a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output Vector3D
-     * 
+     *
      * @testPassCriteria The result array is empty if there is no intersection point. The points have the expected
      *                   coordinates otherwise with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -433,23 +432,23 @@ public class RectangleConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RECTANGLE_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link RectangleCone#closestPointTo(Line)}
-     * 
+     *
      * @description Compute the point of the cone realizing the shortest distance to a line of space, and the associated
      *              point of the line.
-     * 
+     *
      * @input Points of space (Vector3D)
-     * 
+     *
      * @output Vector3D[]
-     * 
+     *
      * @testPassCriteria The output vector must be the one of the shape and the one of the line realizing the shortest
      *                   distance with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -537,22 +536,22 @@ public class RectangleConeTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RECTANGLE_CONE_SHAPE}
-     * 
+     *
      * @testedMethod {@link RectangleCone#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -571,10 +570,9 @@ public class RectangleConeTest {
         final String result = cone.toString();
 
         final String expected =
-            "RectangleCone{Origin{1; 1; 1},Direction{1; 0; 0},U vector{0; 1; 0},Length{8.0},Width{8.0},Height{4.0}}";
+            "RectangleCone{Origin{1.0; 1.0; 1.0},Direction{1.0; 0.0; 0.0},U vector{0.0; 1.0; 0.0},Length{8.0},Width{8.0},Height{4.0}}";
         Assert.assertEquals(expected, result);
     }
-
 
     @Before
     public void setUp() {

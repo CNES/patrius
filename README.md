@@ -3,7 +3,7 @@
 
 # PATRIUS Source Code
 
-This project contains the source code of the PATRIUS library. This code corresponds to **Patrius v4.15.6**.
+This project contains the source code of the PATRIUS library. This code corresponds to **Patrius v4.16**.
 
 ## ABOUT
 

@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history Created 07/05/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -30,32 +32,20 @@
 package fr.cnes.sirius.patrius.events.singlegpsvisis;
 
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.EventDetector;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.Utils;
 
 public class GPSvisEclDetectors {
 
@@ -76,7 +66,7 @@ public class GPSvisEclDetectors {
 
             @Override
             public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                        final boolean forward) throws PatriusException {
+                                        final boolean forward) {
                 // ATTENTION g positif hors éclipse, donc increasing en sortie
                 // d'éclipse
                 if (!increasing) {
@@ -102,7 +92,7 @@ public class GPSvisEclDetectors {
 
             @Override
             public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                        final boolean forward) throws PatriusException {
+                                        final boolean forward) {
                 // ATTENTION g positif hors éclipse, donc increasing en sortie
                 // d'éclipse
                 if (!increasing) {
@@ -126,8 +116,7 @@ public class GPSvisEclDetectors {
 
             @Override
             public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                        final boolean forward)
-                                                              throws PatriusException {
+                                        final boolean forward) {
                 // ATTENTION g positif hors éclipse, donc increasing en sortie
                 // d'éclipse
                 if (increasing) {
@@ -154,7 +143,8 @@ public class GPSvisEclDetectors {
         final CircularFieldOfViewDetector detector = staticInstance.new CustomCircularFieldOfViewDetector(
             maxCheck, gpsSat, fovCenter, halfAp, gpsNr);
         final GenericCodingEventDetector gceDet = new GenericCodingEventDetector(detector, "GPS " + gpsNr
-            + " IN", "GPS " + gpsNr + " OUT", true, "GPS " + gpsNr + " VISI");
+                + " IN",
+            "GPS " + gpsNr + " OUT", true, "GPS " + gpsNr + " VISI");
         return gceDet;
     }
 
@@ -164,7 +154,7 @@ public class GPSvisEclDetectors {
         private final int satNr;
 
         public CustomCircularFieldOfViewDetector(final double maxCheck, final PVCoordinatesProvider pvTarget,
-            final Vector3D center, final double halfAperture, final int satNr) {
+                                                 final Vector3D center, final double halfAperture, final int satNr) {
             super(pvTarget, center, halfAperture, maxCheck);
             this.satNr = satNr;
         }
@@ -172,7 +162,7 @@ public class GPSvisEclDetectors {
         @Override
         public Action eventOccurred(final SpacecraftState s, final boolean increasing,
                                     final boolean forward)
-                                                          throws PatriusException {
+            throws PatriusException {
             eventMessage(s, increasing, "GPS " + this.satNr + " visibility ");
             return Action.CONTINUE;
         }
@@ -197,7 +187,8 @@ public class GPSvisEclDetectors {
             aol -= 360.;
         }
         System.out.format(s.getDate() + " (AoL = %8.3f deg) "
-            + (increasing ? " ENTER " + evtName : " EXIT  " + evtName) + "%n", aol);
+                + (increasing ? " ENTER " + evtName : " EXIT  " + evtName) + "%n",
+            aol);
     }
 
     @Before

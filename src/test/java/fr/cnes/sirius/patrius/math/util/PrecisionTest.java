@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-476:25/04/2025:[PATRIUS] Anomalie dans Precision.equals(double, double, int) et dans Math.abs()
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -219,6 +220,10 @@ public class PrecisionTest {
         Assert.assertFalse(Precision.equals(Float.NaN, 0, 0));
         Assert.assertFalse(Precision.equals(Float.NaN, Float.POSITIVE_INFINITY, 0));
         Assert.assertFalse(Precision.equals(Float.NaN, Float.NEGATIVE_INFINITY, 0));
+        
+        // Test MathLib.abs overflow case
+        final float a = 2;
+        Assert.assertFalse(Precision.equals(-a, a, 0));
 
         Assert.assertFalse(Precision.equals(Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, 100000));
     }
@@ -262,6 +267,10 @@ public class PrecisionTest {
         Assert.assertFalse(Precision.equals(Double.NaN, 0, 0));
         Assert.assertFalse(Precision.equals(Double.NaN, Double.POSITIVE_INFINITY, 0));
         Assert.assertFalse(Precision.equals(Double.NaN, Double.NEGATIVE_INFINITY, 0));
+        
+        // Test MathLib.abs overflow case
+        final double a = 2;
+        Assert.assertFalse(Precision.equals(-a, a, 0));
 
         Assert.assertFalse(Precision.equals(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 100000));
     }

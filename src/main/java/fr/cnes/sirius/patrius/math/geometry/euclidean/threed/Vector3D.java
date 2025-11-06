@@ -8,9 +8,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
  * fournir un message claire
  * VERSION:4.11.1:FA:FA-74:30/06/2023:[PATRIUS] Reliquat OGM3320 hash code de Vector3D
@@ -62,7 +64,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * <p>
  * Instance of this class are guaranteed to be immutable.
  * </p>
- * 
+ *
  * @version $Id: Vector3D.java 18108 2017-10-04 06:45:27Z bignon $
  * @since 1.2
  */
@@ -118,7 +120,7 @@ public class Vector3D implements Vector<Euclidean3D> {
     /**
      * Simple constructor.
      * Build a vector from its coordinates
-     * 
+     *
      * @param xIn
      *        abscissa
      * @param yIn
@@ -138,7 +140,7 @@ public class Vector3D implements Vector<Euclidean3D> {
     /**
      * Simple constructor.
      * Build a vector from its coordinates
-     * 
+     *
      * @param v
      *        coordinates array
      * @exception DimensionMismatchException
@@ -157,7 +159,7 @@ public class Vector3D implements Vector<Euclidean3D> {
     /**
      * Simple constructor.
      * Build a vector from its azimuthal coordinates
-     * 
+     *
      * @param alpha
      *        angle (&alpha;) between projection on XY-plane and X-axis counted in counter-clockwise around Z
      *        (0 is +X, &pi;/2 is +Y, &pi; is -X and 3&pi;/2 is -Y)
@@ -173,7 +175,7 @@ public class Vector3D implements Vector<Euclidean3D> {
         final double[] sincosDelta = MathLib.sinAndCos(delta);
         final double sinDelta = sincosDelta[0];
         final double cosDelta = sincosDelta[1];
-        
+
         this.x = cosAlpha * cosDelta;
         this.y = sinAlpha * cosDelta;
         this.z = sinDelta;
@@ -183,7 +185,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Multiplicative constructor
      * Build a vector from another one and a scale factor.
      * The vector built will be a * u
-     * 
+     *
      * @param a
      *        scale factor
      * @param u
@@ -199,7 +201,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Linear constructor
      * Build a vector from two other ones and corresponding scale factors.
      * The vector built will be a1 * u1 + a2 * u2
-     * 
+     *
      * @param a1
      *        first scale factor
      * @param u1
@@ -219,7 +221,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Linear constructor
      * Build a vector from three other ones and corresponding scale factors.
      * The vector built will be a1 * u1 + a2 * u2 + a3 * u3
-     * 
+     *
      * @param a1
      *        first scale factor
      * @param u1
@@ -234,7 +236,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      *        third base (unscaled) vector
      */
     public Vector3D(final double a1, final Vector3D u1, final double a2, final Vector3D u2,
-        final double a3, final Vector3D u3) {
+                    final double a3, final Vector3D u3) {
         this.x = MathArrays.linearCombination(a1, u1.x, a2, u2.x, a3, u3.x);
         this.y = MathArrays.linearCombination(a1, u1.y, a2, u2.y, a3, u3.y);
         this.z = MathArrays.linearCombination(a1, u1.z, a2, u2.z, a3, u3.z);
@@ -244,7 +246,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Linear constructor
      * Build a vector from four other ones and corresponding scale factors.
      * The vector built will be a1 * u1 + a2 * u2 + a3 * u3 + a4 * u4
-     * 
+     *
      * @param a1
      *        first scale factor
      * @param u1
@@ -263,7 +265,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      *        fourth base (unscaled) vector
      */
     public Vector3D(final double a1, final Vector3D u1, final double a2, final Vector3D u2,
-        final double a3, final Vector3D u3, final double a4, final Vector3D u4) {
+                    final double a3, final Vector3D u3, final double a4, final Vector3D u4) {
         this.x = MathArrays.linearCombination(a1, u1.x, a2, u2.x, a3, u3.x, a4, u4.x);
         this.y = MathArrays.linearCombination(a1, u1.y, a2, u2.y, a3, u3.y, a4, u4.y);
         this.z = MathArrays.linearCombination(a1, u1.z, a2, u2.z, a3, u3.z, a4, u4.z);
@@ -273,7 +275,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * From a RealVector constructor
      * Build a vector from a RealVector object. The input RealVector
      * dimension must be 3.
-     * 
+     *
      * @param vector
      *        The RealVector
      */
@@ -289,7 +291,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * From a {@link SphericalCoordinates} constructor.
-     * 
+     *
      * @param coord
      *        The spherical coordinates
      */
@@ -302,7 +304,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get the abscissa of the vector.
-     * 
+     *
      * @return abscissa of the vector
      * @see #Vector3D(double, double, double)
      */
@@ -312,7 +314,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get the ordinate of the vector.
-     * 
+     *
      * @return ordinate of the vector
      * @see #Vector3D(double, double, double)
      */
@@ -322,7 +324,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get the height of the vector.
-     * 
+     *
      * @return height of the vector
      * @see #Vector3D(double, double, double)
      */
@@ -332,7 +334,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get a RealVector with identical data.
-     * 
+     *
      * @return the RealVector
      * @see RealVector
      */
@@ -344,7 +346,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get the vector coordinates as a dimension 3 array.
-     * 
+     *
      * @return vector coordinates
      * @see #Vector3D(double[])
      */
@@ -366,7 +368,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Indicates if this vector has all its components to 0.
-     * 
+     *
      * @return
      *         true if all the components are 0.
      */
@@ -403,7 +405,7 @@ public class Vector3D implements Vector<Euclidean3D> {
     /**
      * For a given vector, get the angle between projection on XY-plane and X-axis counted in counter-clockwise
      * direction: 0 corresponds to Vector3D(1, 0, ...), and increasing values are counter-clockwise.
-     * 
+     *
      * @return the angle between projection on XY-plane and X-axis counted in counter-clockwise direction (&alpha;) of
      *         the vector, between -&pi; and +&pi;
      * @see #Vector3D(double, double)
@@ -414,22 +416,23 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get the elevation of the vector.
-     * 
+     *
      * @return elevation (&delta;) of the vector, between -&pi;/2 and +&pi;/2
      * @see #Vector3D(double, double)
      */
     public double getDelta() {
-        return MathLib.asin(this.z / this.getNorm());
+        return MathLib.asin(this.z / getNorm());
     }
 
     /**
      * Returns the spherical coordinates.
+     *
      * @return the spherical coordinates (&delta;, &alpha;, norm) / (latitude, longitude, altitude)
      */
     public SphericalCoordinates getSphericalCoordinates() {
         return new SphericalCoordinates(getDelta(), getAlpha(), getNorm());
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public Vector3D add(final Vector<Euclidean3D> v) {
@@ -459,11 +462,11 @@ public class Vector3D implements Vector<Euclidean3D> {
     /** {@inheritDoc} */
     @Override
     public Vector3D normalize() {
-        final double s = this.getNorm();
+        final double s = getNorm();
         if (s == 0) {
             throw new MathArithmeticException(PatriusMessages.CANNOT_NORMALIZE_A_ZERO_NORM_VECTOR);
         }
-        return this.scalarMultiply(1 / s);
+        return scalarMultiply(1 / s);
     }
 
     /**
@@ -472,7 +475,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * There are an infinite number of normalized vectors orthogonal to the instance. This method picks up one of them
      * almost arbitrarily. It is useful when one needs to compute a reference frame with one of the axes in a predefined
      * direction. The following example shows how to build a frame having the k axis aligned with the known vector u :
-     * 
+     *
      * <pre>
      * <code>
      *   Vector3D k = u.normalize();
@@ -480,16 +483,16 @@ public class Vector3D implements Vector<Euclidean3D> {
      *   Vector3D j = Vector3D.crossProduct(k, i);
      * </code>
      * </pre>
-     * 
+     *
      * </p>
-     * 
+     *
      * @return a new normalized vector orthogonal to the instance
      * @exception MathArithmeticException
      *            if the norm of the instance is null
      */
     public Vector3D orthogonal() {
 
-        final double threshold = 0.6 * this.getNorm();
+        final double threshold = 0.6 * getNorm();
         if (threshold == 0) {
             // Null norm
             throw new MathArithmeticException(PatriusMessages.ZERO_NORM);
@@ -518,7 +521,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * and the cross product for almost aligned vectors. This allows to have a good accuracy in all cases, even for
      * vectors very close to each other.
      * </p>
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -574,7 +577,7 @@ public class Vector3D implements Vector<Euclidean3D> {
     /** {@inheritDoc} */
     @Override
     public boolean isInfinite() {
-        return !this.isNaN() && (Double.isInfinite(this.x) || Double.isInfinite(this.y) || Double.isInfinite(this.z));
+        return !isNaN() && (Double.isInfinite(this.x) || Double.isInfinite(this.y) || Double.isInfinite(this.z));
     }
 
     /**
@@ -583,13 +586,13 @@ public class Vector3D implements Vector<Euclidean3D> {
      * If all coordinates of two 3D vectors are exactly the same, and none are <code>Double.NaN</code>, the two 3D
      * vectors are considered to be equal.
      * </p>
-     * 
+     *
      * @param other
      *        Object to test for equality to this
      * @return true if two 3D vector objects are equal, false if
      *         object is null, not an instance of Vector3D, or
      *         not equal to this Vector3D instance
-     * 
+     *
      */
     @Override
     public boolean equals(final Object other) {
@@ -605,7 +608,7 @@ public class Vector3D implements Vector<Euclidean3D> {
                     && Double.doubleToLongBits(this.y) == Double.doubleToLongBits(vec.y)
                     && Double.doubleToLongBits(this.z) == Double.doubleToLongBits(vec.z);
         }
-        
+
         // Return a boolean saying whether the two objects are equal or not
         return isEqual;
     }
@@ -615,7 +618,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get a hashCode for the 3D vector.
-     * 
+     *
      * @return a hash code value for this object
      */
     @Override
@@ -632,7 +635,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * The implementation uses specific multiplication and addition algorithms to preserve accuracy and reduce
      * cancellation effects. It should be very accurate even for nearly orthogonal vectors.
      * </p>
-     * 
+     *
      * @see MathArrays#linearCombination(double, double, double, double, double, double)
      */
     @Override
@@ -643,7 +646,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Compute the cross-product of the instance with another vector.
-     * 
+     *
      * @param v
      *        other vector
      * @return the cross product this ^ v as a new Vector3D
@@ -698,7 +701,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Compute the dot-product of two vectors.
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -711,7 +714,7 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Compute the cross-product of two vectors.
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -728,7 +731,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Calling this method is equivalent to calling: <code>v1.subtract(v2).getNorm1()</code> except that no intermediate
      * vector is built
      * </p>
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -745,7 +748,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Calling this method is equivalent to calling: <code>v1.subtract(v2).getNorm()</code> except that no intermediate
      * vector is built
      * </p>
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -762,7 +765,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Calling this method is equivalent to calling: <code>v1.subtract(v2).getNormInf()</code> except that no
      * intermediate vector is built
      * </p>
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -779,7 +782,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * Calling this method is equivalent to calling: <code>v1.subtract(v2).getNormSq()</code> except that no
      * intermediate vector is built
      * </p>
-     * 
+     *
      * @param v1
      *        first vector
      * @param v2
@@ -792,12 +795,12 @@ public class Vector3D implements Vector<Euclidean3D> {
 
     /**
      * Get a string representation of this vector.
-     * 
+     *
      * @return a string representation of this vector
      */
     @Override
     public String toString() {
-        return Vector3DFormat.getInstance().format(this);
+        return String.format("{%s; %s; %s}", this.x, this.y, this.z);
     }
 
     /** {@inheritDoc} */
@@ -805,7 +808,6 @@ public class Vector3D implements Vector<Euclidean3D> {
     public String toString(final NumberFormat format) {
         return new Vector3DFormat(format).format(this);
     }
-
 
     /**
      * Find a vector from two known cross products.
@@ -816,7 +818,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      * The first equation (Ω ⨯ v₁ = c₁) will always be fulfilled exactly, and the second one will be fulfilled if
      * possible.
      * </p>
-     * 
+     *
      * @param v1
      *        vector forming the first known cross product
      * @param c1
@@ -836,8 +838,8 @@ public class Vector3D implements Vector<Euclidean3D> {
     // Reason: Commons-Math code kept as such
     @SuppressWarnings("PMD.PreserveStackTrace")
     public static Vector3D inverseCrossProducts(final Vector3D v1, final Vector3D c1,
-                                                 final Vector3D v2, final Vector3D c2,
-                                                 final double tolerance) {
+                                                final Vector3D v2, final Vector3D c2,
+                                                final double tolerance) {
         // CHECKSTYLE: resume CyclomaticComplexity check
         final double v12 = v1.getNormSq();
         final double v1n = MathLib.sqrt(v12);

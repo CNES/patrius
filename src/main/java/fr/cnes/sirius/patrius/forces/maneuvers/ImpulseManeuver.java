@@ -14,7 +14,6 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
  * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
@@ -121,30 +120,26 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
 
     /** If true, the integration variable (time) increases during integration. */
     private boolean forwardLocal;
-
+    
     /** False when the maneuver hasn't occurred, true otherwise. **/
     private boolean hasFiredFlag;
 
     /**
      * Build a new instance.
      * 
-     * @param inTrigger
-     *        triggering event (it must generate a <b>STOP</b> event action to trigger the maneuver)
-     * @param inDeltaVSat
-     *        velocity increment in satellite frame
-     * @param isp
-     *        engine specific impulse (s)
-     * @param massModel
-     *        mass model
-     * @param part
-     *        part of the mass model that provides the propellant
-     * @throws PatriusException
-     *         if mass from mass provider is negative
+     * @param inTrigger triggering event (it must generate a <b>STOP</b> event action to trigger the
+     *        maneuver)
+     * @param inDeltaVSat velocity increment in satellite frame
+     * @param isp engine specific impulse (s)
+     * @param massModel mass model
+     * @param part part of the mass model that provides the propellants
+     * @throws PatriusException thrown if mass from mass provider is negative
      */
-    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat, final double isp,
-                           final MassProvider massModel, final String part)
+    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat,
+        final double isp, final MassProvider massModel, final String part)
         throws PatriusException {
-        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger.getThreshold());
+        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger
+            .getThreshold());
         this.trigger = inTrigger;
         this.deltaVSat = inDeltaVSat;
         // Build a constant Propulsive property: thrust unused
@@ -164,23 +159,17 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
      * WARNING : It is not recommended to use this constructor with a LocalOrbitalFrame built with a
      * PVCoordinatesProvider equal to the current propagator.
      * 
-     * @param inTrigger
-     *        triggering event (it must generate a <b>STOP</b> event action to trigger the maneuver)
-     * @param inDeltaVSat
-     *        velocity increment in the frame defined by the user
-     * @param inFrame
-     *        the frame of the velocity increment. Null frame means spacecraft frame.
-     * @param isp
-     *        engine specific impulse (s)
-     * @param massModel
-     *        mass model
-     * @param part
-     *        part of the mass model that provides the propellant
-     * @throws PatriusException
-     *         if mass from mass provider is negative
+     * @param inTrigger triggering event (it must generate a <b>STOP</b> event action to trigger the
+     *        maneuver)
+     * @param inDeltaVSat velocity increment in the frame defined by the user
+     * @param inFrame the frame of the velocity increment. Null frame means spacecraft frame.
+     * @param isp engine specific impulse (s)
+     * @param massModel mass model
+     * @param part part of the mass model that provides the propellants
+     * @throws PatriusException thrown if mass from mass provider is negative
      */
-    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat, final Frame inFrame,
-                           final double isp, final MassProvider massModel, final String part)
+    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat,
+        final Frame inFrame, final double isp, final MassProvider massModel, final String part)
         throws PatriusException {
         super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger
             .getThreshold());
@@ -200,25 +189,20 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
     /**
      * Build a new instance with a LocalOrbitalFrame.
      * 
-     * @param inTrigger
-     *        triggering event (it must generate a <b>STOP</b> event action to trigger the maneuver)
-     * @param inDeltaVSat
-     *        velocity increment in the frame defined by the user
-     * @param isp
-     *        engine specific impulse (s)
-     * @param massModel
-     *        mass model
-     * @param part
-     *        part of the mass model that provides the propellant
-     * @param inLofType
-     *        the LOF type of the velocity increment
-     * @throws PatriusException
-     *         if mass from mass provider is negative
+     * @param inTrigger triggering event (it must generate a <b>STOP</b> event action to trigger the
+     *        maneuver)
+     * @param inDeltaVSat velocity increment in the frame defined by the user
+     * @param isp engine specific impulse (s)
+     * @param massModel mass model
+     * @param part part of the mass model that provides the propellants
+     * @param inLofType the LOF type of the velocity increment
+     * @throws PatriusException thrown if mass from mass provider is negative
      */
-    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat, final double isp,
-                           final MassProvider massModel, final String part, final LOFType inLofType)
-        throws PatriusException {
-        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger.getThreshold());
+    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat,
+        final double isp, final MassProvider massModel, final String part,
+        final LOFType inLofType) throws PatriusException {
+        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger
+            .getThreshold());
         this.trigger = inTrigger;
         this.deltaVSat = inDeltaVSat;
         // Build a constant Propulsive property: thrust unused
@@ -234,20 +218,17 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
     /**
      * Build a new instance using propulsive and engine property.
      * 
-     * @param inTrigger
-     *        triggering event (it must generate a <b>STOP</b> event action to trigger the maneuver)
-     * @param inDeltaVSat
-     *        velocity increment in satellite frame
-     * @param engine
-     *        engine property (specific impulse)
-     * @param massModel
-     *        mass model
-     * @param tank
-     *        tank property gathering mass and part name information
+     * @param inTrigger triggering event (it must generate a <b>STOP</b> event action to trigger the
+     *        maneuver)
+     * @param inDeltaVSat velocity increment in satellite frame
+     * @param engine engine property (specific impulse)
+     * @param massModel mass model
+     * @param tank tank property gathering mass and part name information
      */
-    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat, final PropulsiveProperty engine,
-                           final MassProvider massModel, final TankProperty tank) {
-        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger.getThreshold());
+    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat,
+        final PropulsiveProperty engine, final MassProvider massModel, final TankProperty tank) {
+        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger
+            .getThreshold());
         this.trigger = inTrigger;
         this.deltaVSat = inDeltaVSat;
         this.engineProp = engine;
@@ -265,22 +246,19 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
      * WARNING : It is not recommended to use this constructor with a LocalOrbitalFrame built with a
      * PVCoordinatesProvider equal to the current propagator.
      * 
-     * @param inTrigger
-     *        triggering event (it must generate a <b>STOP</b> event action to trigger the maneuver)
-     * @param inDeltaVSat
-     *        velocity increment in the frame defined by the user
-     * @param inFrame
-     *        the frame of the velocity increment. Null frame means spacecraft frame
-     * @param engine
-     *        engine property (specific impulse)
-     * @param massModel
-     *        mass model
-     * @param tank
-     *        tank property gathering mass and part name information
+     * @param inTrigger triggering event (it must generate a <b>STOP</b> event action to trigger the
+     *        maneuver)
+     * @param inDeltaVSat velocity increment in the frame defined by the user
+     * @param inFrame the frame of the velocity increment. Null frame means spacecraft frame
+     * @param engine engine property (specific impulse)
+     * @param massModel mass model
+     * @param tank tank property gathering mass and part name information
      */
-    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat, final Frame inFrame,
-                           final PropulsiveProperty engine, final MassProvider massModel, final TankProperty tank) {
-        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger.getThreshold());
+    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat,
+        final Frame inFrame, final PropulsiveProperty engine, final MassProvider massModel,
+        final TankProperty tank) {
+        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger
+            .getThreshold());
         this.trigger = inTrigger;
         this.deltaVSat = inDeltaVSat;
         this.engineProp = engine;
@@ -294,22 +272,19 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
     /**
      * Build a new instance with a LocalOrbitalFrame and using propulsive and engine property.
      * 
-     * @param inTrigger
-     *        triggering event (it must generate a <b>STOP</b> event action to trigger the maneuver)
-     * @param inDeltaVSat
-     *        velocity increment in the frame defined by the user
-     * @param engine
-     *        engine property (specific impulse)
-     * @param massModel
-     *        mass model
-     * @param tank
-     *        tank property gathering mass and part name information
-     * @param inLofType
-     *        the LOF type of the velocity increment
+     * @param inTrigger triggering event (it must generate a <b>STOP</b> event action to trigger the
+     *        maneuver)
+     * @param inDeltaVSat velocity increment in the frame defined by the user
+     * @param engine engine property (specific impulse)
+     * @param massModel mass model
+     * @param tank tank property gathering mass and part name information
+     * @param inLofType the LOF type of the velocity increment
      */
-    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat, final PropulsiveProperty engine,
-                           final MassProvider massModel, final TankProperty tank, final LOFType inLofType) {
-        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger.getThreshold());
+    public ImpulseManeuver(final EventDetector inTrigger, final Vector3D inDeltaVSat,
+        final PropulsiveProperty engine, final MassProvider massModel, final TankProperty tank,
+        final LOFType inLofType) {
+        super(inTrigger.getSlopeSelection(), inTrigger.getMaxCheckInterval(), inTrigger
+            .getThreshold());
         this.trigger = inTrigger;
         this.deltaVSat = inDeltaVSat;
         this.engineProp = engine;
@@ -340,10 +315,10 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
 
     /** {@inheritDoc}. */
     @Override
-    public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-        throws PatriusException {
+    public Action eventOccurred(final SpacecraftState s, final boolean increasing,
+                                final boolean forward) throws PatriusException {
         this.forwardLocal = forward;
-
+        
         // filter underlying event
         return (this.trigger.eventOccurred(s, increasing, forward) == Action.STOP) ? Action.RESET_STATE
             : Action.CONTINUE;
@@ -371,22 +346,18 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
     /**
      * {@inheritDoc}
      * 
-     * @throws PatriusException
-     *         if the mass becomes negative (PatriusMessages.SPACECRAFT_MASS_BECOMES_NEGATIVE)<br>
-     *         if the spacecraft state's frame is not pseudo-inertial<br>
-     *         if no attitude informations is defined<br>
-     *         if error occurs during transformation
+     * @throws PatriusException thrown if the mass becomes negative
+     *         (PatriusMessages.SPACECRAFT_MASS_BECOMES_NEGATIVE)
+     * @throws PatriusException thrown if no attitude informations is defined
+     * @throws PatriusException thrown if error occurs during transformation
      **/
     @Override
     public SpacecraftState resetState(final SpacecraftState oldState) throws PatriusException {
-
-        final Frame oldStateFrame = oldState.getFrame();
-        if (!oldStateFrame.isPseudoInertial()) {
-            // If frame is not pseudo-inertial, an exception is thrown
-            throw new PatriusException(PatriusMessages.NOT_INERTIAL_FRAME);
+        if (!oldState.getFrame().isPseudoInertial()) {
+            throw PatriusException.createIllegalArgumentException(PatriusMessages.NOT_INERTIAL_FRAME, oldState);
         }
         final AbsoluteDate date = oldState.getDate();
-
+        
         this.hasFiredFlag = true;
 
         // convert velocity increment in inertial frame
@@ -403,12 +374,13 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
                 }
             } else {
                 // velocity increment in local orbital frame
-                final Transform tranform = this.lofType.transformFromInertial(date, oldState.getPVCoordinates());
+                final Transform tranform = this.lofType.transformFromInertial(date,
+                    oldState.getPVCoordinates());
                 deltaV = tranform.getInverse().transformVector(this.deltaVSat);
             }
         } else {
             // velocity increment in a frame defined by the user
-            final Transform tranform = this.frame.getTransformTo(oldStateFrame, date);
+            final Transform tranform = this.frame.getTransformTo(oldState.getFrame(), date);
             deltaV = tranform.transformVector(this.deltaVSat);
         }
 
@@ -437,9 +409,10 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
 
         // apply increment to position/velocity
         final PVCoordinates oldPV = oldState.getPVCoordinates();
-        final PVCoordinates newPV =
-            new PVCoordinates(oldPV.getPosition(), oldPV.getVelocity().add(new Vector3D(direction, deltaV)));
-        final CartesianOrbit newOrbitCartesian = new CartesianOrbit(newPV, oldStateFrame, date, oldState.getMu());
+        final PVCoordinates newPV = new PVCoordinates(oldPV.getPosition(), oldPV.getVelocity().add(
+            new Vector3D(direction, deltaV)));
+        final CartesianOrbit newOrbitCartesian = new CartesianOrbit(newPV, oldState.getFrame(),
+            date, oldState.getMu());
 
         // pack everything in a new state
         final Orbit newOrbit = oldState.getOrbit().getType().convertType(newOrbitCartesian);
@@ -466,17 +439,16 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
 
     /**
      * Get the maneuver instantaneous consumption deltaV.
-     * 
      * @return the maneuver instantaneous consumption deltaV in maneuver frame (inertial, LOF or satellite)
      */
     public Vector3D getUsedDV() {
         final Vector3D deltaVSatTemp;
-        if (this.hasFiredFlag) {
+        if (hasFiredFlag) {
             deltaVSatTemp = this.deltaVSat;
         } else {
             deltaVSatTemp = Vector3D.ZERO;
         }
-
+        
         return deltaVSatTemp;
     }
 
@@ -532,23 +504,21 @@ public class ImpulseManeuver extends AbstractDetector implements Maneuver {
     public LOFType getLofType() {
         return this.lofType;
     }
-
+    
     /**
      * Returns the mass provider.
-     * 
      * @return the mass provider
      */
     public MassProvider getMassProvider() {
-        return this.mass;
+        return mass;
     }
-
+    
     /**
      * Return the hasFired variable. False when the maneuver hasn't occurred, true otherwise.
-     * 
      * @return true is the maneuver has been performed, false otherwise
      */
     public boolean hasFired() {
-        return this.hasFiredFlag;
+        return hasFiredFlag;
     }
 
     /**

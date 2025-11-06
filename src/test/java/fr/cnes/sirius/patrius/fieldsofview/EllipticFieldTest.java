@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history Creation 16/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14.1:OPENFD-396:10/09/2024:[PATRIUS] Erreurs et oublis dans les classes issues de IGeometricFieldOfView
  * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
@@ -32,44 +34,34 @@
 package fr.cnes.sirius.patrius.fieldsofview;
 
 import static org.junit.Assert.assertEquals;
-import fr.cnes.sirius.patrius.Utils;
 import static org.junit.Assert.assertThrows;
-import fr.cnes.sirius.patrius.Utils;
 import static org.junit.Assert.assertTrue;
-import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @description
  *              <p>
  *              Test class for the elliptic field of view
  *              </p>
- * 
+ *
  * @see EllipticField
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.2
- * 
+ *
  */
 public class EllipticFieldTest {
 
@@ -77,9 +69,9 @@ public class EllipticFieldTest {
     public enum features {
         /**
          * @featureTitle Elliptic field of view
-         * 
+         *
          * @featureDescription Elliptic field of view to be used in sensors description
-         * 
+         *
          * @coveredRequirements DV-VEHICULE_190, DV-VEHICULE_230, DV-VEHICULE_240, DV-VEHICULE_250, DV-VEHICULE_260
          */
         ELLIPTIC_FIELD
@@ -100,23 +92,23 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPTIC_FIELD}
-     * 
+     *
      * @testedMethod {@link CircularField#getAngularDistance(Vector3D)}
      * @testedMethod {@link CircularField#isInTheField(Vector3D)}
      * @testedMethod {@link CircularField#getName()}
-     * 
+     *
      * @description test of the basic methods of an acute elliptic field of view
-     * 
+     *
      * @input an acute elliptic field of view, some vectors
-     * 
+     *
      * @output angular distances, inside checks, and name
-     * 
+     *
      * @testPassCriteria the created field
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -259,23 +251,23 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPTIC_FIELD}
-     * 
+     *
      * @testedMethod {@link CircularField#getAngularDistance(Vector3D)}
      * @testedMethod {@link CircularField#isInTheField(Vector3D)}
      * @testedMethod {@link CircularField#getName()}
-     * 
+     *
      * @description test of the basic methods of an obtuse elliptic field of view
-     * 
+     *
      * @input an obtuse elliptic field of view, some vectors
-     * 
+     *
      * @output angular distances, inside checks, and name
-     * 
+     *
      * @testPassCriteria the created field
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -322,18 +314,18 @@ public class EllipticFieldTest {
 
         // System.out.println(FastMath.PI * 3 / 4 + " " + FastMath.PI * 3.5 / 4);
         final String expected =
-            "EllipticField{Origin{0; 0; 0},Direction{0; 0; 1},U vector{1; 0; 0},Angle on U{2.356194490192345},Angle on V{2.748893571891069}}";
+            "EllipticField{Origin{0.0; 0.0; 0.0},Direction{0.0; 0.0; 1.0},U vector{1.0; 0.0; 0.0},Angle on U{2.356194490192345},Angle on V{2.748893571891069}}";
         Assert.assertEquals(expected, field.toString());
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPTIC_FIELD}
-     * 
+     *
      * @testedMethod {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)}
-     * 
-     * 
+     *
+     *
      * @objective Ensure that the angular distance, considering the {@link AngularDistanceType#DIRECTIONAL} method
      *            provides the correct values. In this unit test, elementary directions are tested.
      *            To be sure that results do not depend on the choice of the axis U and W (main direction), we run the
@@ -345,17 +337,17 @@ public class EllipticFieldTest {
      *              <li>Directions parallel to FOV axes U, V</li>
      *              <li>The four FOV diagonals U, V</li>
      *              </ul>
-     * 
+     *
      * @testPassCriteria the angular distances are correct, with the expected signs (positive
      *                   if the vector is in the field)
-     * 
+     *
      * @referenceVersion 4.14
-     * 
+     *
      * @nonRegressionVersion 4.14
-     * 
+     *
      * @throws PatriusException
      *         if the eclipse computer fails
-     * 
+     *
      */
     @Test
     public void testDirectionalDistance() throws PatriusException {
@@ -457,14 +449,14 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @testedMethod {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)}
-     * 
-     * 
+     *
+     *
      * @objective Ensure that the angular distance, considering the {@link AngularDistanceType#DIRECTIONAL} method
      *            provides the correct values. In this unit test, all the possible directions are tested.
-     * 
+     *
      * @description We create three cones:
      *              <ul>
      *              <li>A first cone, internal to the FOV and centered on the FOV's main direction</li>
@@ -472,21 +464,21 @@ public class EllipticFieldTest {
      *              <li>A third cone, external to the FOV and centered in the opposite direction of the FOV's main
      *              direction</li>
      *              </ul>
-     * 
+     *
      *              For each of the three cones, we create test directions belonging to the surface of the cone, with a
      *              delta of 5 degrees. Then we compute the angular distance over that direction and test if the result
      *              is consistent.
-     * 
+     *
      * @testPassCriteria from the computed angular distance we retrieve the corresponding angular opening. We ensure
      *                   then that this value satisfies the elliptic cone equation
-     * 
+     *
      * @referenceVersion 4.14
-     * 
+     *
      * @nonRegressionVersion 4.14
-     * 
+     *
      * @throws PatriusException
      *         if the eclipse computer fails
-     * 
+     *
      */
     @Test
     public void testDirectionalDistance2() throws PatriusException {
@@ -520,7 +512,7 @@ public class EllipticFieldTest {
             final double coneRadius = mainDir.getNorm() * Math.sin(vOpening) * 0.8;
 
             // Compute the direction on the cone's surface
-            final Vector3D testDir = this.computeTestDir(mainDir, expectedUDir, expectedVDir, theta, coneRadius);
+            final Vector3D testDir = computeTestDir(mainDir, expectedUDir, expectedVDir, theta, coneRadius);
 
             final double distance = field.getAngularDistance(testDir, DIRECTIONAL);
             final double opening = distance + Vector3D.angle(testDir, field.getMainDirection());
@@ -537,7 +529,7 @@ public class EllipticFieldTest {
             final double coneRadius = mainDir.getNorm() * Math.sin(vOpening) * 1.2;
 
             // Compute the direction on the cone's surface
-            final Vector3D testDir = this.computeTestDir(mainDir, expectedUDir, expectedVDir, theta, coneRadius);
+            final Vector3D testDir = computeTestDir(mainDir, expectedUDir, expectedVDir, theta, coneRadius);
             final double distance = field.getAngularDistance(testDir, DIRECTIONAL);
             final double opening = distance + Vector3D.angle(testDir, field.getMainDirection());
             final double rho = Math.tan(opening);
@@ -552,7 +544,7 @@ public class EllipticFieldTest {
         while (theta < (2 * Math.PI)) {
             final double coneRadius = mainDir.getNorm() * Math.sin(vOpening) * 1.2;
             final Vector3D testDir =
-                this.computeTestDir(mainDir.negate(), expectedUDir, expectedVDir, theta, coneRadius);
+                computeTestDir(mainDir.negate(), expectedUDir, expectedVDir, theta, coneRadius);
 
             // Compute the direction on the cone's surface
             final double distance = field.getAngularDistance(testDir, DIRECTIONAL);
@@ -567,16 +559,16 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @testedMethod {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)}
-     * 
-     * 
+     *
+     *
      * @objective Ensure that the angular distance, considering the {@link AngularDistanceType#DIRECTIONAL} method
      *            provides the correct values.
      *            In this unit test, we verify that the angular opening is the same for specific directions over the
      *            same plane.
-     * 
+     *
      * @description The following scenario is build:
      *              <ul>
      *              <li>An elliptic field is created from a two random vectors (not parallel)</li>
@@ -587,16 +579,16 @@ public class EllipticFieldTest {
      *              <li>The angular opening for each of these directions is computed and compared with a reference
      *              value</li>
      *              </ul>
-     * 
+     *
      * @testPassCriteria the angular opening computed over each of the test directions has the same value
-     * 
+     *
      * @referenceVersion 4.14
-     * 
+     *
      * @nonRegressionVersion 4.14
-     * 
+     *
      * @throws PatriusException
      *         if the eclipse computer fails
-     * 
+     *
      */
     @Test
     public void testDirectionalDistance3() throws PatriusException {
@@ -638,27 +630,27 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @testedMethod {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)}
-     * 
-     * 
+     *
+     *
      * @objective Cover the case when {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)} is invoked
      *            with null or parallel to W direction.
-     * 
+     *
      * @description If a null direction is used as input, an exception should be thrown. If the input direction is
      *              parallel to W, the highest value of angular opening is returned
-     * 
+     *
      * @testPassCriteria If a null direction is used as input, an exception should be thrown. If the input direction is
      *                   parallel to W, the highest value of angular opening is returned
-     * 
+     *
      * @referenceVersion 4.14
-     * 
+     *
      * @nonRegressionVersion 4.14
-     * 
+     *
      * @throws PatriusException
      *         if the eclipse computer fails
-     * 
+     *
      */
     @Test
     public void testSpecialDirections() throws PatriusException {
@@ -692,27 +684,27 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @testedMethod {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)}
-     * 
-     * 
+     *
+     *
      * @objective Cover the case when {@link EllipticField#getAngularDistance(Vector3D, AngularDistanceType)} is invoked
      *            with null or parallel to W direction, for an inverted field.
-     * 
+     *
      * @description If a null direction is used as input, an exception should be thrown. If the input direction is
      *              parallel to W, the highest value of angular opening is returned
-     * 
+     *
      * @testPassCriteria If a null direction is used as input, an exception should be thrown. If the input direction is
      *                   parallel to W, the highest value of angular opening is returned
-     * 
+     *
      * @referenceVersion 4.14
-     * 
+     *
      * @nonRegressionVersion 4.14
-     * 
+     *
      * @throws PatriusException
      *         if the eclipse computer fails
-     * 
+     *
      */
     @Test
     public void testSpecialDirectionsInverted() throws PatriusException {
@@ -768,14 +760,14 @@ public class EllipticFieldTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @testedMethod {@link RectangleField#getAngularDistance(Vector3D, AngularDistanceType)}
-     * 
-     * 
+     *
+     *
      * @objective Ensure that the two methods to compute the angular distance given in the enum
      *            {@link AngularDistanceType} provide the same result for specific cases
-     * 
+     *
      * @description The following scenario is build:
      *              <ul>
      *              <li>A circular field of view is build from a generic direction W. U and V defines the edges
@@ -785,16 +777,16 @@ public class EllipticFieldTest {
      *              <li>For each of these directions, we expect that the directional and minimal angular distances are
      *              the same</li>
      *              </ul>
-     * 
+     *
      * @testPassCriteria the directional and minimal angular distances are the equals for each of the tested directions
-     * 
+     *
      * @referenceVersion 4.14
-     * 
+     *
      * @nonRegressionVersion 4.14
-     * 
+     *
      * @throws PatriusException
      *         if the eclipse computer fails
-     * 
+     *
      */
     @Test
     public void testDirectionalDistance4() throws PatriusException {
@@ -853,7 +845,7 @@ public class EllipticFieldTest {
      *
      * The length and orientation of the testDirection are defined by theta (the angle wrt U in the UV plane) and gamma
      * (multiplicative factor giving the length of the vector projection in UV plane)
-     * 
+     *
      * @param W
      *        Cone axis
      * @param U
@@ -875,7 +867,6 @@ public class EllipticFieldTest {
         final Vector3D uvProj = uProj.add(vProj).scalarMultiply(gamma);
         return W.add(uvProj);
     }
-
 
     @Before
     public void setUp() {

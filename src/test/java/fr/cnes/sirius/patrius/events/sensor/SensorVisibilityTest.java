@@ -18,7 +18,7 @@
  * @history creation 23/04/2012
  *
  * HISTORY
- * VERSION:4.15.5:OPENFD-668:23/07/2025:[PATRIUS] Suite problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-:22/08/2024:
  * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
@@ -865,4 +865,5 @@ public class SensorVisibilityTest {
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
         Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
     }
+
 }

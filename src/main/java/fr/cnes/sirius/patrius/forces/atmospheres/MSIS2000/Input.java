@@ -18,6 +18,7 @@
  * @history 03/07/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -58,9 +59,9 @@ public class Input {
     private double sec;
     /** altitude in kilometers */
     private double alt;
-    /** geodetic latitude */
+    /** ellipsoid latitude */
     private double gLat;
-    /** geodetic longitude */
+    /** ellipsoid longitude */
     private double gLong;
     /** local apparent solar time (hours), see note above */
     private double lst;

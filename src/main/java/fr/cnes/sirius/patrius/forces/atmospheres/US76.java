@@ -18,6 +18,8 @@
  * @history Created 15/10/2014
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au
  * lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC)
@@ -167,22 +169,22 @@ public class US76 implements Atmosphere {
     /** Total molar mass */
     private double xmol;
 
-    /** Cache mecanism - Output pressure. */
+    /** Cache mechanism - Output pressure. */
     private double cachedPres;
 
-    /** Cache mecanism - Output density. */
+    /** Cache mechanism - Output density. */
     private double cachedDensity;
 
-    /** Cache mecanism - Output temperature. */
+    /** Cache mechanism - Output temperature. */
     private double cachedTemp;
 
-    /** Cache mecanism - Input date. */
+    /** Cache mechanism - Input date. */
     private AbsoluteDate cachedDate;
 
-    /** Cache mecanism - Input frame. */
+    /** Cache mechanism - Input frame. */
     private Frame cachedFrame;
 
-    /** Cache mecanism - Input position. */
+    /** Cache mechanism - Input position. */
     private Vector3D cachedPosition;
 
     /**
@@ -309,7 +311,7 @@ public class US76 implements Atmosphere {
             // Altitude max
             final double altMax = 1.0E6;
 
-            // Geodetic altitude
+            // Ellipsoid altitude
             final EllipsoidPoint point = this.earth.buildPoint(position, frame, date, "satPoint");
             final double alt = point.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getHeight();
 

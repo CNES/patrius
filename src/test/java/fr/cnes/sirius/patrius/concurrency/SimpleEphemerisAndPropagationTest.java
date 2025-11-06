@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history creation 04/04/12
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -98,7 +100,7 @@ public class SimpleEphemerisAndPropagationTest {
 
     /**
      * Builds an "ephemeris" array of spacecraftStates using a propagation.
-     * 
+     *
      * @throws PatriusException
      *         should not happen.
      */
@@ -149,7 +151,7 @@ public class SimpleEphemerisAndPropagationTest {
 
     /**
      * Builds an eclipse detector.
-     * 
+     *
      * @throws PatriusException
      *         should not happen.
      * @return an eclipse detector.
@@ -171,9 +173,8 @@ public class SimpleEphemerisAndPropagationTest {
 
             @Override
             public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                Action
+                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 if (increasing) {
                     ++SimpleEphemerisAndPropagationTest.this.inEclipsecounter;
                 } else {
@@ -188,28 +189,28 @@ public class SimpleEphemerisAndPropagationTest {
 
     /**
      * Single thread, the two operations run sequentially.
-     * 
+     *
      * @throws PatriusException
      *         should not happen.
      */
     // @Test(priority = 1)
     public void testSingleThread() throws PatriusException {
-        this.buildEphemArray();
+        buildEphemArray();
         // Detect event in the ephemeris propagation
-        this.testEphem();
+        testEphem();
         // Propagate further from the last known ephemeris state
-        this.testPropag();
+        testPropag();
     }
 
     /**
      * Init for the Multi-threaded test.
-     * 
+     *
      * @throws PatriusException
      *         should not happen.
      */
     @Test(priority = 2)
     public void testMultiThreadPart1() throws PatriusException {
-        this.buildEphemArray();
+        buildEphemArray();
     }
 
     /** Used to choose which thread runs what. */
@@ -217,7 +218,7 @@ public class SimpleEphemerisAndPropagationTest {
 
     /**
      * Multi-threaded, the two operations run in parallel.
-     * 
+     *
      * @throws PatriusException
      *         should not happen.
      */
@@ -226,17 +227,17 @@ public class SimpleEphemerisAndPropagationTest {
         if (this.swap) {
             this.swap = !this.swap;
             // Detect event in the ephemeris propagation
-            this.testEphem();
+            testEphem();
         } else {
             this.swap = !this.swap;
             // Propagate further from the last known ephemeris state
-            this.testPropag();
+            testPropag();
         }
     }
 
     /**
      * Implements the first test : event detection in an ephemeris.
-     * 
+     *
      * @throws PatriusException
      *         should not happen.
      */
@@ -246,7 +247,7 @@ public class SimpleEphemerisAndPropagationTest {
 
         System.out.println("START testEphem");
         final double startTime = (new Date()).getTime();
-        ephem.addEventDetector(this.buildEclipsDetector());
+        ephem.addEventDetector(buildEclipsDetector());
 
         final AbsoluteDate computeEnd = new AbsoluteDate(this.finalDate, -1000.0);
 
@@ -265,7 +266,7 @@ public class SimpleEphemerisAndPropagationTest {
 
     /**
      * Implements the second test : propagation.
-     * 
+     *
      * @throws PropagationException
      *         should not happen.
      */
@@ -286,7 +287,7 @@ public class SimpleEphemerisAndPropagationTest {
 
             @Override
             public void handleStep(final SpacecraftState currentState, final boolean isLast)
-                                                                                            throws PropagationException {
+                throws PropagationException {
                 // does nothing.
             }
         };

@@ -18,12 +18,13 @@
 /*
  *
  * HISTORY
-* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
-* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
-* VERSION:4.11.1:DM:DM-75:30/06/2023:[PATRIUS] Degradation performance Patrius 4.11
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:DM:DM-3093:10/05/2022:[PATRIUS] Mise en Oeuvre PM2973 , gestion coordonnees et referentiel 
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.16:OPENFD-426:25/04/2025:[PATRIUS] Rendre Frame immutable et suppression de la notion de referentiel
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.11.1:DM:DM-75:30/06/2023:[PATRIUS] Degradation performance Patrius 4.11
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:DM:DM-3093:10/05/2022:[PATRIUS] Mise en Oeuvre PM2973 , gestion coordonnees et referentiel 
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
  * VERSION:4.5:FA:FA-2464:27/05/2020:Anomalie dans le calcul du vecteur rotation des LOF
  * VERSION::FA:178:06/01/2013:Corrected log id format
@@ -42,67 +43,38 @@
 package fr.cnes.sirius.patrius.frames.transformations;
 
 import java.util.ArrayList;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
-import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.ComparisonType;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.RandomGenerator;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.Well19937a;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.PVCoordinatesTest;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.wrenches.Wrench;
-import fr.cnes.sirius.patrius.Utils;
 
 public class TransformTest {
 
@@ -120,8 +92,8 @@ public class TransformTest {
     @Test
     public void testIdentityRotation() {
         checkNoTransform(new Transform(AbsoluteDate.J2000_EPOCH, new Rotation(false, 1, 0, 0, 0)),
-                new Random(
-            0xfd118eac6b5ec136l));
+            new Random(
+                0xfd118eac6b5ec136l));
     }
 
     @Test
@@ -129,7 +101,7 @@ public class TransformTest {
         Report.printMethodHeader("testSimpleComposition", "Composition", "Math", 1.0e-15, ComparisonType.ABSOLUTE);
         final Transform transform = new Transform(AbsoluteDate.J2000_EPOCH, new Transform(AbsoluteDate.J2000_EPOCH,
             new Rotation(Vector3D.PLUS_K, 0.5 * FastMath.PI)), new Transform(AbsoluteDate.J2000_EPOCH,
-            Vector3D.PLUS_I));
+                Vector3D.PLUS_I));
         final Vector3D u = transform.transformPosition(new Vector3D(1.0, 1.0, 1.0));
         final Vector3D v = new Vector3D(0.0, -1.0, 1.0);
         Assert.assertEquals(0, u.subtract(v).getNorm(), 1.0e-15);
@@ -142,11 +114,11 @@ public class TransformTest {
             ComparisonType.RELATIVE);
 
         final PVCoordinates initPV =
-            new PVCoordinates(new Vector3D(9, 8, 7), new Vector3D(6, 5, 4), new Vector3D(3, 2, 1));
+                new PVCoordinates(new Vector3D(9, 8, 7), new Vector3D(6, 5, 4), new Vector3D(3, 2, 1));
         for (double dt = 0; dt < 1; dt += 0.01) {
             final PVCoordinates basePV = initPV.shiftedBy(dt);
             final PVCoordinates transformedPV = evolvingTransform(AbsoluteDate.J2000_EPOCH, dt)
-                .transformPVCoordinates(basePV);
+                    .transformPVCoordinates(basePV);
 
             // rebuild transformed acceleration, relying only on transformed position and velocity
             final List<TimeStampedPVCoordinates> sample = new ArrayList<>();
@@ -155,12 +127,12 @@ public class TransformTest {
                 final Transform t = evolvingTransform(AbsoluteDate.J2000_EPOCH, dt + i * h);
                 final PVCoordinates pv = t.transformPVCoordinates(initPV.shiftedBy(dt + i * h));
                 sample
-                    .add(new TimeStampedPVCoordinates(t.getDate(), pv.getPosition(), pv.getVelocity(), Vector3D.ZERO));
+                .add(new TimeStampedPVCoordinates(t.getDate(), pv.getPosition(), pv.getVelocity(), Vector3D.ZERO));
             }
             final PVCoordinates rebuiltPV =
-                TimeStampedPVCoordinates.interpolate(AbsoluteDate.J2000_EPOCH.shiftedBy(dt),
-                    CartesianDerivativesFilter.USE_PV,
-                    sample);
+                    TimeStampedPVCoordinates.interpolate(AbsoluteDate.J2000_EPOCH.shiftedBy(dt),
+                        CartesianDerivativesFilter.USE_PV,
+                        sample);
 
             checkVector(rebuiltPV.getPosition(), transformedPV.getPosition(), 4.0e-16);
             checkVector(rebuiltPV.getVelocity(), transformedPV.getVelocity(), 2.0e-15);
@@ -203,10 +175,14 @@ public class TransformTest {
         Assert.assertEquals(0.0, t1.getAngular().getRotationAcceleration().getNorm(), 1.0e-15);
         Assert.assertEquals(0.0, t2.getAngular().getRotationAcceleration().getNorm(), 1.0e-15);
         Assert.assertTrue(t12.getAngular().getRotationAcceleration().getNorm() > 0.01);
-
     }
 
+    /**
+     * This test is deprecated because it uses Transform constructor with acceleration projection, which is a
+     * deprecated behavior.
+     */
     @Test
+    @Deprecated
     public void testProjectVelocityAndAcceleration() {
         final RandomGenerator random = new Well19937a(0x41fdd07d6c9e9f65l);
         final Transform t1 = buildRandomTransform(random);
@@ -227,7 +203,11 @@ public class TransformTest {
             cartesianTransformGeneric.getAcceleration()));
     }
 
+    /**
+     * This test is deprecated because it uses the Frame.setReferential method.
+     */
     @Test
+    @Deprecated
     public void testProjectVelocityAndAccelerationCelestLab() throws PatriusException {
 
         // case 1 (without projection of velocity and acceleration): both referentials coincide with their corresponding
@@ -276,7 +256,7 @@ public class TransformTest {
             FramesFactory.getConfiguration(), true);
         // compute pv in EME2000
         final PVCoordinates pvCoordEme2000PatriusModifOrigRef = transformGcrfToEme2000ModifOrigRef
-            .transformPVCoordinates(pvCoordGcrf);
+                .transformPVCoordinates(pvCoordGcrf);
         final Vector3D posEme2000PatriusModifOrigRef = pvCoordEme2000PatriusModifOrigRef.getPosition();
         final Vector3D velEme2000PatriusModifOrigRef = pvCoordEme2000PatriusModifOrigRef.getVelocity();
         // check that the positions in EME2000 are the same
@@ -301,7 +281,7 @@ public class TransformTest {
             FramesFactory.getConfiguration(), true);
         // compute pv in EME2000
         final PVCoordinates pvCoordEme2000PatriusModifDestRef = transformGcrfToEme2000ModifDestRef
-            .transformPVCoordinates(pvCoordGcrf);
+                .transformPVCoordinates(pvCoordGcrf);
         final Vector3D posEme2000PatriusModifDestRef = pvCoordEme2000PatriusModifDestRef.getPosition();
         final Vector3D velEme2000PatriusModifDestRef = pvCoordEme2000PatriusModifDestRef.getVelocity();
         // check that the positions in EME2000 are the same
@@ -323,11 +303,11 @@ public class TransformTest {
             date, FramesFactory.getConfiguration(), true);
         // compute pv in EME2000
         final PVCoordinates pvCoordEme2000PatriusModifOrigRefAndDestRef = transformGcrfToEme2000ModifOrigRefAndDestRef
-            .transformPVCoordinates(pvCoordGcrf);
+                .transformPVCoordinates(pvCoordGcrf);
         final Vector3D posEme2000PatriusModifOrigRefAndDestRef = pvCoordEme2000PatriusModifOrigRefAndDestRef
-            .getPosition();
+                .getPosition();
         final Vector3D velEme2000PatriusModifOrigRefAndDestRef = pvCoordEme2000PatriusModifOrigRefAndDestRef
-            .getVelocity();
+                .getVelocity();
         // check that the positions in EME2000 are the same
         Assert.assertEquals(posEme2000CelestLab.getX(), posEme2000PatriusModifOrigRefAndDestRef.getX(), tol);
         Assert.assertEquals(posEme2000CelestLab.getY(), posEme2000PatriusModifOrigRefAndDestRef.getY(), tol);
@@ -382,7 +362,188 @@ public class TransformTest {
             FramesFactory.getConfiguration(), true);
         // compute pv in MOD
         final PVCoordinates pvCoordModPatriusModifDestRef = transformGcrfToModModifDestRef
-            .transformPVCoordinates(pvCoordGcrf);
+                .transformPVCoordinates(pvCoordGcrf);
+        final Vector3D posModPatriusModifDestRef = pvCoordModPatriusModifDestRef.getPosition();
+        final Vector3D velModPatriusModifDestRef = pvCoordModPatriusModifDestRef.getVelocity();
+        // check that the positions in MOD are the same
+        Assert.assertEquals(posModCelestLab.getX(), posModPatriusModifDestRef.getX(), modifTol);
+        Assert.assertEquals(posModCelestLab.getY(), posModPatriusModifDestRef.getY(), modifTol);
+        Assert.assertEquals(posModCelestLab.getZ(), posModPatriusModifDestRef.getZ(), modifTol);
+        // check that the velocities in MOD are the same
+        Assert.assertEquals(velModCelestLab.getX(), velModPatriusModifDestRef.getX(), modifTol);
+        Assert.assertEquals(velModCelestLab.getY(), velModPatriusModifDestRef.getY(), modifTol);
+        Assert.assertEquals(velModCelestLab.getZ(), velModPatriusModifDestRef.getZ(), modifTol);
+
+    }
+
+    /**
+     * @testType UT
+     *
+     * @description This test compares the results from Celestlab to different transformations in Patrius
+     *
+     * @testPassCriteria The results match the reference values.
+     *
+     * @referenceVersion 4.16
+     */
+    @Test
+    public void testProjectVelocityAndAccelerationCelestLab_Frozen() throws PatriusException {
+
+        // case 1 (without projection of velocity and acceleration): both referentials coincide with their corresponding
+        // frames
+
+        // define the origin frame
+        final Frame originFrame = FramesFactory.getGCRF();
+        // define the destination frame
+        final Frame destinationFrame = FramesFactory.getEME2000();
+        final AbsoluteDate date = new AbsoluteDate(2000, 01, 06, 11, 14, 51.704);
+        // build the transform needed to pass from the GCRF frame to the EME2000 frame
+        final Transform transformGcrfToEme2000 = originFrame.getTransformTo(destinationFrame, date,
+            FramesFactory.getConfiguration(), true);
+        // initialize pv in GCRF
+        final Vector3D posGcrf = new Vector3D(2563886.8779688897, -985608.501054303, 6236976.976623426);
+        final Vector3D velGcrf = new Vector3D(-7090.259917801003, -448.8883791950612, 2840.586787876285);
+        final PVCoordinates pvCoordGcrf = new PVCoordinates(posGcrf, velGcrf);
+        // compute pv in EME2000
+        final PVCoordinates pvCoordEme2000Patrius = transformGcrfToEme2000.transformPVCoordinates(pvCoordGcrf);
+        final Vector3D posEme2000Patrius = pvCoordEme2000Patrius.getPosition();
+        final Vector3D velEme2000Patrius = pvCoordEme2000Patrius.getVelocity();
+        // use CelestLab pv values in EME2000 as reference
+        final Vector3D posEme2000CelestLab = new Vector3D(2563887.450198092032, -985608.1133819842944,
+            6236976.802654840983);
+        final Vector3D velEme2000CelestLab = new Vector3D(-7090.259657183235504, -448.8887871615972358,
+            2840.587373922796360);
+        // fix the tolerance
+        final double tol = 3.9e-6;
+        // check that the positions in EME2000 are the same
+        Assert.assertEquals(posEme2000CelestLab.getX(), posEme2000Patrius.getX(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getY(), posEme2000Patrius.getY(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getZ(), posEme2000Patrius.getZ(), tol);
+        // check that the velocities in EME2000 are the same
+        Assert.assertEquals(velEme2000CelestLab.getX(), velEme2000Patrius.getX(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getY(), velEme2000Patrius.getY(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getZ(), velEme2000Patrius.getZ(), tol);
+
+        // case 2 (without projection of velocity and acceleration): only the referential of the destination frame
+        // coincides with its corresponding (destination) frame and the referential of the origin frame is not on the
+        // path from the origin frame to the destination frame
+
+        // change the referential of the origin frame
+        final Frame oriFrame_MOD = originFrame.getFrozenFrame(FramesFactory.getMOD(true), "oriFrame_MOD");
+        // build the transform needed to pass from the GCRF frame to the EME2000 frame
+        final Transform transformGcrfToEme2000ModifOrigRef = oriFrame_MOD.getTransformTo(destinationFrame, date,
+            FramesFactory.getConfiguration(), true);
+        // compute pv in EME2000
+        final PVCoordinates pvCoordEme2000PatriusModifOrigRef = transformGcrfToEme2000ModifOrigRef
+                .transformPVCoordinates(pvCoordGcrf);
+        final Vector3D posEme2000PatriusModifOrigRef = pvCoordEme2000PatriusModifOrigRef.getPosition();
+        final Vector3D velEme2000PatriusModifOrigRef = pvCoordEme2000PatriusModifOrigRef.getVelocity();
+        // check that the positions in EME2000 are the same
+        Assert.assertEquals(posEme2000CelestLab.getX(), posEme2000PatriusModifOrigRef.getX(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getY(), posEme2000PatriusModifOrigRef.getY(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getZ(), posEme2000PatriusModifOrigRef.getZ(), tol);
+        // check that the velocities in EME2000 are the same
+        Assert.assertEquals(velEme2000CelestLab.getX(), velEme2000PatriusModifOrigRef.getX(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getY(), velEme2000PatriusModifOrigRef.getY(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getZ(), velEme2000PatriusModifOrigRef.getZ(), tol);
+
+        // case 3 (without projection of velocity and acceleration): only the referential of the origin frame coincides
+        // with its corresponding (origin) frame and the referential of the destination frame is not on the path from
+        // the origin frame to the destination frame
+
+        // reset back the referential of the origin frame to the original one
+        final Frame oriFrame_GCRF = originFrame.getFrozenFrame(FramesFactory.getGCRF(), "oriFrame_GCRF");
+        // change the referential of the destination frame
+        final Frame destFrame_MOD = destinationFrame.getFrozenFrame(FramesFactory.getMOD(true), "destFrame_MOD");
+        // build the transform needed to pass from the GCRF frame to the EME2000 frame
+        final Transform transformGcrfToEme2000ModifDestRef = oriFrame_GCRF.getTransformTo(destFrame_MOD, date,
+            FramesFactory.getConfiguration(), true);
+        // compute pv in EME2000
+        final PVCoordinates pvCoordEme2000PatriusModifDestRef = transformGcrfToEme2000ModifDestRef
+                .transformPVCoordinates(pvCoordGcrf);
+        final Vector3D posEme2000PatriusModifDestRef = pvCoordEme2000PatriusModifDestRef.getPosition();
+        final Vector3D velEme2000PatriusModifDestRef = pvCoordEme2000PatriusModifDestRef.getVelocity();
+        // check that the positions in EME2000 are the same
+        Assert.assertEquals(posEme2000CelestLab.getX(), posEme2000PatriusModifDestRef.getX(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getY(), posEme2000PatriusModifDestRef.getY(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getZ(), posEme2000PatriusModifDestRef.getZ(), tol);
+        // check that the velocities in EME2000 are the same
+        Assert.assertEquals(velEme2000CelestLab.getX(), velEme2000PatriusModifDestRef.getX(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getY(), velEme2000PatriusModifDestRef.getY(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getZ(), velEme2000PatriusModifDestRef.getZ(), tol);
+
+        // case 4 (without projection of velocity and acceleration): no referential coincides with its corresponding
+        // frame and no referential is on the path from the origin frame to the destination frame
+
+        // change the referential of the origin frame
+        final Frame oriFrame_MOD2 = originFrame.getFrozenFrame(FramesFactory.getMOD(true), "oriFrame_MOD2");
+        // build the transform needed to pass from the GCRF frame to the EME2000 frame
+        final Transform transformGcrfToEme2000ModifOrigRefAndDestRef = oriFrame_MOD2.getTransformTo(destFrame_MOD,
+            date, FramesFactory.getConfiguration(), true);
+        // compute pv in EME2000
+        final PVCoordinates pvCoordEme2000PatriusModifOrigRefAndDestRef = transformGcrfToEme2000ModifOrigRefAndDestRef
+                .transformPVCoordinates(pvCoordGcrf);
+        final Vector3D posEme2000PatriusModifOrigRefAndDestRef = pvCoordEme2000PatriusModifOrigRefAndDestRef
+                .getPosition();
+        final Vector3D velEme2000PatriusModifOrigRefAndDestRef = pvCoordEme2000PatriusModifOrigRefAndDestRef
+                .getVelocity();
+        // check that the positions in EME2000 are the same
+        Assert.assertEquals(posEme2000CelestLab.getX(), posEme2000PatriusModifOrigRefAndDestRef.getX(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getY(), posEme2000PatriusModifOrigRefAndDestRef.getY(), tol);
+        Assert.assertEquals(posEme2000CelestLab.getZ(), posEme2000PatriusModifOrigRefAndDestRef.getZ(), tol);
+        // check that the velocities in EME2000 are the same
+        Assert.assertEquals(velEme2000CelestLab.getX(), velEme2000PatriusModifOrigRefAndDestRef.getX(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getY(), velEme2000PatriusModifOrigRefAndDestRef.getY(), tol);
+        Assert.assertEquals(velEme2000CelestLab.getZ(), velEme2000PatriusModifOrigRefAndDestRef.getZ(), tol);
+
+        // case 5 (without projection of velocity and acceleration): no referential coincides with its corresponding
+        // frame and the referential of the origin frame is on the path from the origin frame to the destination frame
+
+        // change the referential of the origin frame
+        final Frame oriFrame_EME2000 = originFrame.getFrozenFrame(FramesFactory.getEME2000(), "oriFrame_EME2000");
+        // define a new destination frame
+        final Frame modDestFrame = FramesFactory.getMOD(false);
+        // change the referential of the destination frame
+        final Frame modDestFrame_TOD =
+                modDestFrame.getFrozenFrame(FramesFactory.getTOD(false), "modifDestinationFrame_TOD");
+        // build the transform needed to pass from the GCRF frame to the MOD frame
+        final Transform transformGcrfToMod = oriFrame_EME2000.getTransformTo(modDestFrame_TOD, date,
+            FramesFactory.getConfiguration(), true);
+        // compute pv in MOD
+        final PVCoordinates pvCoordModPatrius = transformGcrfToMod.transformPVCoordinates(pvCoordGcrf);
+        final Vector3D posModPatrius = pvCoordModPatrius.getPosition();
+        final Vector3D velModPatrius = pvCoordModPatrius.getVelocity();
+        // use CelestLab pv values in MOD as reference
+        final Vector3D posModCelestLab =
+                new Vector3D(2563882.203363891225, -985600.3132453040453, 6236980.192136811092);
+        final Vector3D velModCelestLab = new Vector3D(-7090.262058990344485, -448.9103394367006672,
+            2840.578008473581122);
+        // adapt the tolerance
+        final double modifTol = 3.1e-4;
+        // check that the positions in MOD are the same
+        Assert.assertEquals(posModCelestLab.getX(), posModPatrius.getX(), modifTol);
+        Assert.assertEquals(posModCelestLab.getY(), posModPatrius.getY(), modifTol);
+        Assert.assertEquals(posModCelestLab.getZ(), posModPatrius.getZ(), modifTol);
+        // check that the velocities in MOD are the same
+        Assert.assertEquals(velModCelestLab.getX(), velModPatrius.getX(), modifTol);
+        Assert.assertEquals(velModCelestLab.getY(), velModPatrius.getY(), modifTol);
+        Assert.assertEquals(velModCelestLab.getZ(), velModPatrius.getZ(), modifTol);
+
+        // case 6 (with projection of velocity and acceleration): only the referential of the origin frame coincides
+        // with its corresponding (origin) frame and the referential of the destination frame is on the path from the
+        // origin frame to the destination frame (so the velocity and the acceleration are simply projected from the
+        // referential of the destination frame to its corresponding (destination) frame)
+
+        // change the referential of the origin frame
+        final Frame oriFrame_GCRF2 = originFrame.getFrozenFrame(FramesFactory.getGCRF(), "oriFrame_GCRF2");
+        // change the referential of the destination frame
+        final Frame modDestFrame_EME2000 =
+                modDestFrame.getFrozenFrame(FramesFactory.getEME2000(), "modDestFrame_EME2000");
+        // build the transform needed to pass from the GCRF frame to the MOD frame
+        final Transform transformGcrfToModModifDestRef = oriFrame_GCRF2.getTransformTo(modDestFrame_EME2000, date,
+            FramesFactory.getConfiguration(), true);
+        // compute pv in MOD
+        final PVCoordinates pvCoordModPatriusModifDestRef = transformGcrfToModModifDestRef
+                .transformPVCoordinates(pvCoordGcrf);
         final Vector3D posModPatriusModifDestRef = pvCoordModPatriusModifDestRef.getPosition();
         final Vector3D velModPatriusModifDestRef = pvCoordModPatriusModifDestRef.getVelocity();
         // check that the positions in MOD are the same
@@ -408,14 +569,14 @@ public class TransformTest {
             Transform combined = Transform.IDENTITY;
             for (int k = 0; k < n; ++k) {
                 transforms[k] =
-                    random.nextBoolean()
- ? new Transform(AbsoluteDate.J2000_EPOCH,
-                        randomVector(1.0e3, random), randomVector(1.0, random), randomVector(
+                        random.nextBoolean()
+                        ? new Transform(AbsoluteDate.J2000_EPOCH,
+                            randomVector(1.0e3, random), randomVector(1.0, random), randomVector(
                                 1.0e-3, random)) : new Transform(AbsoluteDate.J2000_EPOCH,
-                        randomRotation(random), randomVector(0.01,
-                            random),
- randomVector(1.0e-4,
-                                random));
+                                    randomRotation(random), randomVector(0.01,
+                                        random),
+                                    randomVector(1.0e-4,
+                                        random));
                 combined = new Transform(AbsoluteDate.J2000_EPOCH, combined, transforms[k], true);
             }
 
@@ -424,8 +585,8 @@ public class TransformTest {
                 final Vector3D a = randomVector(1.0, random);
                 final Vector3D b = randomVector(1.0e3, random);
                 final PVCoordinates c =
- new PVCoordinates(randomVector(1.0e3, random),
-                        randomVector(1.0, random), randomVector(1.0e-3, random));
+                        new PVCoordinates(randomVector(1.0e3, random),
+                            randomVector(1.0, random), randomVector(1.0e-3, random));
                 Vector3D aRef = a;
                 Vector3D bRef = b;
                 PVCoordinates cRef = c;
@@ -456,8 +617,8 @@ public class TransformTest {
             final Transform combined = randomTransform(random);
 
             checkNoTransform(
-                    new Transform(AbsoluteDate.J2000_EPOCH, combined, combined.getInverse()),
-                    random);
+                new Transform(AbsoluteDate.J2000_EPOCH, combined, combined.getInverse()),
+                random);
             checkNoTransform(Transform.IDENTITY.getInverse(), random);
 
         }
@@ -476,8 +637,8 @@ public class TransformTest {
                     combined.getRotationRate(), combined.getRotationAcceleration()), true);
 
             checkNoTransform(
-                    new Transform(AbsoluteDate.J2000_EPOCH, combined, rebuilt.getInverse(true),
-                            true),
+                new Transform(AbsoluteDate.J2000_EPOCH, combined, rebuilt.getInverse(true),
+                    true),
                 random);
 
         }
@@ -520,7 +681,7 @@ public class TransformTest {
         final PVCoordinates pointP2 = new PVCoordinates(new Vector3D(0, 0, 0), new Vector3D(0, 0, 0), new Vector3D(0,
             0, 0));
         final Transform R1toR2 =
-            new Transform(AbsoluteDate.J2000_EPOCH, Vector3D.PLUS_I, Vector3D.PLUS_I, Vector3D.PLUS_I);
+                new Transform(AbsoluteDate.J2000_EPOCH, Vector3D.PLUS_I, Vector3D.PLUS_I, Vector3D.PLUS_I);
         final PVCoordinates result1 = R1toR2.transformPVCoordinates(pointP1);
         checkVector(pointP2.getPosition(), result1.getPosition(), 1.0e-15);
         checkVector(pointP2.getVelocity(), result1.getVelocity(), 1.0e-15);
@@ -535,10 +696,10 @@ public class TransformTest {
 
         // rotation transform test
         final PVCoordinates pointP3 =
-            new PVCoordinates(Vector3D.PLUS_J, new Vector3D(-2, 1, 0), new Vector3D(-4, -3, -1));
+                new PVCoordinates(Vector3D.PLUS_J, new Vector3D(-2, 1, 0), new Vector3D(-4, -3, -1));
         final Rotation R = new Rotation(Vector3D.PLUS_K, -FastMath.PI / 2);
         final Transform R1toR3 =
-            new Transform(AbsoluteDate.J2000_EPOCH, R, new Vector3D(0, 0, -2), new Vector3D(1, 0, 0));
+                new Transform(AbsoluteDate.J2000_EPOCH, R, new Vector3D(0, 0, -2), new Vector3D(1, 0, 0));
         final PVCoordinates result2 = R1toR3.transformPVCoordinates(pointP1);
         checkVector(pointP3.getPosition(), result2.getPosition(), 1.0e-15);
         checkVector(pointP3.getVelocity(), result2.getVelocity(), 1.0e-15);
@@ -553,10 +714,10 @@ public class TransformTest {
 
         // combine 2 velocity transform
         final Transform R1toR4 =
-            new Transform(AbsoluteDate.J2000_EPOCH, new Vector3D(-2, 0, 0), new Vector3D(-2, 0, 0),
-                new Vector3D(-2, 0, 0));
+                new Transform(AbsoluteDate.J2000_EPOCH, new Vector3D(-2, 0, 0), new Vector3D(-2, 0, 0),
+                    new Vector3D(-2, 0, 0));
         final PVCoordinates pointP4 =
-            new PVCoordinates(new Vector3D(3, 0, 0), new Vector3D(3, 0, 0), new Vector3D(3, 0, 0));
+                new PVCoordinates(new Vector3D(3, 0, 0), new Vector3D(3, 0, 0), new Vector3D(3, 0, 0));
         final Transform R2toR4 = new Transform(AbsoluteDate.J2000_EPOCH, R2toR1, R1toR4);
         final PVCoordinates compResult = R2toR4.transformPVCoordinates(pointP2);
         checkVector(pointP4.getPosition(), compResult.getPosition(), 1.0e-15);
@@ -565,7 +726,7 @@ public class TransformTest {
 
         // combine 2 rotation tranform
         final PVCoordinates pointP5 =
-            new PVCoordinates(new Vector3D(-1, 0, 0), new Vector3D(-1, 0, 3), new Vector3D(8, 0, 6));
+                new PVCoordinates(new Vector3D(-1, 0, 0), new Vector3D(-1, 0, 3), new Vector3D(8, 0, 6));
         final Rotation R2 = new Rotation(new Vector3D(0, 0, 1), -FastMath.PI);
         final Transform R1toR5 = new Transform(AbsoluteDate.J2000_EPOCH, R2, new Vector3D(0, -3, 0));
         final Transform R3toR5 = new Transform(AbsoluteDate.J2000_EPOCH, R3toR1, R1toR5, true);
@@ -736,7 +897,7 @@ public class TransformTest {
             for (int j = 0; j < 100; ++j) {
 
                 final PVCoordinates pv0 = new PVCoordinates(randomVector(random),
-                        randomVector(random));
+                    randomVector(random));
                 final double epsilonP = 1.0e-11 * pv0.getPosition().getNorm();
                 final double epsilonV = 1.0e-7 * pv0.getVelocity().getNorm();
 
@@ -765,7 +926,7 @@ public class TransformTest {
                     final PVCoordinates d1 = new PVCoordinates(pvm1h, pvp1h);
                     final double c = 1.0 / (840 * h);
                     final PVCoordinates estimatedColumn =
-                        new PVCoordinates(-3 * c, d4, 32 * c, d3, -168 * c, d2, 672 * c, d1);
+                            new PVCoordinates(-3 * c, d4, 32 * c, d3, -168 * c, d2, 672 * c, d1);
 
                     // check finite analytical Jacobian against finite difference reference
                     Assert.assertEquals(estimatedColumn.getPosition().getX(), jacobian[0][l], epsilonP);
@@ -874,8 +1035,8 @@ public class TransformTest {
 
             // the following point should always remain at moving frame origin
             final PVCoordinates expectedFixedPoint =
-                shifted.transformPVCoordinates(new PVCoordinates(new Vector3D(1, dt, 0), Vector3D.PLUS_J,
-                    Vector3D.ZERO));
+                    shifted.transformPVCoordinates(new PVCoordinates(new Vector3D(1, dt, 0), Vector3D.PLUS_J,
+                        Vector3D.ZERO));
             checkVector(expectedFixedPoint.getPosition(), Vector3D.ZERO, 1.0e-14);
             checkVector(expectedFixedPoint.getVelocity(), Vector3D.ZERO, 1.0e-14);
             checkVector(expectedFixedPoint.getAcceleration(), Vector3D.ZERO, 1.0e-14);
@@ -1008,8 +1169,8 @@ public class TransformTest {
                 final Rotation r0 = t0.getRotation();
                 final Vector3D w = t0.getRotationRate();
                 final Vector3D q =
-                    new Vector3D(r0.getQuaternion().getQ1(), r0.getQuaternion().getQ2(), r0.getQuaternion()
-                        .getQ3());
+                        new Vector3D(r0.getQuaternion().getQ1(), r0.getQuaternion().getQ2(), r0.getQuaternion()
+                            .getQ3());
                 final Vector3D qw = Vector3D.crossProduct(q, w);
                 final double theQ0Dot = -0.5 * Vector3D.dotProduct(q, w);
                 final double theQ1Dot = 0.5 * (r0.getQuaternion().getQ0() * w.getX() + qw.getX());
@@ -1121,8 +1282,8 @@ public class TransformTest {
     }
 
     private static double derivative(final double h,
-                              final double ym4h, final double ym3h, final double ym2h, final double ym1h,
-                              final double yp1h, final double yp2h, final double yp3h, final double yp4h) {
+                                     final double ym4h, final double ym3h, final double ym2h, final double ym1h,
+                                     final double yp1h, final double yp2h, final double yp3h, final double yp4h) {
         return (-3 * (yp4h - ym4h) + 32 * (yp3h - ym3h) - 168 * (yp2h - ym2h) + 672 * (yp1h - ym1h)) /
                 (840 * h);
     }
@@ -1132,9 +1293,9 @@ public class TransformTest {
         Transform combined = Transform.IDENTITY;
         for (int k = 0; k < 20; ++k) {
             final Transform t =
- random.nextBoolean() ? new Transform(AbsoluteDate.J2000_EPOCH,
-                    randomVector(random), randomVector(random), randomVector(random))
-                    : new Transform(AbsoluteDate.J2000_EPOCH, randomRotation(random),
+                    random.nextBoolean() ? new Transform(AbsoluteDate.J2000_EPOCH,
+                        randomVector(random), randomVector(random), randomVector(random))
+                        : new Transform(AbsoluteDate.J2000_EPOCH, randomRotation(random),
                             randomVector(random), randomVector(random));
             combined = new Transform(AbsoluteDate.J2000_EPOCH, combined, t);
         }
@@ -1146,14 +1307,14 @@ public class TransformTest {
         Transform combined = Transform.IDENTITY;
         for (int k = 0; k < 20; ++k) {
             final Transform t =
-                random.nextBoolean() ?
- new Transform(AbsoluteDate.J2000_EPOCH,
-                    randomVector(1.0e3, random), randomVector(1.0,
-                        random),
- randomVector(1.0e-3,
-                            random)) : new Transform(AbsoluteDate.J2000_EPOCH,
-                    randomRotation(random), randomVector(0.01, random),
-                    randomVector(1.0e-4, random));
+                    random.nextBoolean() ?
+                        new Transform(AbsoluteDate.J2000_EPOCH,
+                            randomVector(1.0e3, random), randomVector(1.0,
+                                random),
+                            randomVector(1.0e-3,
+                                random)) : new Transform(AbsoluteDate.J2000_EPOCH,
+                                    randomRotation(random), randomVector(0.01, random),
+                                    randomVector(1.0e-4, random));
             combined = new Transform(AbsoluteDate.J2000_EPOCH, combined, t, true);
         }
         return combined;
@@ -1229,9 +1390,9 @@ public class TransformTest {
             final Vector3D tB = transform.transformPosition(b);
             Assert.assertEquals(0, b.subtract(tB).getNorm(), 1.0e-10 * a.getNorm());
             final PVCoordinates pv =
- new PVCoordinates(randomVector(1.0e3, random), randomVector(
-                    1.0, random), randomVector(
-                    1.0e-3, random));
+                    new PVCoordinates(randomVector(1.0e3, random), randomVector(
+                        1.0, random), randomVector(
+                            1.0e-3, random));
             final PVCoordinates tPv = transform.transformPVCoordinates(pv);
             checkVector(pv.getPosition(), tPv.getPosition(), 1.0e-10);
             checkVector(pv.getVelocity(), tPv.getVelocity(), 3.0e-9);
@@ -1241,7 +1402,7 @@ public class TransformTest {
 
     @Test
     public void testCoverageCompletion()
-        throws IllegalArgumentException {
+            throws IllegalArgumentException {
 
         // shift tranform
         final Transform t0 = Transform.IDENTITY;
@@ -1305,7 +1466,7 @@ public class TransformTest {
     }
 
     private static void checkVector(final Vector3D reference, final Vector3D result,
-            final double relativeTolerance) {
+                                    final double relativeTolerance) {
         if (reference == null) {
             Assert.assertNull(result);
         } else {
@@ -1314,7 +1475,7 @@ public class TransformTest {
             final double tolerance = relativeTolerance * (1 + MathLib.max(refNorm, resNorm));
             Assert.assertEquals("ref = " + reference + ", res = " + result + " -> " +
                     (Vector3D.distance(reference, result) / (1 + MathLib.max(refNorm, resNorm))),
-                0, Vector3D.distance(reference, result), tolerance);
+                    0, Vector3D.distance(reference, result), tolerance);
         }
     }
 

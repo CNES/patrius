@@ -15,7 +15,6 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
  * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:FA:FA-157:08/12/2023:[PATRIUS] Anomalie de la methode SpacecraftState#updateOrbit
@@ -1103,7 +1102,7 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
      */
     public SpacecraftState updateOrbit(final Orbit newOrbit) throws PatriusException {
         if (this.attitude == null) {
-            return new SpacecraftState(this.attitudeProvider, this.attitudeProviderEvents, newOrbit, this.additionalStates);
+            return new SpacecraftState(attitudeProvider, attitudeProviderEvents, newOrbit, this.additionalStates);
         } else {
             // Convert attitude in right frame to keep orbit/attitude frame consistency
             Attitude att = this.getAttitude();
@@ -1351,9 +1350,9 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
             throw new PatriusException(PatriusMessages.NO_ATTITUDE_DEFINED);
         }
 
-        final AbsoluteDate date = this.getDate();
-        return new Transform(date, new Transform(date, this.getPVCoordinates()),
-            new Transform(date, this.getAttitude().getOrientation()));
+        final AbsoluteDate date = this.orbit.getDate();
+        return new Transform(date, new Transform(date, this.orbit.getPVCoordinates()), new Transform(date, this
+                .getAttitude().getOrientation()));
     }
 
     /**
@@ -1371,7 +1370,7 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
      *         if no attitude information is defined
      */
     public Transform toTransform(final Frame frame) throws PatriusException {
-        final AbsoluteDate date = this.getDate();
+        final AbsoluteDate date = this.orbit.getDate();
         // Transform from specified frame into inertial frame (getFrame method of SpacecraftState)
         final Transform transform1 = frame.getTransformTo(this.getFrame(), date);
         // Transform from inertial frame into spacecraft frame
@@ -1389,19 +1388,19 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
      * @throws PatriusException
      */
     public Transform toTransform(final LOFType lofType) throws PatriusException {
-        final AbsoluteDate date = this.getDate();
         // Checks if the frame of attribute orbit is actually inertial and transforms the PVCoordinates into an inertial
         // frame if not
         PVCoordinates sPV = this.getPVCoordinates();
-        final Frame stateFrame = this.getFrame();
+        final Frame stateFrame = orbit.getFrame();
 
         if (!stateFrame.isPseudoInertial()) {
             final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
-            final Transform t = stateFrame.getTransformTo(workFrame, date);
+            final Transform t =
+                stateFrame.getTransformTo(workFrame, orbit.getDate());
             sPV = t.transformPVCoordinates(sPV);
         }
         // Transform from the frame where position-velocity are defined to local orbital frame
-        return lofType.transformFromInertial(date, sPV);
+        return lofType.transformFromInertial(this.getDate(), sPV);
     }
 
     /**
@@ -1416,16 +1415,18 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
      *         if some frame specific error occurs
      */
     public Transform toTransform(final Frame frame, final LOFType lofType) throws PatriusException {
-        final AbsoluteDate date = this.getDate();
-        final Frame stateFrame = this.getFrame();
+        final AbsoluteDate date = this.orbit.getDate();
         // Transform from specified frame to inertial frame
-        final Transform transform1 = frame.getTransformTo(stateFrame, date);
+        final Transform transform1 = frame.getTransformTo(this.getFrame(), date);
         // Checks if the frame of attribute orbit is actually inertial and transforms the PVCoordinates into an inertial
         // frame if not
         PVCoordinates sPV = this.getPVCoordinates();
+        final Frame stateFrame = orbit.getFrame();
+
         if (!stateFrame.isPseudoInertial()) {
             final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
-            final Transform t = stateFrame.getTransformTo(workFrame, date);
+            final Transform t =
+                stateFrame.getTransformTo(workFrame, date);
             sPV = t.transformPVCoordinates(sPV);
         }
         // Transform from inertial frame to local orbital frame
@@ -1489,8 +1490,8 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
             throw new PatriusException(PatriusMessages.NO_ATTITUDE_EVENTS_DEFINED);
         }
 
-        final AbsoluteDate date = this.getDate();
-        return new Transform(date, new Transform(date, this.getPVCoordinates()), new Transform(date, this
+        final AbsoluteDate date = this.orbit.getDate();
+        return new Transform(date, new Transform(date, this.orbit.getPVCoordinates()), new Transform(date, this
                 .getAttitudeEvents().getOrientation()));
     }
 
@@ -1509,7 +1510,7 @@ public class SpacecraftState implements TimeStamped, TimeShiftable<SpacecraftSta
      *         if no attitude information is defined
      */
     public Transform toTransformEvents(final Frame frame) throws PatriusException {
-        final AbsoluteDate date = this.getDate();
+        final AbsoluteDate date = this.orbit.getDate();
         // Transform from specified frame into inertial frame (getFrame method of SpacecraftState)
         final Transform transform1 = frame.getTransformTo(this.getFrame(), date);
         // Transform from inertial frame into spacecraft frame

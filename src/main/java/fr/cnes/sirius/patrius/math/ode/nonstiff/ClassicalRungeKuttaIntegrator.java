@@ -26,9 +26,8 @@
 package fr.cnes.sirius.patrius.math.ode.nonstiff;
 
 /**
- * This class implements the classical fourth order Runge-Kutta
- * integrator for Ordinary Differential Equations (it is the most
- * often used Runge-Kutta method).
+ * This class implements the classical 4th order Runge-Kutta integrator for Ordinary Differential Equations (it is the
+ * most often used Runge-Kutta method).
  * 
  * <p>
  * This method is an explicit Runge-Kutta method, its Butcher-array is the following one :
@@ -41,7 +40,6 @@ package fr.cnes.sirius.patrius.math.ode.nonstiff;
  *       |--------------------
  *       | 1/6  1/3  1/3  1/6
  * </pre>
- * 
  * </p>
  * 
  * @see EulerIntegrator
@@ -51,8 +49,10 @@ package fr.cnes.sirius.patrius.math.ode.nonstiff;
  * @version $Id: ClassicalRungeKuttaIntegrator.java 18108 2017-10-04 06:45:27Z bignon $
  * @since 1.2
  */
-
 public class ClassicalRungeKuttaIntegrator extends RungeKuttaIntegrator {
+
+    /** Serializable UID. */
+    private static final long serialVersionUID = -2755456771438289193L;
 
     /** Time steps Butcher array. */
     private static final double[] STATIC_C = {
@@ -72,9 +72,8 @@ public class ClassicalRungeKuttaIntegrator extends RungeKuttaIntegrator {
     };
 
     /**
-     * Simple constructor.
-     * Build a fourth-order Runge-Kutta integrator with the given
-     * step.
+     * Simple constructor.<br>
+     * Build a fourth-order Runge-Kutta integrator with the given step.
      * 
      * @param step
      *        integration step
@@ -83,5 +82,4 @@ public class ClassicalRungeKuttaIntegrator extends RungeKuttaIntegrator {
         super("classical Runge-Kutta", STATIC_C, STATIC_A, STATIC_B,
             new ClassicalRungeKuttaStepInterpolator(), step);
     }
-
 }

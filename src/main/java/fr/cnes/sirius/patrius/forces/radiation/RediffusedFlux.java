@@ -18,6 +18,7 @@
  * @history creation 25/05/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -271,7 +272,7 @@ public class RediffusedFlux {
         final double[] dlongSurfacet = new double[2];
         final double dEarthSat = satPV.getPosition().getNorm();
 
-        // nadir point in geodetic frame
+        // nadir point in ellipsoid frame
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(EQUATORIAL_RADIUS, 0., bodyFrame);
         final EllipsoidPoint geoSat = earth.buildPoint(satPV.getPosition(), bodyFrame, dDate, "satPoint");
 
