@@ -1,0 +1,14 @@
+# Parametre: ey 
+# t0 (TAI) : MJD sec (date calendaire arrondie a la milliseconde) = 
+# 54466 42633 (2008-01-01T11:50:33.000)
+# Partie polynomiale: A + B*(t-t0) (sans unité)
+# 0.00114813666185537 0.0 
+# Partie harmonique: amp * cos(n*(psoM0+psoMp*(t-t0)) + k*(lna0+lnap*(t-t0)) + phi)
+# psoM0, psoMp, lna0, lnap:
+# 0.00240920772572818 0.00103696259570651 0.436345729642068 -7.27220521664304e-05
+# Col 1: n
+# Col 2: k 
+# Col 3: amp (sans unité)
+# Col 4: phi (rad) 
+ 1  0 0.000910358557649944 1.57079721673555
+ 3  0 0.000729699805287709 -1.57079727714975
