@@ -17,7 +17,8 @@
  * @history creation 16/03/2015
  *
  * HISTORY
- * VERSION:4.15.1:OPENFD-487:28/01/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
+ * VERSION:4.16:OPENFD-487:25/04/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
+ * VERSION:4.14.2:OPENFD-487:10/12/2024:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3242:22/05/2023:[PATRIUS] Parametres circulaires orbites hyperboliques
  * VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector

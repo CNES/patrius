@@ -18,6 +18,7 @@
  * @history created 24/05/12
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-:22/08/2024:
  * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
@@ -174,7 +175,7 @@ public class VisibilityFromStationDetectorTest {
     final MeteorologicalConditionsProvider meteoConditionsProvider = new ConstantMeteorologicalConditionsProvider(
         this.meteoConditions);
 
-    /** geodetic altitude [m] */
+    /** ellipsoid altitude [m] */
     final double altitude = 150;
 
     /** Epsilon for dates comparison. */

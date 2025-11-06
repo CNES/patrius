@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -65,13 +67,13 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <p>
  * This test class is copied from {@link fr.cnes.sirius.patrius.events.CodedEventsLoggerTest}
  * </p>
- * 
+ *
  * @author maggioranic
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 3.0
- * 
+ *
  */
 public class MultiEventsLoggerTest {
 
@@ -90,43 +92,47 @@ public class MultiEventsLoggerTest {
         this.propagator.addEventDetector(logger.monitorDetector(this.umbraDetector));
         this.propagator.addEventDetector(this.penumbraDetector);
         this.count = 0;
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator.getInitialStates()
-            .get(STATE1).getMu())), STATE1);
+        this.propagator
+            .addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.propagator.getInitialStates()
+                .get(STATE1).getMu())), STATE1);
         this.propagator.propagate(this.iniDate.shiftedBy(16215)).get(STATE1).getDate();
         Assert.assertEquals(11, this.count);
-        this.checkCounts(logger, 3, 3, 0, 0);
+        checkCounts(logger, 3, 3, 0, 0);
     }
 
     @Test
     public void testLogPenumbra() throws PatriusException {
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator.getInitialStates()
-            .get(STATE1).getMu())), STATE1);
+        this.propagator
+            .addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.propagator.getInitialStates()
+                .get(STATE1).getMu())), STATE1);
         final MultiEventsLogger logger = new MultiEventsLogger();
         this.propagator.addEventDetector(this.umbraDetector);
         this.propagator.addEventDetector(logger.monitorDetector(this.penumbraDetector));
         this.count = 0;
         this.propagator.propagate(this.iniDate.shiftedBy(16215)).get(STATE1).getDate();
         Assert.assertEquals(11, this.count);
-        this.checkCounts(logger, 0, 0, 2, 3);
+        checkCounts(logger, 0, 0, 2, 3);
     }
 
     @Test
     public void testLogAll() throws PatriusException {
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator.getInitialStates()
-            .get(STATE1).getMu())), STATE1);
+        this.propagator
+            .addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.propagator.getInitialStates()
+                .get(STATE1).getMu())), STATE1);
         final MultiEventsLogger logger = new MultiEventsLogger();
         this.propagator.addEventDetector(logger.monitorDetector(this.umbraDetector));
         this.propagator.addEventDetector(logger.monitorDetector(this.penumbraDetector));
         this.count = 0;
         this.propagator.propagate(this.iniDate.shiftedBy(16215));
         Assert.assertEquals(11, this.count);
-        this.checkCounts(logger, 3, 3, 2, 3);
+        checkCounts(logger, 3, 3, 2, 3);
     }
 
     @Test
     public void testImmutableList() throws PatriusException {
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator.getInitialStates()
-            .get(STATE1).getMu())), STATE1);
+        this.propagator
+            .addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.propagator.getInitialStates()
+                .get(STATE1).getMu())), STATE1);
         final MultiEventsLogger logger = new MultiEventsLogger();
         this.propagator.addEventDetector(logger.monitorDetector(this.umbraDetector));
         this.propagator.addEventDetector(logger.monitorDetector(this.penumbraDetector));
@@ -155,8 +161,9 @@ public class MultiEventsLoggerTest {
 
     @Test
     public void testClearLog() throws PatriusException {
-        propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(propagator.getInitialStates()
-            .get(STATE1).getMu())), STATE1);
+        this.propagator
+            .addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.propagator.getInitialStates()
+                .get(STATE1).getMu())), STATE1);
         final MultiEventsLogger logger = new MultiEventsLogger();
         this.propagator.addEventDetector(logger.monitorDetector(this.umbraDetector));
         this.propagator.addEventDetector(logger.monitorDetector(this.penumbraDetector));
@@ -209,9 +216,8 @@ public class MultiEventsLoggerTest {
 
             @Override
             public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                Action
+                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 ++MultiEventsLoggerTest.this.count;
                 return Action.CONTINUE;
             }
@@ -242,8 +248,8 @@ public class MultiEventsLoggerTest {
             this.propagator = new MultiNumericalPropagator(integrator);
             this.propagator.addInitialState(this.initialState, STATE1);
             this.count = 0;
-            this.umbraDetector = new OneSatEventDetectorWrapper(this.buildDetector(true), STATE1);
-            this.penumbraDetector = new OneSatEventDetectorWrapper(this.buildDetector(false), STATE1);
+            this.umbraDetector = new OneSatEventDetectorWrapper(buildDetector(true), STATE1);
+            this.penumbraDetector = new OneSatEventDetectorWrapper(buildDetector(false), STATE1);
         } catch (final PatriusException oe) {
             Assert.fail(oe.getLocalizedMessage());
         }

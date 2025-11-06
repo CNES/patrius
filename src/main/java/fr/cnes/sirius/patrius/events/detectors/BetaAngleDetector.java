@@ -18,7 +18,6 @@
  * @history created 06/03/12
  *
  * HISTORY
- * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
  * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
  * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
@@ -49,7 +48,6 @@ import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -219,12 +217,11 @@ public class BetaAngleDetector extends AbstractSignalPropagationDetector {
         final AbsoluteDate sunDate = getSignalEmissionDate(state);
         // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
         final Frame stateFrame = state.getFrame();
-        final Frame workFrame;
-        if (stateFrame.isPseudoInertial()) {
-            workFrame = stateFrame;
-        } else {
+        Frame workFrame = stateFrame;
+        if (!stateFrame.isPseudoInertial()) {
             workFrame = stateFrame.getFirstPseudoInertialAncestor();
-            final Transform t = stateFrame.getTransformTo(workFrame, sunDate);
+            final fr.cnes.sirius.patrius.frames.transformations.Transform t =
+                stateFrame.getTransformTo(workFrame, sunDate);
             sPV = t.transformPVCoordinates(sPV);
         }
         final PVCoordinates sunPV = this.sun.getPVCoordinates(sunDate, workFrame);

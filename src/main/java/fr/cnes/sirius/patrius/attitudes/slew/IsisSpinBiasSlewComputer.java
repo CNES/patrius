@@ -1,13 +1,13 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-481:25/04/2025:[PATRIUS] Problemes de codage IsisSpinBiasSlewCalculator
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-379:25/04/2025:[PATRIUS] Ajout d'une implementation basique de OrbitalCovarianceProvider
  * VERSION:4.15:OPENFD-350:21/11/2024:[PATRIUS] IsisSpinBiasSlew - Renvoi d'un
  * message lorsque le nombre max d'itérations est atteint
  * VERSION:4.13:DM:DM-109:08/12/2023:[PATRIUS] IsisSpinBiasSlew - Renvoi du
@@ -39,7 +42,7 @@ import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.math.linear.BlockRealMatrix;
+import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.linear.SingularValueDecomposition;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -56,9 +59,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 /**
  * Class for ISIS spin bias slew computation: slew with trapezoidal angular velocity profile calculated in GCRF.
  * Computation of slew returns a {@link TabulatedSlew}.
- * 
+ *
  * @author Emmanuel Bignon
- * 
+ *
  * @since 4.5
  */
 public class IsisSpinBiasSlewComputer {
@@ -114,11 +117,6 @@ public class IsisSpinBiasSlewComputer {
     /** Nature. */
     private final String nature;
 
-    // Class variables (computed after slew computation)
-
-    /** Angle of the rotation associated to the spin bias slew. */
-    private double slewAngle;
-
     /** Axis of the rotation associated to the spin bias slew. */
     private Vector3D slewAxis;
 
@@ -138,11 +136,29 @@ public class IsisSpinBiasSlewComputer {
     private double decelDuration;
 
     /** Decision to raise an Exception if the maximum of iterations arrive */
-    private boolean throwExceptionOnMaxIterations;
+    private final boolean throwExceptionOnMaxIterations;
+
+    /** PV coordinates provider */
+    private final PVCoordinatesProvider pvProv;
+
+    /** initial attitude law (before the slew) */
+    private final AttitudeProvider initialLaw;
+
+    /** slew start date (null if slew defined with its end date) */
+    private final AbsoluteDate initialDateIn;
+
+    /** final attitude law (after the slew) */
+    private final AttitudeProvider finalLaw;
+
+    /** slew end date (null if slew defined with its start date) */
+    private final AbsoluteDate finalDate;
+
+    /** Slew duration */
+    private final double duration;
 
     /**
      * Constructor with default maximum number of iterations allowed for slew duration computation's convergence.
-     * 
+     *
      * @param dtSCAOIn
      *        time step (s)
      * @param thetaMaxAllowedIn
@@ -165,6 +181,18 @@ public class IsisSpinBiasSlewComputer {
      *        frame).
      * @param tranquillisationTimeIn
      *        tranquilisation time after the end of the slew (s)
+     * @param pvProv
+     *        PV coordinates provider
+     * @param initialLaw
+     *        initial attitude law (before the slew)
+     * @param initialDateIn
+     *        slew start date (null if slew defined with its end date)
+     * @param finalLaw
+     *        final attitude law (after the slew)
+     * @param finalDate
+     *        slew end date (null if slew defined with its start date)
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
     public IsisSpinBiasSlewComputer(final double dtSCAOIn,
                                     final double thetaMaxAllowedIn, final double durationMaxIn,
@@ -172,16 +200,22 @@ public class IsisSpinBiasSlewComputer {
                                     final double[][] inertiaMatrixIn, final double rwTorqueAllocAccelIn,
                                     final double rwTorqueAllocDecelIn,
                                     final double rwDeltaMomentumAllocIn, final double[][] rwMatrixIn,
-                                    final double tranquillisationTimeIn) {
+                                    final double tranquillisationTimeIn, final PVCoordinatesProvider pvProv,
+                                    final AttitudeProvider initialLaw,
+                                    final AbsoluteDate initialDateIn,
+                                    final AttitudeProvider finalLaw,
+                                    final AbsoluteDate finalDate)
+        throws PatriusException {
         this(dtSCAOIn, thetaMaxAllowedIn, durationMaxIn,
                 dtConvergenceThresholdIn, inertiaMatrixIn, rwTorqueAllocAccelIn, rwTorqueAllocDecelIn,
                 rwDeltaMomentumAllocIn, rwMatrixIn,
-                tranquillisationTimeIn, DEFAUT_MAX_ITERATIONS, DEFAULT_NATURE);
+                tranquillisationTimeIn, DEFAUT_MAX_ITERATIONS, DEFAULT_NATURE, pvProv, initialLaw, initialDateIn,
+                finalLaw, finalDate);
     }
 
     /**
      * Constructor.
-     * 
+     *
      * @param dtSCAOIn
      *        time step (s)
      * @param thetaMaxAllowedIn
@@ -206,6 +240,18 @@ public class IsisSpinBiasSlewComputer {
      *        tranquilisation time after the end of the slew (s)
      * @param maxIterationsNumberIn
      *        maximum number of iterations allowed for slew duration computation's convergence
+     * @param pvProv
+     *        PV coordinates provider
+     * @param initialLaw
+     *        initial attitude law (before the slew)
+     * @param initialDateIn
+     *        slew start date (null if slew defined with its end date)
+     * @param finalLaw
+     *        final attitude law (after the slew)
+     * @param finalDate
+     *        slew end date (null if slew defined with its start date)
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
     public IsisSpinBiasSlewComputer(final double dtSCAOIn,
                                     final double thetaMaxAllowedIn, final double durationMaxIn,
@@ -214,33 +260,61 @@ public class IsisSpinBiasSlewComputer {
                                     final double rwTorqueAllocDecelIn,
                                     final double rwDeltaMomentumAllocIn, final double[][] rwMatrixIn,
                                     final double tranquillisationTimeIn,
-                                    final int maxIterationsNumberIn) {
+                                    final int maxIterationsNumberIn, final PVCoordinatesProvider pvProv,
+                                    final AttitudeProvider initialLaw,
+                                    final AbsoluteDate initialDateIn,
+                                    final AttitudeProvider finalLaw,
+                                    final AbsoluteDate finalDate)
+        throws PatriusException {
         this(dtSCAOIn, thetaMaxAllowedIn, durationMaxIn, dtConvergenceThresholdIn, inertiaMatrixIn,
                 rwTorqueAllocAccelIn, rwTorqueAllocDecelIn, rwDeltaMomentumAllocIn, rwMatrixIn, tranquillisationTimeIn,
-                maxIterationsNumberIn, DEFAULT_NATURE);
+                maxIterationsNumberIn, DEFAULT_NATURE, pvProv, initialLaw, initialDateIn, finalLaw, finalDate);
     }
 
     /**
      * Constructor with default maximum number of iterations allowed for slew duration computation's
      * convergence.
-     * 
-     * @param dtSCAOIn time step (s)
-     * @param thetaMaxAllowedIn maximum slew angular amplitude allowed (rad)
-     * @param durationMaxIn maximum duration expected for the slew, including the tranquilisation
+     *
+     * @param dtSCAOIn
+     *        time step (s)
+     * @param thetaMaxAllowedIn
+     *        maximum slew angular amplitude allowed (rad)
+     * @param durationMaxIn
+     *        maximum duration expected for the slew, including the tranquilisation
      *        phase (s)
-     * @param dtConvergenceThresholdIn convergence threshold for the iterative computation of the
+     * @param dtConvergenceThresholdIn
+     *        convergence threshold for the iterative computation of the
      *        slew duration (s)
-     * @param inertiaMatrixIn satellite inertia matrix in satellite reference frame (kg.m^2)
-     * @param rwTorqueAllocAccelIn torque allocation for each RW during the acceleration phase (N.m)
-     * @param rwTorqueAllocDecelIn torque allocation for each RW during the deceleration phase
+     * @param inertiaMatrixIn
+     *        satellite inertia matrix in satellite reference frame (kg.m^2)
+     * @param rwTorqueAllocAccelIn
+     *        torque allocation for each RW during the acceleration phase (N.m)
+     * @param rwTorqueAllocDecelIn
+     *        torque allocation for each RW during the deceleration phase
      *        (assumed > 0) (N.m)
-     * @param rwDeltaMomentumAllocIn angular momentum allocation for each RW during the manoeuvre
+     * @param rwDeltaMomentumAllocIn
+     *        angular momentum allocation for each RW during the manoeuvre
      *        (N.m.s)
-     * @param rwMatrixIn cosine directors matrix of the reaction wheels in the satellite reference
+     * @param rwMatrixIn
+     *        cosine directors matrix of the reaction wheels in the satellite reference
      *        frame. Matrix 3xN_RW with N_RW wheels (Reaction wheels spin axes written in column in
      *        the satellite reference frame).
-     * @param tranquillisationTimeIn tranquilisation time after the end of the slew (s)
-     * @param natureIn leg nature
+     * @param tranquillisationTimeIn
+     *        tranquilisation time after the end of the slew (s)
+     * @param natureIn
+     *        leg nature
+     * @param pvProv
+     *        PV coordinates provider
+     * @param initialLaw
+     *        initial attitude law (before the slew)
+     * @param initialDateIn
+     *        slew start date (null if slew defined with its end date)
+     * @param finalLaw
+     *        final attitude law (after the slew)
+     * @param finalDate
+     *        slew end date (null if slew defined with its start date)
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
     public IsisSpinBiasSlewComputer(final double dtSCAOIn,
                                     final double thetaMaxAllowedIn,
@@ -248,34 +322,63 @@ public class IsisSpinBiasSlewComputer {
                                     final double[][] inertiaMatrixIn, final double rwTorqueAllocAccelIn,
                                     final double rwTorqueAllocDecelIn, final double rwDeltaMomentumAllocIn,
                                     final double[][] rwMatrixIn, final double tranquillisationTimeIn,
-                                    final String natureIn) {
+                                    final String natureIn, final PVCoordinatesProvider pvProv,
+                                    final AttitudeProvider initialLaw,
+                                    final AbsoluteDate initialDateIn,
+                                    final AttitudeProvider finalLaw,
+                                    final AbsoluteDate finalDate)
+        throws PatriusException {
         this(dtSCAOIn, thetaMaxAllowedIn, durationMaxIn, dtConvergenceThresholdIn, inertiaMatrixIn,
                 rwTorqueAllocAccelIn, rwTorqueAllocDecelIn, rwDeltaMomentumAllocIn, rwMatrixIn, tranquillisationTimeIn,
-                DEFAUT_MAX_ITERATIONS, natureIn);
+                DEFAUT_MAX_ITERATIONS, natureIn, pvProv, initialLaw, initialDateIn, finalLaw, finalDate);
     }
 
     /**
      * Constructor.
-     * 
-     * @param dtSCAOIn time step (s)
-     * @param thetaMaxAllowedIn maximum slew angular amplitude allowed (rad)
-     * @param durationMaxIn maximum duration expected for the slew, including the tranquilisation
+     *
+     * @param dtSCAOIn
+     *        time step (s)
+     * @param thetaMaxAllowedIn
+     *        maximum slew angular amplitude allowed (rad)
+     * @param durationMaxIn
+     *        maximum duration expected for the slew, including the tranquilisation
      *        phase (s)
-     * @param dtConvergenceThresholdIn convergence threshold for the iterative computation of the
+     * @param dtConvergenceThresholdIn
+     *        convergence threshold for the iterative computation of the
      *        slew duration (s)
-     * @param inertiaMatrixIn satellite inertia matrix in satellite reference frame (kg.m^2)
-     * @param rwTorqueAllocAccelIn torque allocation for each RW during the acceleration phase (N.m)
-     * @param rwTorqueAllocDecelIn torque allocation for each RW during the deceleration phase
+     * @param inertiaMatrixIn
+     *        satellite inertia matrix in satellite reference frame (kg.m^2)
+     * @param rwTorqueAllocAccelIn
+     *        torque allocation for each RW during the acceleration phase (N.m)
+     * @param rwTorqueAllocDecelIn
+     *        torque allocation for each RW during the deceleration phase
      *        (assumed > 0) (N.m)
-     * @param rwDeltaMomentumAllocIn angular momentum allocation for each RW during the manoeuvre
+     * @param rwDeltaMomentumAllocIn
+     *        angular momentum allocation for each RW during the manoeuvre
      *        (N.m.s)
-     * @param rwMatrixIn cosine directors matrix of the reaction wheels in the satellite reference
+     * @param rwMatrixIn
+     *        cosine directors matrix of the reaction wheels in the satellite reference
      *        frame. Matrix 3xN_RW with N_RW wheels (Reaction wheels spin axes written in column in
      *        the satellite reference frame).
-     * @param tranquillisationTimeIn tranquilisation time after the end of the slew (s)
-     * @param maxIterationsNumberIn maximum number of iterations allowed for slew duration
+     * @param tranquillisationTimeIn
+     *        tranquilisation time after the end of the slew (s)
+     * @param maxIterationsNumberIn
+     *        maximum number of iterations allowed for slew duration
      *        computation's convergence
-     * @param natureIn leg nature
+     * @param natureIn
+     *        leg nature
+     * @param pvProv
+     *        PV coordinates provider
+     * @param initialLaw
+     *        initial attitude law (before the slew)
+     * @param initialDateIn
+     *        slew start date (null if slew defined with its end date)
+     * @param finalLaw
+     *        final attitude law (after the slew)
+     * @param finalDate
+     *        slew end date (null if slew defined with its start date)
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
     public IsisSpinBiasSlewComputer(final double dtSCAOIn,
                                     final double thetaMaxAllowedIn,
@@ -283,7 +386,78 @@ public class IsisSpinBiasSlewComputer {
                                     final double[][] inertiaMatrixIn, final double rwTorqueAllocAccelIn,
                                     final double rwTorqueAllocDecelIn, final double rwDeltaMomentumAllocIn,
                                     final double[][] rwMatrixIn, final double tranquillisationTimeIn,
-                                    final int maxIterationsNumberIn, final String natureIn) {
+                                    final int maxIterationsNumberIn, final String natureIn,
+                                    final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
+                                    final AbsoluteDate initialDateIn, final AttitudeProvider finalLaw,
+                                    final AbsoluteDate finalDate)
+        throws PatriusException {
+
+        this(dtSCAOIn, thetaMaxAllowedIn, durationMaxIn, dtConvergenceThresholdIn, inertiaMatrixIn,
+                rwTorqueAllocAccelIn, rwTorqueAllocDecelIn, rwDeltaMomentumAllocIn, rwMatrixIn, tranquillisationTimeIn,
+                maxIterationsNumberIn, natureIn, pvProv, initialLaw, initialDateIn, finalLaw, finalDate, true);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param dtSCAOIn
+     *        time step (s)
+     * @param thetaMaxAllowedIn
+     *        maximum slew angular amplitude allowed (rad)
+     * @param durationMaxIn
+     *        maximum duration expected for the slew, including the tranquilisation
+     *        phase (s)
+     * @param dtConvergenceThresholdIn
+     *        convergence threshold for the iterative computation of the
+     *        slew duration (s)
+     * @param inertiaMatrixIn
+     *        satellite inertia matrix in satellite reference frame (kg.m^2)
+     * @param rwTorqueAllocAccelIn
+     *        torque allocation for each RW during the acceleration phase (N.m)
+     * @param rwTorqueAllocDecelIn
+     *        torque allocation for each RW during the deceleration phase
+     *        (assumed > 0) (N.m)
+     * @param rwDeltaMomentumAllocIn
+     *        angular momentum allocation for each RW during the manoeuvre
+     *        (N.m.s)
+     * @param rwMatrixIn
+     *        cosine directors matrix of the reaction wheels in the satellite reference
+     *        frame. Matrix 3xN_RW with N_RW wheels (Reaction wheels spin axes written in column in
+     *        the satellite reference frame).
+     * @param tranquillisationTimeIn
+     *        tranquilisation time after the end of the slew (s)
+     * @param maxIterationsNumberIn
+     *        maximum number of iterations allowed for slew duration
+     *        computation's convergence
+     * @param natureIn
+     *        leg nature
+     * @param pvProv
+     *        PV coordinates provider
+     * @param initialLaw
+     *        initial attitude law (before the slew)
+     * @param initialDateIn
+     *        slew start date (null if slew defined with its end date)
+     * @param finalLaw
+     *        final attitude law (after the slew)
+     * @param finalDate
+     *        slew end date (null if slew defined with its start date)
+     * @param throwExceptionOnMaxIterations
+     *        Decision to raise an Exception if the maximum of iterations is reached
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
+     */
+    public IsisSpinBiasSlewComputer(final double dtSCAOIn,
+                                    final double thetaMaxAllowedIn,
+                                    final double durationMaxIn, final double dtConvergenceThresholdIn,
+                                    final double[][] inertiaMatrixIn, final double rwTorqueAllocAccelIn,
+                                    final double rwTorqueAllocDecelIn, final double rwDeltaMomentumAllocIn,
+                                    final double[][] rwMatrixIn, final double tranquillisationTimeIn,
+                                    final int maxIterationsNumberIn, final String natureIn,
+                                    final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
+                                    final AbsoluteDate initialDateIn,
+                                    final AttitudeProvider finalLaw,
+                                    final AbsoluteDate finalDate, final boolean throwExceptionOnMaxIterations)
+        throws PatriusException {
 
         // Attributes
         this.refFrame = FramesFactory.getGCRF();
@@ -299,74 +473,54 @@ public class IsisSpinBiasSlewComputer {
         this.tranquillisationTime = tranquillisationTimeIn;
         this.maxIterationsNumber = maxIterationsNumberIn;
         this.nature = natureIn;
-        this.throwExceptionOnMaxIterations = true;
-
-        // Class variables (computed after slew computation)
-        this.slewAngle = Double.NaN;
-        this.slewAxis = Vector3D.NaN;
-        this.durationWoTranq = Double.NaN;
-        this.accelMax = Double.NaN;
-        this.decelMax = Double.NaN;
-        this.accelDuration = Double.NaN;
-        this.decelDuration = Double.NaN;
-    }
-
-    /**
-     * Set the boolean to decide if an exception is thrown when the max number of iterations arrive
-     * 
-     * @param throwExceptionOnMaxIterations boolean indicating if an exception is thrown or the duration
-     *        is returned when the computation loop arrives to the maxIterations
-     */
-    public void setThrowExceptionOnMaxIterations(final boolean throwExceptionOnMaxIterations) {
         this.throwExceptionOnMaxIterations = throwExceptionOnMaxIterations;
+
+        this.pvProv = pvProv;
+        this.initialLaw = initialLaw;
+        this.initialDateIn = initialDateIn;
+        this.finalLaw = finalLaw;
+        this.finalDate = finalDate;
+
+        // Compute duration and initialize other class variables
+        this.duration =
+            computeDuration(this.pvProv, this.initialLaw, this.initialDateIn, this.finalLaw, this.finalDate);
+
     }
 
     /**
      * Compute the slew (analytical version).
-     * 
-     * @param pvProv satellite PV coordinates through time
-     * @param initialLaw initial attitude law (before the slew)
-     * @param initialDateIn slew start date (null if slew defined with its end date)
-     * @param finalLaw final attitude law (after the slew)
-     * @param finalDate slew end date (null if slew defined with its start date)
+     *
      * @return built slew (analytical version)
-     * @throws PatriusException thrown if computation failed or if dates are both null or not null
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
-    public TabulatedSlew computeAnalytical(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
-                                           final AbsoluteDate initialDateIn,
-                                           final AttitudeProvider finalLaw,
-                                           final AbsoluteDate finalDate)
+    public TabulatedSlew computeAnalytical()
         throws PatriusException {
-
-        // Check type of slew
-        checkInputs(initialDateIn, finalDate);
-
-        // Compute slew duration
-        final double duration = this.computeDuration(pvProv, initialLaw, initialDateIn, finalLaw, finalDate);
 
         // Get initial slew date
         AbsoluteDate initialDate = null;
-        if (initialDateIn != null) {
-            initialDate = initialDateIn;
+        if (this.initialDateIn != null) {
+            initialDate = this.initialDateIn;
         } else {
-            initialDate = finalDate.shiftedBy(-duration);
+            initialDate = this.finalDate.shiftedBy(-this.duration);
         }
 
         // Initialization
-        final Attitude initialAttitude = initialLaw.getAttitude(pvProv, initialDate, this.refFrame);
+        final Attitude initialAttitude = this.initialLaw.getAttitude(this.pvProv, initialDate, this.refFrame);
         final List<Attitude> slewEphem = new ArrayList<>();
         slewEphem.add(initialAttitude);
         double t = 0;
         final Vector3D slewAxisNormed = this.slewAxis.normalize();
 
         // Loop on slew duration
-        while (t < duration) {
+        while (t < this.duration) {
 
             t += this.dtSCAO;
 
             // Computation of the attitude
-            final Attitude nextAtt = this.nextAtt(pvProv, duration, t, initialAttitude, slewAxisNormed, initialDate,
-                finalLaw);
+            final Attitude nextAtt =
+                nextAtt(this.pvProv, this.duration, t, initialAttitude, slewAxisNormed, initialDate,
+                    this.finalLaw);
 
             if (nextAtt == null) {
                 // Exit the while loop
@@ -382,7 +536,7 @@ public class IsisSpinBiasSlewComputer {
 
     /**
      * Inner loop of compute() method.
-     * 
+     *
      * @param pvProv
      *        PV provider
      * @param duration
@@ -474,8 +628,8 @@ public class IsisSpinBiasSlewComputer {
             }
         } else {
             if (t < duration) {
-                final AbsoluteDate finalDate = initialDate.shiftedBy(t);
-                nextAtt = finalLaw.getAttitude(pvProv, finalDate, this.refFrame);
+                final AbsoluteDate endDate = initialDate.shiftedBy(t);
+                nextAtt = finalLaw.getAttitude(pvProv, endDate, this.refFrame);
             } else {
                 // Exit the while loop
                 return null;
@@ -487,53 +641,43 @@ public class IsisSpinBiasSlewComputer {
 
     /**
      * Check input dates
-     * 
-     * @param initialDate slew initial date
-     * @param finalDate slew final date
-     * @throws PatriusException thrown if dates are incoherent
+     *
+     * @param initialDate
+     *        slew initial date
+     * @param finalDate
+     *        slew final date
+     * @throws PatriusException
+     *         thrown if dates are incoherent
      */
     private static void checkInputs(final AbsoluteDate initialDate, final AbsoluteDate finalDate)
         throws PatriusException {
         // Check type of slew
         if ((initialDate == null && finalDate == null) || (initialDate != null && finalDate != null)) {
             // Incoherent case
-            throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
+            throw new PatriusException(PatriusMessages.INCONSISTENT_DATE_IN_SLEW_CALCULATION);
         }
     }
 
     /**
      * Compute the slew (numerical version).
-     * 
-     * @param pvProv satellite PV coordinates through time
-     * @param initialLaw initial attitude law (before the slew)
-     * @param initialDateIn slew start date (null if slew defined with its end date)
-     * @param finalLaw final attitude law (after the slew)
-     * @param finalDate slew end date (null if slew defined with its start date)
+     *
      * @return built slew (numerical version)
-     * @throws PatriusException thrown if computation failed or if dates are both null or not null
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
-    public TabulatedSlew computeNumerical(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
-                                          final AbsoluteDate initialDateIn,
-                                          final AttitudeProvider finalLaw,
-                                          final AbsoluteDate finalDate)
+    public TabulatedSlew computeNumerical()
         throws PatriusException {
-
-        // Check type of slew
-        checkInputs(initialDateIn, finalDate);
-
-        // Compute slew duration
-        final double duration = this.computeDuration(pvProv, initialLaw, initialDateIn, finalLaw, finalDate);
 
         // Get initial slew date
         AbsoluteDate initialDate = null;
-        if (initialDateIn != null) {
-            initialDate = initialDateIn;
+        if (this.initialDateIn != null) {
+            initialDate = this.initialDateIn;
         } else {
-            initialDate = finalDate.shiftedBy(-duration);
+            initialDate = this.finalDate.shiftedBy(-this.duration);
         }
 
         // Initialization
-        final Attitude initialAttitude = initialLaw.getAttitude(pvProv, initialDate, this.refFrame);
+        final Attitude initialAttitude = this.initialLaw.getAttitude(this.pvProv, initialDate, this.refFrame);
         Attitude prevAtt = initialAttitude;
         double prevOmega = 0;
         final List<Attitude> slewEphem = new ArrayList<>();
@@ -542,7 +686,7 @@ public class IsisSpinBiasSlewComputer {
         final Vector3D slewAxisNormed = this.slewAxis.normalize();
 
         // Loop on slew duration
-        while (t < duration) {
+        while (t < this.duration) {
             // Acceleration computation
             final double accel;
             if (Precision.compareTo(t, this.accelDuration, Precision.DOUBLE_COMPARISON_EPSILON) < 0) {
@@ -576,9 +720,9 @@ public class IsisSpinBiasSlewComputer {
                 final AbsoluteDate nextDate = initialDate.shiftedBy(t + this.dtSCAO);
                 nextAtt = new Attitude(nextDate, this.refFrame, new AngularCoordinates(newRot, newOmega));
             } else {
-                if (t + this.dtSCAO < duration) {
+                if (t + this.dtSCAO < this.duration) {
                     final AbsoluteDate finalCurrentDate = initialDate.shiftedBy(t + this.dtSCAO);
-                    nextAtt = finalLaw.getAttitude(pvProv, finalCurrentDate, this.refFrame);
+                    nextAtt = this.finalLaw.getAttitude(this.pvProv, finalCurrentDate, this.refFrame);
                     nextOmega = 0;
                 } else {
                     // Exit the while loop
@@ -598,25 +742,33 @@ public class IsisSpinBiasSlewComputer {
 
     /**
      * Computes the slew duration.
-     * 
+     *
      * @param pvProv
      *        PV coordinates provider
-     * @param initialLaw initial attitude law (before the slew)
-     * @param initialDateIn slew start date (null if slew defined with its end date)
-     * @param finalLaw final attitude law (after the slew)
-     * @param finalDate slew end date (null if slew defined with its start date)
+     * @param initialLaw
+     *        initial attitude law (before the slew)
+     * @param initialDateIn
+     *        slew start date (null if slew defined with its end date)
+     * @param finalLaw
+     *        final attitude law (after the slew)
+     * @param finalDate
+     *        slew end date (null if slew defined with its start date)
      * @return slew duration
-     * @throws PatriusException thrown if computation failed or if dates are both null or not null
+     * @throws PatriusException
+     *         thrown if computation failed or if dates are both null or not null
      */
-    public double computeDuration(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
-                                  final AbsoluteDate initialDateIn,
-                                  final AttitudeProvider finalLaw,
-                                  final AbsoluteDate finalDate)
+    private double computeDuration(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
+                                   final AbsoluteDate initialDateIn,
+                                   final AttitudeProvider finalLaw,
+                                   final AbsoluteDate finalDate)
         throws PatriusException {
 
         // Initialization
         double durationPrevious = Double.POSITIVE_INFINITY;
-        double duration = this.durationMax;
+        double computedDuration = this.durationMax;
+
+        // Check type of slew
+        checkInputs(initialDateIn, finalDate);
 
         // Get reference attitude depending on type of date
         Attitude initialAttitude = null;
@@ -630,7 +782,7 @@ public class IsisSpinBiasSlewComputer {
         int iLoop = 0;
 
         // Loop until convergence is reached
-        while (MathLib.abs(durationPrevious - duration) > this.dtConvergenceThreshold) {
+        while (MathLib.abs(durationPrevious - computedDuration) > this.dtConvergenceThreshold) {
             iLoop++;
             if (iLoop > this.maxIterationsNumber) {
                 if (this.throwExceptionOnMaxIterations) {
@@ -643,10 +795,11 @@ public class IsisSpinBiasSlewComputer {
                             this.maxIterationsNumber).getMessage());
                     }
 
-                    return duration;
+                    break;
                 }
             }
-            durationPrevious = duration;
+
+            durationPrevious = computedDuration;
 
             // Get target attitude depending on type of date
             if (initialDateIn != null) {
@@ -657,16 +810,16 @@ public class IsisSpinBiasSlewComputer {
                 initialAttitude = initialLaw.getAttitude(pvProv, date, this.refFrame);
             }
 
-            duration = this.analyze(initialAttitude, finalAttitude);
+            computedDuration = analyze(initialAttitude, finalAttitude);
         }
 
         // Return computed duration
-        return duration;
+        return computedDuration;
     }
 
     /**
      * Computes the slew duration.
-     * 
+     *
      * @param initialAttitude
      *        initial attitude
      * @param finalAttitude
@@ -681,11 +834,9 @@ public class IsisSpinBiasSlewComputer {
 
         // Rotation from initial attitude to final attitude
         final Rotation slewRot = initialAttitude.getRotation().applyInverseTo(finalAttitude.getRotation());
-        // Rotation associated angle (always positive)
-        this.slewAngle = slewRot.getAngle();
 
         // Check slew angle does not exceed maximum allowed value
-        if (this.slewAngle > this.thetaMaxAllowed) {
+        if (slewRot.getAngle() > this.thetaMaxAllowed) {
             throw new PatriusException(PatriusMessages.MANEUVER_AMPLITUDE_EXCEEDS_FIXED_MAXIMUM_VALUE);
         }
 
@@ -695,12 +846,12 @@ public class IsisSpinBiasSlewComputer {
         // 2. Computation of the maximum equivalent satellite inertia in function of the rotation axis :
 
         // Computation of the pseudo-inv. matrix representing the rotation from satellite frame to reaction wheel frame
-        final RealMatrix matrix = new BlockRealMatrix(this.rwMatrix);
+        final RealMatrix matrix = new Array2DRowRealMatrix(this.rwMatrix);
         final SingularValueDecomposition decomposition = new SingularValueDecomposition(matrix);
         final RealMatrix pseudoInvMatrix = decomposition.getSolver().getInverse();
 
         // Computation of the equivalent satellite inertia in reaction wheel frame
-        final double[] inertiaEquivRwFrameRaw = pseudoInvMatrix.multiply(new BlockRealMatrix(this.inertiaMatrix))
+        final double[] inertiaEquivRwFrameRaw = pseudoInvMatrix.multiply(new Array2DRowRealMatrix(this.inertiaMatrix))
             .operate(this.slewAxis.toArray());
         final double[] inertiaEquivRwFrame = new double[inertiaEquivRwFrameRaw.length];
         for (int i = 0; i < inertiaEquivRwFrame.length; i++) {
@@ -729,7 +880,7 @@ public class IsisSpinBiasSlewComputer {
         final double decelMaxDuration = MathLib.divide(this.rwDeltaMomentumAlloc, this.rwTorqueAllocDecel);
 
         // Computation of the acceleration and deceleration durations assuming there is no constant velocity phase
-        final double coef = MathLib.divide(2 * this.slewAngle, (this.accelMax + this.decelMax));
+        final double coef = MathLib.divide(2 * slewRot.getAngle(), (this.accelMax + this.decelMax));
         this.accelDuration = MathLib.sqrt(coef * MathLib.divide(this.decelMax, this.accelMax));
         this.decelDuration = MathLib.sqrt(coef * MathLib.divide(this.accelMax, this.decelMax));
 
@@ -742,7 +893,7 @@ public class IsisSpinBiasSlewComputer {
         if (this.accelDuration == accelMaxDuration || this.decelDuration == decelMaxDuration) {
             // There is a constant velocity phase
             this.durationWoTranq =
-                MathLib.divide(this.slewAngle, omegaMax) + (this.accelDuration + this.decelDuration) / 2.;
+                MathLib.divide(slewRot.getAngle(), omegaMax) + (this.accelDuration + this.decelDuration) / 2.;
         } else {
             // There is no constant velocity phase
             this.durationWoTranq = this.accelDuration + this.decelDuration;
@@ -751,5 +902,14 @@ public class IsisSpinBiasSlewComputer {
         // Add the tranquillisation time
         // Return result
         return this.durationWoTranq + this.tranquillisationTime;
+    }
+
+    /**
+     * Getter for the duration of the slew
+     *
+     * @return the duration of the slew
+     */
+    public double getDuration() {
+        return this.duration;
     }
 }

@@ -18,7 +18,6 @@
 /*
  *
  * HISTORY
- * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
  * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
@@ -57,7 +56,6 @@ import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.AbstractVector3DFunction;
-import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -134,7 +132,8 @@ public class LofOffsetTest {
         // Satellite position
         final CircularOrbit circ =
             new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
-                MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(), this.date, this.mu);
+                MathLib.toRadians(5.300), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), this.date, this.mu);
 
         // Create target pointing attitude provider
         // ************************************
@@ -163,7 +162,7 @@ public class LofOffsetTest {
         // Create lof offset attitude provider with computed roll, pitch, yaw
         // **************************************************************
         final LofOffset lofOffsetLaw =
-            new LofOffset(circ.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.ZYX, yaw, pitch, roll));
+            new LofOffset(circ.getFrame(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch, roll);
         final Rotation lofOffsetRot = lofOffsetLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
 
         // Compose rotations : target pointing attitudes
@@ -185,7 +184,8 @@ public class LofOffsetTest {
         // Satellite position
         final CircularOrbit circ =
             new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
-                MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(), this.date, this.mu);
+                MathLib.toRadians(5.300), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), this.date, this.mu);
 
         // Create target pointing attitude provider
         // ************************************
@@ -214,7 +214,8 @@ public class LofOffsetTest {
         // Create lof offset attitude provider with computed roll, pitch, yaw
         // **************************************************************
         final LofOffset lofOffsetLaw =
-            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.ZYX, yaw, pitch, roll));
+            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch,
+                roll);
         final Rotation lofOffsetRot = lofOffsetLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
 
         // Compose rotations : target pointing attitudes
@@ -248,7 +249,8 @@ public class LofOffsetTest {
 
         // Create a lof offset law from those values
         final LofOffset lofOffsetLaw =
-            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.ZYX, yaw, pitch, roll));
+            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch,
+                roll);
         final LofOffsetPointing lofOffsetPtLaw =
             new LofOffsetPointing(this.earthSpheric, lofOffsetLaw, Vector3D.PLUS_K);
 
@@ -262,17 +264,6 @@ public class LofOffsetTest {
             Utils.epsilonAngle);
         Assert.assertEquals(targetDef.getLLHCoordinates().getLatitude(), targetRes.getLLHCoordinates().getLatitude(),
             Utils.epsilonAngle);
-
-        // Try to use a non pseudo-inertial frame (should fail)
-        try {
-            new LofOffset(FramesFactory.getTIRF(), LOFType.LVLH,
-                new EulerRotation(RotationOrder.ZYX, yaw, pitch, roll));
-            Assert.fail();
-        } catch (final PatriusException e) {
-            // Expected (check the message to be sure the test fails for the expected reason)
-            Assert.assertEquals("non pseudo-inertial frame \"TIRF\" is not suitable for defining orbits",
-                e.getMessage());
-        }
     }
 
     /**
@@ -284,315 +275,6 @@ public class LofOffsetTest {
     @Test
     public void testTargetGCRF()
         throws PatriusException {
-
-        // Create target point and target pointing law towards that point
-        final EllipsoidPoint targetDef = new EllipsoidPoint(this.earthSpheric,
-            this.earthSpheric.getLLHCoordinatesSystem(), MathLib.toRadians(5.), MathLib.toRadians(-40.), 0., "");
-        final TargetPointing targetLaw = new TargetPointing(targetDef);
-
-        // Get roll, pitch, yaw angles corresponding to this pointing law
-        final LofOffset lofAlignedLaw = new LofOffset(this.orbit.getFrame(), LOFType.LVLH);
-        final Rotation lofAlignedRot =
-            lofAlignedLaw.getAttitude(this.orbit, this.date, this.orbit.getFrame()).getRotation();
-        final Rotation targetAttitudeRot =
-            targetLaw.getAttitude(this.orbit, this.date, this.orbit.getFrame()).getRotation();
-        final Rotation rollPitchYaw = lofAlignedRot.applyInverseTo(targetAttitudeRot);
-        final double[] angles = rollPitchYaw.getAngles(RotationOrder.ZYX);
-        final double yaw = angles[0];
-        final double pitch = angles[1];
-        final double roll = angles[2];
-
-        // Create a lof offset law from those values
-        final LofOffset lofOffsetLaw = new LofOffset(LOFType.LVLH, new Rotation(RotationOrder.ZYX, yaw, pitch, roll));
-        final LofOffsetPointing lofOffsetPtLaw =
-            new LofOffsetPointing(this.earthSpheric, lofOffsetLaw, Vector3D.PLUS_K);
-
-        // Check target pointed by this law : shall be the same as defined
-        final Vector3D pTargetRes =
-            lofOffsetPtLaw.getTargetPosition(this.orbit, this.date, this.earthSpheric.getBodyFrame());
-        final EllipsoidPoint targetRes = this.earthSpheric.buildPoint(pTargetRes, this.earthSpheric.getBodyFrame(),
-            this.date, "");
-
-        Assert.assertEquals(targetDef.getLLHCoordinates().getLongitude(), targetRes.getLLHCoordinates().getLongitude(),
-            Utils.epsilonAngle);
-        Assert.assertEquals(targetDef.getLLHCoordinates().getLatitude(), targetRes.getLLHCoordinates().getLatitude(),
-            Utils.epsilonAngle);
-    }
-
-    @Test
-    public void testSpin() throws PatriusException {
-
-        Report.printMethodHeader("testSpin", "Spin computation", "Finite differences", 1.0e-10,
-            ComparisonType.ABSOLUTE);
-
-        final AbstractAttitudeLaw law =
-            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYX, 0.1, 0.2, 0.3));
-
-        final AbsoluteDate date = new AbsoluteDate(new DateComponents(1970, 01, 01), new TimeComponents(3, 25, 45.6789),
-            TimeScalesFactory.getUTC());
-        final KeplerianOrbit orbit =
-            new KeplerianOrbit(7178000.0, 1.e-4, MathLib.toRadians(50.), MathLib.toRadians(10.), MathLib.toRadians(20.),
-                MathLib.toRadians(30.), PositionAngle.MEAN, FramesFactory.getEME2000(), date, 3.986004415e14);
-
-        final Propagator propagator = new KeplerianPropagator(orbit, law);
-
-        final double h = 0.01;
-        final SpacecraftState sMinus = propagator.propagate(date.shiftedBy(-h));
-        final SpacecraftState sPlus = propagator.propagate(date.shiftedBy(h));
-
-        final Rotation rMinus = law.getAttitude(orbit, date.shiftedBy(-h), orbit.getFrame()).getRotation();
-        final Rotation r0 = law.getAttitude(orbit, date, orbit.getFrame()).getRotation();
-        final Rotation rPlus = law.getAttitude(orbit, date.shiftedBy(h), orbit.getFrame()).getRotation();
-
-        // check spin is consistent with attitude evolution
-        final double errorAngleMinus = Rotation.distance(sMinus.shiftedBy(h).getAttitude().getRotation(), r0);
-        final double evolutionAngleMinus = Rotation.distance(rMinus, r0);
-        Assert.assertEquals(0.0, errorAngleMinus, 1.0e-6 * evolutionAngleMinus);
-        final double errorAnglePlus = Rotation.distance(r0, sPlus.shiftedBy(-h).getAttitude().getRotation());
-        final double evolutionAnglePlus = Rotation.distance(r0, rPlus);
-        Assert.assertEquals(0.0, errorAnglePlus, 1.0e-6 * evolutionAnglePlus);
-
-        final Vector3D spin0 = law.getAttitude(orbit, date, orbit.getFrame()).getSpin();
-        final Vector3D reference = AngularCoordinates.estimateRate(sMinus.getAttitude().getRotation(),
-            sPlus.getAttitude().getRotation(), 2 * h);
-        Assert.assertEquals(0.0, spin0.subtract(reference).getNorm(), 1.0e-10);
-
-        Report.printToReport("Spin at date", reference, spin0);
-    }
-
-    @Test
-    public void testAnglesSign() throws PatriusException {
-
-        final AbsoluteDate date = new AbsoluteDate(new DateComponents(1970, 01, 01), new TimeComponents(3, 25, 45.6789),
-            TimeScalesFactory.getUTC());
-        final KeplerianOrbit orbit =
-            new KeplerianOrbit(7178000.0, 1.e-8, MathLib.toRadians(50.), MathLib.toRadians(10.), MathLib.toRadians(20.),
-                MathLib.toRadians(0.), PositionAngle.MEAN, FramesFactory.getEME2000(), date, 3.986004415e14);
-
-        final double alpha = 0.1;
-        final double cos = MathLib.cos(alpha);
-        final double sin = MathLib.sin(alpha);
-
-        // Roll
-        Attitude attitude =
-            new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYZ, alpha, 0., 0.))
-                .getAttitude(orbit, date, orbit.getFrame());
-        checkSatVector(orbit, attitude, Vector3D.PLUS_I, 1.0, 0.0, 0.0, 1.0e-8);
-        checkSatVector(orbit, attitude, Vector3D.PLUS_J, 0.0, cos, sin, 1.0e-8);
-        checkSatVector(orbit, attitude, Vector3D.PLUS_K, 0.0, -sin, cos, 1.0e-8);
-
-        // Pitch
-        attitude = new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYZ, 0., alpha, 0.))
-            .getAttitude(orbit, date, orbit.getFrame());
-        checkSatVector(orbit, attitude, Vector3D.PLUS_I, cos, 0.0, -sin, 1.0e-8);
-        checkSatVector(orbit, attitude, Vector3D.PLUS_J, 0.0, 1.0, 0.0, 1.0e-8);
-        checkSatVector(orbit, attitude, Vector3D.PLUS_K, sin, 0.0, cos, 1.0e-8);
-
-        // Yaw
-        attitude = new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYZ, 0., 0., alpha))
-            .getAttitude(orbit, date, orbit.getFrame());
-        checkSatVector(orbit, attitude, Vector3D.PLUS_I, cos, sin, 0.0, 1.0e-8);
-        checkSatVector(orbit, attitude, Vector3D.PLUS_J, -sin, cos, 0.0, 1.0e-8);
-        checkSatVector(orbit, attitude, Vector3D.PLUS_K, 0.0, 0.0, 1.0, 1.0e-8);
-    }
-
-    @Test
-    public void testRetrieveAngles() throws PatriusException {
-        final AbsoluteDate date = new AbsoluteDate(new DateComponents(1970, 01, 01), new TimeComponents(3, 25, 45.6789),
-            TimeScalesFactory.getUTC());
-        final KeplerianOrbit orbit =
-            new KeplerianOrbit(7178000.0, 1.e-4, MathLib.toRadians(50.), MathLib.toRadians(10.), MathLib.toRadians(20.),
-                MathLib.toRadians(30.), PositionAngle.MEAN, FramesFactory.getEME2000(), date, 3.986004415e14);
-
-        final RotationOrder order = RotationOrder.ZXY;
-        final double alpha1 = 0.123;
-        final double alpha2 = 0.456;
-        final double alpha3 = 0.789;
-        final LofOffset law =
-            new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(order, alpha1, alpha2, alpha3));
-        final Rotation offsetAttRot = law.getAttitude(orbit, date, orbit.getFrame()).getRotation();
-        final Rotation alignedAttRot = new LofOffset(orbit.getFrame(), LOFType.LVLH).getAttitude(orbit, date,
-            orbit.getFrame()).getRotation();
-        final Rotation offsetProper = alignedAttRot.applyInverseTo(offsetAttRot);
-        final double[] angles = offsetProper.getAngles(order);
-        Assert.assertEquals(alpha1, angles[0], 1.0e-11);
-        Assert.assertEquals(alpha2, angles[1], 1.0e-11);
-        Assert.assertEquals(alpha3, angles[2], 1.0e-11);
-    }
-
-    @Test
-    public void testRotationAcceleration() throws PatriusException {
-
-        Report.printMethodHeader("testRotationAcceleration", "Rotation acceleration computation", "Finite differences",
-            1E-13, ComparisonType.ABSOLUTE);
-
-        // Satellite position
-        final CircularOrbit circ =
-            new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
-                MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(), this.date, this.mu);
-
-        // Create target pointing attitude provider
-        // ************************************
-        // Elliptic earth shape
-        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(6378136.460, 1 / 298.257222101,
-            this.frameITRF2005);
-        final EllipsoidPoint targetITRF2005 = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
-            MathLib.toRadians(43.36), MathLib.toRadians(1.26), 600., "");
-
-        // Attitude law definition from point target
-        final TargetPointing targetLaw = new TargetPointing(targetITRF2005);
-        final Rotation targetRot = targetLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
-
-        // Create lof aligned attitude provider
-        // *******************************
-        final LofOffset lofAlignedLaw = new LofOffset(LOFType.LVLH);
-        final Rotation lofAlignedRot = lofAlignedLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
-
-        // Get rotation from LOF to target pointing attitude
-        final Rotation rollPitchYaw = lofAlignedRot.applyInverseTo(targetRot);
-        final double[] angles = rollPitchYaw.getAngles(RotationOrder.ZYX);
-        final double yaw = angles[0];
-        final double pitch = angles[1];
-        final double roll = angles[2];
-
-        // Create lof offset attitude provider with computed roll, pitch, yaw
-        // **************************************************************
-        final LofOffset lofOffsetLaw =
-            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.ZYX, yaw, pitch, roll));
-        lofOffsetLaw.setSpinDerivativesComputation(true);
-
-        // Check that derivation of spin with finite difference method is closed to acceleration
-        final Frame frameToCompute = FramesFactory.getITRF();
-
-        for (int i = 1; i < 10000; i += 100) {
-            final Vector3D acc =
-                lofOffsetLaw.getAttitude(this.orbit, this.date.shiftedBy(i), frameToCompute).getRotationAcceleration();
-            final Vector3D accDerivateSpin =
-                this.getSpinFunction(lofOffsetLaw, this.orbit, frameToCompute, this.date.shiftedBy(i)).nthDerivative(1)
-                    .getVector3D(this.date.shiftedBy(i));
-            Assert.assertEquals(acc.distance(accDerivateSpin), 0.0, 1e-13);
-            if (i == 0) {
-                Report.printToReport("Rotation acceleration at date", accDerivateSpin, acc);
-            }
-        }
-
-        // Check rotation acceleration is null when spin derivative is deactivated
-        lofOffsetLaw.setSpinDerivativesComputation(false);
-        Assert.assertNull(lofOffsetLaw.getAttitude(this.orbit).getRotationAcceleration());
-    }
-
-    @Test
-    public void testRotationNoAcceleration() throws PatriusException {
-
-        // Satellite position
-        final CircularOrbit circ =
-            new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
-                MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(), this.date, this.mu);
-
-        // Create target pointing attitude provider
-        // ************************************
-        // Elliptic earth shape
-        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(6378136.460, 1 / 298.257222101,
-            this.frameITRF2005);
-        final EllipsoidPoint gargetITRF2005 = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
-            MathLib.toRadians(43.36), MathLib.toRadians(1.26), 600., "");
-
-        // Attitude law definition from point target
-        final TargetPointing targetLaw = new TargetPointing(gargetITRF2005);
-        final Rotation targetRot = targetLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
-
-        // Create lof aligned attitude provider
-        // *******************************
-        final LofOffset lofAlignedLaw = new LofOffset(LOFType.LVLH);
-        final Rotation lofAlignedRot = lofAlignedLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
-
-        // Get rotation from LOF to target pointing attitude
-        final Rotation rollPitchYaw = lofAlignedRot.applyInverseTo(targetRot);
-        final double[] angles = rollPitchYaw.getAngles(RotationOrder.ZYX);
-        final double yaw = angles[0];
-        final double pitch = angles[1];
-        final double roll = angles[2];
-
-        // Create lof offset attitude provider with computed roll, pitch, yaw
-        // with no acceleration (we don't call setSpinDerivativesComputation())
-        // **************************************************************
-        final LofOffset lofOffsetLaw =
-            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.ZYX, yaw, pitch, roll));
-
-        // Check that derivation of spin with finite difference method is closed to acceleration
-        final Frame frameToCompute = FramesFactory.getITRF();
-
-        for (int i = 1; i < 10000; i += 100) {
-            final Vector3D acc = lofOffsetLaw.getAttitude(this.orbit, this.date.shiftedBy(i), frameToCompute)
-                .getRotationAcceleration();
-            Assert.assertNull(acc);
-        }
-    }
-
-    /**
-     * Coverage test for Deprecated methods (duplicates from existing tests).<br>
-     * Can be cleaned at the same time as the Deprecated methods.
-     * 
-     * @since 4.16.2
-     */
-    @Test
-    @Deprecated
-    public void testTargetDeprecated() throws PatriusException {
-
-        // Create target point and target pointing law towards that point
-        final EllipsoidPoint targetDef = new EllipsoidPoint(this.earthSpheric,
-            this.earthSpheric.getLLHCoordinatesSystem(), MathLib.toRadians(5.), MathLib.toRadians(-40.), 0., "");
-        final TargetPointing targetLaw = new TargetPointing(targetDef);
-
-        // Get roll, pitch, yaw angles corresponding to this pointing law
-        final LofOffset lofAlignedLaw = new LofOffset(this.orbit.getFrame(), LOFType.LVLH);
-        final Rotation lofAlignedRot =
-            lofAlignedLaw.getAttitude(this.orbit, this.date, this.orbit.getFrame()).getRotation();
-        final Rotation targetAttitudeRot =
-            targetLaw.getAttitude(this.orbit, this.date, this.orbit.getFrame()).getRotation();
-        final Rotation rollPitchYaw = lofAlignedRot.applyInverseTo(targetAttitudeRot);
-        final double[] angles = rollPitchYaw.getAngles(RotationOrder.ZYX);
-        final double yaw = angles[0];
-        final double pitch = angles[1];
-        final double roll = angles[2];
-
-        // Create a lof offset law from those values
-        final LofOffset lofOffsetLaw =
-            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch, roll);
-        final LofOffsetPointing lofOffsetPtLaw =
-            new LofOffsetPointing(this.earthSpheric, lofOffsetLaw, Vector3D.PLUS_K);
-
-        // Check target pointed by this law : shall be the same as defined
-        final Vector3D pTargetRes =
-            lofOffsetPtLaw.getTargetPosition(this.orbit, this.date, this.earthSpheric.getBodyFrame());
-        final EllipsoidPoint targetRes = this.earthSpheric.buildPoint(pTargetRes, this.earthSpheric.getBodyFrame(),
-            this.date, "");
-
-        Assert.assertEquals(targetDef.getLLHCoordinates().getLongitude(), targetRes.getLLHCoordinates().getLongitude(),
-            Utils.epsilonAngle);
-        Assert.assertEquals(targetDef.getLLHCoordinates().getLatitude(), targetRes.getLLHCoordinates().getLatitude(),
-            Utils.epsilonAngle);
-
-        // Try to use a non pseudo-inertial frame (should fail)
-        try {
-            new LofOffset(FramesFactory.getTIRF(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch, roll);
-            Assert.fail();
-        } catch (final PatriusException e) {
-            // Expected (check the message to be sure the test fails for the expected reason)
-            Assert.assertEquals("non pseudo-inertial frame \"TIRF\" is not suitable for defining orbits",
-                e.getMessage());
-        }
-    }
-
-    /**
-     * Coverage test for Deprecated methods (duplicates from existing tests).<br>
-     * Can be cleaned at the same time as the Deprecated methods.
-     * 
-     * @since 4.16.2
-     */
-    @Test
-    @Deprecated
-    public void testTargetGCRFDeprecated() throws PatriusException {
 
         // Create target point and target pointing law towards that point
         final EllipsoidPoint targetDef = new EllipsoidPoint(this.earthSpheric,
@@ -626,6 +308,227 @@ public class LofOffsetTest {
             Utils.epsilonAngle);
         Assert.assertEquals(targetDef.getLLHCoordinates().getLatitude(), targetRes.getLLHCoordinates().getLatitude(),
             Utils.epsilonAngle);
+    }
+
+    @Test
+    public void testSpin() throws PatriusException {
+
+        Report
+            .printMethodHeader("testSpin", "Spin computation", "Finite differences", 1.0e-10, ComparisonType.ABSOLUTE);
+
+        final AbstractAttitudeLaw law =
+            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, RotationOrder.XYX, 0.1, 0.2, 0.3);
+
+        final AbsoluteDate date = new AbsoluteDate(new DateComponents(1970, 01, 01),
+            new TimeComponents(3, 25, 45.6789),
+            TimeScalesFactory.getUTC());
+        final KeplerianOrbit orbit =
+            new KeplerianOrbit(7178000.0, 1.e-4, MathLib.toRadians(50.),
+                MathLib.toRadians(10.), MathLib.toRadians(20.),
+                MathLib.toRadians(30.), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), date, 3.986004415e14);
+
+        final Propagator propagator = new KeplerianPropagator(orbit, law);
+
+        final double h = 0.01;
+        final SpacecraftState sMinus = propagator.propagate(date.shiftedBy(-h));
+        final SpacecraftState sPlus = propagator.propagate(date.shiftedBy(h));
+
+        final Rotation rMinus = law.getAttitude(orbit, date.shiftedBy(-h), orbit.getFrame()).getRotation();
+        final Rotation r0 = law.getAttitude(orbit, date, orbit.getFrame()).getRotation();
+        final Rotation rPlus = law.getAttitude(orbit, date.shiftedBy(h), orbit.getFrame()).getRotation();
+
+        // check spin is consistent with attitude evolution
+        final double errorAngleMinus = Rotation.distance(sMinus.shiftedBy(h).getAttitude().getRotation(), r0);
+        final double evolutionAngleMinus = Rotation.distance(rMinus, r0);
+        Assert.assertEquals(0.0, errorAngleMinus, 1.0e-6 * evolutionAngleMinus);
+        final double errorAnglePlus = Rotation.distance(r0, sPlus.shiftedBy(-h).getAttitude().getRotation());
+        final double evolutionAnglePlus = Rotation.distance(r0, rPlus);
+        Assert.assertEquals(0.0, errorAnglePlus, 1.0e-6 * evolutionAnglePlus);
+
+        final Vector3D spin0 = law.getAttitude(orbit, date, orbit.getFrame()).getSpin();
+        final Vector3D reference = AngularCoordinates.estimateRate(sMinus.getAttitude().getRotation(),
+            sPlus.getAttitude().getRotation(), 2 * h);
+        Assert.assertEquals(0.0, spin0.subtract(reference).getNorm(), 1.0e-10);
+
+        Report.printToReport("Spin at date", reference, spin0);
+    }
+
+    @Test
+    public void testAnglesSign() throws PatriusException {
+
+        final AbsoluteDate date = new AbsoluteDate(new DateComponents(1970, 01, 01),
+            new TimeComponents(3, 25, 45.6789),
+            TimeScalesFactory.getUTC());
+        final KeplerianOrbit orbit =
+            new KeplerianOrbit(7178000.0, 1.e-8, MathLib.toRadians(50.),
+                MathLib.toRadians(10.), MathLib.toRadians(20.),
+                MathLib.toRadians(0.), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), date, 3.986004415e14);
+
+        final double alpha = 0.1;
+        final double cos = MathLib.cos(alpha);
+        final double sin = MathLib.sin(alpha);
+
+        // Roll
+        Attitude attitude = new LofOffset(orbit.getFrame(), LOFType.LVLH, RotationOrder.XYZ, alpha, 0.0, 0.0)
+            .getAttitude(orbit, date, orbit.getFrame());
+        checkSatVector(orbit, attitude, Vector3D.PLUS_I, 1.0, 0.0, 0.0, 1.0e-8);
+        checkSatVector(orbit, attitude, Vector3D.PLUS_J, 0.0, cos, sin, 1.0e-8);
+        checkSatVector(orbit, attitude, Vector3D.PLUS_K, 0.0, -sin, cos, 1.0e-8);
+
+        // Pitch
+        attitude = new LofOffset(orbit.getFrame(), LOFType.LVLH, RotationOrder.XYZ, 0.0, alpha, 0.0).getAttitude(orbit,
+            date, orbit.getFrame());
+        checkSatVector(orbit, attitude, Vector3D.PLUS_I, cos, 0.0, -sin, 1.0e-8);
+        checkSatVector(orbit, attitude, Vector3D.PLUS_J, 0.0, 1.0, 0.0, 1.0e-8);
+        checkSatVector(orbit, attitude, Vector3D.PLUS_K, sin, 0.0, cos, 1.0e-8);
+
+        // Yaw
+        attitude = new LofOffset(orbit.getFrame(), LOFType.LVLH, RotationOrder.XYZ, 0.0, 0.0, alpha).getAttitude(orbit,
+            date, orbit.getFrame());
+        checkSatVector(orbit, attitude, Vector3D.PLUS_I, cos, sin, 0.0, 1.0e-8);
+        checkSatVector(orbit, attitude, Vector3D.PLUS_J, -sin, cos, 0.0, 1.0e-8);
+        checkSatVector(orbit, attitude, Vector3D.PLUS_K, 0.0, 0.0, 1.0, 1.0e-8);
+    }
+
+    @Test
+    public void testRetrieveAngles() throws PatriusException {
+        final AbsoluteDate date = new AbsoluteDate(new DateComponents(1970, 01, 01),
+            new TimeComponents(3, 25, 45.6789),
+            TimeScalesFactory.getUTC());
+        final KeplerianOrbit orbit =
+            new KeplerianOrbit(7178000.0, 1.e-4, MathLib.toRadians(50.),
+                MathLib.toRadians(10.), MathLib.toRadians(20.),
+                MathLib.toRadians(30.), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), date, 3.986004415e14);
+
+        final RotationOrder order = RotationOrder.ZXY;
+        final double alpha1 = 0.123;
+        final double alpha2 = 0.456;
+        final double alpha3 = 0.789;
+        final LofOffset law = new LofOffset(orbit.getFrame(), LOFType.LVLH, order, alpha1, alpha2, alpha3);
+        final Rotation offsetAttRot = law.getAttitude(orbit, date, orbit.getFrame()).getRotation();
+        final Rotation alignedAttRot = new LofOffset(orbit.getFrame(), LOFType.LVLH).getAttitude(orbit, date,
+            orbit.getFrame()).getRotation();
+        final Rotation offsetProper = alignedAttRot.applyInverseTo(offsetAttRot);
+        final double[] angles = offsetProper.getAngles(order);
+        Assert.assertEquals(alpha1, angles[0], 1.0e-11);
+        Assert.assertEquals(alpha2, angles[1], 1.0e-11);
+        Assert.assertEquals(alpha3, angles[2], 1.0e-11);
+    }
+
+    @Test
+    public void testRotationAcceleration() throws PatriusException {
+
+        Report.printMethodHeader("testRotationAcceleration", "Rotation acceleration computation", "Finite differences",
+            1E-13, ComparisonType.ABSOLUTE);
+
+        // Satellite position
+        final CircularOrbit circ =
+            new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
+                MathLib.toRadians(5.300), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), this.date, this.mu);
+
+        // Create target pointing attitude provider
+        // ************************************
+        // Elliptic earth shape
+        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(6378136.460, 1 / 298.257222101,
+            this.frameITRF2005);
+        final EllipsoidPoint targetITRF2005 = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
+            MathLib.toRadians(43.36), MathLib.toRadians(1.26), 600., "");
+
+        // Attitude law definition from point target
+        final TargetPointing targetLaw = new TargetPointing(targetITRF2005);
+        final Rotation targetRot = targetLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
+
+        // Create lof aligned attitude provider
+        // *******************************
+        final LofOffset lofAlignedLaw = new LofOffset(LOFType.LVLH);
+        final Rotation lofAlignedRot = lofAlignedLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
+
+        // Get rotation from LOF to target pointing attitude
+        final Rotation rollPitchYaw = lofAlignedRot.applyInverseTo(targetRot);
+        final double[] angles = rollPitchYaw.getAngles(RotationOrder.ZYX);
+        final double yaw = angles[0];
+        final double pitch = angles[1];
+        final double roll = angles[2];
+
+        // Create lof offset attitude provider with computed roll, pitch, yaw
+        // **************************************************************
+        final LofOffset lofOffsetLaw =
+            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch,
+                roll);
+        lofOffsetLaw.setSpinDerivativesComputation(true);
+
+        // Check that derivation of spin with finite difference method is closed to acceleration
+        final Frame frameToCompute = FramesFactory.getITRF();
+
+        for (int i = 1; i < 10000; i += 100) {
+            final Vector3D acc = lofOffsetLaw.getAttitude(this.orbit, this.date.shiftedBy(i), frameToCompute)
+                .getRotationAcceleration();
+            final Vector3D accDerivateSpin =
+                this.getSpinFunction(lofOffsetLaw, this.orbit, frameToCompute, this.date.shiftedBy(i))
+                    .nthDerivative(1).getVector3D(this.date.shiftedBy(i));
+            Assert.assertEquals(acc.distance(accDerivateSpin), 0.0, 1e-13);
+            if (i == 0) {
+                Report.printToReport("Rotation acceleration at date", accDerivateSpin, acc);
+            }
+        }
+
+        // Check rotation acceleration is null when spin derivative is deactivated
+        lofOffsetLaw.setSpinDerivativesComputation(false);
+        Assert.assertNull(lofOffsetLaw.getAttitude(this.orbit).getRotationAcceleration());
+    }
+
+    @Test
+    public void testRotationNoAcceleration() throws PatriusException {
+
+        // Satellite position
+        final CircularOrbit circ =
+            new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
+                MathLib.toRadians(5.300), PositionAngle.MEAN,
+                FramesFactory.getEME2000(), this.date, this.mu);
+
+        // Create target pointing attitude provider
+        // ************************************
+        // Elliptic earth shape
+        final OneAxisEllipsoid earthShape = new OneAxisEllipsoid(6378136.460, 1 / 298.257222101,
+            this.frameITRF2005);
+        final EllipsoidPoint gargetITRF2005 = new EllipsoidPoint(earthShape, earthShape.getLLHCoordinatesSystem(),
+            MathLib.toRadians(43.36), MathLib.toRadians(1.26), 600., "");
+
+        // Attitude law definition from point target
+        final TargetPointing targetLaw = new TargetPointing(gargetITRF2005);
+        final Rotation targetRot = targetLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
+
+        // Create lof aligned attitude provider
+        // *******************************
+        final LofOffset lofAlignedLaw = new LofOffset(LOFType.LVLH);
+        final Rotation lofAlignedRot = lofAlignedLaw.getAttitude(circ, this.date, circ.getFrame()).getRotation();
+
+        // Get rotation from LOF to target pointing attitude
+        final Rotation rollPitchYaw = lofAlignedRot.applyInverseTo(targetRot);
+        final double[] angles = rollPitchYaw.getAngles(RotationOrder.ZYX);
+        final double yaw = angles[0];
+        final double pitch = angles[1];
+        final double roll = angles[2];
+
+        // Create lof offset attitude provider with computed roll, pitch, yaw
+        // with no acceleration (we don't call setSpinDerivativesComputation())
+        // **************************************************************
+        final LofOffset lofOffsetLaw =
+            new LofOffset(this.orbit.getFrame(), LOFType.LVLH, RotationOrder.ZYX, yaw, pitch,
+                roll);
+
+        // Check that derivation of spin with finite difference method is closed to acceleration
+        final Frame frameToCompute = FramesFactory.getITRF();
+
+        for (int i = 1; i < 10000; i += 100) {
+            final Vector3D acc = lofOffsetLaw.getAttitude(this.orbit, this.date.shiftedBy(i), frameToCompute)
+                .getRotationAcceleration();
+            Assert.assertNull(acc);
+        }
     }
 
     /**
@@ -679,8 +582,7 @@ public class LofOffsetTest {
         final double alpha2 = 1;
         final double alpha3 = 2;
         final Rotation rotation = new Rotation(order, alpha1, alpha2, alpha3);
-        final LofOffset lofOffset =
-            new LofOffset(pInertialFrame, typeIn, new EulerRotation(order, alpha1, alpha2, alpha3));
+        final LofOffset lofOffset = new LofOffset(pInertialFrame, typeIn, order, alpha1, alpha2, alpha3);
 
         Assert.assertEquals(rotation.getAngle(), lofOffset.getRotation().getAngle(), 0);
         Assert.assertEquals(pInertialFrame.getName(), lofOffset.getPseudoInertialFrame().getName());
@@ -704,12 +606,14 @@ public class LofOffsetTest {
     @Before
     public void setUp() {
         try {
+
             Utils.setDataRoot("regular-data");
             FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
             // Computation date
-            this.date =
-                new AbsoluteDate(new DateComponents(2008, 04, 07), TimeComponents.H00, TimeScalesFactory.getUTC());
+            this.date = new AbsoluteDate(new DateComponents(2008, 04, 07),
+                TimeComponents.H00,
+                TimeScalesFactory.getUTC());
 
             // Body mu
             this.mu = 3.9860047e14;
@@ -718,16 +622,20 @@ public class LofOffsetTest {
             this.frameITRF2005 = FramesFactory.getITRF();
 
             // Elliptic earth shape
-            this.earthSpheric = new OneAxisEllipsoid(6378136.460, 0., this.frameITRF2005);
+            this.earthSpheric =
+                new OneAxisEllipsoid(6378136.460, 0., this.frameITRF2005);
 
             // Satellite position
-            this.orbit = new CircularOrbit(7178000.0, 0.5e-8, -0.5e-8, MathLib.toRadians(50.), MathLib.toRadians(150.),
-                MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(), this.date, this.mu);
+            this.orbit =
+                new CircularOrbit(7178000.0, 0.5e-8, -0.5e-8, MathLib.toRadians(50.), MathLib.toRadians(150.),
+                    MathLib.toRadians(5.300), PositionAngle.MEAN,
+                    FramesFactory.getEME2000(), this.date, this.mu);
             this.pvSatEME2000 = this.orbit.getPVCoordinates();
 
         } catch (final PatriusException oe) {
             Assert.fail(oe.getMessage());
         }
+
     }
 
     @After

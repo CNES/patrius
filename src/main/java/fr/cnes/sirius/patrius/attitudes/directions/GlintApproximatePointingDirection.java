@@ -18,6 +18,7 @@
  * @history creation 15/10/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -108,20 +109,20 @@ public final class GlintApproximatePointingDirection implements IDirection {
     private final UnivariateSolver solver;
 
     /**
-     * Cache mecanism - the current coordinates of the origin point of the direction
+     * Cache mechanism - the current coordinates of the origin point of the direction
      */
     private PVCoordinatesProvider cachedOrigin;
 
-    /** Cache mecanism - the date */
+    /** Cache mechanism - the date */
     private AbsoluteDate cachedDate;
 
-    /** Cache mecanism - the frame */
+    /** Cache mechanism - the frame */
     private Frame cachedFrame;
 
-    /** Cache mecanism - glint point position */
+    /** Cache mechanism - glint point position */
     private Vector3D cachedGlintPoint;
 
-    /** Cache mecanism - line */
+    /** Cache mechanism - line */
     private Line cachedLine;
 
     /**

@@ -18,6 +18,7 @@
  * @history creation 19/06/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
@@ -292,7 +293,7 @@ public class OneAxisEllipsoidTest {
     @Test
     public void transformTest() throws PatriusException {
 
-        Report.printMethodHeader("transformTest", "Geodetic coordinates computation", "Orekit", 1E-10,
+        Report.printMethodHeader("transformTest", "Ellipsoid coordinates computation", "Orekit", 1E-10,
             ComparisonType.RELATIVE);
 
         // Cartesian to ellipsoidic
@@ -1042,7 +1043,7 @@ public class OneAxisEllipsoidTest {
      */
     @Deprecated
     @Test
-    public void testJacobianCartesianToGeodeticMSLIB() throws PatriusException {
+    public void testJacobianCartesianToEllipsoidMSLIB() throws PatriusException {
 
         final double[][] jacobian =
         { { -0.107954488167401 * 1E-06, -0.282449738801487 * 1E-08, 0.114080171824722 * 1E-06 },
@@ -1175,7 +1176,7 @@ public class OneAxisEllipsoidTest {
      */
     @Deprecated
     @Test
-    public void testJacobianGeodeticToCartesianMSLIB() throws PatriusException {
+    public void testJacobianEllipsoidToCartesianMSLIB() throws PatriusException {
         // nominal case
         final double[][] jacobian = {
             { -0.479311467789823 * 1E+07, -0.177908184625686 * 1E+06, 0.657529466860734 },

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
@@ -60,8 +61,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  */
 public final class ProjectionEllipsoidUtils {
 
-    /** Local precision for geodetic problem computation (in meters). */
-    public static final double GEODETIC_PRECISION = 1E-5;
+    /** Local precision for ellipsoid problem computation (in meters). */
+    public static final double ELLIPSOID_PRECISION = 1E-5;
 
     /** Local precision for azimuth problem computation (in meters). */
     private static final double AZIMUTH_PRECISION = 1E-8;
@@ -339,22 +340,22 @@ public final class ProjectionEllipsoidUtils {
     }
 
     /**
-     * Compute crescent latitude (Le) at a given geodetic latitude. also called Mercator latitude. See following link
+     * Compute crescent latitude (Le) at a given ellipsoid latitude. also called Mercator latitude. See following link
      * for demonstration of formula :
      *
      * @see <a href="http://cartes-martinique.pagesperso-orange.fr/LatitudesCroissantes.htm">
      *      http://cartes-martinique.pagesperso-orange.fr/LatitudesCroissantes.htm</a>
-     * @param geodeticLat
-     *        Geodetic latitude
+     * @param ellipsoidLat
+     *        Ellipsoid latitude
      * @param shape
      *        Body shape
      * @return crescent latitude (Le) also called Mercator latitude
      */
-    public static double computeMercatorLatitude(final double geodeticLat, final OneAxisEllipsoid shape) {
+    public static double computeMercatorLatitude(final double ellipsoidLat, final OneAxisEllipsoid shape) {
 
-        double lat = geodeticLat;
-        if (MathLib.abs(geodeticLat) > Mercator.MAX_LATITUDE) {
-            lat = MathLib.signum(geodeticLat) * Mercator.MAX_LATITUDE;
+        double lat = ellipsoidLat;
+        if (MathLib.abs(ellipsoidLat) > Mercator.MAX_LATITUDE) {
+            lat = MathLib.signum(ellipsoidLat) * Mercator.MAX_LATITUDE;
         }
         final double e = getEccentricity(shape);
         final double eSL = e * MathLib.sin(lat);
@@ -367,15 +368,15 @@ public final class ProjectionEllipsoidUtils {
      * Compute radius of curvature section East/West (also called M or Re). Distance to the Intersection of normal to
      * ellipsoid at the given latitude with pole axis.
      *
-     * @param geodeticLat
-     *        Geodetic latitude must between : - PI/2 and PI/2
+     * @param ellipsoidLat
+     *        Ellipsoid latitude must between : - PI/2 and PI/2
      * @param shape
      *        Body shape
      * @return radius of curvatureEast/West (also called M or Re)
      */
-    public static double computeRadiusEastWest(final double geodeticLat, final OneAxisEllipsoid shape) {
+    public static double computeRadiusEastWest(final double ellipsoidLat, final OneAxisEllipsoid shape) {
 
-        final double sinLat = MathLib.sin(geodeticLat);
+        final double sinLat = MathLib.sin(ellipsoidLat);
         final double ecc = getEccentricity(shape);
         return MathLib.divide(shape.getARadius(), MathLib.sqrt(MathLib.max(0.0, 1. - ecc * ecc * sinLat * sinLat)));
     }
@@ -451,15 +452,15 @@ public final class ProjectionEllipsoidUtils {
     }
 
     /**
-     * Compute the distance from a given geodetic latitude to the equator, along a meridian.
+     * Compute the distance from a given ellipsoid latitude to the equator, along a meridian.
      *
-     * @param geodeticLat
-     *        Geodetic latitude must between : - PI/2 and PI/2
+     * @param ellipsoidLat
+     *        Ellipsoid latitude must between : - PI/2 and PI/2
      * @param shape
      *        Body shape
      * @return meridionalDistance (in meters)
      */
-    public static final double computeMeridionalDistance(final double geodeticLat, final OneAxisEllipsoid shape) {
+    public static final double computeMeridionalDistance(final double ellipsoidLat, final OneAxisEllipsoid shape) {
 
         final double[] seriesComp = getSeries(shape);
         final double coefAP = seriesComp[0];
@@ -467,17 +468,17 @@ public final class ProjectionEllipsoidUtils {
         final double coefCP = seriesComp[2];
         final double coefDP = seriesComp[3];
         final double coefEP = seriesComp[4];
-        return shape.getARadius() * (coefAP * geodeticLat + evalSinEven(geodeticLat, coefBP, coefCP, coefDP, coefEP));
+        return shape.getARadius() * (coefAP * ellipsoidLat + evalSinEven(ellipsoidLat, coefBP, coefCP, coefDP, coefEP));
     }
 
     /**
-     * Compute the geodetic latitude, from a distance from the equator.
+     * Compute the ellipsoid latitude, from a distance from the equator.
      *
      * @param distance
      *        Distance from the equator
      * @param shape
      *        Body shape
-     * @return geodetic latitude
+     * @return ellipsoid latitude
      */
     public static final double computeInverseMeridionalDistance(final double distance, final OneAxisEllipsoid shape) {
 
@@ -488,7 +489,7 @@ public final class ProjectionEllipsoidUtils {
 
     /**
      * Compute the point coordinates from an origin point, an azimuth and a distance along the rhumb line (Loxodrome).
-     * The computation is done on the geoid associated to the geodetic point. The method is issue from Snyder, Map
+     * The computation is done on the geoid associated to the ellipsoid point. The method is issue from Snyder, Map
      * Projection, A working manuel, p46/47. The method comes from libSpace The precision is:
      * <ul>
      * <li>4 cm for 1000 km</li>
@@ -522,7 +523,7 @@ public final class ProjectionEllipsoidUtils {
         final double sinAz = MathLib.sin(azimuth);
         final double cosAz = MathLib.cos(azimuth);
 
-        // geodetic lat
+        // ellipsoid lat
         final double lat1 = p1.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude();
         final double lat2;
         double lon2 = p1.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLongitude();
@@ -544,14 +545,14 @@ public final class ProjectionEllipsoidUtils {
             }
 
             final double y1 = computeMercatorLatitude(lat1, shapeCast);
-            // M = M(geodeticLat) + dist * cos(Az) and then use M to solve for final geodeticLat
+            // M = M(ellipsoidLat) + dist * cos(Az) and then use M to solve for final ellipsoidLat
             // A) Simplified solution : Spherical earth
-            // geodeticLat += dLat;
+            // ellipsoidLat += dLat;
             // B) Ellipsoid solution by power series
             lat2 = computeInverseMeridionalDistance(
                 dLat * shapeCast.getEquatorialRadius() + computeMeridionalDistance(lat1, shapeCast), shapeCast);
             // C) Ellipsoid solution by elliptic integral evaluation
-            // geodeticLat = inverseMeridionalDistance(dLat * _A + meridionalDistance(geodeticLat));
+            // ellipsoidLat = inverseMeridionalDistance(dLat * _A + meridionalDistance(ellipsoidLat));
             final double y2 = computeMercatorLatitude(lat2, shapeCast);
             double dLon = MathLib.abs(MathLib.divide((y2 - y1) * sinAz, cosAz));
             if (sinAz < 0) {
@@ -576,14 +577,14 @@ public final class ProjectionEllipsoidUtils {
     }
 
     /**
-     * compute geodetic latitude at a given rectifying latitude. rectifying latitude -> giving sphere that has correct
+     * compute ellipsoid latitude at a given rectifying latitude. rectifying latitude -> giving sphere that has correct
      * distances along the meridians.
      *
      * @param rectifyingLat
      *        Rectifying latitude
      * @param shape
      *        Body shape
-     * @return geodetic latitude (rad)
+     * @return ellipsoid latitude (rad)
      */
     public static double computeInverseRectifyingLatitude(final double rectifyingLat, final OneAxisEllipsoid shape) {
 
@@ -818,7 +819,7 @@ public final class ProjectionEllipsoidUtils {
 
     /**
      * Compute a point along orthodrome, from a point <code>p<sub>1</sub></code>, at a distance <code>d</code>, in a
-     * direction defined from an azimuth. This is the direct geodetic problem. This code is issue from <b>Vincenty</b>'s
+     * direction defined from an azimuth. This is the direct ellipsoid problem. This code is issue from <b>Vincenty</b>'s
      * works.
      *
      * @see <a href="http://www.ngs.noaa.gov/PUBS_LIB/inverse.pdf"> http://www.ngs.noaa.gov/PUBS_LIB/inverse.pdf</a>

@@ -18,7 +18,6 @@
  * @history creation 12/03/2012
  *
  * HISTORY
- * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
  * car l'orientation n'est pas forcement IAU
@@ -102,7 +101,6 @@ import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
-import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Parallelepiped;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RightCircularCylinder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -110,8 +108,8 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Sphere;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
+import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
@@ -241,7 +239,7 @@ public class RediffusedRadiationModelTest {
 
             // one facet
             final Vector3D normal = new Vector3D(-1.0, 1.0, -2.0);
-            final Facet facet = new Facet(normal, 25 * MathLib.PI);
+            final Facet facet = new Facet(normal, 25 * FastMath.PI);
 
             // Main shape : one sphere
             // Add a Radiative cross section property with sphere
@@ -577,7 +575,7 @@ public class RediffusedRadiationModelTest {
         final AttitudeProvider attitudeProvider = new BodyCenterPointing();
 
         // State 1: pos = (0, 0, 7000km)
-        final Orbit orbit1 = new KeplerianOrbit(7000000., 0., MathUtils.HALF_PI, 0., 0., MathUtils.HALF_PI,
+        final Orbit orbit1 = new KeplerianOrbit(7000000, 0, FastMath.PI / 2., 0, 0, FastMath.PI / 2.,
                 PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU);
         final SpacecraftState state1 = new SpacecraftState(orbit1, attitudeProvider.getAttitude(orbit1));
         assembly.initMainPartFrame(state1);
@@ -884,7 +882,7 @@ public class RediffusedRadiationModelTest {
         radAcc = model.rediffusedRadiationPressureAcceleration(shiftedBogusState, elemFlux);
 
         // Acceleration is as expected : along flux with expected norm
-        crossSection = (MathLib.PI * radius * radius * MathLib.sqrt(2.) / 2. + radius * radius * heigh
+        crossSection = (FastMath.PI * radius * radius * MathLib.sqrt(2.) / 2. + radius * radius * heigh
                 * MathLib.sqrt(2.) / 2.);
         // crossSection * - (1 + 4 kd / 9) * albedo_pressure
         cylFactor = -crossSection * (1. + ((4. / 9.) * kd)) * (albPress / mass);
@@ -1304,7 +1302,7 @@ public class RediffusedRadiationModelTest {
             final Orbit orbit = new CartesianOrbit(pvCoordinates, referenceFrame, date, mu);
             // creation of the spacecraft
             final SpacecraftState spacecraftState = new SpacecraftState(orbit, new Attitude(date, referenceFrame,
-                    new Rotation(Vector3D.PLUS_K, -MathUtils.HALF_PI), Vector3D.ZERO), new MassModel(assembly));
+                    new Rotation(Vector3D.PLUS_K, -FastMath.PI / 2), Vector3D.ZERO), new MassModel(assembly));
 
             // radiative model
             assembly.initMainPartFrame(spacecraftState);
@@ -1415,7 +1413,7 @@ public class RediffusedRadiationModelTest {
 
             builder.addProperty(radSphereProp, this.mainBody);
             final Vector3D normal = new Vector3D(0.0, 0.0, -2.0);
-            final Facet facet = new Facet(normal, 25 * MathLib.PI);
+            final Facet facet = new Facet(normal, 25 * FastMath.PI);
 
             final IPartProperty radFacetProp = new RadiativeFacetProperty(facet);
             builder.addProperty(radFacetProp, this.mainBody);
@@ -1742,8 +1740,8 @@ public class RediffusedRadiationModelTest {
                 MathLib.toRadians(123.456), 0.0, PositionAngle.MEAN, FramesFactory.getEME2000(), new AbsoluteDate(
                         new DateComponents(2004, 01, 01), new TimeComponents(23, 30, 00.000),
                         TimeScalesFactory.getUTC()), Constants.EIGEN5C_EARTH_MU);
-        final AttitudeProvider law = new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XZY,
-            MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.));
+        final AttitudeProvider law = new LofOffset(orbit.getFrame(), LOFType.LVLH, RotationOrder.XZY,
+                FastMath.PI / 2.0, -FastMath.PI / 2.0, 0.0);
         final SpacecraftState state = new SpacecraftState(orbit, law.getAttitude(orbit, orbit.getDate(),
                 orbit.getFrame()));
         assembly.initMainPartFrame(state);
@@ -1777,7 +1775,7 @@ public class RediffusedRadiationModelTest {
 
         // one facet
         final Vector3D normal = new Vector3D(-1.0, 1.0, -2.0);
-        final Facet facet = new Facet(normal, 25 * MathLib.PI);
+        final Facet facet = new Facet(normal, 25 * FastMath.PI);
 
         final IPartProperty radSphereProp = new RadiativeSphereProperty(5.);
         builder.addProperty(radSphereProp, nameMain);

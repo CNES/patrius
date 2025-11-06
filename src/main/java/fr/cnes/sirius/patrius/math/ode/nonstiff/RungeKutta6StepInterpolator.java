@@ -36,13 +36,11 @@ import fr.cnes.sirius.patrius.utils.Constants;
 
 
 /**
- * <p>
  * Interpolator for {@link RungeKutta6Integrator}.
- * </p>
  * 
  * <p>
  * <b>Warning:</b> This interpolator currently performs a 2nd order interpolation issued from article <i>Dense output
- * for strong stability preserving Runge–Kutta methods, D. Ketcheson, 2016</i>. <br/>
+ * for strong stability preserving Runge–Kutta methods, D. Ketcheson, 2016</i>.<br/>
  * Accuracy is however below 1m for standard timestep.
  * </p>
  * 
@@ -59,7 +57,10 @@ import fr.cnes.sirius.patrius.utils.Constants;
 public class RungeKutta6StepInterpolator extends RungeKuttaStepInterpolator {
 
 
-    /** Interpolator polynomial coefficients bj as defined in Shampine book. */
+    /**
+     * Interpolator polynomial coefficients bj as defined in Hairer, Wanner, Norsett (1993) Solving ordinary
+     * differential equations I - Nonstiff problems book.
+     */
     private final double[][] b;
 
     /**
@@ -117,7 +118,7 @@ public class RungeKutta6StepInterpolator extends RungeKuttaStepInterpolator {
             // Intermediate points
 
             // Precompute powers of theta
-            final double[] powTheta = new double[b[yDotK.length - 1].length + 1];
+            final double[] powTheta = new double[this.b[this.yDotK.length - 1].length + 1];
             for (int i = 0; i < powTheta.length; i++) {
                 powTheta[i] = FastMath.pow(theta, i);
             }
@@ -125,23 +126,23 @@ public class RungeKutta6StepInterpolator extends RungeKuttaStepInterpolator {
             // Formula (6.1) and (6.6) from Shampine book
             for (int i = 0; i < this.interpolatedState.length; ++i) {
                 double delta = 0;
-                for (int j = 0; j < yDotK.length; j++) {
+                for (int j = 0; j < this.yDotK.length; j++) {
                     double bj = 0;
-                    for (int q = 0; q < b[j].length; q++) {
+                    for (int q = 0; q < this.b[j].length; q++) {
                         // Index 0 represents order 1
-                        bj += b[j][q] * powTheta[q + 1];
+                        bj += this.b[j][q] * powTheta[q + 1];
                     }
                     delta += bj * this.yDotK[j][i];
                 }
                 this.interpolatedState[i] = this.previousState[i] + this.h * delta;
             }
-            
+
             // If an error has occurred in the derivatives computation (incoherent state),
             // linear interpolation is used instead
             if (isIncoherentState(this.interpolatedState)) {
                 for (int i = 0; i < 6; i++) {
-                    interpolatedDerivatives[i] = currentState[i] - previousState[i];
-                    interpolatedState[i] = previousState[i] + theta * interpolatedDerivatives[i];
+                    this.interpolatedDerivatives[i] = this.currentState[i] - this.previousState[i];
+                    this.interpolatedState[i] = this.previousState[i] + theta * this.interpolatedDerivatives[i];
                 }
             }
 

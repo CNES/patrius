@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-426:25/04/2025:[PATRIUS] Rendre Frame immutable et suppression de la notion de referentiel
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-75:30/06/2023:[PATRIUS] Degradation performance Patrius 4.11
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
@@ -43,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -291,7 +293,8 @@ public class Transform implements TimeStamped, TimeShiftable<Transform>, TimeInt
      */
     public Transform(final AbsoluteDate dateIn, final Transform first, final Transform second,
                      final boolean computeSpinDerivatives) {
-        this(dateIn, first, second, computeSpinDerivatives, false);
+        this(dateIn, compositePVCoordinates(first, second, false),
+            compositeAngularCoordinates(first, second, computeSpinDerivatives, false));
     }
 
     /**
@@ -312,11 +315,14 @@ public class Transform implements TimeStamped, TimeShiftable<Transform>, TimeInt
      *        true if spin derivatives should be computed. If not, spin derivative is set to <i>null</i>
      * @param projectVelocityAndAcceleration
      *        true if velocity and acceleration should be simply projected, false otherwise
+     * @deprecated since 4.16, the concept of projectVelocityAndAcceleration has been introduced to answer the needs of
+     *             referential frame whereas this concept is erroneous. All methods using it should be avoided.
      */
+    @Deprecated
     public Transform(final AbsoluteDate dateIn, final Transform first, final Transform second,
                      final boolean computeSpinDerivatives, final boolean projectVelocityAndAcceleration) {
         this(dateIn, compositePVCoordinates(first, second, projectVelocityAndAcceleration),
-                compositeAngularCoordinates(first, second, computeSpinDerivatives, projectVelocityAndAcceleration));
+            compositeAngularCoordinates(first, second, computeSpinDerivatives, projectVelocityAndAcceleration));
     }
 
     /**

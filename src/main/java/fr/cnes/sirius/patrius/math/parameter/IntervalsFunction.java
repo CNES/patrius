@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-312:25/04/2025:[PATRIUS] Ajout de getter d'entry pour IntervalMapSearcher
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -35,6 +37,7 @@ import java.util.Map.Entry;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.time.AbsoluteDateIntervalsList;
 import fr.cnes.sirius.patrius.time.IntervalMapSearcher;
@@ -250,6 +253,42 @@ public class IntervalsFunction extends Parameterizable implements IParamDiffFunc
      */
     public Map<AbsoluteDateInterval, IParamDiffFunction> getIntervalFunctionAssociation() {
         return this.functionsSearcher.getIntervalDataAssociation();
+    }
+
+    /**
+     * Getter for the {@link CacheEntry entry} <{@link AbsoluteDateInterval interval}, {@link IParamDiffFunction
+     * function}> associated to the provided {@link AbsoluteDate date}.<br>
+     * An exception is raised if there is no match
+     *
+     * @param date date for which we want the corresponding association interval/function
+     *
+     * @return the association corresponding to the {@link AbsoluteDateInterval interval} in which the given date is
+     *         included
+     *
+     * @throws IllegalStateException if the provided date does not belong to any of the intervals
+     */
+    public CacheEntry<AbsoluteDateInterval, IParamDiffFunction> getEntry(final AbsoluteDate date) {
+        return this.functionsSearcher.getEntry(date);
+    }
+
+    /**
+     * Getter for the {@link CacheEntry entry} <{@link AbsoluteDateInterval interval}, {@link IParamDiffFunction
+     * function}> associated to the provided {@link AbsoluteDate date}.<br>
+     *
+     * @param date date for which we want the corresponding association interval/function
+     * @param throwException if true an exception is raised if there is no match; if false a null is returned if
+     *        there is no match
+     *
+     * @return the association corresponding to the {@link AbsoluteDateInterval interval} in which the given date is
+     *         included
+     *
+     * @throws IllegalStateException if {@code throwException == true} and the provided date does not belong to any of
+     *         the
+     *         intervals
+     */
+    public CacheEntry<AbsoluteDateInterval, IParamDiffFunction> getEntry(final AbsoluteDate date,
+                                                                         final boolean throwException) {
+        return this.functionsSearcher.getEntry(date, throwException);
     }
 
     /**

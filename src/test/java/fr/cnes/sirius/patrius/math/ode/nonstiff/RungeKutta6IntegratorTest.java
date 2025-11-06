@@ -36,30 +36,18 @@ package fr.cnes.sirius.patrius.math.ode.nonstiff;
 import org.junit.Assert;
 import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.AbstractIntegrator;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderDifferentialEquations;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderIntegrator;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler.Action;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepHandler;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepInterpolator;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @description test class for RungeKutta6Integrator
@@ -661,7 +649,6 @@ public class RungeKutta6IntegratorTest {
         integrator2.integrate(ode, t0, y0, t0 + 300, y);
         Assert.assertEquals(1, detector2.getCount());
     }
-
 
     @Before
     public void setUp() {

@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history Created on 20/10/2011
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -28,29 +30,25 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
  * Test class for {@link InfiniteEllipticCylinder}
  * </p>
- * 
+ *
  * @author Rami Houdroge
- * 
+ *
  * @version $Id: InfiniteEllipticCylinderTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class InfiniteEllipticCylinderTest {
 
@@ -71,37 +69,37 @@ public class InfiniteEllipticCylinderTest {
 
         /**
          * @featureTitle Infinite Elliptic Cylinder
-         * 
+         *
          * @featureDescription Creation of an infinite elliptic cylinder. Test constructors in nominal and degraded
          *                     cases.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         INFINITEELLIPTICCYLINDER_SHAPE,
 
         /**
          * @featureTitle Infinite Elliptic Cylinder
-         * 
+         *
          * @featureDescription Test InfiniteEllipticCylinder getters.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         INFINITEELLIPTICCYLINDER_PROPS,
 
         /**
          * @featureTitle Infinite Elliptic Cylinder
-         * 
+         *
          * @featureDescription Test InfiniteEllipticCylinder basis transformations3.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         INFINITEELLIPTICCYLINDER_BASISTRANSFORMATIONS,
 
         /**
          * @featureTitle Infinite Elliptic Cylinder
-         * 
+         *
          * @featureDescription Test InfiniteEllipticCylinder intersection algorithms.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -109,18 +107,18 @@ public class InfiniteEllipticCylinderTest {
 
         /**
          * @featureTitle Infinite Elliptic Cylinder
-         * 
+         *
          * @featureDescription Test InfiniteEllipticCylinder distance computation algorithms.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         INFINITEELLIPTICCYLINDER_DISTANCES,
 
         /**
          * @featureTitle Infinite Elliptic Cylinder
-         * 
+         *
          * @featureDescription Test InfiniteEllipticCylinder toString method.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         INFINITEELLIPTICCYLINDER_STRING
@@ -128,22 +126,22 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#InfiniteEllipticCylinder(Vector3D, Vector3D, Vector3D, double, double)}
-     * 
+     *
      * @description Instantiation of an infinite elliptic cylinder shape in 3D space.
-     * 
+     *
      * @input A position vector, an axis vector, an orthogonal axis vector and two semi axes
-     * 
+     *
      * @output InfiniteEllipticCylinder
-     * 
+     *
      * @testPassCriteria The cylinder shape can be created only if they are strictly positive. The axis and orthogonal
      *                   axis must not be parallel, an exception is thrown otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -207,23 +205,23 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_PROPS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getDirection()}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder getters.
-     * 
+     *
      * @input none
-     * 
+     *
      * @output Vector3D containing the normalized cylinder axis
-     * 
+     *
      * @testPassCriteria The returned axis is the same as the user specified axis (with an epsilon of 1e-16 due to the
      *                   machine errors only : we check that the axis is indeed the one given at the construction
      *                   normalized).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -244,22 +242,22 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_PROPS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getOrigin()}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder getters.
-     * 
+     *
      * @input none
-     * 
+     *
      * @output Vector3D containing the cylinder position
-     * 
+     *
      * @testPassCriteria The returned position is the same as the user specified position (with an epsilon of 1e-16 due
      *                   to the machine errors : we check if the origin is indeed the one given at the construction).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -280,23 +278,23 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_PROPS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getSemiAxisA()}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder getters.
-     * 
+     *
      * @input none
-     * 
+     *
      * @output double containing semi axis a
-     * 
+     *
      * @testPassCriteria The returned semi axis is the same as the user specified semi axis (with an epsilon of 1e-16
      *                   due to the machine errors : we check if the semi axis is indeed the one given at the
      *                   construction).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -314,23 +312,23 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_PROPS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getSemiAxisB()}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder getters.
-     * 
+     *
      * @input none
-     * 
+     *
      * @output double containing semi axis b
-     * 
+     *
      * @testPassCriteria The returned semi axis is the same as the user specified semi axis (with an epsilon of 1e-16
      *                   due to the machine errors : we check if the semi axis is indeed the one given at the
      *                   construction).
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -348,27 +346,27 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getLocalBasisTransform()},
      *               {@link InfiniteEllipticCylinder#getStandardBasisTransform()}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder getters.
-     * 
+     *
      * @input Origin = (2, -5, 6)
      * @input Axis = (5, 3, 1)
      * @input AxisX = (1, -2, .8)
      * @input a=2 and b=1
-     * 
+     *
      * @output Matrix3D containing coordinates of target basis expressed in current basis
-     * 
+     *
      * @testPassCriteria The local basis transform matrix contains the coordinates of the standard basis vectors
      *                   expressed in the local basis. The product of both matrices must equal the identity matrix. All
      *                   with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -424,24 +422,24 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getAffineLocalExpression(Vector3D)},
      *               {@link InfiniteEllipticCylinder#getAffineStandardExpression(Vector3D)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder basis transformations.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D expressed in taget basis
-     * 
+     *
      * @testPassCriteria For a vector expressed in the standard basis, the vector expressed in the local basis must be
      *                   the same as the predicted one, and the transformation into the standard basis must yield the
      *                   same result with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -470,24 +468,24 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getVectorialLocalExpression(Vector3D)},
      *               {@link InfiniteEllipticCylinder#getVectorialStandardExpression(Vector3D)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder basis transformations.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D expressed in taget basis
-     * 
+     *
      * @testPassCriteria For a vector expressed in the standard basis, the vector expressed in the local basis must be
      *                   the same as the predicted one, and the transformation into the standard basis must yield the
      *                   same result with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -516,21 +514,21 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_INTERSECTIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#intersects(Line)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder intersections algorithm.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Boolean set to true if the user specified line intersects the cylinder
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -560,22 +558,22 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_INTERSECTIONS}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder intersections algorithm.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] containing the intersection points, or empty
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -620,23 +618,23 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#closestPointTo(Vector3D)},
      *               {@link InfiniteEllipticCylinder#distanceTo(Vector3D)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder distance computation algorithms, test part1.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -753,24 +751,24 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#closestPointTo(Vector3D)},
      *               {@link InfiniteEllipticCylinder#distanceTo(Vector3D)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder distance computation algorithms, test part 2 only to keep part 1 under
      *              100 lines.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point.
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -842,24 +840,24 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
-     * 
+     *
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#closestPointTo(Line)},
      *               {@link InfiniteEllipticCylinder#distanceTo(Line)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder distance computation algorithms.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] containing the closest computed points
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -986,24 +984,24 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_DISTANCES}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#closestPointTo(Line)},
      *               {@link InfiniteEllipticCylinder#distanceTo(Line)}
-     * 
+     *
      * @description Test InfiniteEllipticCylinder distance computation algorithms. Test part 2 only to keep part 1 under
      *              100 lines.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] containing the closest computed points
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1077,22 +1075,22 @@ public class InfiniteEllipticCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#INFINITEELLIPTICCYLINDER_STRING}
-     * 
+     *
      * @testedMethod {@link InfiniteEllipticCylinder#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1110,10 +1108,9 @@ public class InfiniteEllipticCylinderTest {
         final String result = myCl.toString();
 
         final String expected =
-            "InfiniteEllipticCylinder{Origin{2; 5; -8},Direction{1; 0; 0},U vector{0; 1; 0},Radius A{2.5},Radius B{3.5}}";
+            "InfiniteEllipticCylinder{Origin{2.0; 5.0; -8.0},Direction{1.0; 0.0; 0.0},U vector{0.0; 1.0; 0.0},Radius A{2.5},Radius B{3.5}}";
         Assert.assertEquals(expected, result);
     }
-
 
     @Before
     public void setUp() {

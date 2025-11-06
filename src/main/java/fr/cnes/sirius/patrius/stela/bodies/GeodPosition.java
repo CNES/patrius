@@ -18,6 +18,7 @@
  * @history created 04/03/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -40,8 +41,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
- * Class representing the geodetic representation of a position.<br>
- * It is used to compute the spacecraft geodetic latitude when computing the atmospheric drag acceleration.
+ * Class representing the Geodetic representation of a position.<br>
+ * It is used to compute the spacecraft Geodetic latitude when computing the atmospheric drag acceleration.
  * 
  * @concurrency immutable
  * 
@@ -60,7 +61,7 @@ public final class GeodPosition implements Serializable {
      /** Serializable UID. */
     private static final long serialVersionUID = 8116050377752754673L;
 
-    /** Convergence threshold used in the geodetic latitude computation. */
+    /** Convergence threshold used in the Geodetic latitude computation. */
     private static final double GEODETIC_THRESHOLD_1 = 1.0E-05;
 
     /** Convergence threshold used in the geodetic latitude computation. */

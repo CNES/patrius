@@ -19,6 +19,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-476:25/04/2025:[PATRIUS] Anomalie dans Precision.equals(double, double, int) et dans Math.abs()
  * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -258,20 +259,34 @@ public final class Precision {
      * @since 2.2
      */
     public static boolean equals(final float x, final float y, final int maxUlps) {
-        int xInt = Float.floatToIntBits(x);
-        int yInt = Float.floatToIntBits(y);
+        final boolean isEqual;
+        if (Float.isNaN(x) || Float.isNaN(y)) {
+            isEqual = false;
+        } else {
+            int xInt = Float.floatToIntBits(x);
+            int yInt = Float.floatToIntBits(y);
+    
+            // Make lexicographically ordered as a two's-complement integer.
+            if (xInt < 0) {
+                xInt = SGN_MASK_FLOAT - xInt;
+            }
+            if (yInt < 0) {
+                yInt = SGN_MASK_FLOAT - yInt;
+            }
+            
+            // Check if the absolute difference between the bits representation of the compared
+            // numbers is lower than the specified tolerance. 
+            // Note that if the difference is equal to Integer.MIN_VALUE, its absolute value is also 
+            // equal to Integer.MIN_VALUE because it overflows. When that occurs, the numbers cannot be equal.
+            final int abs = MathLib.abs(xInt - yInt);
+            if (abs == Integer.MIN_VALUE) {
+                isEqual = false;
+            } else {
+                isEqual = abs <= maxUlps;
+            }
 
-        // Make lexicographically ordered as a two's-complement integer.
-        if (xInt < 0) {
-            xInt = SGN_MASK_FLOAT - xInt;
         }
-        if (yInt < 0) {
-            yInt = SGN_MASK_FLOAT - yInt;
-        }
-
-        final boolean isEqual = MathLib.abs(xInt - yInt) <= maxUlps;
-
-        return isEqual && !Float.isNaN(x) && !Float.isNaN(y);
+        return isEqual;
     }
 
     /**
@@ -420,20 +435,34 @@ public final class Precision {
      *         point values between {@code x} and {@code y}.
      */
     public static boolean equals(final double x, final double y, final int maxUlps) {
-        long xInt = Double.doubleToLongBits(x);
-        long yInt = Double.doubleToLongBits(y);
+        final boolean isEqual;
+        if (Double.isNaN(x) || Double.isNaN(y)) {
+            isEqual = false;
+        } else {
+            long xInt = Double.doubleToLongBits(x);
+            long yInt = Double.doubleToLongBits(y);
+    
+            // Make lexicographically ordered as a two's-complement integer.
+            if (xInt < 0) {
+                xInt = SGN_MASK - xInt;
+            }
+            if (yInt < 0) {
+                yInt = SGN_MASK - yInt;
+            }
+            
+            // Check if the absolute difference between the bits representation of the compared
+            // numbers is lower than the specified tolerance. 
+            // Note that if the difference is equal to Long.MIN_VALUE, its absolute value is also 
+            // equal to Long.MIN_VALUE because it overflows. When that occurs, the numbers cannot be equal.
+            final long abs = MathLib.abs(xInt - yInt);
+            if (abs == Long.MIN_VALUE) {
+                isEqual = false;
+            } else {
+                isEqual = abs <= maxUlps;
+            }
 
-        // Make lexicographically ordered as a two's-complement integer.
-        if (xInt < 0) {
-            xInt = SGN_MASK - xInt;
         }
-        if (yInt < 0) {
-            yInt = SGN_MASK - yInt;
-        }
-
-        final boolean isEqual = MathLib.abs(xInt - yInt) <= maxUlps;
-
-        return isEqual && !Double.isNaN(x) && !Double.isNaN(y);
+        return isEqual;
     }
 
     /**

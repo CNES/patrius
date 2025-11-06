@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history Created on 06/10/2011
  *
  * HISTORY
- * VERSION:4.15.3:OPENFD-576:02/07/2025:[PATRIUS] Problème de convergence dans Ellipsoid.runNewtonAlgorithmLine
- * VERSION:4.15.1:OPENFD-399:28/01/2025:problème de convergence dans EllipsoidPoint.closestPointTo
- * VERSION:4.15:OPENFD-399:21/11/2024:problème de convergence dans EllipsoidPoint.closestPointTo
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-576:25/04/2025:[PATRIUS] Probleme de convergence dans Ellipsoid.runNewtonAlgorithmLine
  * VERSION:4.15:OPENFD-384:21/11/2024:[PATRIUS] Non convergence de l'algo d'intersection avec un ellipsoïde
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.15:OPENFD-399:21/11/2024:problème de convergence dans EllipsoidPoint.closestPointTo
@@ -58,15 +58,15 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <p>
  * Test class for {@link Ellipsoid}
  * </p>
- * 
+ *
  * @see Ellipsoid
- * 
+ *
  * @author Rami Houdroge
- * 
+ *
  * @version $Id: EllipsoidTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.2
- * 
+ *
  */
 public class EllipsoidTest {
 
@@ -75,37 +75,37 @@ public class EllipsoidTest {
 
         /**
          * @featureTitle Ellipsoid shape
-         * 
+         *
          * @featureDescription Creation of a ellipsoid, computation of distances and intersections with lines and
          *                     points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         ELLIPSOID_SHAPE,
 
         /**
          * @featureTitle Ellipsoid getters
-         * 
+         *
          * @featureDescription Test Ellipsoid getters
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         ELLIPSOID_PROPS,
 
         /**
          * @featureTitle Ellipsoid basis transformations
-         * 
+         *
          * @featureDescription Test Ellipsoid basis transformations
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         ELLIPSOID_BASISTRANSFORMATIONS,
 
         /**
          * @featureTitle Ellipsoid intersections
-         * 
+         *
          * @featureDescription Test Ellipsoid intersection algorithms
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -113,9 +113,9 @@ public class EllipsoidTest {
 
         /**
          * @featureTitle Ellipsoid distance
-         * 
+         *
          * @featureDescription Test Ellipsoid distance computation algorithms
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         ELLIPSOID_DISTANCES
@@ -132,25 +132,25 @@ public class EllipsoidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_SHAPE}
-     * 
+     *
      * @testedMethod {@link Ellipsoid#Ellipsoid(Vector3D, Vector3D, Vector3D, double, double, double)}
-     * 
+     *
      * @description Test Ellipsoid Constructor. Here we
      *              check the correctness of the Ellipsoid class constructor. Nominal case as well as degraded cases are
      *              checked. Once the test is passed, the method is considered correct and used afterwards.
-     * 
+     *
      * @input data
-     * 
+     *
      * @output Spheroid
-     * 
+     *
      * @testPassCriteria No exception is raised for nominal cases, an IllegalArgumentException is raised for degraded
      *                   cases. We check the returned elements with the ones given at the construction with an epsilon
      *                   of 1e-14 which takes into account the machine error only.
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -219,25 +219,25 @@ public class EllipsoidTest {
 
     /**
      * Testing distance and closestPointTo(Vector3D)
-     * 
+     *
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Ellipsoid#closestPointTo(Vector3D)}
      * @testedMethod {@link Ellipsoid#distanceTo(Vector3D)}
-     * 
+     *
      * @description Test Ellipsoid distance computation algorithms for distance to Vector3D.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -321,7 +321,7 @@ public class EllipsoidTest {
         Assert.assertEquals(ellipsoid.getSemiPrincipalZ().getZ(), 1, this.comparisonEpsilon);
 
         final String expected =
-            "Ellipsoid{Center{0; 0; 0},Revolution axis{0; 0; 1},Axis a{1; 0; 0},Semi axis a{2.0},Semi axis b{1.5},Semi axis c{1.0}}";
+            "Ellipsoid{Center{0.0; 0.0; 0.0},Revolution axis{0.0; 0.0; 1.0},Axis a{1.0; 0.0; 0.0},Semi axis a{2.0},Semi axis b{1.5},Semi axis c{1.0}}";
         Assert.assertEquals(expected, ellipsoid.toString());
 
         ellipsoid = new Ellipsoid(Vector3D.ZERO, Vector3D.PLUS_K, Vector3D.PLUS_I, 2, 1.5, 1);
@@ -345,21 +345,21 @@ public class EllipsoidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#closestPointTo(Vector3D)}
-     * 
+     *
      * @description Make sure the vector (user point - computed closest point) is normal to the surface of the ellipsoid
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output dot product of surface tangents and user point / closest point vector
-     * 
+     *
      * @testPassCriteria The computed dot products must be within machine espilon range
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -415,23 +415,23 @@ public class EllipsoidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#closestPointTo(Line)}
-     * 
+     *
      * @description Make sure the vector (computed user line point - computed ellipsoid point) is normal to the surface
      *              of the ellipsoid and othogonal to the line direction
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output dot product of surface tangents / line and computed points
-     * 
+     *
      * @testPassCriteria The computed dot products must be within machine espilon range. Points calculated are the
      *                   expected ones, whether the line intersects the ellipsoid or not.
-     * 
+     *
      * @referenceVersion 2.0
-     * 
+     *
      * @nonRegressionVersion 2.0
      */
     @Test
@@ -449,8 +449,8 @@ public class EllipsoidTest {
         Vector3D[] pts = ellipsoid.closestPointTo(line);
 
         Assert.assertFalse(ellipsoid.intersects(line));
-        this.assertEq(new Vector3D(0, 0, 5), pts[0]);
-        this.assertEq(new Vector3D(0, 0, 1.3), pts[1]);
+        assertEq(new Vector3D(0, 0, 5), pts[0]);
+        assertEq(new Vector3D(0, 0, 1.3), pts[1]);
 
         // Same test with semi-finite line
         final Vector3D minAbsP = new Vector3D(4, 0, 5);
@@ -458,16 +458,16 @@ public class EllipsoidTest {
         pts = ellipsoid.closestPointTo(line);
 
         Assert.assertFalse(ellipsoid.intersects(line));
-        this.assertEq(minAbsP, pts[0]);
-        this.assertEq(ellipsoid.closestPointTo(minAbsP), pts[1]);
+        assertEq(minAbsP, pts[0]);
+        assertEq(ellipsoid.closestPointTo(minAbsP), pts[1]);
 
         // Same test with semi-finite line and with line's closest point with abscissa > min abscissa
         line = new Line(pt1, pt2, pt1);
         pts = ellipsoid.closestPointTo(line);
 
         Assert.assertFalse(ellipsoid.intersects(line));
-        this.assertEq(new Vector3D(0, 0, 5), pts[0]);
-        this.assertEq(new Vector3D(0, 0, 1.3), pts[1]);
+        assertEq(new Vector3D(0, 0, 5), pts[0]);
+        assertEq(new Vector3D(0, 0, 1.3), pts[1]);
 
         // Underneath case with infinite line
         pt1 = new Vector3D(-5, 0, -5);
@@ -476,8 +476,8 @@ public class EllipsoidTest {
         pts = ellipsoid.closestPointTo(line);
 
         Assert.assertFalse(ellipsoid.intersects(line));
-        this.assertEq(new Vector3D(0, 0, -5), pts[0]);
-        this.assertEq(new Vector3D(0, 0, -1.3), pts[1]);
+        assertEq(new Vector3D(0, 0, -5), pts[0]);
+        assertEq(new Vector3D(0, 0, -1.3), pts[1]);
 
         // Same test with semi-finite line
         line = new Line(pt1, pt2, minAbsP);
@@ -485,8 +485,8 @@ public class EllipsoidTest {
 
         Assert.assertFalse(ellipsoid.intersects(line));
         Vector3D projectedMinAbsP = line.toSpace(line.toSubSpace(minAbsP));
-        this.assertEq(projectedMinAbsP, pts[0]);
-        this.assertEq(ellipsoid.closestPointTo(projectedMinAbsP), pts[1]);
+        assertEq(projectedMinAbsP, pts[0]);
+        assertEq(ellipsoid.closestPointTo(projectedMinAbsP), pts[1]);
 
         /*
          * Intersection case
@@ -498,8 +498,8 @@ public class EllipsoidTest {
         pts = ellipsoid.closestPointTo(line);
 
         Assert.assertTrue(ellipsoid.intersects(line));
-        this.assertEq(new Vector3D(-2, 0, 0), pts[0]);
-        this.assertEq(new Vector3D(-2, 0, 0), pts[1]);
+        assertEq(new Vector3D(-2, 0, 0), pts[0]);
+        assertEq(new Vector3D(-2, 0, 0), pts[1]);
 
         // Same test with semi-finite line completely outside the ellispoid: no intersection
         pt1 = new Vector3D(-5, 0, 0);
@@ -509,8 +509,8 @@ public class EllipsoidTest {
 
         Assert.assertFalse(ellipsoid.intersects(line));
         projectedMinAbsP = line.toSpace(line.toSubSpace(minAbsP));
-        this.assertEq(projectedMinAbsP, pts[0]);
-        this.assertEq(new Vector3D(2, 0, 0), pts[1]);
+        assertEq(projectedMinAbsP, pts[0]);
+        assertEq(new Vector3D(2, 0, 0), pts[1]);
 
         // Same test with semi-finite line whose min abscissa point is within the ellispoid: 1 intersection
         pt1 = new Vector3D(-5, 0, 0);
@@ -519,29 +519,29 @@ public class EllipsoidTest {
         pts = ellipsoid.closestPointTo(line);
 
         Assert.assertTrue(ellipsoid.intersects(line));
-        this.assertEq(new Vector3D(2, 0, 0), pts[0]);
-        this.assertEq(new Vector3D(2, 0, 0), pts[1]);
+        assertEq(new Vector3D(2, 0, 0), pts[0]);
+        assertEq(new Vector3D(2, 0, 0), pts[1]);
 
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#ELLIPSOID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Ellipsoid#setNewtonThreshold(double)}
-     * 
+     *
      * @description Test Ellipsoid setter for Newton algorithm.
-     * 
+     *
      * @input data
-     * 
+     *
      * @output Spheroid
-     * 
+     *
      * @testPassCriteria algorithm does not converge if threshold is too small, algorithm converge with default
      *                   threshold (1E-11).
-     * 
+     *
      * @referenceVersion 3.3
-     * 
+     *
      * @nonRegressionVersion 3.3
      */
     @Test
@@ -564,6 +564,7 @@ public class EllipsoidTest {
      * Test for the closest point on the ellipsoid to a line where the line is defined with a point
      * that is very far away from the ellipsoid.
      * This is a case that can happen in interplanetary settings.
+     *
      * @throws NoSuchFieldException
      * @throws SecurityException
      * @throws IllegalArgumentException
@@ -608,7 +609,6 @@ public class EllipsoidTest {
      * on the ellipsoid's surface when the point of interest is very close to it's center. It was
      * implemented due to OPENFD-399.
      */
-
     @Test
     public void testClosestPointInsideConvergence() {
         // This point cause issues before OPENFD-399 implementation
@@ -660,6 +660,7 @@ public class EllipsoidTest {
      * We compute 5000 points' nearest neighbors and we compare the results with before the
      * modifications.
      * Both points and results lists are stored in .txt files in ./ressources.
+     *
      * @throws PatriusException
      * @throws IOException
      */
@@ -675,12 +676,11 @@ public class EllipsoidTest {
         }
     }
 
-
     /**
      * Compute one point's the closest neighbor on an ellipsoid's surface.
-     * 
+     *
      * @param point
-     *        Point of interest
+     *        : Point of interest
      * @throws PatriusException
      */
     public LLHCoordinates computeClosestPoint(final Vector3D point) throws PatriusException {
@@ -694,9 +694,9 @@ public class EllipsoidTest {
     /**
      * Compute one point's the closest neighbor on an sphere surface.
      * It should be the intersection of the line center - point and the sphere's surface
-     * 
+     *
      * @param point
-     *        Point of interest
+     *        : Point of interest
      * @throws PatriusException
      */
     public LLHCoordinates computeClosestPointSphere(final Vector3D point) throws PatriusException {
@@ -709,7 +709,7 @@ public class EllipsoidTest {
 
     /**
      * Test equality of vectors
-     * 
+     *
      * @param v1
      *        expected
      * @param v2

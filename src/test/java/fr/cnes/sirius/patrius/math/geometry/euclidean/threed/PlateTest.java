@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -24,29 +26,26 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
- * @description <p>
+ * @description
+ *              <p>
  *              Validation tests for the object Plate.
  *              </p>
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id: PlateTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class PlateTest {
 
@@ -55,10 +54,10 @@ public class PlateTest {
 
         /**
          * @featureTitle Plate shape
-         * 
+         *
          * @featureDescription Creation of a rectangle plate shape, computation of distances and intersections with
          *                     lines and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -73,25 +72,25 @@ public class PlateTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Plate#Plate(Vector3D, Vector3D, Vector3D, double, double)}
-     * 
+     *
      * @description Instantiation of a rectangle plate from its center, two vectors and two dimensions.
-     * 
+     *
      * @input A point center, two vectors to describe its orientation and dimensions.
-     * 
+     *
      * @output Plate
-     * 
+     *
      * @testPassCriteria the shape can be created only if the two vectors are not parallel and the dimensions strictly
      *                   positive, an exception is thrown otherwise. We check the returned elements with the ones given
      *                   at the construction with an epsilon of 1e-16 which takes into account the machine error only.
      *                   We check the computed corners with the expected ones with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -217,22 +216,22 @@ public class PlateTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Plate#distanceTo(Line)}
-     * 
+     *
      * @description Compute the shortest distance between the surface of the shape and a line of space.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output doubles : the distances
-     * 
+     *
      * @testPassCriteria The output doubles must be the right distance, zero if the line passes through the surface with
      *                   an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -288,23 +287,23 @@ public class PlateTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Plate#intersects(Line)}
-     * 
+     *
      * @description Test the computation of intersection points between the shape and a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output Vector3D[]
-     * 
+     *
      * @testPassCriteria The output must be null if there is no intersection or if the line belongs to the plane defined
      *                   by the plate, and the right coordinates otherwise with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -343,21 +342,21 @@ public class PlateTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Plate#intersects(Line)}
-     * 
+     *
      * @description Test the intersection between the shape and a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output booleans
-     * 
+     *
      * @testPassCriteria The output boolean must be true if the line intersects the surface, false otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -392,23 +391,23 @@ public class PlateTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Plate#closestPointTo(Line)}
-     * 
+     *
      * @description Compute the point of the plate realizing the shortest distance to a line of space, and the
      *              associated point of the line.
-     * 
+     *
      * @input Points of space (Vector3D)
-     * 
+     *
      * @output Vector3D[]
-     * 
+     *
      * @testPassCriteria The output vector must be the one of the shape and the one of the line realizing the shortest
      *                   distance with an epsilon of 1e-14 due to the computation errors..
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -474,22 +473,22 @@ public class PlateTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Plate#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -504,27 +503,28 @@ public class PlateTest {
         // string creation
         final String result = plate.toString();
 
-        final String expected = "Plate{Center{1; 1; 1},U vector{1; 0; 0},V vector{0; 1; 0},Length{4.0},Width{2.0}}";
+        final String expected =
+            "Plate{Center{1.0; 1.0; 1.0},U vector{1.0; 0.0; 0.0},V vector{0.0; 1.0; 0.0},Length{4.0},Width{2.0}}";
         Assert.assertEquals(expected, result);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#PLATE_SHAPE}
-     * 
+     *
      * @testedMethod {@link Sphere#getCrossSection(Vector3D)}
-     * 
+     *
      * @description Creates a sphere, and gets the cross section.
-     * 
+     *
      * @input a sphere.
-     * 
+     *
      * @output a double : the cross section
-     * 
+     *
      * @testPassCriteria The cross section must be the one expected.
-     * 
+     *
      * @referenceVersion 1.1
-     * 
+     *
      * @nonRegressionVersion 1.1
      */
     @Test

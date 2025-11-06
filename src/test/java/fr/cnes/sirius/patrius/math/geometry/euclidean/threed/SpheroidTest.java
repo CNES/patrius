@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history Created on 06/10/2011
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -31,37 +33,30 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import java.util.Random;
-import fr.cnes.sirius.patrius.Utils;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
  * Test class for {@link Spheroid}
  * </p>
- * 
+ *
  * @see Spheroid
- * 
+ *
  * @author Rami Houdroge
- * 
+ *
  * @version $Id: SpheroidTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class SpheroidTest {
 
@@ -70,36 +65,36 @@ public class SpheroidTest {
 
         /**
          * @featureTitle Spheroid shape
-         * 
+         *
          * @featureDescription Creation of a spheroid, computation of distances and intersections with lines and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         SPHEROID_SHAPE,
 
         /**
          * @featureTitle Spheroid getters
-         * 
+         *
          * @featureDescription Test Spheroid getters
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         SPHEROID_PROPS,
 
         /**
          * @featureTitle Spheroid basis transformations
-         * 
+         *
          * @featureDescription Test Spheroid basis transformations
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         SPHEROID_BASISTRANSFORMATIONS,
 
         /**
          * @featureTitle Spheroid intersections
-         * 
+         *
          * @featureDescription Test Spheroid intersection algorithms
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -107,9 +102,9 @@ public class SpheroidTest {
 
         /**
          * @featureTitle Spheroid distance
-         * 
+         *
          * @featureDescription Test Spheroid distance computation algorithms
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         SPHEROID_DISTANCES
@@ -123,26 +118,26 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_SHAPE}
      * @testedFeature {@link features#SPHEROID_PROPS}
-     * 
+     *
      * @testedMethod {@link Spheroid#Spheroid(Vector3D, Vector3D, double, double)}
-     * 
+     *
      * @description Test Spheroid Constructor {@link Spheroid#Spheroid(Vector3D, Vector3D, double, double)} Here we
      *              check the correctness of the Spheroid class constructor. Nominal case as well as degraded cases are
      *              checked. Once the test is passed, the method is considered correct and used afterwards.
-     * 
+     *
      * @input data
-     * 
+     *
      * @output Spheroid
-     * 
+     *
      * @testPassCriteria No exception is raised for nominal cases, an IllegalArgumentException is raised for degraded
      *                   cases. We check the returned elements with the ones given at the construction with an epsilon
      *                   of 1e-16 which takes into account the machine error only.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -223,22 +218,22 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_PROPS}
-     * 
+     *
      * @testedMethod {@link Spheroid#getCenter()}
-     * 
+     *
      * @description Test Spheroid getters.
-     * 
+     *
      * @input none
-     * 
+     *
      * @output Vector3D containing the normalized cylinder axis
-     * 
+     *
      * @testPassCriteria The returned axis is the same as the user specified axis with an epsilon of 1e-16 due to the
      *                   machine errors only.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -261,24 +256,24 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link Spheroid#getLocalBasisTransform()}
      * @testedMethod {@link Spheroid#getStandardBasisTransform()}
-     * 
+     *
      * @description Test Spheroid basis transformations.
-     * 
+     *
      * @input none
-     * 
+     *
      * @output Matrix3D containing coordinates of target basis expressed in current basis
-     * 
+     *
      * @testPassCriteria The local basis transform matrix contains the coordinates of the standard basis vectors
      *                   expressed in the local basis. The product of both matrices must equal the identity matrix. All
      *                   with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -341,26 +336,26 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_BASISTRANSFORMATIONS}
-     * 
+     *
      * @testedMethod {@link Spheroid#getAffineLocalExpression(Vector3D)}
      * @testedMethod {@link Spheroid#getAffineStandardExpression(Vector3D)}
      * @testedMethod {@link Spheroid#getVectorialLocalExpression(Vector3D)}
      * @testedMethod {@link Spheroid#getVectorialStandardExpression(Vector3D)}
-     * 
+     *
      * @description Test Spheroid basis transformations.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D expressed in target basis
-     * 
+     *
      * @testPassCriteria For a vector expressed in the standard basis, the vector expressed in the local basis must be
      *                   the same as the predicted one, and the transformation into the standard basis must yield the
      *                   same result with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -440,21 +435,21 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_INTERSECTIONS}
-     * 
+     *
      * @testedMethod {@link Spheroid#intersects(Line)}
-     * 
+     *
      * @description Test Spheroid intersections algorithm.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Boolean set to true if the user specified line intersects the spheroid
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -635,22 +630,22 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_INTERSECTIONS}
-     * 
+     *
      * @testedMethod {@link Spheroid#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Test Spheroid intersections algorithm.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] containing the intersection points, or empty
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -709,25 +704,25 @@ public class SpheroidTest {
 
     /**
      * Testing distance and closestPointTo(Vector3D)
-     * 
+     *
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#closestPointTo(Vector3D)}
      * @testedMethod {@link Spheroid#distanceTo(Vector3D)}
-     * 
+     *
      * @description Test Spheroid distance computation algorithms for distance to Vector3D.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -869,23 +864,23 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#closestPointTo(Vector3D)}
      * @testedMethod {@link Spheroid#distanceTo(Vector3D)}
-     * 
+     *
      * @description Test Spheroid distance computation algorithms. Test part 2 only to keep part 1 under 100 lines.
-     * 
+     *
      * @input Vector3D
-     * 
+     *
      * @output Vector3D containing the closest computed point
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1017,23 +1012,23 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#closestPointTo(Line)}
      * @testedMethod {@link Spheroid#distanceTo(Line)}
-     * 
+     *
      * @description Test Spheroid distance computation algorithms.
-     * 
+     *
      * @input Line
-     * 
+     *
      * @output Vector3D[] containing the closest computed points
-     * 
+     *
      * @testPassCriteria The expected result is the same as the predicted one with an epsilon of 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1085,22 +1080,22 @@ public class SpheroidTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations in this output being the same
      *              as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -1117,27 +1112,27 @@ public class SpheroidTest {
         final String result = mySpheroid.toString();
 
         final String expected =
-            "Spheroid{Center{5; 5; 5},Revolution axis{1; 0; 0},Equatorial radius{2.0},Polar radius{2.5}}";
+            "Spheroid{Center{5.0; 5.0; 5.0},Revolution axis{1.0; 0.0; 0.0},Equatorial radius{2.0},Polar radius{2.5}}";
         Assert.assertEquals(expected, result);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SPHEROID_DISTANCES}
-     * 
+     *
      * @testedMethod {@link Spheroid#closestPointTo(Vector3D)}
-     * 
+     *
      * @description Make sure the vector (user point - computed closest point) is normal to the surface of the spheroid
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output dot product of surface tangents and user point / closest point vector
-     * 
+     *
      * @testPassCriteria The computed dot products must be within machine espilon range
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test

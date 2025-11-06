@@ -12,10 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Copyright 2002-2011 CS Communication & Systèmes
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -45,14 +47,7 @@ import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.events.utils.EventShifter;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
-import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.orbits.EquinoctialOrbit;
-import fr.cnes.sirius.patrius.orbits.Orbit;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.propagation.ParametersType;
-import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
-import fr.cnes.sirius.patrius.propagation.analytical.EcksteinHechlerPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -65,9 +60,7 @@ public class EventShifterTest {
      * It should NOT BE MERGED BACK into Orekit!
      */
 
-    private double mu;
     private AbsoluteDate iniDate;
-    private Propagator propagator;
     private List<EventEntry> log;
 
     private final double sunRadius = 696000000.;
@@ -75,7 +68,7 @@ public class EventShifterTest {
 
     private EventDetector createRawDetector(final String nameIncreasing, final String nameDecreasing,
                                             final double tolerance)
-                                                                   throws PatriusException {
+        throws PatriusException {
         return new EclipseDetector(CelestialBodyFactory.getSun(), this.sunRadius,
             CelestialBodyFactory.getEarth(), this.earthRadius, 0, 60., 1.e-10){
 
@@ -84,9 +77,8 @@ public class EventShifterTest {
 
             @Override
             public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                Action
+                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 EventShifterTest.this.log.add(new EventEntry(s.getDate().durationFrom(EventShifterTest.this.iniDate),
                     tolerance,
                     increasing ? nameIncreasing : nameDecreasing));
@@ -101,21 +93,7 @@ public class EventShifterTest {
             Utils.clear();
             Utils.setDataRoot("regular-dataCNES-2003");
             FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
-            this.mu = 3.9860047e14;
-            final double ae = 6.378137e6;
-            final double c20 = -1.08263e-3;
-            final double c30 = 2.54e-6;
-            final double c40 = 1.62e-6;
-            final double c50 = 2.3e-7;
-            final double c60 = -5.5e-7;
-            final Vector3D position = new Vector3D(-6142438.668, 3492467.560, -25767.25680);
-            final Vector3D velocity = new Vector3D(505.8479685, 942.7809215, 7435.922231);
             this.iniDate = new AbsoluteDate(1969, 7, 28, 4, 0, 0.0, TimeScalesFactory.getTT());
-            final Orbit orbit = new EquinoctialOrbit(new PVCoordinates(position, velocity),
-                FramesFactory.getEME2000(), this.iniDate, this.mu);
-            this.propagator =
-                new EcksteinHechlerPropagator(orbit, ae, this.mu, orbit.getFrame(), c20, c30, c40, c50, c60,
-                    ParametersType.OSCULATING);
             this.log = new ArrayList<>();
         } catch (final PropagationException pe) {
             Assert.fail(pe.getLocalizedMessage());
@@ -125,22 +103,12 @@ public class EventShifterTest {
     @After
     public void tearDown() {
         this.iniDate = null;
-        this.propagator = null;
         this.log = null;
     }
 
     private static class EventEntry {
 
-        private final double dt;
-        private final double expectedDT;
-        private final double tolerance;
-        private final String name;
-
         public EventEntry(final double dt, final double tolerance, final String name) {
-            this.dt = dt;
-            this.expectedDT = Double.NaN;
-            this.tolerance = tolerance;
-            this.name = name;
         }
     }
 
@@ -155,9 +123,9 @@ public class EventShifterTest {
     public enum features {
         /**
          * @featureTitle Validation of the event shifter
-         * 
+         *
          * @featureDescription Validation of the event shifter
-         * 
+         *
          * @coveredRequirements DV-INTEG_70
          */
         VALIDATION_EVENT_SHIFTER;
@@ -165,24 +133,24 @@ public class EventShifterTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VALIDATION_EVENT_SHIFTER}
-     * 
+     *
      * @testedMethod {@link EventShifter#getIncreasingTimeShift()}
      * @testedMethod {@link EventShifter#getDecreasingTimeShift()}
-     * 
+     *
      * @description test for code coverage of the simple getters
-     * 
+     *
      * @input constructor parameters for an EventShifter
-     * 
+     *
      * @output outputs of the simple getters
-     * 
+     *
      * @testPassCriteria outputs of the simple getters as expected
-     * 
+     *
      * @referenceVersion 1.1
-     * 
+     *
      * @nonRegressionVersion 1.1
-     * 
+     *
      * @throws PatriusException
      *         should never happen
      */
@@ -191,7 +159,7 @@ public class EventShifterTest {
         final double incr = -15;
         final double decr = -20;
         final EventShifter evtShifter =
-            new EventShifter(this.createRawDetector("shifted increasing", "shifted decreasing",
+            new EventShifter(createRawDetector("shifted increasing", "shifted decreasing",
                 1.0e-3),
                 true, incr, decr);
         // simple getters' tests

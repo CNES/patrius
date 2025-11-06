@@ -18,6 +18,7 @@
  * @history Created 20/08/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.13:FA:FA-165:08/12/2023:[PATRIUS] SolarActivityDataReader.getMaxDate erronee
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -260,6 +261,7 @@ public abstract class SolarActivityDataReader implements DataLoader, SolarActivi
 
     /**
      * {@inheritDoc}
+     * <br>
      * Warning: for performance reasons, this method does not check if data are available for provided date.
      * If not data is available for provided date, null is returned.
      * The method {@link #checkApKpValidity(AbsoluteDate, AbsoluteDate)} should be called to ensure data are available

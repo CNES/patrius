@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
  * car l'orientation n'est pas forcement IAU
  * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
@@ -157,11 +158,11 @@ public class FacetBodyShapeValTest {
         body1 = new StarConvexFacetBodyShape("Phobos HD", celestialBody1.getRotatingFrame(IAUPoleModelType.TRUE),
             new ObjMeshLoader(fullName1));
         body1.setLLHCoordinatesSystem(LLHCoordinatesSystem.BODYCENTRIC_NORMAL);
-        // Load geodetic mesh and validate .obj file writing
+        // Load ellipsoid mesh and validate .obj file writing
         final String modelFile2 = "mnt" + File.separator + "m1phobos.tab";
         final String fullName2 = StarConvexFacetBodyShape.class.getClassLoader().getResource(modelFile2).toURI()
             .getPath();
-        final GeodeticMeshLoader loader2 = new GeodeticMeshLoader(fullName2);
+        final EllipsoidMeshLoader loader2 = new EllipsoidMeshLoader(fullName2);
         final String m1phobosObjPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator
                 + "mnt" + File.separator + "m1phobos.obj";
         loader2.toObjFile(m1phobosObjPath);
@@ -301,7 +302,7 @@ public class FacetBodyShapeValTest {
      *              <li>Check found intersection point belongs to triangle</li>
      *              <li>Check intersection point lies on line of sight</li>
      *              <li>Check intersection point is between satellite body center</li>
-     *              <li>Check intersection point is similar between .obj and geodetic files</li>
+     *              <li>Check intersection point is similar between .obj and ellipsoid files</li>
      *              </ul>
      *
      * @testPassCriteria intersection between a line of sight and the body is properly computed for various
@@ -353,7 +354,7 @@ public class FacetBodyShapeValTest {
                 body2.getPVCoordinates(date, frame).getPosition().subtract(actual2.getPoint()),
                 position1.subtract(actual2.getPoint())) < 0);
 
-            // Intersection point is similar between .obj and geodetic files (threshold: 131m, limited due to different
+            // Intersection point is similar between .obj and ellipsoid files (threshold: 131m, limited due to different
             // models)
             Assert.assertEquals(0., actual1.getPoint().distance(actual2.getPoint()), 131);
         }
@@ -368,7 +369,7 @@ public class FacetBodyShapeValTest {
      *              <li>Check found intersection point belongs to triangle</li>
      *              <li>Check intersection point lies on line of sight</li>
      *              <li>Check intersection point is between satellite body center</li>
-     *              <li>Check intersection point is similar between .obj and geodetic files</li>
+     *              <li>Check intersection point is similar between .obj and ellipsoid files</li>
      *              </ul>
      *
      * @testPassCriteria intersection between a line of sight and the body is properly computed for various
@@ -395,7 +396,7 @@ public class FacetBodyShapeValTest {
     /**
      * @testType VT
      *
-     * @description check that neighbors are properly computed (Triangle, Geodetic and cartesian points case):
+     * @description check that neighbors are properly computed (Triangle, ellipsoid and cartesian points case):
      *              <ul>
      *              <li>Check that neighbors respect the distance criterion</li>
      *              <li>Check that other triangles do not respect the distance criterion</li>
@@ -837,10 +838,10 @@ public class FacetBodyShapeValTest {
     }
 
     /**
-     * Check that provided list of triangles is within provided distance of provided geodetic point.
+     * Check that provided list of triangles is within provided distance of provided ellipsoid point.
      *
      * @param triangles triangles list to check
-     * @param point geodetic point
+     * @param point ellipsoid point
      * @param body body
      * @param maxDistance max distance
      */

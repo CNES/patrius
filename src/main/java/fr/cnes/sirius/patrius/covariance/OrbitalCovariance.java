@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-447:25/04/2025:[PATRIUS] Non prise en compte 
+ *          du cadre interplanetaire dans OrbitalCovariance et MultiOrbitalCovariance 
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
@@ -31,9 +34,7 @@ import java.util.List;
 import java.util.Objects;
 
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
-import fr.cnes.sirius.patrius.frames.LocalOrbitalFrame;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.linear.SymmetricPositiveMatrix;
@@ -351,67 +352,6 @@ public class OrbitalCovariance extends AbstractOrbitalCovariance<OrbitalCovarian
     public OrbitalCovariance transformTo(final LOFType lofType, final boolean frozenLof)
             throws PatriusException {
         return transformTo(this.associatedOrbit, lofType, frozenLof);
-    }
-
-    /**
-     * Transforms this orbital covariance to a local orbital frame centered on a given orbit.
-     * <p>
-     * <em>The reference orbit must be defined at the same date as the covariance.</em>
-     * </p>
-     * <p>
-     * <b>Important:</b><br>
-     * The returned covariance is defined in {@linkplain OrbitType#CARTESIAN Cartesian coordinates},
-     * in the specified {@linkplain LOFType}. Note that the local orbital frame uses the reference
-     * orbit as its {@linkplain PVCoordinatesProvider}, which relies on a simple Keplerian model for
-     * the propagation. The LOF built is therefore only valid at the date of the reference orbit,
-     * unless it is frozen at this date (the LOF then becomes an inertial frame which can be used at
-     * other dates).
-     * </p>
-     *
-     * @param referenceOrbit
-     *        the orbit used to build the local orbital frame
-     * @param lofType
-     *        the type of the local orbital frame
-     * @param frozenLof
-     *        whether or not the local orbital frame built should be frozen at the date of the
-     *        reference orbit
-     * @return the transformed orbital covariance
-     * @throws PatriusException
-     *         if the orbital covariance cannot be transformed to the specified local orbital frame
-     */
-    public OrbitalCovariance transformTo(final Orbit referenceOrbit, final LOFType lofType,
-            final boolean frozenLof) throws PatriusException {
-        // Ensure the reference orbit is not null and defined at the same date as the covariance
-        checkOrbit(referenceOrbit);
-
-        // Initialize the reference pseudo inertial frame
-        final Frame pseudoInertialFrame;
-        if (this.getFrame().isPseudoInertial()) {
-            pseudoInertialFrame = this.getFrame();
-        } else if (referenceOrbit.getFrame().isPseudoInertial()) {
-            pseudoInertialFrame = referenceOrbit.getFrame();
-        } else {
-            pseudoInertialFrame = FramesFactory.getGCRF();
-        }
-
-        // Check if the reference orbit frame is pseudo-inertial, otherwise convert the orbit in the
-        // pseudo-inertial frame
-        final Orbit orbit;
-        if (referenceOrbit.getFrame().isPseudoInertial()) {
-            orbit = referenceOrbit;
-        } else {
-            orbit = referenceOrbit.getType().convertOrbit(referenceOrbit, pseudoInertialFrame);
-        }
-
-        // Build the LOF frame and freeze it if requested
-        Frame lofFrame = new LocalOrbitalFrame(pseudoInertialFrame, lofType, orbit, lofType.name());
-        if (frozenLof) {
-            lofFrame = lofFrame.getFrozenFrame(pseudoInertialFrame, orbit.getDate(), "Frozen_"
-                    + lofType.name());
-        }
-
-        // Return the orbital covariance transformed in the expected frame
-        return this.transformTo(lofFrame, OrbitType.CARTESIAN, this.getPositionAngle());
     }
 
     /**

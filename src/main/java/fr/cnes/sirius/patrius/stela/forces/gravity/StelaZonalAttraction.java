@@ -18,6 +18,7 @@
  * @history created on 08/02/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-391:25/04/2025:[STELA-PATRIUS] Implementation zonaux par recurrence
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -36,25 +37,24 @@
 package fr.cnes.sirius.patrius.stela.forces.gravity;
 
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
+import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.stela.JavaMathAdapter;
-import fr.cnes.sirius.patrius.stela.forces.AbstractStelaLagrangeContribution;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 //CHECKSTYLE:OFF
 
 /**
+ * Class computing Zonal perturbations.
  * <p>
- * Class computing Zonal perturbations
+ * Computes Zonal perturbations, short periods and partial derivatives depending on the degree of development asked.
  * </p>
  * <p>
- * computes Zonal perturbations, short periods and partial derivatives depending on the degree of development asked
- * </p>
- * <p>
- * The class is adapted from STELA EarthPotentialGTO in fr.cnes.los.stela.elib.business.implementation.earthPotential
+ * The class is adapted from STELA EarthPotentialGTO in fr.cnes.los.stela.elib.business.implementation.earthPotential.
  * </p>
  * 
  * @concurrency conditionally thread-safe
@@ -66,25 +66,24 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * @version $Id$
  * 
  * @since 1.3
- * 
  */
-public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
+public class StelaZonalAttraction extends AbstractStelaZonalAttraction {
 
      /** Serializable UID. */
     private static final long serialVersionUID = 4836663314116306825L;
 
     /** Central body reference radius (m). */
     private final double rEq;
+
     /** Central body coefficients */
-    private double[] j;
-    /** Degree of development for zonal perturbations */
-    private final int zonalDegreeMaxPerturbation;
-    /** Boolean: true J2 is computed */
-    private final boolean isJ2SquareComputed;
+    private final double[] j;
+
     /** Degree of development for zonal short periods */
     private final int zonalDegreeMaxSP;
+
     /** Degree of development for zonal partial derivatives */
     private final int zonalDegreeMaxPD;
+
     /** Boolean: true partial derivatives from J2 are computed */
     private final boolean isJ2SquareParDerComputed;
 
@@ -96,7 +95,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
      * @param inZonalDegreeMaxPerturbation
      *        degree of development for zonal perturbations (max 15)
      * @param inIsJ2SquareComputed
-     *        true J2² is computed
+     *        if {@code true}, J2² is computed
      * @param inZonalDegreeMaxSP
      *        the degree of development for zonal short periods (max 2)
      * @param inZonalDegreeMaxPD
@@ -106,30 +105,31 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
      * 
      * @throws PatriusException
      *         Orekit exception needed for using the provider
+     * @throws NotPositiveException
+     *         if {@code inZonalDegreeMaxPerturbation < 0}
      */
     public StelaZonalAttraction(final PotentialCoefficientsProvider provider, final int inZonalDegreeMaxPerturbation,
         final boolean inIsJ2SquareComputed, final int inZonalDegreeMaxSP, final int inZonalDegreeMaxPD,
         final boolean inIsJ2SquareParDerComputed)
         throws PatriusException {
 
-        this.zonalDegreeMaxPerturbation = inZonalDegreeMaxPerturbation;
-        this.isJ2SquareComputed = inIsJ2SquareComputed;
+        super(inZonalDegreeMaxPerturbation, inIsJ2SquareComputed);
+
         this.zonalDegreeMaxSP = inZonalDegreeMaxSP;
         this.zonalDegreeMaxPD = inZonalDegreeMaxPD;
         this.isJ2SquareParDerComputed = inIsJ2SquareParDerComputed;
 
         this.rEq = provider.getAe();
-        this.j = new double[this.zonalDegreeMaxPerturbation + 1];
         this.j = provider.getJ(false, this.zonalDegreeMaxPerturbation);
-
     }
 
+    /** {@inheritDoc} */
     @Override
     public double[] computePerturbation(final StelaEquinoctialOrbit orbit) {
 
         // From J8, methods are set in another file because there are too long (thousands of lines)
 
-        double[] dPotZonal = new double[6];
+        final double[] dPotZonal;
         switch (this.zonalDegreeMaxPerturbation) {
             case 2:
                 dPotZonal = this.computeJ2(orbit);
@@ -174,12 +174,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
                 dPotZonal = this.computeJ15(orbit);
                 break;
             default:
-                break;
+                throw PatriusException.createIllegalArgumentException(PatriusMessages.OUT_OF_RANGE_ORDER);
         }
 
         return dPotZonal;
     }
 
+    /** {@inheritDoc} */
     @Override
     public double[] computeShortPeriods(final StelaEquinoctialOrbit orbit,
             final OrbitNatureConverter converter) {
@@ -193,6 +194,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
         return shortPeriods;
     }
 
+    /** {@inheritDoc} */
     @Override
     public double[][] computePartialDerivatives(final StelaEquinoctialOrbit orbit) {
 
@@ -224,9 +226,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 2nd degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 2nd degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -237,9 +237,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
      * Compute the effect of the 2nd degree development of the Zonal Perturbation with specific mu.
-     * </p>
      * 
      * @param orbit
      *        an orbit
@@ -290,13 +288,10 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
         }
 
         return dPotJ2;
-
     }
 
     /**
-     * <p>
-     * Compute the effect of the 3rd degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 3rd degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -307,9 +302,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 3rd degree development of the Zonal Perturbation with specific mu
-     * </p>
+     * Compute the effect of the 3rd degree development of the Zonal Perturbation with specific mu.
      * 
      * @param orbit
      *        an orbit
@@ -371,9 +364,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 4th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 4th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -486,9 +477,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 5th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 5th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -643,9 +632,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 6th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 6th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -914,8 +901,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 7th degree development of the Zonal Perturbation
+     * Compute the effect of the 7th degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
@@ -1219,9 +1205,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 8th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 8th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1240,9 +1224,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 9th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 9th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1261,9 +1243,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 10th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 10th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1282,9 +1262,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 11th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 11th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1303,9 +1281,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 12th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 12th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1324,9 +1300,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 13th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 13th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1345,9 +1319,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 14th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 14th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1366,9 +1338,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * <p>
-     * Compute the effect of the 15th degree development of the Zonal Perturbation
-     * </p>
+     * Compute the effect of the 15th degree development of the Zonal Perturbation.
      * 
      * @param orbit
      *        an orbit
@@ -1386,15 +1356,8 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
         return dPot;
     }
 
-    /**
-     * <p>
-     * Compute the effect of the J2² of the Zonal Perturbation.
-     * </p>
-     * 
-     * @param orbit
-     *        an orbit
-     * @return the J2² perturbation
-     */
+    /** {@inheritDoc} */
+    @Override
     public double[] computeJ2Square(final StelaEquinoctialOrbit orbit) {
 
         /** Orbital elements */
@@ -1447,14 +1410,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the short periods linked to J2 Potential effect
+     * Compute the short periods linked to J2 Potential effect.
      * <p>
-     * Compute the effect of the short periods generated by the 2nd degree development of the Zonal Perturbation
+     * Compute the effect of the short periods generated by the 2nd degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return shortPeriodsJ2 the J2 short periods
      */
     public double[] computeJ2ShortPeriods(final StelaEquinoctialOrbit orbit) {
@@ -1654,14 +1616,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J2 Potential effect
+     * Compute the partial derivatives due to J2 Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to the 2nd degree development of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to the 2nd degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ2 the J2 partial derivatives
      */
     public double[][] computeJ2PartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -1748,14 +1709,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J3 Potential effect
+     * Compute the partial derivatives due to J3 Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to the 3rd degree development of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to the 3rd degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ3 the J3 partial derivatives
      */
     public double[][] computeJ3PartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -1882,14 +1842,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J4 Potential effect
+     * Compute the partial derivatives due to J4 Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to the 4th degree development of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to the 4th degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ4 the J4 partial derivatives
      */
     public double[][] computeJ4PartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -2151,14 +2110,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J5 Potential effect
+     * Compute the partial derivatives due to J5 Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to the 5th degree development of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to the 5th degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ5 the J5 partial derivatives
      */
     public double[][] computeJ5PartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -2480,14 +2438,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J6 Potential effect
+     * Compute the partial derivatives due to J6 Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to the 6th degree development of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to the 6th degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ6 the J6 partial derivatives
      */
     public double[][] computeJ6PartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -3441,14 +3398,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J7 Potential effect
+     * Compute the partial derivatives due to J7 Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to the 7th degree development of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to the 7th degree development of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ7 the J7 partial derivatives
      */
     public double[][] computeJ7PartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -4464,14 +4420,13 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
     }
 
     /**
-     * Compute the partial derivatives due to J2² Potential effect
+     * Compute the partial derivatives due to J2² Potential effect.
      * <p>
-     * Compute the effect of the partial derivatives due to J2² of the Zonal Perturbation
+     * Compute the effect of the partial derivatives due to J2² of the Zonal Perturbation.
      * </p>
      * 
      * @param orbit
      *        the equinoctial orbit
-     * 
      * @return partialDerivativesJ2Square the J2 partial derivatives
      */
     public double[][] computeJ2SquarePartialDerivatives(final StelaEquinoctialOrbit orbit) {
@@ -4664,6 +4619,7 @@ public class StelaZonalAttraction extends AbstractStelaLagrangeContribution {
      * 
      * @return true if J2<sup>2</sup> is computed
      */
+    @Override
     public boolean isJ2SquareComputed() {
         return this.isJ2SquareComputed;
     }

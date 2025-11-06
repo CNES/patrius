@@ -16,9 +16,10 @@
  *
  * 
  * @history creation 20/04/2012
-<<<<<<< HEAD
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-379:25/04/2025:[PATRIUS] Ajout d'une implementation basique de OrbitalCovarianceProvider
+ * VERSION:4.16:OPENFD-550:25/04/2025:[PATRIUS] Detecteur de masquage par un corps celeste
  * VERSION:4.15:OPENFD-376:21/11/2024:[PATRIUS] Nombre max d'itérations pour la propagation du signal par SensorModel
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -1566,8 +1567,8 @@ public class SensorModelTest {
         builder.addProperty(sensorProperty, this.mainBody);
         final Assembly assembly = builder.returnAssembly();
         
-        SensorModel sensorModel = new SensorModel(assembly, this.mainBody);
-        Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER, sensorModel.getMaxIter());
+        final SensorModel sensorModel = new SensorModel(assembly, this.mainBody);
+        Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER, sensorModel.getMaxIterSignalPropagation());
     }
 
     /**
@@ -1595,11 +1596,11 @@ public class SensorModelTest {
         builder.addProperty(sensorProperty, this.mainBody);
         final Assembly assembly = builder.returnAssembly();
 
-        SensorModel sensorModel = new SensorModel(assembly, this.mainBody);
+        final SensorModel sensorModel = new SensorModel(assembly, this.mainBody);
         Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER,
-                sensorModel.getMaxIter());
-        sensorModel.setMaxIter(1);
-        Assert.assertEquals(1, sensorModel.getMaxIter());
+                sensorModel.getMaxIterSignalPropagation());
+        sensorModel.setMaxIterSignalPropagation(1);
+        Assert.assertEquals(1, sensorModel.getMaxIterSignalPropagation());
     }
 
     private static double erreurAngleHorizonCible(final EllipsoidBodyShape elli, final double lat,

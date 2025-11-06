@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
  * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -677,10 +678,10 @@ public class FacetBodyShape extends AbstractBodyShape {
                 obsTangentialPoint = rotation.applyTo(obsOcculting);
                 // Retrieve the closest intersection point between the line observer-tangentialPoint and this occulting
                 // body, at reception date (= date of Line definition)
-                final FacetPoint[] geodeticInterPoints = getIntersectionPoints(new Line(posObserver,
+                final FacetPoint[] ellipsoidInterPoints = getIntersectionPoints(new Line(posObserver,
                     posObserver.add(obsTangentialPoint), posObserver), frameAtOccultingDate, date);
                 // Check if the line observer-tangentialPoint intersects this occulting body
-                if (geodeticInterPoints.length > 0) {
+                if (ellipsoidInterPoints.length > 0) {
                     // Set the current angle as the new minimum angle to search for a larger angle
                     minAngle = currentAngle;
                 } else {
@@ -754,13 +755,13 @@ public class FacetBodyShape extends AbstractBodyShape {
     }
 
     /**
-     * Getter for the neighbors of provided geodetic point whose center is closer than provided distance.
+     * Getter for the neighbors of provided ellipsoid point whose center is closer than provided distance.
      *
      * @param point
      *        a body point
      * @param maxDistance
      *        max distance
-     * @return the neighbors of provided geodetic point whose center is closer than provided distance
+     * @return the neighbors of provided ellipsoid point whose center is closer than provided distance
      */
     public List<Triangle> getNeighbors(final BodyPoint point, final double maxDistance) {
         return getNeighbors(point.getPosition(), maxDistance);

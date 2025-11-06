@@ -17,6 +17,7 @@
  * @history creation 16/03/2015
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -542,7 +543,7 @@ public class CartesianParameters extends AbstractOrbitalParameters {
             // Build ellipsoid
             final OneAxisEllipsoid ellipsoid = new OneAxisEllipsoid(ae, f, frame);
 
-            // Get geodetic coordinates (altitude, latitude, longitude)
+            // Get ellipsoid coordinates (altitude, latitude, longitude)
             // No date needs to be provided since frame is unchanged
             final EllipsoidPoint point = ellipsoid.buildPoint(getPosition(), frame, null, "");
             final double latitude = point.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude();

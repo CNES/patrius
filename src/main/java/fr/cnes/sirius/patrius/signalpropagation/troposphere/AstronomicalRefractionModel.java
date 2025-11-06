@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * END-HISTORY
  */
@@ -114,7 +115,7 @@ public class AstronomicalRefractionModel implements FiniteDistanceAngularCorrect
     /** Wavelength of the signal [nanometer]. */
     private final double wavelengthNanometer;
 
-    /** The geodetic position of the ground station. */
+    /** The ellipsoid position of the ground station. */
     private final BodyPoint point;
 
     /**
@@ -134,7 +135,7 @@ public class AstronomicalRefractionModel implements FiniteDistanceAngularCorrect
      * throws an exception.
      *
      * @param point
-     *        The geodetic point of the ground station
+     *        The ellipsoid point of the ground station
      * @param meteoConditionsProvider
      *        The meteorological condition provider at the ground station
      * @param wavelengthNanometer
@@ -153,7 +154,7 @@ public class AstronomicalRefractionModel implements FiniteDistanceAngularCorrect
      * The use of values outside the tables throws an exception.
      *
      * @param point
-     *        The geodetic point of the ground station
+     *        The ellipsoid point of the ground station
      * @param meteoConditionsProvider
      *        The meteorological condition provider at the ground station
      * @param wavelengthNanometer

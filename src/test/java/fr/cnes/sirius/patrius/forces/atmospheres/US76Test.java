@@ -18,6 +18,7 @@
  * @history Created 16/10/2014
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -218,7 +219,7 @@ public class US76Test {
     }
 
     /**
-     * Geodetic altitude from geopotential altitude
+     * Ellipsoid altitude from geopotential altitude
      * 
      * @param h
      *        Geopotential altitude
@@ -255,7 +256,7 @@ public class US76Test {
             EPS2, ComparisonType.RELATIVE);
 
         // Altitudes 1 - 4 of the reference table
-        // are geopotential altitudes => must convert to geodetic altitude before test!
+        // are geopotential altitudes => must convert to ellipsoid altitude before test!
         final double alt0 = this.computeZ(0);
         final double alt1 = this.computeZ(20E3);
         final double alt2 = this.computeZ(40E3);
@@ -443,7 +444,7 @@ public class US76Test {
         final double alt1 = this.computeZ(20E3);
         final double alt2 = this.computeZ(40E3);
 
-        // Geodetic point
+        // Ellipsoid point
         final EllipsoidPoint point1 = new EllipsoidPoint(this.earth1, this.earth1.getLLHCoordinatesSystem(), 0, 0,
             alt1, "");
         final EllipsoidPoint point2 = new EllipsoidPoint(this.earth1, this.earth1.getLLHCoordinatesSystem(), 0, 0,            alt2,            "");

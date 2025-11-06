@@ -16,10 +16,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-551:25/04/2025:[PATRIUS] Amelioration retour methodes ParameterUtils
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -29,43 +30,28 @@
 package fr.cnes.sirius.patrius.math.parameter;
 
 import java.util.ArrayList;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.Arrays;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.Collection;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.Iterator;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
-import fr.cnes.sirius.patrius.Utils;
 import java.util.Locale;
-import fr.cnes.sirius.patrius.Utils;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
-import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.CartesianCoordinate;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.EquinoctialCoordinate;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.KeplerianCoordinate;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.OrbitalCoordinate;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@linkplain ParameterUtils}.
@@ -130,19 +116,25 @@ public class ParameterUtilsTest {
 
         // The parameterizable instance is null
         parameterizable = null;
-        boolean hasReplacedField = ParameterUtils.addFieldToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertFalse(hasReplacedField); // No descriptor has been replaced
+        Map<Parameter, AbsoluteDate> replacedFieldDateMap =
+            ParameterUtils.addFieldToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(replacedFieldDateMap.isEmpty()); // No descriptor has been replaced
 
         // The list of parameters is not null, but it contains a null value and an immutable
         // instance
         final List<Parameter> parameters = Arrays.asList(parameter1, parameter2, parameter3,
             parameter4, null);
         parameterizable = new SimpleParameterizable(parameters);
-        hasReplacedField = ParameterUtils.addFieldToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertTrue(hasReplacedField); // Some descriptors have been replaced
+        replacedFieldDateMap =
+            ParameterUtils.addFieldToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertFalse(replacedFieldDateMap.isEmpty()); // Some descriptors have been replaced
+        Assert.assertEquals(replacedFieldDateMap.size(), 1);
+        Assert.assertEquals(replacedFieldDateMap.get(parameter1), AbsoluteDate.J2000_EPOCH); // Old value
 
-        hasReplacedField = ParameterUtils.addFieldToParameters(parameterizable, ID, "SAT1");
-        Assert.assertFalse(hasReplacedField); // The descriptor ID:"SAT1" already exists in params 1, 2, 3 so it doesn't replace it
+        final Map<Parameter, String> replacedFieldStringMap =
+            ParameterUtils.addFieldToParameters(parameterizable, ID, "SAT1");
+        Assert.assertTrue(replacedFieldStringMap.isEmpty()); // The descriptor ID:"SAT1" already exists in params 1, 2,
+                                                             // 3 so it doesn't replace it
 
         expected = new ParameterDescriptor();
         expected.addField(ID, "SAT1");
@@ -199,17 +191,22 @@ public class ParameterUtilsTest {
 
         // The list of parameters is null.
         parameters = null;
-        boolean hasReplacedField = ParameterUtils.addFieldToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertFalse(hasReplacedField); // No descriptor has been replaced
+        Map<Parameter, AbsoluteDate> replacedFieldDateMap =
+            ParameterUtils.addFieldToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(replacedFieldDateMap.isEmpty()); // No descriptor has been replaced
 
         // The list of parameters is not null, but it contains a null value and an immutable
         // instance
         parameters = Arrays.asList(parameter1, parameter2, parameter3, parameter4, null);
-        hasReplacedField = ParameterUtils.addFieldToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertTrue(hasReplacedField); // Some descriptors have been replaced
+        replacedFieldDateMap = ParameterUtils.addFieldToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(replacedFieldDateMap.containsKey(parameter1)); // Some descriptors have been replaced
+        Assert.assertEquals(replacedFieldDateMap.size(), 1);
+        Assert.assertEquals(replacedFieldDateMap.get(parameter1), AbsoluteDate.J2000_EPOCH); // Old value
 
-        hasReplacedField = ParameterUtils.addFieldToParameters(parameters, ID, "SAT1");
-        Assert.assertFalse(hasReplacedField); // The descriptor ID:"SAT1" already exists in params 1, 2, 3 so it doesn't replace it
+        final Map<Parameter, String> replacedFieldStringMap =
+            ParameterUtils.addFieldToParameters(parameters, ID, "SAT1");
+        Assert.assertTrue(replacedFieldStringMap.isEmpty());// The descriptor ID:"SAT1" already exists in params 1, 2, 3
+                                                            // so it doesn't replace it
 
         expected = new ParameterDescriptor();
         expected.addField(ID, "SAT1");
@@ -261,18 +258,26 @@ public class ParameterUtilsTest {
 
         // The list of parameter descriptors is null.
         parameterDescriptors = null;
-        boolean hasReplacedField = ParameterUtils.addFieldToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertFalse(hasReplacedField); // No descriptor has been replaced
+        Map<ParameterDescriptor, AbsoluteDate> replacedFieldDateMap =
+            ParameterUtils.addFieldToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(replacedFieldDateMap.isEmpty()); // No descriptor has been replaced
 
         // The list of parameter descriptors is not null, but it contains a null value and an
         // immutable instance
         parameterDescriptors = Arrays.asList(parameterDescriptor1, parameterDescriptor2,
             parameterDescriptor3, null);
-        hasReplacedField = ParameterUtils.addFieldToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertTrue(hasReplacedField); // Some descriptors have been replaced
+        replacedFieldDateMap =
+            ParameterUtils.addFieldToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertFalse(replacedFieldDateMap.isEmpty()); // Some descriptors have been replaced
+        Assert.assertEquals(replacedFieldDateMap.size(), 1); // Some descriptors have been replaced
 
-        hasReplacedField = ParameterUtils.addFieldToParameterDescriptors(parameterDescriptors, ID, "SAT1");
-        Assert.assertFalse(hasReplacedField); // The descriptor ID:"SAT1" already exists in params 1, 2, 3 so it doesn't replace it
+        Assert.assertTrue(replacedFieldDateMap.containsKey(parameterDescriptor1));
+        Assert.assertEquals(replacedFieldDateMap.get(parameterDescriptor1), AbsoluteDate.J2000_EPOCH); // Old value
+
+        final Map<ParameterDescriptor, String> replacedFieldStringMap =
+            ParameterUtils.addFieldToParameterDescriptors(parameterDescriptors, ID, "SAT1");
+        Assert.assertTrue(replacedFieldStringMap.isEmpty()); // The descriptor ID:"SAT1" already exists in params 1, 2,
+                                                             // 3 so it doesn't replace it
 
         expected = new ParameterDescriptor();
         expected.addField(ID, "SAT1");
@@ -324,19 +329,27 @@ public class ParameterUtilsTest {
 
         // The parameterizable instance is null
         parameterizable = null;
-        boolean hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertFalse(hasAlreadyPresentField); // No descriptor has been replaced
+        Set<Parameter> alreadyPresentFieldSet =
+            ParameterUtils.addFieldIfAbsentToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(alreadyPresentFieldSet.isEmpty()); // No descriptor has been replaced
 
         // The list of parameters is not null, but it contains a null value and an immutable
         // instance
         final List<Parameter> parameters = Arrays.asList(parameter1, parameter2, parameter3,
             parameter4, null);
         parameterizable = new SimpleParameterizable(parameters);
-        hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertTrue(hasAlreadyPresentField); // Some descriptors have been replaced, every descriptors are new
+        alreadyPresentFieldSet =
+            ParameterUtils.addFieldIfAbsentToParameters(parameterizable, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(alreadyPresentFieldSet.contains(parameter1)); // Some descriptors have been replaced, every
+                                                                        // descriptors are new
+        Assert.assertEquals(alreadyPresentFieldSet.size(), 1);
 
-        hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameters(parameterizable, ID, "SAT1");
-        Assert.assertFalse(hasAlreadyPresentField); // The descriptor ID:"SAT1" already exists in params 1, 2, 3 so it's not added
+        final List<Parameter> alreadyPresentFieldList = new ArrayList<>(alreadyPresentFieldSet);
+        Assert.assertEquals(parameter1, alreadyPresentFieldList.get(0));
+
+        alreadyPresentFieldSet = ParameterUtils.addFieldIfAbsentToParameters(parameterizable, ID, "SAT1");
+        Assert.assertTrue(alreadyPresentFieldSet.isEmpty()); // The descriptor ID:"SAT1" already exists in params 1, 2,
+                                                             // 3 so it's not added
 
         expected = new ParameterDescriptor();
         expected.addField(ID, "SAT1");
@@ -393,17 +406,24 @@ public class ParameterUtilsTest {
 
         // The list of parameters is null.
         parameters = null;
-        boolean hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertFalse(hasAlreadyPresentField); // No descriptor has been replaced
+        Set<Parameter> alreadyPresentFieldSet =
+            ParameterUtils.addFieldIfAbsentToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertTrue(alreadyPresentFieldSet.isEmpty()); // No descriptor has been replaced
 
         // The list of parameters is not null, but it contains a null value and an immutable
         // instance
         parameters = Arrays.asList(parameter1, parameter2, parameter3, parameter4, null);
-        hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertTrue(hasAlreadyPresentField); // Some descriptors have been replaced, every descriptors are new
+        alreadyPresentFieldSet =
+            ParameterUtils.addFieldIfAbsentToParameters(parameters, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertFalse(alreadyPresentFieldSet.isEmpty()); // Some descriptors have been replaced
+        Assert.assertTrue(alreadyPresentFieldSet.contains(parameter1)); // Some descriptors have been replaced
+        Assert.assertEquals(alreadyPresentFieldSet.size(), 1);
+        final List<Parameter> alreadyPresentFieldList = new ArrayList<>(alreadyPresentFieldSet);
+        Assert.assertEquals(parameter1, alreadyPresentFieldList.get(0));
 
-        hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameters(parameters, ID, "SAT1");
-        Assert.assertFalse(hasAlreadyPresentField); // The descriptor ID:"SAT1" already exists in params 1, 2, 3 so it's not added
+        alreadyPresentFieldSet = ParameterUtils.addFieldIfAbsentToParameters(parameters, ID, "SAT1");
+        Assert.assertTrue(alreadyPresentFieldSet.isEmpty()); // The descriptor ID:"SAT1" already exists in params 1, 2,
+                                                             // 3 so it's not added
 
         expected = new ParameterDescriptor();
         expected.addField(ID, "SAT1");
@@ -455,20 +475,26 @@ public class ParameterUtilsTest {
 
         // The list of parameter descriptors is null.
         parameterDescriptors = null;
-        boolean hasAlreadyPresentField =
+        Set<ParameterDescriptor> alreadyPresentFieldSet =
             ParameterUtils.addFieldIfAbsentToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertFalse(hasAlreadyPresentField); // No descriptor has been replaced
+        Assert.assertTrue(alreadyPresentFieldSet.isEmpty()); // No descriptor has been replaced
 
         // The list of parameter descriptors is not null, but it contains a null value and an
         // immutable instance
         parameterDescriptors = Arrays.asList(parameterDescriptor1, parameterDescriptor2,
             parameterDescriptor3, null);
-        hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
-        Assert.assertTrue(hasAlreadyPresentField); // Some descriptors have been replaced, every descriptors are new
+        alreadyPresentFieldSet =
+            ParameterUtils.addFieldIfAbsentToParameterDescriptors(parameterDescriptors, DATE, AbsoluteDate.CCSDS_EPOCH);
+        Assert.assertFalse(alreadyPresentFieldSet.isEmpty()); // Some descriptors have been replaced
+        Assert.assertEquals(alreadyPresentFieldSet.size(), 1);
+        Assert.assertTrue(alreadyPresentFieldSet.contains(parameterDescriptor1));
+        final List<ParameterDescriptor> alreadyPresentFieldList = new ArrayList<>(alreadyPresentFieldSet);
+        Assert.assertEquals(parameterDescriptor1, alreadyPresentFieldList.get(0));
 
-        hasAlreadyPresentField = ParameterUtils.addFieldIfAbsentToParameterDescriptors(parameterDescriptors, ID, "SAT1");
-        Assert.assertFalse(hasAlreadyPresentField); // The descriptor ID:"SAT1" already exists in params 1, 2, 3 so it's not added
-
+        alreadyPresentFieldSet =
+            ParameterUtils.addFieldIfAbsentToParameterDescriptors(parameterDescriptors, ID, "SAT1");
+        Assert.assertTrue(alreadyPresentFieldSet.isEmpty()); // The descriptor ID:"SAT1" already exists in params 1, 2,
+                                                             // 3 so it's not added
         expected = new ParameterDescriptor();
         expected.addField(ID, "SAT1");
         expected.addField(COORDINATE, CartesianCoordinate.X);

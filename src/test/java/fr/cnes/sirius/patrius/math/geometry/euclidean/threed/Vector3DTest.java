@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-74:30/06/2023:[PATRIUS] Reliquat OGM3320 hash code de Vector3D
  * VERSION:4.11:FA:FA-3320:22/05/2023:[PATRIUS] Mauvaise implementation de la methode hashCode de Vector3D
@@ -33,37 +35,23 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import java.text.DecimalFormat;
-import fr.cnes.sirius.patrius.Utils;
 import java.text.NumberFormat;
-import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.Space;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.Well1024a;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
 
 public class Vector3DTest {
 
@@ -105,7 +93,7 @@ public class Vector3DTest {
         } catch (final MathIllegalArgumentException e) {
             // expected
         }
-        
+
         // From spherical coordinates
         final Vector3D expected = new Vector3D(2., 3., 4.);
         final SphericalCoordinates coord = new SphericalCoordinates(expected);
@@ -384,7 +372,7 @@ public class Vector3DTest {
     @Test
     public void testToString() {
         final Vector3D v = new Vector3D(1., 2., 3.);
-        final String expected = "{1; 2; 3}";
+        final String expected = "{1.0; 2.0; 3.0}";
         final String actual = v.toString();
         Assert.assertEquals(expected, actual);
     }
@@ -511,7 +499,8 @@ public class Vector3DTest {
         TestUtils.checkSerializedEquality(Vector3D.NEGATIVE_INFINITY);
     }
 
-    private static void
+    private static
+        void
             checkVector(final Vector3D v, final double x, final double y, final double z) {
         Assert.assertEquals(x, v.getX(), 1.0e-12);
         Assert.assertEquals(y, v.getY(), 1.0e-12);

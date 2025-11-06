@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>fr.cnes.sirius.patrius</groupId>
 	<artifactId>patrius</artifactId>
-	<version>4.15.6</version>
+	<version>4.16</version>
 	<packaging>jar</packaging>
 	<name>CNES space flight dynamics library</name>
 	<description>

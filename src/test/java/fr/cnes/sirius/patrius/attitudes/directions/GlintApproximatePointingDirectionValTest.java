@@ -18,7 +18,6 @@
  * @history creation 15/10/2015
  *
  * HISTORY
- * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
  * des reperes predefinis et des corps predefinis
@@ -49,7 +48,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -88,6 +86,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Validation test for GlintApproximatePointingDirection.
@@ -201,8 +200,7 @@ public class GlintApproximatePointingDirectionValTest {
             this.mu, this.frame);
 
         // build a TNW align attitude law with X earth pointed
-        final LofOffset tnwLaw =
-            new LofOffset(LOFType.TNW, new Rotation(RotationOrder.XYZ, -FastMath.PI / 2, -FastMath.PI / 2, 0));
+        final LofOffset tnwLaw = new LofOffset(LOFType.TNW, RotationOrder.XYZ, -FastMath.PI / 2, -FastMath.PI / 2, 0);
 
         final MyAttitudeLaw glintAttLaw = new MyAttitudeLaw();
 
@@ -279,8 +277,8 @@ public class GlintApproximatePointingDirectionValTest {
         private final GlintApproximatePointingDirection glint;
 
         /** Intermediate attitude law: offset from LOF. */
-        private final LofOffset intermediateLaw;
-        // = new LofOffset(LOFType.LVLH, new Rotation(RotationOrder.YZX, -FastMath.PI / 2, 0, 0);
+        private final LofOffset intermediateLaw;// = new LofOffset(LOFType.LVLH, RotationOrder.YZX, -FastMath.PI / 2, 0,
+                                                // 0);
 
         /**
          * Constructor
@@ -295,8 +293,7 @@ public class GlintApproximatePointingDirectionValTest {
             // Build inermediate frame
             final Rotation rotation = new Rotation(Vector3D.PLUS_I, Vector3D.PLUS_K, Vector3D.PLUS_K, Vector3D.MINUS_I);
             final double[] angles = rotation.getAngles(RotationOrder.YZX);
-            this.intermediateLaw =
-                new LofOffset(LOFType.LVLH, new Rotation(RotationOrder.YZX, angles[0], angles[1], angles[2]));
+            this.intermediateLaw = new LofOffset(LOFType.LVLH, RotationOrder.YZX, angles[0], angles[1], angles[2]);
         }
 
         /** {@inheritDoc} */

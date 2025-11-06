@@ -19,6 +19,7 @@
 /*
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
@@ -169,7 +170,7 @@ public class NadirPointing extends AbstractGroundPointing {
 
         final Vector3D satInBodyFrame = pvProv.getPVCoordinates(date, getBodyFrame()).getPosition();
 
-        // nadir position in geodetic coordinates
+        // nadir position in ellipsoid coordinates
         final EllipsoidPoint nadirPoint = getNadirPoint(satInBodyFrame, date);
 
         // nadir point position in specified frame
@@ -193,7 +194,7 @@ public class NadirPointing extends AbstractGroundPointing {
 
         final Vector3D satInBodyFrame = refToBody.transformPosition(scRef.getPosition());
 
-        // nadir position in geodetic coordinates
+        // nadir position in -ellipsoid coordinates
         final EllipsoidPoint nadirPoint = getNadirPoint(satInBodyFrame, scRef.getDate());
 
         // nadir point position in body frame
@@ -219,11 +220,11 @@ public class NadirPointing extends AbstractGroundPointing {
     private EllipsoidPoint getNadirPoint(final Vector3D satInBodyFrame, final AbsoluteDate date)
         throws PatriusException {
 
-        // satellite position in geodetic coordinates
+        // satellite position in ellipsoid coordinates
         final EllipsoidPoint satPoint = (EllipsoidPoint) getBodyShape().buildPoint(satInBodyFrame, getBodyFrame(),
             date, BodyPointName.DEFAULT);
 
-        // nadir position in geodetic coordinates
+        // nadir position in ellipsoid coordinates
         return new EllipsoidPoint(satPoint.getBodyShape(), satPoint.getBodyShape().getLLHCoordinatesSystem(), 
             satPoint.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude(), 
             satPoint.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLongitude(), 0., BodyPointName.DEFAULT);

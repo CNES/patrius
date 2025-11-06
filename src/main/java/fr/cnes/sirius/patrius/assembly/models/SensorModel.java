@@ -5,19 +5,20 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  *
  * @history creation 19/04/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-550:25/04/2025:[PATRIUS] Detecteur de masquage par un corps celeste
  * VERSION:4.15:OPENFD-376:21/11/2024:[PATRIUS] Nombre max d'itérations pour la propagation du signal par SensorModel
  * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
@@ -71,6 +72,7 @@ import fr.cnes.sirius.patrius.bodies.ApparentRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -84,6 +86,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.SolidShape;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.math.util.Pair;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
@@ -98,28 +101,25 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  *              This class is a model for a generic sensor of the assembly : it uses a SensorProperty object. It
  *              provides computations using the tree of frames and some measures are available.
  *              </p>
- * 
+ *
  * @concurrency not thread-safe
- * 
+ *
  * @concurrency.comment the direct use of a not thread-safe Assembly makes this class
  *                      not thread-safe itself
- * 
+ *
  * @see SensorProperty
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.2
- * 
+ *
  */
 public final class SensorModel implements PVCoordinatesProvider {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 2071997109297592846L;
-
-    /** Default epsilon (s) for signal propagation computation. */
-    private static final double DEFAULT_EPSILON_SIGNAL_PROPAGATION = 1E-14;
 
     /** The sensor property */
     private SensorProperty property;
@@ -181,18 +181,21 @@ public final class SensorModel implements PVCoordinatesProvider {
     /** index of this spacecraft in the masking parts list */
     private int ownSpacecraftIndex;
 
-    /** Epsilon for signal propagation computation. */
-    private double epsSignalPropagation = DEFAULT_EPSILON_SIGNAL_PROPAGATION;
-    
+    /**
+     * Epsilon for signal propagation computation (initialized to
+     * {@link VacuumSignalPropagationModel#DEFAULT_THRESHOLD} by default).
+     */
+    private double epsSignalPropagation;
+
     /**
      * Maximum number of iterations for signal propagation computation (initialized to
      * {@link VacuumSignalPropagationModel#DEFAULT_MAX_ITER} by default).
      */
-    private int maxIter = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
+    private int maxIterSignalPropagation;
 
     /**
      * Constructor for a sensor model.
-     * 
+     *
      * @param assembly
      *        the considered vehicle
      * @param partName
@@ -203,7 +206,7 @@ public final class SensorModel implements PVCoordinatesProvider {
         // initialisations
         this.inPartName = partName;
         this.inAssembly = assembly;
-        this.resetProperty();
+        resetProperty();
 
         this.maskingParts = new ArrayList<>();
         this.maskingSpacecraftNames = new ArrayList<>();
@@ -211,9 +214,9 @@ public final class SensorModel implements PVCoordinatesProvider {
         this.maskingAssemblies = new ArrayList<>();
         this.ownSpacecraftIndex = -1;
         this.maskingPartName = "none";
-        this.maxIter = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
+        this.epsSignalPropagation = VacuumSignalPropagationModel.DEFAULT_THRESHOLD;
+        this.maxIterSignalPropagation = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
     }
-
 
     /**
      * Resets the sensor property features. Shall be used each time the
@@ -236,7 +239,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Checks if the main target at least partially is in the field of view at a date
-     * 
+     *
      * @param date
      *        the date of the computation
      * @return true if the main target is in the field of view at this date
@@ -280,7 +283,7 @@ public final class SensorModel implements PVCoordinatesProvider {
     /**
      * Checks if at least an inhibition target is at least partially in its associated
      * inhibition field at a date
-     * 
+     *
      * @param date
      *        the date of the computation
      * @return false if one of the targets is in its field
@@ -335,7 +338,7 @@ public final class SensorModel implements PVCoordinatesProvider {
     /**
      * Checks if the main target is in the field of view and no inhibition target in its inhibition field
      * at a given date.
-     * 
+     *
      * @param date
      *        the date of the computation
      * @return true if the main target is in the field of view and no inhibition target in its inhibition field.
@@ -344,14 +347,14 @@ public final class SensorModel implements PVCoordinatesProvider {
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
      */
     public boolean visibilityOk(final AbsoluteDate date) throws PatriusException {
-        return this.noInhibition(date) && this.isMainTargetInField(date);
+        return noInhibition(date) && isMainTargetInField(date);
     }
 
     /**
      * Computes the angular distance of the CENTER of the main target to the border of the main field
      * of view at a date. The result is positive if the center of the target is in the field. Please
      * refer the specific used field's javadoc for details.
-     * 
+     *
      * @param targetDate
      *        the target date of the computation (important in case of PropagationDelayType.LIGHT_SPEED!)
      * @return the angular distance
@@ -367,14 +370,14 @@ public final class SensorModel implements PVCoordinatesProvider {
      * Computes the angular distance of the CENTER of the main target to the border of the main field of view at
      * sensor's reception date. The result is positive if the center of the target is in the field. Please refer the
      * specific used field's javadoc for details.
-     * 
+     *
      * @param targetDate
      *        target's date
      * @param sensorDate
      *        sensor's date
-     * 
+     *
      * @return the angular distance
-     * 
+     *
      * @throws PatriusException
      *         if some frame transformation problem occurs
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
@@ -390,7 +393,7 @@ public final class SensorModel implements PVCoordinatesProvider {
      * of the associated inhibition field
      * at a date. The result is positive if the center of the target is in the field. Please
      * refer the specific used field's javadoc for details.
-     * 
+     *
      * @param date
      *        the date of the computation
      * @param inhibitionFieldNumber
@@ -401,7 +404,8 @@ public final class SensorModel implements PVCoordinatesProvider {
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
      */
     public double getInhibitTargetCenterToFieldAngle(final AbsoluteDate date,
-                                                     final int inhibitionFieldNumber) throws PatriusException {
+                                                     final int inhibitionFieldNumber)
+        throws PatriusException {
 
         // direction vector of this target in the sensor's frame
         final IPart sensorPart = this.inAssembly.getPart(this.inPartName);
@@ -414,7 +418,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Computes the sight axis of the sensor in a given frame at a date
-     * 
+     *
      * @param frame
      *        the frame of expression
      * @param date
@@ -432,7 +436,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Computes the reference axis of the sensor in a given frame at a date
-     * 
+     *
      * @param frame
      *        the frame of expression
      * @param date
@@ -458,7 +462,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Computes the target vector at a date in the sensor's frame.
-     * 
+     *
      * @param targetDate
      *        the target computation date
      * @return the target vector
@@ -478,14 +482,14 @@ public final class SensorModel implements PVCoordinatesProvider {
      * Computes the target vector in the sensor's frame. The target position (used as source) is computed at
      * targetDate, and the sensor position (used as receiver) is computed at sensor date. The computed vector
      * therefore links two points that are computed at two different dates.
-     * 
+     *
      * @param targetDate
      *        the target date
      * @param sensorDate
      *        the sensor date
-     * 
+     *
      * @return the target vector that links the target (at target date) and the sensor (at sensor date)
-     * 
+     *
      * @throws PatriusException
      *         if some frame transformation problem occurs
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
@@ -514,7 +518,7 @@ public final class SensorModel implements PVCoordinatesProvider {
      * Computes the target vector at a date in the sensor's frame.
      * The vector is then normalised (the X, Y and Z coefficients of
      * this vector are so the directing cosine).
-     * 
+     *
      * @param date
      *        the computation date
      * @return the target vector
@@ -529,7 +533,7 @@ public final class SensorModel implements PVCoordinatesProvider {
     /**
      * Computes the dihedral angles of the target at a date in the sensor's frame.
      * The array is filled with {AX, AY, AZ}.
-     * 
+     *
      * @param date
      *        the computation date
      * @return the dihedral angles
@@ -553,7 +557,7 @@ public final class SensorModel implements PVCoordinatesProvider {
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
      */
     public double getTargetSightAxisAngle(final AbsoluteDate date) throws PatriusException {
-        return Vector3D.angle(this.getNormalisedTargetVectorInSensorFrame(date), this.property.getInSightAxis());
+        return Vector3D.angle(getNormalisedTargetVectorInSensorFrame(date), this.property.getInSightAxis());
     }
 
     /**
@@ -570,7 +574,7 @@ public final class SensorModel implements PVCoordinatesProvider {
         // right reference axis
         final Vector3D refAxis = this.property.getReferenceAxis()[axisNumber - 1];
 
-        return Vector3D.angle(this.getNormalisedTargetVectorInSensorFrame(date), refAxis);
+        return Vector3D.angle(getNormalisedTargetVectorInSensorFrame(date), refAxis);
     }
 
     /**
@@ -582,7 +586,7 @@ public final class SensorModel implements PVCoordinatesProvider {
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
      */
     public double getTargetSightAxisElevation(final AbsoluteDate date) throws PatriusException {
-        return MathUtils.HALF_PI - this.getTargetSightAxisAngle(date);
+        return MathUtils.HALF_PI - getTargetSightAxisAngle(date);
     }
 
     /**
@@ -596,7 +600,7 @@ public final class SensorModel implements PVCoordinatesProvider {
      *         (if the assembly is not linked to the tree of frame in witch the target is defined)
      */
     public double getTargetRefAxisElevation(final AbsoluteDate date, final int axisNumber) throws PatriusException {
-        return MathUtils.HALF_PI - this.getTargetRefAxisAngle(date, axisNumber);
+        return MathUtils.HALF_PI - getTargetRefAxisAngle(date, axisNumber);
     }
 
     /**
@@ -615,7 +619,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Sets the main target of the sensor property.
-     * 
+     *
      * @param target
      *        the new main target center
      * @param radius
@@ -629,7 +633,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Computes the angular radius from the sensor of the main target at a date.
-     * 
+     *
      * @param targetDate
      *        the target date of the computation (important in case of PropagationDelayType.LIGHT_SPEED!)
      * @return the angular radius
@@ -663,14 +667,15 @@ public final class SensorModel implements PVCoordinatesProvider {
         final BasicPVCoordinatesProvider pvProv = new BasicPVCoordinatesProvider(pvDir, FramesFactory.getGCRF());
 
         final double value = MathLib.divide(this.mainTargetRadius.getApparentRadius(pvProvider,
-            targetDate, pvProv, PropagationDelayType.INSTANTANEOUS), this
-            .getTargetVectorInSensorFrame(targetDate).getNorm());
+            targetDate, pvProv, PropagationDelayType.INSTANTANEOUS),
+            this
+                .getTargetVectorInSensorFrame(targetDate).getNorm());
         return MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, value)));
     }
 
     /**
      * Computes the angular radius from the sensor of the main target at a date.
-     * 
+     *
      * @param inhibitionDate
      *        the date at which the signal passes at the inhibition target
      * @param sensorDate
@@ -735,14 +740,15 @@ public final class SensorModel implements PVCoordinatesProvider {
 
         // Final computation
         final double value = MathLib.divide(this.inhibitionTargetsRadiuses[inhibitionFieldNumber - 1]
-            .getApparentRadius(sensorFrame, inhibitionDate, occultedBody, propagationDelayType), targetInFrame
-            .getNorm());
+            .getApparentRadius(sensorFrame, inhibitionDate, occultedBody, propagationDelayType),
+            targetInFrame
+                .getNorm());
         return MathLib.asin(MathLib.min(1.0, MathLib.max(-1.0, value)));
     }
 
     /**
      * Get the {@link PVCoordinates} of the sensor part in the selected frame.
-     * 
+     *
      * @param date
      *        current date
      * @param frame
@@ -780,8 +786,9 @@ public final class SensorModel implements PVCoordinatesProvider {
      * Computes the minimal euclidian distance to the spacecraft's shapes (GEOMERTY properties).
      * If the line between the sensor and the target intersects the shape, a negative value
      * is returned in order to compute events detections.
-     * 
-     * @param spacecraftDate spacecraft date
+     *
+     * @param spacecraftDate
+     *        spacecraft date
      * @param targetDate
      *        the current target date (currently unused)
      * @param propagationDelayType
@@ -818,8 +825,8 @@ public final class SensorModel implements PVCoordinatesProvider {
             for (final List<IPart> partList : this.maskingParts) {
                 for (final IPart part : partList) {
                     // the part's shape
-                    final GeometricProperty geomProperty = (GeometricProperty) (part.
-                        getProperty(PropertyType.GEOMETRY));
+                    final GeometricProperty geomProperty =
+                        (GeometricProperty) (part.getProperty(PropertyType.GEOMETRY));
                     final SolidShape shape = geomProperty.getShape();
 
                     // the transformation to the part's frame
@@ -853,7 +860,8 @@ public final class SensorModel implements PVCoordinatesProvider {
                             /** {@inheritDoc} */
                             @Override
                             public PVCoordinates getPVCoordinates(final AbsoluteDate date,
-                                                                  final Frame frame) throws PatriusException {
+                                                                  final Frame frame)
+                                throws PatriusException {
                                 return part.getFrame().getTransformTo(frame, date).getCartesian();
                             }
 
@@ -879,7 +887,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Compute part date.
-     * 
+     *
      * @param spacecraftDate
      *        spacecraft date
      * @param propagationDelayType
@@ -889,7 +897,8 @@ public final class SensorModel implements PVCoordinatesProvider {
      * @param pvProvider
      *        PV coordinates provider
      * @return part date
-     * @throws PatriusException thrown if computation failed
+     * @throws PatriusException
+     *         if computation failed
      */
     private AbsoluteDate getPartDate(final AbsoluteDate spacecraftDate,
                                      final PropagationDelayType propagationDelayType, final LinkType linkType,
@@ -907,20 +916,26 @@ public final class SensorModel implements PVCoordinatesProvider {
             // Handle link type
             if (linkType == LinkType.DOWNLINK) {
                 maskingPartDate = VacuumSignalPropagationModel.getSignalReceptionDate(pvProvider, this,
-                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame, this.maxIter);
+                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame,
+                    this.maxIterSignalPropagation);
             } else {
                 maskingPartDate = VacuumSignalPropagationModel.getSignalEmissionDate(pvProvider, this,
-                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame, this.maxIter);
+                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame,
+                    this.maxIterSignalPropagation);
             }
         }
         return maskingPartDate;
     }
 
     /**
-     * Computes the minimal euclidian distance to the celestial body shapes.
+     * Computes the minimal euclidian distance to the celestial body shapes.<br>
      * If the line between the sensor and the target intersects the shape, a negative value
      * is returned in order to compute events detections.
-     * 
+     * <p>
+     * Note: as soon as an intersection is found between the sensor and the target for one masking body, the distance
+     * computation is stopped and the negative value is returned (doesn't evaluate the others masking bodies).
+     * </p>
+     *
      * @param spacecraftDate
      *        spacecraft date
      * @param targetDate
@@ -935,55 +950,126 @@ public final class SensorModel implements PVCoordinatesProvider {
      */
     public double celestialBodiesMaskingDistance(final AbsoluteDate spacecraftDate, final AbsoluteDate targetDate,
                                                  final PropagationDelayType propagationDelayType,
-                                                 final LinkType linkType) throws PatriusException {
+                                                 final LinkType linkType)
+        throws PatriusException {
 
-        // initialization
-        double distance = Double.POSITIVE_INFINITY;
+        // Initialization
+        final double distance;
+        if (this.maskingBodies.isEmpty()) {
+            distance = Double.POSITIVE_INFINITY;
+        } else {
 
-        final int maskingBodiesNumber = this.maskingBodies.size();
-
-        if (maskingBodiesNumber > 0) {
+            final SignalPropagationRole mainRole;
+            if (linkType == LinkType.DOWNLINK) {
+                mainRole = SignalPropagationRole.EMITTER;
+            } else {
+                mainRole = SignalPropagationRole.RECEIVER;
+            }
 
             // sensor part's frame
-            final IPart sensorPart = this.inAssembly.getPart(this.inPartName);
-            final Frame sensorFrame = sensorPart.getFrame();
+            final Frame sensorFrame = this.inAssembly.getPart(this.inPartName).getFrame();
             final Vector3D targetInSensorFrame = this.getTargetVectorInSensorFrame(spacecraftDate);
-            final double targetDistance = targetInSensorFrame.getNorm();
-
-            final Line line = new Line(Vector3D.ZERO, targetInSensorFrame);
 
             // minimal distance to the masking bodies
-            for (int i = 0; i < maskingBodiesNumber; i++) {
-                AbsoluteDate bodyDate = spacecraftDate;
-                // Light speed case is treated separately only for computation times optimization
-                if (propagationDelayType == PropagationDelayType.LIGHT_SPEED) {
-                    // Signal propagation frame
-                    final Frame nativeFrameBody = this.maskingBodies.get(i).getNativeFrame(spacecraftDate);
-                    final Frame nativeFrameSensor = getNativeFrame(spacecraftDate);
-                    final Frame bodyInertialFrame = nativeFrameBody
-                        .getFirstCommonPseudoInertialAncestor(nativeFrameSensor);
-                    // Handle link type
-                    if (linkType == LinkType.DOWNLINK) {
-                        bodyDate = VacuumSignalPropagationModel.getSignalReceptionDate(this.maskingBodies.get(i),
-                            this, spacecraftDate, this.epsSignalPropagation, propagationDelayType,
-                            bodyInertialFrame, this.maxIter);
-                    } else {
-                        bodyDate = VacuumSignalPropagationModel.getSignalEmissionDate(this.maskingBodies.get(i), this,
-                            spacecraftDate, this.epsSignalPropagation, propagationDelayType, bodyInertialFrame, this.maxIter);
-                    }
-                }
+            final Pair<BodyShape, Double> minDistToMaskBody =
+                computeMinDistToMaskingBodies(spacecraftDate, this, mainRole, sensorFrame, targetInSensorFrame,
+                    this.maskingBodies, propagationDelayType, this.epsSignalPropagation, this.maxIterSignalPropagation);
 
-                // Distance to body
-                final double distToBody = bodyShapeMaskingDistance(
-                    this.maskingBodies.get(i), bodyDate, line, sensorFrame, targetDistance, targetInSensorFrame);
-                distance = MathLib.min(distance, distToBody);
-                this.maskingBodyName = this.maskingBodies.get(i).getName();
-                this.maskingBody = this.maskingBodies.get(i);
-            }
+            this.maskingBodyName = minDistToMaskBody.getFirst().getName();
+            this.maskingBody = minDistToMaskBody.getFirst();
+            distance = minDistToMaskBody.getSecond();
         }
 
         // Return result
         return distance;
+    }
+
+    /**
+     * Computes the minimal euclidian distance to the celestial body shapes.<br>
+     * If the line between the main object and the target intersects the shape, a negative value is returned in order to
+     * compute events detections.
+     * <p>
+     * Note: as soon as an intersection is found between the main object and the target for one masking body, the
+     * distance computation is stopped and the negative value is returned (doesn't evaluate the others masking bodies).
+     * </p>
+     *
+     * @param spacecraftDate
+     *        spacecraft date
+     * @param orbit
+     *        main orbit PVCoordinatesProvider
+     * @param spacecraftRole
+     *        role of the spacecraft (EMITTER or RECEIVER)
+     * @param spacecraftFrame
+     *        spacecraft centered frame
+     * @param targetPosition
+     *        target vector at a date in the line frame
+     * @param maskingBodies
+     *        masking celestial bodies
+     * @param propagationDelayType
+     *        propagation delay type
+     * @param epsilonSignalPropagation
+     *        Epsilon for signal propagation computation
+     * @param maxIterSignalPropagation
+     *        Maximum number of iterations for signal propagation computation
+     * @return the closest BodyShape and the distance from itself to the line of sight of both objects. If the line
+     *         between the main object and the target intersects the shape, a negative value is returned in order to
+     *         compute events detections.
+     * @throws PatriusException
+     *         if an error occurs
+     */
+    public static Pair<BodyShape, Double> computeMinDistToMaskingBodies(final AbsoluteDate spacecraftDate,
+                                                                        final PVCoordinatesProvider orbit,
+                                                                        final SignalPropagationRole spacecraftRole,
+                                                                        final Frame spacecraftFrame,
+                                                                        final Vector3D targetPosition,
+                                                                        final List<BodyShape> maskingBodies,
+                                                                        final PropagationDelayType propagationDelayType,
+                                                                        final double epsilonSignalPropagation,
+                                                                        final int maxIterSignalPropagation)
+        throws PatriusException {
+
+        // Initialization
+        double distance = Double.POSITIVE_INFINITY;
+        Pair<BodyShape, Double> res = new Pair<>(maskingBodies.get(0), distance);
+
+        final Line line = new Line(Vector3D.ZERO, targetPosition);
+
+        // Minimal distance to the masking bodies
+        for (final BodyShape maskingBody : maskingBodies) {
+            AbsoluteDate bodyDate = spacecraftDate;
+            // Light speed case is treated separately only for computation times optimization
+            if (propagationDelayType == PropagationDelayType.LIGHT_SPEED) {
+                // Signal propagation frame
+                final Frame nativeFrameBody = maskingBody.getNativeFrame(spacecraftDate);
+                final Frame bodyInertialFrame = nativeFrameBody
+                    .getFirstCommonPseudoInertialAncestor(spacecraftFrame);
+                // Handle link type
+                if (spacecraftRole == SignalPropagationRole.EMITTER) {
+                    bodyDate = VacuumSignalPropagationModel.getSignalReceptionDate(maskingBody, orbit, spacecraftDate,
+                        epsilonSignalPropagation, propagationDelayType, bodyInertialFrame, maxIterSignalPropagation);
+                } else {
+                    bodyDate = VacuumSignalPropagationModel.getSignalEmissionDate(maskingBody, orbit,
+                        spacecraftDate, epsilonSignalPropagation, propagationDelayType, bodyInertialFrame,
+                        maxIterSignalPropagation);
+                }
+            }
+
+            // Distance to body
+            final double distToBody =
+                bodyShapeMaskingDistance(maskingBody, bodyDate, line, spacecraftFrame, targetPosition);
+
+            // Update out information
+            if (distToBody < distance) {
+                distance = distToBody;
+                res = new Pair<>(maskingBody, distance);
+            }
+
+            if (distance < 0.) {
+                // A masking body is found, no need to look for other masking bodies, return the negative value
+                break;
+            }
+        }
+        return res;
     }
 
     /**
@@ -1012,7 +1098,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Getter for the last masking spacecraft.
-     * 
+     *
      * @return the last masking spacecraft
      */
     public PVCoordinatesProvider getMaskingSpacecraft() {
@@ -1021,7 +1107,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Getter for the last masking body.
-     * 
+     *
      * @return the last masking body
      */
     public PVCoordinatesProvider getMaskingBody() {
@@ -1030,7 +1116,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Computes the distance between a line and a shape, with a negative value if the line intersects the shape.
-     * 
+     *
      * @param line
      *        the line in the shape's frame
      * @param trans
@@ -1106,67 +1192,66 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Computes the minimal distance to a celestial body shape.<br>
-     * If the line between the sensor and the target intersects the body, a negative value is returned in order to
+     * If the line between the main object and the target intersects the body, a negative value is returned in order to
      * compute events detections.
-     * 
+     *
      * @param body
      *        the celestial body's shape
      * @param date
      *        the body date
      * @param line
-     *        the line sensor - target
-     * @param sensorFrame
-     *        the sensor part local frame
-     * @param targetDistance
-     *        distance from the sensor to the target
-     * @param targetInSensorFrame
-     *        the target position in the sensor local frame
+     *        the line main object - target
+     * @param mainFrame
+     *        main object centered frame
+     * @param targetPosition
+     *        the target position in the line frame
      * @return the minimal distance
      * @throws PatriusException
      *         if a problem occurs in frames transformations
      */
-    private static double bodyShapeMaskingDistance(final BodyShape body, final AbsoluteDate date,
-                                                   final Line line, final Frame sensorFrame,
-                                                   final double targetDistance, final Vector3D targetInSensorFrame)
+    private static double bodyShapeMaskingDistance(final BodyShape body, final AbsoluteDate date, final Line line,
+                                                   final Frame mainFrame, final Vector3D targetPosition)
         throws PatriusException {
 
-        // distance to the shape
+        // Distance to the shape
         double distLineToBody = 0.;
 
-        // intersection points
-        final BodyPoint[] points = body.getIntersectionPoints(line, sensorFrame, date);
-        final Vector3D[] pointsSensorFrame = new Vector3D[points.length];
-        final Transform t = body.getBodyFrame().getTransformTo(sensorFrame, date);
-        for (int i = 0; i < pointsSensorFrame.length; i++) {
-            pointsSensorFrame[i] = t.transformPosition(points[i].getPosition());
+        // Compute the distance from the main object to the target
+        final double targetDistance = targetPosition.getNorm();
+
+        // Intersection points
+        final BodyPoint[] points = body.getIntersectionPoints(line, mainFrame, date);
+        final Vector3D[] pointsMainFrame = new Vector3D[points.length];
+        final Transform t = body.getBodyFrame().getTransformTo(mainFrame, date);
+        for (int i = 0; i < pointsMainFrame.length; i++) {
+            pointsMainFrame[i] = t.transformPosition(points[i].getPosition());
         }
 
         if (points.length == 0) {
-            distLineToBody = body.distanceTo(line, sensorFrame, date);
-        } else if (Vector3D.dotProduct(pointsSensorFrame[0], targetInSensorFrame) > 0.) {
+            distLineToBody = body.distanceTo(line, mainFrame, date);
+        } else if (Vector3D.dotProduct(pointsMainFrame[0], targetPosition) > 0.) {
 
-            // if the line intersects the body, the returned distance is negative, and
-            // equal to minus the distance between the closest intersection points
-            // and the target.
+            // If the line intersects the body, the returned distance is negative, and equal to minus the distance
+            // between the closest intersection points and the target
             if (points.length > 1) {
-                // distance to the target
+                // Distance to the target
                 double distToMask = Double.POSITIVE_INFINITY;
                 int index = 0;
                 for (int i = 0; i < points.length; i++) {
-                    if (pointsSensorFrame[i].getNorm() < distToMask) {
-                        distToMask = pointsSensorFrame[i].getNorm();
+                    if (pointsMainFrame[i].getNorm() < distToMask) {
+                        distToMask = pointsMainFrame[i].getNorm();
                         index = i;
                     }
                 }
                 if (distToMask < targetDistance) {
-                    distLineToBody = -pointsSensorFrame[index].distance(targetInSensorFrame);
+                    distLineToBody = -pointsMainFrame[index].distance(targetPosition);
                 } else {
-                    // if the masking body is behind the target : no masking !
+                    // If the masking body is behind the target : no masking !
                     distLineToBody = 1.;
                 }
             }
         } else {
-            // if the masking body is behind the sensor : no masking !
+            // If the masking body is behind the main object : no masking !
             distLineToBody = 1.;
         }
 
@@ -1176,7 +1261,7 @@ public final class SensorModel implements PVCoordinatesProvider {
     /**
      * Enables the masking by the considered spacecraft's own parts, by giving the names of the parts that can cause
      * maskings.
-     * 
+     *
      * @param partsNames
      *        the names of the considered parts
      */
@@ -1195,7 +1280,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Enables the masking by a secondary spacecraft's parts, by giving the names of the parts that can cause maskings.
-     * 
+     *
      * @param spacecraft
      *        the secondary masking spacecraft
      * @param partsNames
@@ -1218,7 +1303,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Adds a celestial body shape to consider in maskings.
-     * 
+     *
      * @param body
      *        the celestial body shape to consider
      */
@@ -1228,7 +1313,7 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Getter for the main target.
-     * 
+     *
      * @return the main target
      */
     public PVCoordinatesProvider getMainTarget() {
@@ -1238,7 +1323,7 @@ public final class SensorModel implements PVCoordinatesProvider {
     /**
      * Returns inhibition field number #i.
      * Warning: no check is performed if provided number is beyond limits.
-     * 
+     *
      * @param inhibitionFieldNumber
      *        number of the inhibition field to consider (first is 1)
      * @return inhibition field number #i
@@ -1253,43 +1338,43 @@ public final class SensorModel implements PVCoordinatesProvider {
      * {@link #celestialBodiesMaskingDistance(AbsoluteDate, AbsoluteDate, PropagationDelayType, LinkType)} methods.
      * This epsilon (in s) directly reflect the accuracy of signal propagation (1s of accuracy = 3E8m of accuracy on
      * distance between emitter and receiver).
-     * 
-     * @param epsilon epsilon for signal propagation
+     *
+     * @param epsSignalPropagation
+     *        epsilon for signal propagation
      */
-    public void setEpsilonSignalPropagation(final double epsilon) {
-        this.epsSignalPropagation = epsilon;
+    public void setEpsilonSignalPropagation(final double epsSignalPropagation) {
+        this.epsSignalPropagation = epsSignalPropagation;
     }
-    
 
     /**
      * Getter for the maximum number of iterations for signal propagation when signal propagation is taken into account.
-     * 
+     *
      * @return the maximum number of iterations for signal propagation
      */
-    public int getMaxIter() {
-        return this.maxIter;
+    public int getMaxIterSignalPropagation() {
+        return this.maxIterSignalPropagation;
     }
 
     /**
      * Setter for the maximum number of iterations for signal propagation when signal propagation is
      * taken into account.
-     * 
-     * @param maxIter
+     *
+     * @param maxIterSignalPropagation
      *        Maximum number of iterations for signal propagation
      */
-    public void setMaxIter(final int maxIter) {
-        this.maxIter = maxIter;
+    public void setMaxIterSignalPropagation(final int maxIterSignalPropagation) {
+        this.maxIterSignalPropagation = maxIterSignalPropagation;
     }
 
     /**
      * @description This class is only used in the tests of the package Directions. This
      *              is a basic PVCoordinatesProvider : the attributes are a PVCoordinates object that can
      *              be returned and its frame of expression.
-     * 
+     *
      * @concurrency not thread-safe
-     * 
+     *
      * @author Thomas Rodrigues
-     * 
+     *
      * @since 3.3
      */
     private static class BasicPVCoordinatesProvider implements PVCoordinatesProvider {
@@ -1305,12 +1390,12 @@ public final class SensorModel implements PVCoordinatesProvider {
 
         /**
          * Build a direction from an origin and a target described by their PVCoordinatesProvider.
-         * 
+         *
          * @param inCoordinates
          *        the PVCoordinates
          * @param inFrame
          *        the frame in which the coordinates are expressed
-         * */
+         */
         public BasicPVCoordinatesProvider(final PVCoordinates inCoordinates, final Frame inFrame) {
             // Initialisation
             this.coordinates = inCoordinates;

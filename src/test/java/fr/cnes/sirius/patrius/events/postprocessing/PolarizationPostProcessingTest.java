@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
  * des reperes predefinis et des corps predefinis
@@ -69,16 +71,17 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import junit.framework.Assert;
 
 /**
- * @description <p>
+ * @description
+ *              <p>
  *              Class that tests the polarization post processing.
  *              </p>
- * 
+ *
  * @author Tiziana Sabatini
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.2
- * 
+ *
  */
 public class PolarizationPostProcessingTest {
 
@@ -86,17 +89,17 @@ public class PolarizationPostProcessingTest {
     public enum features {
         /**
          * @featureTitle Polarization single selection
-         * 
+         *
          * @featureDescription test the creation of a polarization single selection phenomenon.
-         * 
+         *
          * @coveredRequirements DV-VISI_60, DV-EVT_150
          */
         SINGLE_SELECTION,
         /**
          * @featureTitle Polarization selection switch
-         * 
+         *
          * @featureDescription test the creation of polarization switch events.
-         * 
+         *
          * @coveredRequirements DV-VISI_60, DV-EVT_150
          */
         POLARIZATION_SWITCH
@@ -108,22 +111,22 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#SINGLE_SELECTION}
-     * 
+     *
      * @testedMethod {@link PolarizationSingleSelection#PolarizationSingleSelection(String, String, double, double)}
      * @testedMethod {@link PolarizationSingleSelection#applyTo(Timeline)}
-     * 
+     *
      * @description tests the creation of the polarization single selection phenomenon
-     * 
+     *
      * @input timeline that contains all of the events detected through the propagation and the corresponding phenomena.
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created element is the expected one
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test
@@ -214,22 +217,22 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#POLARIZATION_SWITCH}
-     * 
+     *
      * @testedMethod {@link PolarizationSwitch#PolarizationSwitch(String, String, double, double)}
      * @testedMethod {@link PolarizationSwitch#applyTo(Timeline)}
-     * 
+     *
      * @description tests the creation of the polarization selection switch events
-     * 
+     *
      * @input timeline that contains all of the events detected through the propagation and the corresponding phenomena.
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created elements are the expected one
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test
@@ -316,22 +319,22 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#POLARIZATION_SWITCH}
-     * 
+     *
      * @testedMethod {@link PolarizationSwitch#PolarizationSwitch(String, String, double, double)}
      * @testedMethod {@link PolarizationSwitch#applyTo(Timeline)}
-     * 
+     *
      * @description tests the creation of the polarization selection switch events
-     * 
+     *
      * @input timeline that contains all of the events detected through the propagation and the corresponding phenomena.
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created elements are the expected one
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test
@@ -425,22 +428,22 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#POLARIZATION_SWITCH}
-     * 
+     *
      * @testedMethod {@link PolarizationSwitch#PolarizationSwitch(String, String, double, double)}
      * @testedMethod {@link PolarizationSwitch#applyTo(Timeline)}
-     * 
+     *
      * @description tests the creation of the polarization selection switch events
-     * 
+     *
      * @input timeline that contains all of the events detected through the propagation and the corresponding phenomena.
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created elements are the expected one
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test
@@ -517,22 +520,22 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#POLARIZATION_SWITCH}
-     * 
+     *
      * @testedMethod {@link PolarizationSwitch#PolarizationSwitch(String, String, double, double)}
      * @testedMethod {@link PolarizationSwitch#applyTo(Timeline)}
-     * 
+     *
      * @description tests the creation of the polarization selection switch events
-     * 
+     *
      * @input timeline that contains all of the events detected through the propagation and the corresponding phenomena.
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created elements are the expected one
-     * 
+     *
      * @referenceVersion 1.2
-     * 
+     *
      * @nonRegressionVersion 1.2
      */
     @Test
@@ -617,23 +620,23 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#POLARIZATION_SWITCH}
-     * 
+     *
      * @testedMethod {@link PolarizationSwitch#PolarizationSwitch(String, String, double, double)}
      * @testedMethod {@link PolarizationSwitch#applyTo(Timeline)}
-     * 
+     *
      * @description tests the polarization selection switch algorithm when there are no R events/phenomena in the
      *              timeline
-     * 
+     *
      * @input timeline with only one R event
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created event is the expected one (R event)
-     * 
+     *
      * @referenceVersion 1.3
-     * 
+     *
      * @nonRegressionVersion 1.3
      */
     @Test
@@ -675,23 +678,23 @@ public class PolarizationPostProcessingTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#POLARIZATION_SWITCH}
-     * 
+     *
      * @testedMethod {@link PolarizationSwitch#PolarizationSwitch(String, String, double, double)}
      * @testedMethod {@link PolarizationSwitch#applyTo(Timeline)}
-     * 
+     *
      * @description tests the polarization selection switch algorithm when there are no L events/phenomena in the
      *              timeline
-     * 
+     *
      * @input timeline with only one L event
-     * 
+     *
      * @output timeline after this post processing
-     * 
+     *
      * @testPassCriteria the created event is the expected one (L event)
-     * 
+     *
      * @referenceVersion 1.3
-     * 
+     *
      * @nonRegressionVersion 1.3
      */
     @Test
@@ -732,7 +735,7 @@ public class PolarizationPostProcessingTest {
 
     /**
      * Setup for all unit tests in the class.
-     * 
+     *
      * @throws PatriusException
      *         should not happen here
      */
@@ -775,9 +778,9 @@ public class PolarizationPostProcessingTest {
 
             @Override
             public
-                    Action
+                Action
                     eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                        throws PatriusException {
                 return Action.CONTINUE;
             }
         };
@@ -792,9 +795,9 @@ public class PolarizationPostProcessingTest {
 
             @Override
             public
-                    Action
+                Action
                     eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                        throws PatriusException {
                 return Action.CONTINUE;
             }
         };
@@ -826,9 +829,8 @@ public class PolarizationPostProcessingTest {
 
             @Override
             public
-                    Action
-                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
-                                                                                                           throws PatriusException {
+                Action
+                    eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward) {
                 return Action.CONTINUE;
             }
         };

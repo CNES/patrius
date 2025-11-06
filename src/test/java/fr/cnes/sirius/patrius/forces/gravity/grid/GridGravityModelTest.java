@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2021-2021 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-474:25/04/2025:[PATRIUS] Ameliorations de GridGravityModel
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -32,12 +34,14 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.BalminoGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
+import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GRGSFormatReader;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
@@ -50,6 +54,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.ClassicalRungeKuttaIntegrator;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
@@ -60,72 +65,76 @@ import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import junit.framework.Assert;
 
 /**
  * Unit tests for {@link GridGravityModel} class.
- * 
+ *
  * @author Emmanuel Bignon
- * 
+ *
  * @since 4.7
  */
 public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of acceleration on grid knots (with cartesian file)
-     * 
-     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 1E-15, due to round-off errors)
-     * 
+     *
+     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 1E-15, due to round-off
+     *                   errors)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void accelerationCartesianOnKnotsTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is line 1000 in file)
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.1000000000E+02).scalarMultiply(1000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
-        
+            new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.1000000000E+02).scalarMultiply(1000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
+
         // Check
         final Vector3D actual = force.computeAcceleration(state.getPVCoordinates().getPosition(),
             state.getDate());
-        final Vector3D expected = new Vector3D(+0.2691503164E01, +0.1506732218E01, +0.3404867886E01).scalarMultiply(force.getMu() / 1E9);
+        final Vector3D expected =
+            new Vector3D(+0.2691503164E01, +0.1506732218E01, +0.3404867886E01).scalarMultiply(force.getMu() / 1E9);
         Assert.assertEquals(0, actual.distance(expected), 1E-15);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of acceleration within grid knots (with cartesian file and spline interpolation)
-     * 
-     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 1E-4, due to manuel approximation of file values)
-     * 
+     *
+     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 1E-4, due to manuel
+     *                   approximation of file values)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void accelerationCartesianWithinKnotsTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TricubicSplineInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is exactly between line 1000 and 1001 in file)
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.7500000000E+01).scalarMultiply(1000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
-        
+            new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.7500000000E+01).scalarMultiply(1000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
+
         // Check
         final Vector3D actual = force.computeAcceleration(state.getPVCoordinates().getPosition(),
             state.getDate());
@@ -137,66 +146,73 @@ public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of acceleration on grid knots (with spherical file)
-     * 
-     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 2E-14, due to round-off errors)
-     * 
+     *
+     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 2E-14, due to round-off
+     *                   errors)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void accelerationSphericalOnKnotsTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_sphere.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_sphere.txt";
         final SphericalGridAttractionLoader loader = new SphericalGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is line 1000 in file)
         final SphericalCoordinates coords = new SphericalCoordinates(MathLib.toRadians(5), MathLib.toRadians(10), 9000);
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                coords.getCartesianCoordinates(), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
-        
+            coords.getCartesianCoordinates(),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+
         // Check
         final Vector3D actual = force.computeAcceleration(state.getPVCoordinates().getPosition(),
             state.getDate());
-        final Vector3D expected = new Vector3D(-7.856589059157337600e-03, -1.441903035720318200e-03, -7.508503790460136100e-04).scalarMultiply(force.getMu() / 1E9 * 1000);
+        final Vector3D expected =
+            new Vector3D(-7.856589059157337600e-03, -1.441903035720318200e-03, -7.508503790460136100e-04)
+                .scalarMultiply(force.getMu() / 1E9 * 1000);
         Assert.assertEquals(0, actual.distance(expected), 2E-14);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @description check that results is independent of modulo along longitude
-     * 
+     *
      * @testPassCriteria result is identical if longitude = 190deg or -170deg
-     * 
+     *
      * @referenceVersion 4.9
-     * 
+     *
      * @nonRegressionVersion 4.9
      */
     @Test
     public void accelerationSphericalCoordsNormalizedLongitudeTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_sphere.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_sphere.txt";
         final SphericalGridAttractionLoader loader = new SphericalGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State with longitude = 190deg
-        final SphericalCoordinates coords1 = new SphericalCoordinates(MathLib.toRadians(5), MathLib.toRadians(190), 9000);
+        final SphericalCoordinates coords1 =
+            new SphericalCoordinates(MathLib.toRadians(5), MathLib.toRadians(190), 9000);
         final SpacecraftState state1 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                coords1.getCartesianCoordinates(), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+            coords1.getCartesianCoordinates(),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
 
         // State with longitude = -170deg
-        final SphericalCoordinates coords2 = new SphericalCoordinates(MathLib.toRadians(5), MathLib.toRadians(-170), 9000);
+        final SphericalCoordinates coords2 =
+            new SphericalCoordinates(MathLib.toRadians(5), MathLib.toRadians(-170), 9000);
         final SpacecraftState state2 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                coords2.getCartesianCoordinates(), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+            coords2.getCartesianCoordinates(),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
 
         // Check
         final Vector3D actual1 = force.computeAcceleration(state1.getPVCoordinates().getPosition(),
@@ -208,62 +224,69 @@ public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of acceleration within grid knots (with spherical file and spline interpolation)
-     * 
-     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 1E-4, due to manuel approximation of file values)
-     * 
+     *
+     * @testPassCriteria acceleration is as expected (reference: from file, relative threshold: 1E-4, due to manuel
+     *                   approximation of file values)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void accelerationSphericalWithinKnotsTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_sphere.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_sphere.txt";
         final SphericalGridAttractionLoader loader = new SphericalGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is exactly between line 1000 and 1001 in file)
-        final SphericalCoordinates coords = new SphericalCoordinates(MathLib.toRadians(7.5), MathLib.toRadians(10), 9000);
+        final SphericalCoordinates coords =
+            new SphericalCoordinates(MathLib.toRadians(7.5), MathLib.toRadians(10), 9000);
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                coords.getCartesianCoordinates(), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
-        
+            coords.getCartesianCoordinates(),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
+
         // Check
         final Vector3D actual = force.computeAcceleration(state.getPVCoordinates().getPosition(),
             state.getDate());
-        final Vector3D expected1 = new Vector3D(-7.856589059157337600e00, -1.441903035720318200e00, -7.508503790460136100e-01);
-        final Vector3D expected2 = new Vector3D(-7.766784778628123400e00, -1.425421447623912600e00, -1.495986333331622400e00);
+        final Vector3D expected1 =
+            new Vector3D(-7.856589059157337600e00, -1.441903035720318200e00, -7.508503790460136100e-01);
+        final Vector3D expected2 =
+            new Vector3D(-7.766784778628123400e00, -1.425421447623912600e00, -1.495986333331622400e00);
         final Vector3D expected = new Vector3D(0.5, expected1, 0.5, expected2).scalarMultiply(force.getMu() / 1E9);
         Assert.assertEquals(0, actual.distance(expected), 1E-4);
     }
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of potential on grid knots (with cartesian file)
-     * 
-     * @testPassCriteria potential is as expected (reference: from file, relative threshold: 1E-15, due to round-off errors)
-     * 
+     *
+     * @testPassCriteria potential is as expected (reference: from file, relative threshold: 1E-15, due to round-off
+     *                   errors)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void potentialCartesianOnKnotsTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is line 1000 in file)
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.1000000000E+02).scalarMultiply(1000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
-        
+            new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.1000000000E+02).scalarMultiply(1000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+
         // Check
         final double actual = force.computePotential(state.getPVCoordinates().getPosition(), state.getFrame(),
             state.getDate());
@@ -273,29 +296,31 @@ public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of potential on grid knots (with spherical file)
-     * 
-     * @testPassCriteria potential is as expected (reference: from file, relative threshold: 2E-15, due to round-off errors)
-     * 
+     *
+     * @testPassCriteria potential is as expected (reference: from file, relative threshold: 2E-15, due to round-off
+     *                   errors)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void potentialSphericalOnKnotsTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_sphere.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_sphere.txt";
         final SphericalGridAttractionLoader loader = new SphericalGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is line 1000 in file)
         final SphericalCoordinates coords = new SphericalCoordinates(MathLib.toRadians(5), MathLib.toRadians(10), 9000);
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                coords.getCartesianCoordinates(), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
-        
+            coords.getCartesianCoordinates(),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+
         // Check
         final double actual = force.computePotential(state.getPVCoordinates().getPosition(), state.getFrame(),
             state.getDate());
@@ -305,13 +330,13 @@ public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of acceleration outside grid
-     * 
+     *
      * @testPassCriteria acceleration is as expected (reference: back-up model, relative threshold: 0)
-     * 
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
@@ -323,16 +348,17 @@ public class GridGravityModelTest {
             0.712699979843467446E-03 * 1E9, cnorm, snorm);
         backupModel.setCentralTermContribution(false);
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                backupModel, FramesFactory.getGCRF());
+            backupModel, FramesFactory.getGCRF());
 
         // State outside grid
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(100000, 200000, 300000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
-        
+            new Vector3D(100000, 200000, 300000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+
         // Check
         final Vector3D actual = force.computeAcceleration(state.getPVCoordinates().getPosition(),
             state.getDate());
@@ -343,32 +369,34 @@ public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check computation of potential outside grid
-     * 
-     * @testPassCriteria potential is close to potential on grid border (reference: potential on grid border, relative threshold: 2E-3, limited due to central body potential approximation)
-     * 
+     *
+     * @testPassCriteria potential is close to potential on grid border (reference: potential on grid border, relative
+     *                   threshold: 2E-3, limited due to central body potential approximation)
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void potentialOutsideGridTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
-                null, FramesFactory.getGCRF());
-        
+            null, FramesFactory.getGCRF());
+
         // State (position is line 17 in file)
         final SpacecraftState state1 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(-0.4000000000E+02, -0.4000000000E+02, -0.2000000000E+02).scalarMultiply(1000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+            new Vector3D(-0.4000000000E+02, -0.4000000000E+02, -0.2000000000E+02).scalarMultiply(1000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
         // State shifted by 1 micrometer (outside grid)
         final SpacecraftState state2 = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(-0.40000000001E+02, -0.4000000000E+02, -0.2000000000E+02).scalarMultiply(1000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
-        
+            new Vector3D(-0.40000000001E+02, -0.4000000000E+02, -0.2000000000E+02).scalarMultiply(1000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, Constants.WGS84_EARTH_MU));
+
         // Check
         final double actual = force.computePotential(state2.getPVCoordinates().getPosition(), state2.getFrame(),
             state2.getDate());
@@ -379,24 +407,25 @@ public class GridGravityModelTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check basic functional features of {@link GridGravityModel} are as expected:
      *              <ul>
      *              <li>No event detectors</li>
      *              <li>No partial derivatives</li>
      *              <li>Value of Mu</li>
      *              </ul>
-     * 
+     *
      * @testPassCriteria read data is as expected (reference: from file)
-     * 
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
     public void functionalTest() throws PatriusException {
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final BalminoGravityModel gravityModel = new BalminoGravityModel(FramesFactory.getTIRF(),
             Constants.WGS84_EARTH_EQUATORIAL_RADIUS, Constants.WGS84_EARTH_MU, new double[2][2], new double[2][2]);
@@ -409,20 +438,22 @@ public class GridGravityModelTest {
         // Factor k check
         final GridGravityModel force2 = new GridGravityModel(loader, new TriLinearIntervalsInterpolator(),
             new BalminoGravityModel(FramesFactory.getTIRF(), Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-                Constants.WGS84_EARTH_MU, new double[2][2], new double[2][2]), FramesFactory.getGCRF());
+                Constants.WGS84_EARTH_MU, new double[2][2], new double[2][2]),
+            FramesFactory.getGCRF());
         final SpacecraftState state = new SpacecraftState(new CartesianOrbit(new PVCoordinates(
-                new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.1000000000E+02).scalarMultiply(1000), 
-                new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
+            new Vector3D(-0.1000000000E+02, -0.5000000000E+01, -0.1000000000E+02).scalarMultiply(1000),
+            new Vector3D(0, 0, 0)), FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force.getMu()));
         Assert.assertEquals(forceModel.computeAcceleration(state),
             force2.computeAcceleration(state.getPVCoordinates().getPosition(), state.getDate())
-            .scalarMultiply(5.));
+                .scalarMultiply(5.));
 
         // Functional Checks
         Assert.assertEquals(0, forceModel.getEventsDetectors().length);
 
         final double[][] dAccdPos = new double[3][3];
         try {
-            forceModel.addDAccDState(state.getPVCoordinates().getPosition(), state.getFrame(), state.getDate(), dAccdPos);
+            forceModel.addDAccDState(state.getPVCoordinates().getPosition(), state.getFrame(), state.getDate(),
+                dAccdPos);
             Assert.fail();
         } catch (final PatriusException e) {
             Assert.assertTrue(true);
@@ -433,28 +464,29 @@ public class GridGravityModelTest {
             }
         }
         try {
-			forceModel.addDAccDParam(state.getPVCoordinates().getPosition(),
-					state.getFrame(), state.getDate(), new Parameter("", 0),
-					new double[3]);
+            forceModel.addDAccDParam(state.getPVCoordinates().getPosition(),
+                state.getFrame(), state.getDate(), new Parameter("", 0),
+                new double[3]);
             Assert.fail();
         } catch (final PatriusException e) {
             Assert.assertTrue(true);
         }
         Assert.assertEquals(+0.712699979843467446E-03 * 1E9, force.getMu(), 0.);
         forceModel.checkData(null, null);
-        Assert.assertEquals(5., forceModel.getMultiplicativeFactor());
+        Assert.assertEquals(5., forceModel.getMultiplicativeFactor(), Precision.DOUBLE_COMPARISON_EPSILON);
     }
 
     /**
      * @testType UT
-     * 
-     * @description integration test: compare final bulletin of propagation with cartesian grid attraction force (and spline interpolation)
+     *
+     * @description integration test: compare final bulletin of propagation with cartesian grid attraction force (and
+     *              spline interpolation)
      *              vs propagation with simple Newtonian attraction force over a 1h propagation
-     * 
+     *
      * @testPassCriteria final position are close (threshold: 1km)
-     * 
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
@@ -463,14 +495,15 @@ public class GridGravityModelTest {
         // Propagation with grid model
 
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force1 = new GridGravityModel(loader, new TricubicSplineInterpolator(),
-                null, FramesFactory.getGCRF());
+            null, FramesFactory.getGCRF());
 
         // Initial state within grid
         final SpacecraftState state = new SpacecraftState(new KeplerianOrbit(20000, 0, 0, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force1.getMu()));
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force1.getMu()));
         final AbsoluteDate finalDate = state.getDate().shiftedBy(3600.);
 
         // Build propagator without grid attraction
@@ -481,7 +514,7 @@ public class GridGravityModelTest {
 
         // Propagation
         final SpacecraftState finalState1 = propagator1.propagate(finalDate);
-        
+
         // Propagation with Balmino model 8x8
 
         // Build propagator
@@ -494,19 +527,21 @@ public class GridGravityModelTest {
         final SpacecraftState finalState2 = propagator2.propagate(finalDate);
 
         // Compare final bulletin (threshold: 1.1km)
-        Assert.assertEquals(0, finalState1.getPVCoordinates().getPosition().distance(finalState2.getPVCoordinates().getPosition()), 1100);
+        Assert.assertEquals(0,
+            finalState1.getPVCoordinates().getPosition().distance(finalState2.getPVCoordinates().getPosition()), 1100);
     }
 
     /**
      * @testType UT
-     * 
-     * @description performance test: compare duration of propagation with cartesian grid attraction force (and spline interpolation)
+     *
+     * @description performance test: compare duration of propagation with cartesian grid attraction force (and spline
+     *              interpolation)
      *              vs propagation with Balmino 8x8 attraction force over a 10 days propagation
-     * 
+     *
      * @testPassCriteria durations are of same order of magnitude
-     * 
+     *
      * @referenceVersion 4.7
-     * 
+     *
      * @nonRegressionVersion 4.7
      */
     @Test
@@ -516,14 +551,15 @@ public class GridGravityModelTest {
         final double t01 = System.currentTimeMillis();
 
         // Build attraction model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "grid"
+                + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
         final GridGravityModel force1 = new GridGravityModel(loader, new TricubicSplineInterpolator(),
-                null, FramesFactory.getGCRF());
+            null, FramesFactory.getGCRF());
 
         // Initial state within grid
         final SpacecraftState state = new SpacecraftState(new KeplerianOrbit(20000, 0, 0, 0, 0, 0, PositionAngle.TRUE,
-                FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force1.getMu()));
+            FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH, force1.getMu()));
         final AbsoluteDate finalDate = state.getDate().shiftedBy(10. * Constants.JULIAN_DAY);
 
         // Build propagator without Newtonian attraction
@@ -535,7 +571,7 @@ public class GridGravityModelTest {
         // Propagation
         propagator1.propagate(finalDate);
         final double tf1 = (System.currentTimeMillis() - t01) / 1000.;
-        
+
         // Propagation with Balmino model 8x8
         final double t02 = System.currentTimeMillis();
 
@@ -545,7 +581,8 @@ public class GridGravityModelTest {
         final PotentialCoefficientsProvider data = GravityFieldFactory.getPotentialProvider();
         final double[][] c = data.getC(8, 8, true);
         final double[][] s = data.getS(8, 8, true);
-        final BalminoGravityModel force2 = new BalminoGravityModel(FramesFactory.getGCRF(), 10000, force1.getMu(), c, s);
+        final BalminoGravityModel force2 =
+            new BalminoGravityModel(FramesFactory.getGCRF(), 10000, force1.getMu(), c, s);
 
         // Build propagator
         final NumericalPropagator propagator2 = new NumericalPropagator(new ClassicalRungeKuttaIntegrator(30.),
@@ -566,31 +603,73 @@ public class GridGravityModelTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @description Test the getters of a class.
-     * 
+     *
      * @input the class parameters
-     * 
+     *
      * @output the class parameters
-     * 
+     *
      * @testPassCriteria the parameters of the class are the same in input and output
-     * 
+     *
      * @referenceVersion 4.10
-     * 
+     *
      * @nonRegressionVersion 4.10
      */
     @Test
     public void testGetters() throws PatriusException {
         // Build model
-        final String filename = "src" + File.separator + "test" + File.separator + "resources" + File.separator
-                + "grid" + File.separator + "GRA_grille_cube.txt";
+        final String filename = "src" + File.separator + "test" + File.separator + "resources"
+                + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
         final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
-        final GridGravityModel model = new GridGravityModel(loader, new TricubicSplineInterpolator(),
-            null, FramesFactory.getGCRF());
+        final double mu = loader.getData().getMuParameter().getValue();
+        final GravityModel backupModel = new NewtonianGravityModel(mu);
+        final GridGravityModel model = new GridGravityModel(loader,
+            new TricubicSplineInterpolator(), backupModel, FramesFactory.getGCRF());
         Assert.assertEquals(true, model.getBodyFrame().getName().equals("GCRF"));
-
+        Assert.assertEquals(backupModel, model.getBackupModel());
     }
 
+    /**
+     * @throws PatriusException
+     * @testType UT
+     *
+     * @description Test the fact that the mu value is updated also for the backup model when the
+     *              setMu method is called
+     *
+     * @input the class parameters to create the object
+     * @output the value of mu modified
+     *
+     * @testPassCriteria the mu value is updated also for the backup model
+     *
+     * @referenceVersion 4.16
+     *
+     * @nonRegressionVersion 4.16
+     */
+    @Test
+    public void testSetMu() throws PatriusException {
+        // Build model
+        final String filename = "src" + File.separator + "test" + File.separator + "resources"
+                + File.separator + "grid" + File.separator + "GRA_grille_cube.txt";
+        final CartesianGridAttractionLoader loader = new CartesianGridAttractionLoader(filename);
+        final double mu = loader.getData().getMuParameter().getValue();
+        final GravityModel backupModel = new NewtonianGravityModel(mu);
+        final GridGravityModel model = new GridGravityModel(loader,
+            new TricubicSplineInterpolator(), backupModel, FramesFactory.getGCRF());
+
+        // Check the original value of mu
+        Assert.assertEquals(mu, model.getMu(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(mu, model.getBackupModel().getMu(), Precision.DOUBLE_COMPARISON_EPSILON);
+
+        // Modify the value of mu
+        final double newMu = 10 * mu;
+        model.setMu(newMu);
+
+        // Check the new value of mu
+        Assert.assertEquals(newMu, model.getMu(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(newMu, model.getBackupModel().getMu(), Precision.DOUBLE_COMPARISON_EPSILON);
+
+    }
 
     @Before
     public void setUp() {

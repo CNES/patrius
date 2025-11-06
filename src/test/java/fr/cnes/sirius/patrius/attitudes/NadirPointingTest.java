@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
  *          retourner un CelestialBodyFrame 
@@ -264,7 +265,7 @@ public class NadirPointingTest {
         // Get observed ground point position/velocity
         final Vector3D pTargetItrf = nadirAttitudeLaw.getTargetPosition(circ, this.date, this.frameITRF2005);
 
-        // Convert to geodetic coordinates
+        // Convert to ellipsoid coordinates
         final EllipsoidPoint target = earthShape.buildPoint(pTargetItrf, this.frameITRF2005, this.date, "");
 
         // Compute local vertical axis

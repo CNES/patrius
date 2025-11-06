@@ -90,9 +90,16 @@ public class SphericalCoordinates implements Serializable {
     }
 
     /**
-     * Build a new instance.
+     * Builds a new instance that represents a 3D vector.
      * 
-     * @param vector vector in cartesian coordinates
+     * <br>
+     * &delta; is the elevation, in the interval [-&pi;/2;&pi;/2]. It is 0 for a
+     * point on the equator (z=0), &pi;/2 for a point on the north pole
+     * (z=|vector|), -&pi;/2 for a point on the south pole (z=-|vector|). <br>
+     * &alpha; is the azimuth, positive from the x axis to the y axis, in the
+     * interval [-&pi;;&pi;]. It is 0 for x>0, y=0 and &pi;/2 for x=0, y>0.
+     * 
+     * @param vector the cartesian coordinates to convert
      */
     public SphericalCoordinates(final Vector3D vector) {
         this.norm = vector.getNorm();

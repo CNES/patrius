@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-312:25/04/2025:[PATRIUS] Ajout de getter d'entry pour IntervalMapSearcher
  * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
  * fournir un message claire
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
@@ -285,82 +287,122 @@ public class IntervalMapSearcher<T> implements Iterable<CacheEntry<AbsoluteDateI
      *         if {@code throwException == true} and the provided date does not belong to any of the intervals
      */
     public T getData(final AbsoluteDate date, final boolean throwException) {
-        final CacheEntry<AbsoluteDateInterval, T> matchingCacheEntry =
-            this.cache.computeIf(entry -> entry.getKey().contains(date), () -> {
-                //
-                // Search sample matching the provided date
-                //
-
-                // Initialize variables to the bounds of the samples
-                int indexInf = 0;
-                int indexSup = this.samples.length - 1;
-
-                AbsoluteDateInterval intervalInf = this.firstInterval;
-                AbsoluteDateInterval intervalSup = this.lastInterval;
-
-                // Check bounds
-                final int intervalInfComp = intervalInf.compare(date);
-                final int intervalSupComp = intervalSup.compare(date);
-
-                // Check if the date is outside the supported interval [dateInf, dateSup]
-                if (intervalInfComp < 0 || intervalSupComp > 0) {
-                    // Raise an exception if asked, otherwise only return null
-                    if (throwException) {
-                        throw PatriusException
-                            .createIllegalStateException(PatriusMessages.DATE_OUTSIDE_INTERVALS, date);
-                    }
-                    return null;
-                }
-
-                if (intervalInfComp == 0) {
-                    // The provided date matches the inferior sample
-                    return this.samples[indexInf];
-                } else if (intervalSupComp == 0) {
-                    // The provided date matches the superior sample
-                    return this.samples[indexSup];
-                }
-
-                // The provided date is within the two extreme samples
-                // Search while indexInf + 1 < indexSup
-                while (indexSup - indexInf > 1) {
-                    // Compute the mid sample
-                    final int indexMid = midIndex(indexInf, indexSup);
-
-                    final AbsoluteDateInterval intervalMid = this.samples[indexMid].getKey();
-                    final int intervalMidComp = intervalMid.compare(date);
-
-                    if (intervalMidComp == 0) {
-                        return this.samples[indexMid];
-                    }
-
-                    if (intervalMidComp > 0) {
-                        // The provided date is above the mid sample: update the inferior sample
-                        indexInf = indexMid;
-                        intervalInf = intervalMid;
-                    } else {
-                        // The provided date is below the mid sample: update the superior sample
-                        indexSup = indexMid;
-                        intervalSup = intervalMid;
-                    }
-                }
-
-                // The provided date does not belong to any of the intervals
-                // Raise an exception if asked, otherwise only return null
-                if (throwException) {
-                    throw PatriusException.createIllegalStateException(PatriusMessages.DATE_IN_NO_INTERVALS, date);
-                }
-                return null;
-            });
-
         final T output;
+        final CacheEntry<AbsoluteDateInterval, T> matchingCacheEntry = this.getEntry(date, throwException);
         if (matchingCacheEntry == null) {
             output = null;
         } else {
             output = matchingCacheEntry.getValue();
         }
-
         return output;
     }
+
+    /**
+     * Getter for the entry associated to the provided date.
+     *
+     * @param date Date associated to the entry
+     * @param throwException Indicate if the method should throw an exception if the provided date does not belong to
+     *        any of the intervals
+     *
+     * @return the corresponding entry (can be null if 'throwException = false')
+     *
+     * @throws IllegalStateException if {@code throwException == true} and the provided date does not belong to any of
+     *         the
+     *         intervals
+     */
+    public CacheEntry<AbsoluteDateInterval, T> getEntry(final AbsoluteDate date, final boolean throwException) {
+        //
+        // Search sample matching the provided date
+        //
+        // Initialize variables to the bounds of the samples
+        // Check bounds
+        // Check if the date is outside the supported interval [dateInf, dateSup]
+        // Raise an exception if asked, otherwise only return null
+        // The provided date matches the inferior sample
+        // The provided date matches the superior sample
+        // The provided date is within the two extreme samples
+        // Search while indexInf + 1 < indexSup
+        // Compute the mid sample
+        // The provided date is above the mid sample: update the inferior sample
+        // The provided date is below the mid sample: update the superior sample
+        // The provided date does not belong to any of the intervals
+        // Raise an exception if asked, otherwise only return null
+
+        return this.cache.computeIf(entry -> entry.getKey().contains(date), () -> {
+            //
+            // Search sample matching the provided date
+            //
+
+            // Initialize variables to the bounds of the samples
+            int indexInf = 0;
+            int indexSup = this.samples.length - 1;
+
+            // Check bounds
+            final int intervalInfComp = this.firstInterval.compare(date);
+            final int intervalSupComp = this.lastInterval.compare(date);
+
+            // Check if the date is outside the supported interval [dateInf, dateSup]
+            if (intervalInfComp < 0 || intervalSupComp > 0) {
+                // Raise an exception if asked, otherwise only return null
+                if (throwException) {
+                    throw PatriusException.createIllegalStateException(PatriusMessages.DATE_OUTSIDE_INTERVALS,
+                        date);
+                }
+                return null;
+            }
+
+            if (intervalInfComp == 0) {
+                // The provided date matches the inferior sample
+                return this.samples[indexInf];
+            } else if (intervalSupComp == 0) {
+                // The provided date matches the superior sample
+                return this.samples[indexSup];
+            }
+
+            // The provided date is within the two extreme samples
+            // Search while indexInf + 1 < indexSup
+            while (indexSup - indexInf > 1) {
+                // Compute the mid sample
+                final int indexMid = midIndex(indexInf, indexSup);
+
+                final AbsoluteDateInterval intervalMid = this.samples[indexMid].getKey();
+                final int intervalMidComp = intervalMid.compare(date);
+
+                if (intervalMidComp == 0) {
+                    return this.samples[indexMid];
+                }
+
+                if (intervalMidComp > 0) {
+                    // The provided date is above the mid sample: update the inferior sample
+                    indexInf = indexMid;
+                } else {
+                    // The provided date is below the mid sample: update the superior sample
+                    indexSup = indexMid;
+                }
+            }
+
+            // The provided date does not belong to any of the intervals
+            // Raise an exception if asked, otherwise only return null
+            if (throwException) {
+                throw PatriusException.createIllegalStateException(PatriusMessages.DATE_IN_NO_INTERVALS, date);
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Getter for the entry associated to the provided date.
+     *
+     * @param date Date associated to the entry
+     *
+     * @return the corresponding entry
+     *
+     * @throws IllegalStateException if the provided date does not belong to any of the intervals
+     */
+    public CacheEntry<AbsoluteDateInterval, T> getEntry(final AbsoluteDate date) {
+        return getEntry(date, true);
+    }
+
 
     /**
      * Return an iterator over entries associating an object and an interval.

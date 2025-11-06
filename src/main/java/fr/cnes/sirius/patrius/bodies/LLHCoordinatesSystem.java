@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-351:21/11/2024:[PATRIUS] Calcul de la dérivée des coordonnées LLH
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
@@ -60,11 +61,7 @@ public enum LLHCoordinatesSystem {
             // Implementation note: this is an analytical method to compute the jacobian. It only supports
             // OneAxisEllipsoid body shape. Otherwise the generic method with finite difference is used.
             final BodyShape bodyShape = point.getBodyShape();
-            if (!(bodyShape instanceof OneAxisEllipsoid)) {
-                // If the body shape isn't a OneAxisEllipsoid, this method is not supported, call the generic method
-                // with finite difference
-                jacobian = super.jacobianToCartesian(point);
-            } else {
+            if (bodyShape instanceof OneAxisEllipsoid) {
                 final OneAxisEllipsoid ellipsoid = (OneAxisEllipsoid) bodyShape;
 
                 // Temporary variables
@@ -97,8 +94,12 @@ public enum LLHCoordinatesSystem {
                 jacobian[2][0] = (k * r + alt) * cosLat;
                 jacobian[2][1] = 0.0;
                 jacobian[2][2] = sinLat;
+            } else {
+                // If the body shape isn't a OneAxisEllipsoid, this method is not supported, call the generic method
+                // with finite difference
+                jacobian = super.jacobianToCartesian(point);
             }
-            
+
             return jacobian;
         }
 
@@ -112,11 +113,7 @@ public enum LLHCoordinatesSystem {
             // Implementation note: this is an analytical method to compute the jacobian. It only supports
             // OneAxisEllipsoid body shape. Otherwise the generic method with finite difference is used.
             final BodyShape bodyShape = point.getBodyShape();
-            if (!(bodyShape instanceof OneAxisEllipsoid)) {
-                // If the body shape isn't a OneAxisEllipsoid, this method is not supported, call the generic method
-                // with finite difference
-                jacobian = super.jacobianFromCartesian(point);
-            } else {
+            if (bodyShape instanceof OneAxisEllipsoid) {
                 final OneAxisEllipsoid ellipsoid = (OneAxisEllipsoid) bodyShape;
 
                 // Cartesian coordinates
@@ -167,6 +164,10 @@ public enum LLHCoordinatesSystem {
                 jacobian[2][0] = cosLat * cosLon;
                 jacobian[2][1] = cosLat * sinLon;
                 jacobian[2][2] = sinLat;
+            } else {
+                // If the body shape isn't a OneAxisEllipsoid, this method is not supported, call the generic method
+                // with finite difference
+                jacobian = super.jacobianFromCartesian(point);
             }
             
             return jacobian;
@@ -208,7 +209,7 @@ public enum LLHCoordinatesSystem {
                 // Special case using analytical formulas
                 final OneAxisEllipsoid ellipsoidBodyShape = (OneAxisEllipsoid) bodyShape;
 
-                // Convert given PV to geodetic coordinates, by applying the transform between the input
+                // Convert given PV to ellipsoid coordinates, by applying the transform between the input
                 // frame (given by the user) and the rotating body frame
                 final Transform trans = frame.getTransformTo(ellipsoidBodyShape.getBodyFrame(), date);
                 final PVCoordinates pvBody = trans.transformPVCoordinates(pv);
@@ -240,12 +241,12 @@ public enum LLHCoordinatesSystem {
                 final double xDot = (vel.getX() * cLon + vel.getY() * sLon) / transverseRadius;
                 final double zDot = vel.getZ() / transverseRadius;
     
-                // geodetic latitude rate
+                // ellipsoid latitude rate
                 rates[1] = (sLat * xDot - cLat * zDot) / det;
                 final double nVarModFlat = nVar * (1. - modFlatness);
                 final double nToSc = modFlatness * nVar * nVar * sLat * cLat;
     
-                // geodetic altitude rate
+                // ellipsoid altitude rate
                 rates[2] = ((nVar * nToSc * cLat - (nVar + normAltitude) * sLat) * zDot
                         - (nVarModFlat * nToSc * sLat + (nVarModFlat + normAltitude) * cLat) * xDot)
                         * (transverseRadius / det);

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -59,7 +60,7 @@ public class SphericalCoordinatesTest {
      * 
      * @description Test the getters of the {@link SphericalCoordinates} class.
      * 
-     * @testPassCriteria the parameters are as expected (reference from geodetic point and Vector3D classes)
+     * @testPassCriteria the parameters are as expected (reference from ellipsoid point and Vector3D classes)
      * 
      * @referenceVersion 4.7
      * 
@@ -67,7 +68,7 @@ public class SphericalCoordinatesTest {
      */
     @Test
     public void testGetters() throws PatriusException {
-        // Test vs GeodeticPoint in case of (latitude, longitude, altitude) construction
+        // Test vs EllipsoidPoint in case of (latitude, longitude, altitude) construction
         final OneAxisEllipsoid earthSpheric = new OneAxisEllipsoid(6378136.460, 0., FramesFactory.getITRF());
         final EllipsoidPoint reference1 = new EllipsoidPoint(earthSpheric, earthSpheric.getLLHCoordinatesSystem(),
             MathLib.toRadians(20), MathLib.toRadians(40), 150000, "");

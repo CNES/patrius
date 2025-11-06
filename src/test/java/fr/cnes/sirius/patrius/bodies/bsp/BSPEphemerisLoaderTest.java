@@ -12,10 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-<<<<<<< HEAD
  *
  * HISTORY
- * VERSION:4.15.2:OPENFD-547:25/02/2025:[PATRIUS] Mauvaise gestion de computeSpinDerivatives dans BSPEphemerisLoader
+ * VERSION:4.16:OPENFD-547:25/04/2025:[PATRIUS] Mauvaise gestion de computeSpinDerivatives dans BSPEphemerisLoader
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-379:25/04/2025:[PATRIUS] Ajout d'une implementation basique de OrbitalCovarianceProvider
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
  * VERSION:4.15:OPENFD-428:21/11/2024:[PATRIUS] Robustesse aux bsp contenant l'échelle TDB

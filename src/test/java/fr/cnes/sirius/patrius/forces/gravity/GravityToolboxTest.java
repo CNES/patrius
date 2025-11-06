@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history created 23/04/12
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-567:25/04/2025:[PATRIUS] Terme (1,1) dans le modele de gravite de Balmino
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -58,11 +59,11 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * This class tests the tidal corrections tool box.
- * 
+ *
  * @author Gérald Mercadier, Julie Anton
- * 
+ *
  * @version $Id: GravityToolboxTest.java 18089 2017-10-02 17:02:50Z bignon $
- * 
+ *
  * @since 1.2
  */
 public class GravityToolboxTest {
@@ -71,9 +72,9 @@ public class GravityToolboxTest {
     public enum features {
         /**
          * @featureTitle denormalization
-         * 
+         *
          * @featureDescription denormalization of gravity coefficients
-         * 
+         *
          * @coveredRequirements ??
          */
         DENORM
@@ -122,10 +123,93 @@ public class GravityToolboxTest {
         final Vector3D cun = model.computeNonCentralTermsAcceleration(pv.getPosition(), date);
         final Vector3D nor = model1.computeNonCentralTermsAcceleration(pv.getPosition(), date);
 
+        // Verifications
+        // Check non regression of computed values
+        final Vector3D cunRef = new Vector3D(0.012049370494552927, -8.716736175077831E-4, -0.005235077886377982);
+        Assert.assertEquals(cunRef.getX(), cun.getX(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(cunRef.getY(), cun.getY(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(cunRef.getZ(), cun.getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
+
+        final Vector3D norRef = new Vector3D(0.012049370494552914, -8.716736175077796E-4, -0.005235077886377973);
+        Assert.assertEquals(norRef.getX(), nor.getX(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(norRef.getY(), nor.getY(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(norRef.getZ(), nor.getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
+
         Assert.assertEquals(0, (cun.getX() - nor.getX()) / cun.getX(), Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(0, (cun.getY() - nor.getY()) / cun.getY(), Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(0, (cun.getZ() - nor.getZ()) / cun.getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
 
+    }
+
+    /**
+     * @testType UT
+     *
+     * @description Test created after OPENFD-567 to correct an issue where the first term in
+     *              GravityToolbox.computeBalminoAcceleration was not taken into account.
+     *
+     *              In this test we compute the value of the NonCentralTermsAcceleration using the BalminoGravityModel
+     *              and we verify that the outputs match the references.
+     *
+     *              The potential coefficients are taken from the file EGNSTA02BS.txt. However, the l=1; m=1 value is
+     *              modified so that it is different from zero and the modification can be verified.
+     *
+     * @input GravityFieldNames potentialFileName = GravityFieldNames.SHM : the regular expression for gravity field
+     *        file name
+     *
+     * @output an instance of Balmino model
+     *
+     * @testPassCriteria The acceleration values match the references
+     *
+     * @referenceVersion 4.16
+     *
+     * @nonRegressionVersion 4.16
+     *
+     * @throws PatriusException
+     *         should not happen
+     * @throws ParseException
+     *         should not happen
+     * @throws IOException
+     *         should not happen
+     */
+    @Test
+    public void testUseFirstTermInBalMino() throws IOException, ParseException, PatriusException {
+
+        Utils.setDataRoot("normalized");
+        FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
+
+        // c and s tables
+        GravityFieldFactory.addPotentialCoefficientsReader(new GRGSFormatReader("EGNSTA02BS", true));
+        final PotentialCoefficientsProvider pot = GravityFieldFactory.getPotentialProvider();
+
+        final int degree = 60;
+        final int order = 60;
+
+        final double[][] cN = pot.getC(degree, order, true);
+        final double[][] sN = pot.getS(degree, order, true);
+
+        // Modify 1,1 value to make it different from zero (no specific value is given)
+        cN[1][1] = -0.48416529907354E-03;
+
+        // pv
+        final Frame itrf = FramesFactory.getITRF();
+        final AbsoluteDate date = new AbsoluteDate(2002, 1, 1, TimeScalesFactory.getTAI());
+        final double mu = Constants.EIGEN5C_EARTH_MU;
+        final double ae = Constants.EIGEN5C_EARTH_EQUATORIAL_RADIUS;
+
+        final Vector3D pos = new Vector3D(-6590149.9269526824, 521546.44375059905, 886362.25364358397);
+        final PVCoordinates pv = new PVCoordinates(pos, Vector3D.ZERO);
+
+        // helmholtz
+        final BalminoGravityModel model1 = new BalminoGravityModel(itrf, ae, mu, cN, sN);
+
+        final Vector3D nor = model1.computeNonCentralTermsAcceleration(pv.getPosition(), date);
+
+        // Verifications
+        // Check non regression of computed values
+        final Vector3D norRef = new Vector3D(0.02590688492000146, -0.002536982959870087, -0.00806525218705026);
+        Assert.assertEquals(norRef.getX(), nor.getX(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(norRef.getY(), nor.getY(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(norRef.getZ(), nor.getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
     }
 
     @Test
@@ -150,7 +234,7 @@ public class GravityToolboxTest {
 
     /**
      * Check that two double[][] arrays are equal
-     * 
+     *
      * @param exp
      *        expected
      * @param act

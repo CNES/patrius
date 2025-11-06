@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-382:25/04/2025:[PATRIUS] Analyse concernant le renvoi 
+ *          des coordonnees d'entree pour EllipsoidPoint 
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
@@ -31,46 +34,28 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
-import static org.junit.Assert.assertEquals;
-import fr.cnes.sirius.patrius.Utils;
-
 import java.util.Random;
-import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.SphericalCoordinates;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.math.util.MathUtils;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for class {@link EllipsoidPoint}.
  */
 public class EllipsoidPointTest {
 
-    private static final double TOLERANCE_GEODETIC_POINT = 1E-8;
+    private static final double TOLERANCE_ELLIPSOID_POINT = 1E-8;
     private static final double TOLERANCE_ANGLE = 1E-12;
 
     @Test
@@ -79,7 +64,7 @@ public class EllipsoidPointTest {
         final EllipsoidBodyShape earthShape = new OneAxisEllipsoid(Constants.GRIM5C1_EARTH_EQUATORIAL_RADIUS, 0.,
             FramesFactory.getGCRF());
 
-        // geodetic coordinates
+        // ellipsoid coordinates
         final double longitude = 2;
         final double latitude = MathLib.toRadians(65);
         final double altitude = 455;
@@ -100,19 +85,19 @@ public class EllipsoidPointTest {
         // build an ellipsoid body point using this position
         final EllipsoidPoint point1 = new EllipsoidPoint(earthShape, position0, false, "point1");
 
-        // compute its LLH coordinates with the GEODETIC convention
+        // compute its LLH coordinates with the ELLIPSOID convention
         LLHCoordinatesSystem convention = LLHCoordinatesSystem.ELLIPSODETIC;
 
         // Assertions
         Assert.assertEquals(latitude, point1.getLLHCoordinates(convention).getLatitude(), TOLERANCE_ANGLE);
         Assert.assertEquals(longitude, point1.getLLHCoordinates(convention).getLongitude(), 0.);
-        Assert.assertEquals(altitude, point1.getLLHCoordinates(convention).getHeight(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getX(), point1.getPosition().getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getY(), point1.getPosition().getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getZ(), point1.getPosition().getZ(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getX(), point1.getNormal().getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getY(), point1.getNormal().getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getZ(), point1.getNormal().getZ(), TOLERANCE_GEODETIC_POINT);
+        Assert.assertEquals(altitude, point1.getLLHCoordinates(convention).getHeight(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getX(), point1.getPosition().getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getY(), point1.getPosition().getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getZ(), point1.getPosition().getZ(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getX(), point1.getNormal().getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getY(), point1.getNormal().getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getZ(), point1.getNormal().getZ(), TOLERANCE_ELLIPSOID_POINT);
 
         /* Test the BODYCENTRIC_RADIAL convention */
 
@@ -126,13 +111,13 @@ public class EllipsoidPointTest {
         // Assertions
         Assert.assertEquals(latitude, point2.getLLHCoordinates(convention).getLatitude(), TOLERANCE_ANGLE);
         Assert.assertEquals(longitude, point2.getLLHCoordinates(convention).getLongitude(), 0.);
-        Assert.assertEquals(altitude, point2.getLLHCoordinates(convention).getHeight(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getX(), point2.getPosition().getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getY(), point2.getPosition().getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getZ(), point2.getPosition().getZ(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getX(), point2.getNormal().getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getY(), point2.getNormal().getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getZ(), point2.getNormal().getZ(), TOLERANCE_GEODETIC_POINT);
+        Assert.assertEquals(altitude, point2.getLLHCoordinates(convention).getHeight(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getX(), point2.getPosition().getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getY(), point2.getPosition().getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getZ(), point2.getPosition().getZ(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getX(), point2.getNormal().getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getY(), point2.getNormal().getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getZ(), point2.getNormal().getZ(), TOLERANCE_ELLIPSOID_POINT);
 
         /* Test the BODYCENTRIC_NORMAL convention */
 
@@ -146,45 +131,45 @@ public class EllipsoidPointTest {
         // Assertions
         Assert.assertEquals(latitude, point3.getLLHCoordinates(convention).getLatitude(), TOLERANCE_ANGLE);
         Assert.assertEquals(longitude, point3.getLLHCoordinates(convention).getLongitude(), 0.);
-        Assert.assertEquals(altitude, point3.getLLHCoordinates(convention).getHeight(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getX(), point3.getPosition().getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getY(), point3.getPosition().getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(position0.getZ(), point3.getPosition().getZ(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getX(), point3.getNormal().getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getY(), point3.getNormal().getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(point0.getNormal().getZ(), point3.getNormal().getZ(), TOLERANCE_GEODETIC_POINT);
+        Assert.assertEquals(altitude, point3.getLLHCoordinates(convention).getHeight(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getX(), point3.getPosition().getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getY(), point3.getPosition().getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(position0.getZ(), point3.getPosition().getZ(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getX(), point3.getNormal().getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getY(), point3.getNormal().getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(point0.getNormal().getZ(), point3.getNormal().getZ(), TOLERANCE_ELLIPSOID_POINT);
 
         /* Compare the ellipsoid points with each other */
 
         // Assertions
-        Assert.assertEquals(0., point1.getPosition().subtract(position0).getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point1.getPosition().subtract(position0).getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point1.getPosition().subtract(position0).getZ(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point2.getPosition().subtract(position0).getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point2.getPosition().subtract(position0).getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point2.getPosition().subtract(position0).getZ(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point3.getPosition().subtract(position0).getX(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point3.getPosition().subtract(position0).getY(), TOLERANCE_GEODETIC_POINT);
-        Assert.assertEquals(0., point3.getPosition().subtract(position0).getZ(), TOLERANCE_GEODETIC_POINT);
+        Assert.assertEquals(0., point1.getPosition().subtract(position0).getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point1.getPosition().subtract(position0).getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point1.getPosition().subtract(position0).getZ(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point2.getPosition().subtract(position0).getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point2.getPosition().subtract(position0).getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point2.getPosition().subtract(position0).getZ(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point3.getPosition().subtract(position0).getX(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point3.getPosition().subtract(position0).getY(), TOLERANCE_ELLIPSOID_POINT);
+        Assert.assertEquals(0., point3.getPosition().subtract(position0).getZ(), TOLERANCE_ELLIPSOID_POINT);
         /* Check all their points on shape have null height */
 
         // Assertions
         Assert.assertEquals(0., point0.getClosestPointOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point0.getRadialProjectionOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point1.getClosestPointOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point1.getRadialProjectionOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point2.getClosestPointOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point2.getRadialProjectionOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point3.getClosestPointOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
         Assert.assertEquals(0., point3.getRadialProjectionOnShape().getLLHCoordinates().getHeight(),
-            TOLERANCE_GEODETIC_POINT);
+            TOLERANCE_ELLIPSOID_POINT);
     }
 
     /**
@@ -203,7 +188,7 @@ public class EllipsoidPointTest {
     @Test
     public void testGettersSpherical() {
 
-        // Build GeodeticPoint
+        // Build EllipsoidPoint
         final double latitude = MathLib.toRadians(42.5);
         final double longitude = MathLib.toRadians(12.4);
         final double altitude = 1234;
@@ -239,7 +224,8 @@ public class EllipsoidPointTest {
         Assert.assertEquals(name, point.getName());
         Assert.assertEquals(0., Vector3D.distance(new SphericalCoordinates(point.getLLHCoordinates().getLatitude(),
             point.getLLHCoordinates().getLongitude(), bodyShape.getARadius() + altitude)
-            .getCartesianCoordinates(), point.getPosition()), 1E-9);
+                .getCartesianCoordinates(),
+            point.getPosition()), 1E-9);
         Assert.assertEquals(0., Vector3D.distance(point.getPosition().normalize(), point.getNormal()), 1E-15);
 
         // Method from BodyPoint
@@ -262,7 +248,7 @@ public class EllipsoidPointTest {
     @Test
     public void testGettersEllipsoid() {
 
-        // Build GeodeticPoint
+        // Build EllipsoidPoint
         final double latitude = MathLib.toRadians(42.5);
         final double longitude = MathLib.toRadians(12.4);
         final double altitude = 1234;
@@ -300,7 +286,8 @@ public class EllipsoidPointTest {
         final LLHCoordinates bodycentricCoord = point.getLLHCoordinates(LLHCoordinatesSystem.BODYCENTRIC_RADIAL);
         Assert.assertEquals(9715.90721085705, Vector3D.distance(
             new SphericalCoordinates(bodycentricCoord.getLatitude(), bodycentricCoord.getLongitude(), bodyShape
-                .getARadius() + altitude).getCartesianCoordinates(), point.getPosition()), 1E-9);
+                .getARadius() + altitude).getCartesianCoordinates(),
+            point.getPosition()), 1E-9);
         // Expected to be slightly different from position vector
 
         Assert.assertEquals(0.003344005668915436,
@@ -346,13 +333,13 @@ public class EllipsoidPointTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description Test all the {@link BodyPoint} methods
-     * 
+     *
      * @testPassCriteria the methods returns the expected results (reference: math, threshold: 0)
-     * 
+     *
      * @referenceVersion 4.12
-     * 
+     *
      * @nonRegressionVersion 4.12
      */
     @Test
@@ -363,7 +350,8 @@ public class EllipsoidPointTest {
         final Vector3D position = new Vector3D(7000E3, 0, 0);
         final EllipsoidPoint point = new EllipsoidPoint(shape, position, "");
 
-        Assert.assertTrue(point.getPVCoordinates(AbsoluteDate.J2000_EPOCH, FramesFactory.getGCRF()).getPosition().equals(position));
+        Assert.assertTrue(
+            point.getPVCoordinates(AbsoluteDate.J2000_EPOCH, FramesFactory.getGCRF()).getPosition().equals(position));
         Assert.assertTrue(point.getNormal().equals(new Vector3D(1, 0, 0)));
         Assert.assertEquals(point.angularSeparation(point), 0, 0);
         Assert.assertEquals(point.getNativeFrame(null), FramesFactory.getGCRF());
@@ -371,7 +359,7 @@ public class EllipsoidPointTest {
 
     /**
      * Evaluate two {@link BodyPoint} with their attributes.
-     * 
+     *
      * @param point1
      *        First point
      * @param point2
@@ -390,147 +378,6 @@ public class EllipsoidPointTest {
         Assert.assertEquals(point1.getLLHCoordinates().getHeight(), point2.getLLHCoordinates().getHeight(), 0.);
 
         Assert.assertEquals(point1.toString(), point2.toString());
-    }
-
-    /**
-     * @description Tests the method {@link AbstractBodyPoint#getInputLLHCoordinates()} returns the expected value in a
-     *              nominal case where the input coordinates are defined.
-     * 
-     * @testedMethod {@link AbstractBodyPoint#getInputLLHCoordinates()}
-     * 
-     * @throws PatriusException
-     */
-    @Test
-    public void testInputLLHCoordinatesGetterNominal() throws PatriusException {
-        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
-        final double latitude = MathUtils.DEG_TO_RAD * 43;
-        final double longitude = MathUtils.DEG_TO_RAD * 1;
-        final double height = 35000 * 1e3;
-        final LLHCoordinates coord =
-            new LLHCoordinates(LLHCoordinatesSystem.BODYCENTRIC_NORMAL, latitude, longitude, height);
-        final String name = "name";
-        final EllipsoidPoint point = new EllipsoidPoint(shape, coord, name);
-        assertEquals(coord, point.getInputLLHCoordinates());
-    }
-
-    /**
-     * @description Tests the method {@link AbstractBodyPoint#getInputLLHCoordinates()} returns the expected value in a
-     *              non-nominal case where the input coordinates are not defined. The method should throw an error.
-     * 
-     * @testedMethod {@link AbstractBodyPoint#getInputLLHCoordinates()}
-     * 
-     * @throws PatriusException
-     */
-    @Test
-    public void testInputLLHCoordinatesGetterError() throws PatriusException {
-        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
-        final String name = "name";
-        final Vector3D vector = Vector3D.PLUS_I;
-        final EllipsoidPoint point = new EllipsoidPoint(shape, vector, name);
-        try {
-            point.getInputLLHCoordinates();
-            Assert.fail();
-        } catch (final PatriusException e) {
-            assertEquals(e.getMessage(), PatriusMessages.NO_LLHCOORDINATES_DEFINED.getSourceString());
-        }
-    }
-
-    /**
-     * @description This method verifies the method {@link AbstractBodyPoint#toStringWithInputCoords()} provides the
-     *              expected result in a nominal case where input coordinates are provided.
-     * 
-     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords()}
-     * 
-     * @throws PatriusException
-     */
-    @Test
-    public void testToStringWithInputCoordsNominal() throws PatriusException {
-        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
-        final double latitude = 0.54;
-        final double longitude = 1.54;
-        final double height = 250;
-        final LLHCoordinates coord =
-            new LLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC, latitude, longitude, height);
-        final String name = "name";
-        final EllipsoidPoint point = new EllipsoidPoint(shape, coord, name);
-
-        // Results are provided without recomputation
-        final String expString =
-            "EllipsoidPoint: name='name', surface ellipsodetic coord={lat=0.54, long=1.54}rad, normal height=250.0m, body='ONE_AXIS_ELLIPSOID'";
-        assertEquals(expString, point.toStringWithInputCoords());
-    }
-
-    /**
-     * @description This method verifies the method {@link AbstractBodyPoint#toStringWithInputCoords()} provides the
-     *              expected result in a non-nominal case where input coordinates are not provided.
-     * 
-     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords()}
-     * 
-     * @throws PatriusException
-     */
-    @Test
-    public void testToStringWithInputCoordsError() throws PatriusException {
-        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
-        final Vector3D vector = Vector3D.PLUS_I;
-        final String name = "name";
-        final EllipsoidPoint point = new EllipsoidPoint(shape, vector, name);
-
-        try{
-            point.toStringWithInputCoords();
-            Assert.fail();
-        } catch(final PatriusException e) {
-            assertEquals(e.getMessage(), PatriusMessages.NO_LLHCOORDINATES_DEFINED.getSourceString());
-        }
-    }
-
-    /**
-     * @description This test verifies the method
-     *              {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)} provides the expected
-     *              result in a nominal case where the LLHCoordinates are defined by user.
-     * 
-     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)}
-     * 
-     * @throws PatriusException
-     */
-    @Test
-    public void testToStringWithInputCoordsLHCCoordSystemNominal() throws PatriusException {
-        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
-        final double latitude = 0.54;
-        final double longitude = 1.54;
-        final double height = 250.;
-        final LLHCoordinates coord =
-            new LLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC, latitude, longitude, height);
-        final String name = "name";
-        final EllipsoidPoint point = new EllipsoidPoint(shape, coord, name);
-        
-        // Results are provided with transformation computation
-        final String expString =
-            "EllipsoidPoint: name='name', surface bodycentric coord={lat=0.5399999999999999, long=1.54}rad, radial height=250.00000000011343m, body='ONE_AXIS_ELLIPSOID'";
-        assertEquals(expString,point.toStringWithInputCoords(LLHCoordinatesSystem.BODYCENTRIC_RADIAL));
-    }
-
-    /**
-     * @description This test verifies the method
-     *              {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)} provides the expected
-     *              result in a non-nominal case where the LLHCoordinates are not defined by user.
-     * 
-     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)}
-     * 
-     * @throws PatriusException
-     */
-    @Test
-    public void testToStringWithInputCoordsLHCCoordSystemError() throws PatriusException {
-        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
-        final String name = "name";
-        final Vector3D vector = Vector3D.PLUS_I;
-        final EllipsoidPoint point = new EllipsoidPoint(shape, vector, name);
-
-        try {
-            point.toStringWithInputCoords(LLHCoordinatesSystem.ELLIPSODETIC);
-            Assert.fail();
-        } catch (final PatriusException e) {
-            assertEquals(e.getMessage(), PatriusMessages.NO_LLHCOORDINATES_DEFINED.getSourceString());
-        }
     }
 
     @Before

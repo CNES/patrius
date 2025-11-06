@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -267,10 +268,10 @@ public class NadirPointingTest {
 
         final Vector3D satInBodyFrame = refToBody.transformPosition(scRef.getPosition());
 
-        // satellite position in geodetic coordinates
+        // satellite position in ellipsoid coordinates
         final BodyPoint epSat = bodyShape.buildPoint(satInBodyFrame, frame, scRef.getDate(), "");
 
-        // nadir position in geodetic coordinates
+        // nadir position in ellipsoid coordinates
         final EllipsoidPoint gpNadir = new EllipsoidPoint(bodyShape, new LLHCoordinates(
             bodyShape.getLLHCoordinatesSystem(), epSat.getLLHCoordinates().getLatitude(), epSat.getLLHCoordinates()
                 .getLongitude(), 0.0), "");

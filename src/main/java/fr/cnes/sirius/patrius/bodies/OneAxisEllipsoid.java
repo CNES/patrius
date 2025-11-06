@@ -18,6 +18,7 @@
  * @history creation 15/06/2012
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
@@ -386,7 +387,7 @@ public class OneAxisEllipsoid extends AbstractEllipsoidBodyShape {
      * Transform a surface-relative point to a cartesian point and compute the jacobian of the transformation.
      *
      * @param point
-     *        geodetic point
+     *        ellipsoid point
      * @param jacobian
      *        the jacobian matrix which will be computed (input and output of the method)
      * @return point at the same location but as a cartesian point
@@ -401,7 +402,7 @@ public class OneAxisEllipsoid extends AbstractEllipsoidBodyShape {
     }
 
     /**
-     * Compute the jacobian matrix of the transformation from geodetic point to Cartesian point.
+     * Compute the jacobian matrix of the transformation from ellipsoid point to Cartesian point.
      *
      * See "Algorithmes des routines du th&egraveme "changement de variables et de rep&egravere pour la trajectographie"
      * de la MSLIB (edition 4)".
@@ -409,7 +410,7 @@ public class OneAxisEllipsoid extends AbstractEllipsoidBodyShape {
      * @param cartesianPoint
      *        cartesian point
      * @param point
-     *        geodetic point
+     *        ellipsoid point
      * @param jacobian
      *        the jacobian matrix which will be computed (input and output of the method)
      * @deprecated since 4.13, use {@link LLHCoordinatesSystem#jacobianToCartesian(BodyPoint)} with
@@ -477,13 +478,13 @@ public class OneAxisEllipsoid extends AbstractEllipsoidBodyShape {
     }
 
     /**
-     * Compute the jacobian matrix of the transformation from Cartesian point to geodetic point.
+     * Compute the jacobian matrix of the transformation from Cartesian point to ellipsoid point.
      *
      * See "Algorithmes des routines du th&egraveme "changement de variables et de rep&egravere pour la trajectographie"
      * de la MSLIB (edition 4)".
      *
      * @param point
-     *        geodetic point
+     *        ellipsoid point
      * @param cartesianPoint
      *        cartesian point
      * @param jacobian

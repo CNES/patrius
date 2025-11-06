@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -24,29 +26,26 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
- * @description <p>
+ * @description
+ *              <p>
  *              Validation tests for the object LineSegment.
  *              </p>
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id: LineSegmentTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class LineSegmentTest {
     /** Features description. */
@@ -54,9 +53,9 @@ public class LineSegmentTest {
 
         /**
          * @featureTitle Line segment
-         * 
+         *
          * @featureDescription Creation of a line segment, computation of distance to lines.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130
          */
         LINE_SEGMENT
@@ -70,24 +69,24 @@ public class LineSegmentTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#LINE_SEGMENT}
-     * 
+     *
      * @testedMethod {@link LineSegment#LineSegment(Vector3D, Vector3D, double)}
-     * 
+     *
      * @description Instantiation of a line segment from its origin, direction and length.
-     * 
+     *
      * @input A vector origin, direction vectors (OK and with null norm) and lengths (positive, null, negative).
-     * 
+     *
      * @output LineSegment
-     * 
+     *
      * @testPassCriteria The segment can be created only if the direction's norm and length are strictly positive, an
      *                   exception is thrown otherwise. We check the returned elements (origin, direction) with the ones
      *                   given at the construction with an epsilon of 1e-16 which takes into account the machine error
      *                   only.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -148,22 +147,22 @@ public class LineSegmentTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#LINE_SEGMENT}
-     * 
+     *
      * @testedMethod {@link LineSegment#distanceTo(Line)}
-     * 
+     *
      * @description Compute the shortest distance between the segment and a line of space.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output doubles : the distances
-     * 
+     *
      * @testPassCriteria The output doubles must be the right distance, zero if the line touches the segment with an
      *                   epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -220,22 +219,22 @@ public class LineSegmentTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#LINE_SEGMENT}
-     * 
+     *
      * @testedMethod {@link LineSegment#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -251,7 +250,7 @@ public class LineSegmentTest {
         // string creation
         final String result = segment.toString();
 
-        final String expected = "LineSegment{Origin{1; 1; 1},Direction{1; 0; 0},Length{2.0}}";
+        final String expected = "LineSegment{Origin{1.0; 1.0; 1.0},Direction{1.0; 0.0; 0.0},Length{2.0}}";
         Assert.assertEquals(expected, result);
     }
 

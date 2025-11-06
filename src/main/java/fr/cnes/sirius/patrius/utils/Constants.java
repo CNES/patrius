@@ -18,8 +18,10 @@
 /*
  *
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
+ * VERSION:4.16:OPENFD-388:25/04/2025:[STELA-PATRIUS] Coefficients de frottement Cook, tabule
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * VERSION::DM:346:23/04/2015:creation of a local time class
  * VERSION::DM:600:16/06/2016:add Cook (Cn, Ct) models
@@ -268,6 +270,33 @@ public interface Constants {
 
     /** Solar Constant (N/M**2). */
     double CONST_SOL_STELA = 0.45605E-05;
+
+    /** Default drag coefficient used in MEAN_CONSTANT F107 computation. */
+    double STELA_DEFAULT_LOS_CX = 2.2;
+    /** k0 coefficient used in MEAN_CONSTANT F107 computation. */
+    double STELA_LOS_K0 = 194.4;
+    /** k1 coefficient used in MEAN_CONSTANT F107 computation. */
+    double STELA_LOS_K1 = 3.17;
+    /** k2 coefficient used in MEAN_CONSTANT F107 computation. */
+    double STELA_LOS_K2 = -6.86;
+    /** F10.7 constant for stela los */
+    double STELA_LOS_F107 = 140.0;
+    /** AP constant for stela los */
+    double STELA_LOS_AP = 15.0;
+
+    /** Space object name. */
+    String STELA_SPACE_OBJECT_NAME = "Default Object Name";
+    /** Space object mass (kg). */
+    double STELA_SPACE_OBJECT_MASS = 0.;
+    /** Space object mean area (m<sup>2</sup>). */
+    double STELA_SPACE_OBJECT_MEAN_AREA = 0.;
+    /** Space object reflectivity area (m<sup>2</sup>). */
+    double STELA_SPACE_OBJECT_REF_AREA = 0.;
+    /** Space object reflection coefficient. */
+    double STELA_SPACE_OBJECT_REFLECT_COEF = 1.5;
+    /** Constant drag coefficient value. */
+    double STELA_CONSTANT_DRAG_COEFFICIENT = 2.2;
+
     /**
      * Critical prograde inclination from 4 - 5 &times; sin<sup>2</sup>i = 0
      * see "Fundamentals of Astrodynamics and Applications", 3rd Edition, D. A. Vallado, p.646
@@ -297,6 +326,24 @@ public interface Constants {
 
     /** CNES Stela reference mu. */
     double CNES_STELA_MU = 398600441449820.000;
+
+    /** Cook perfect gaz constant. */
+    double STELA_COOK_GAZ_CONSTANT = 8.314472;
+
+    /** Cook molar mass of oxygen atom. */
+    double STELA_COOK_MOLAR_MASS_OXYGEN = 16e-3;
+
+    /** Cook wall temperature (K). */
+    double STELA_COOK_WALL_TEMPERATURE = 300;
+
+    /** Cook accomodation constant. */
+    double STELA_COOK_ACCOMODATION = 4;
+
+    /** LOS Earth Radius (m). */
+    double STELA_LOS_EARTH_RADIUS = 6378000;
+
+    /** Altitude of the upper atmospheric boundary (m). */
+    double STELA_Z_LIMIT_ATMOS = 2500000;
 
     // IERS92 data from CNES COMPAS_Base data set ...
 

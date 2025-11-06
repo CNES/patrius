@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -197,7 +198,7 @@ public abstract class AbstractProjection implements IProjection {
      * Discretize following great circle lines between vertices of polygon and project obtained points.
      * 
      * @param list
-     *        geodetic points list
+     *        ellipsoid points list
      * @param maxLength
      *        This distance is used when a discretization occurs : i.e : when the line property is not
      *        coherent with the projection ( {@link EnumLineProperty}). This parameter represent a <b>distance</b>
@@ -250,7 +251,7 @@ public abstract class AbstractProjection implements IProjection {
      * </p>
      * 
      * @param list
-     *        list of geodetic vectors
+     *        list of ellipsoid vectors
      * @param maxLength
      *        This distance is used when a discretization occurs :
      *        i.e when the line property is not coherent with the projection ( {@link EnumLineProperty}). This parameter
@@ -288,9 +289,9 @@ public abstract class AbstractProjection implements IProjection {
      * half of the X projection world at the end of the projection world.
      * 
      * @param from
-     *        the initial geodetic point
+     *        the initial ellipsoid point
      * @param to
-     *        the final geodetic point
+     *        the final ellipsoid point
      * @param maxLength
      *        maximal length for a leg, after discretization. If maxlength <=0, no discretization is done.
      * @param lastIncluded
@@ -325,11 +326,11 @@ public abstract class AbstractProjection implements IProjection {
     }
 
     /**
-     * Project a list of GeodeticPoints with a given projection. A check and correction are done on each point if
+     * Project a list of EllipsoidPoints with a given projection. A check and correction are done on each point if
      * latitude > the maximum value of the projection.
      * 
      * @param list
-     *        list of geodetic points
+     *        list of ellipsoid points
      * @return list of projected points
      * @throws PatriusException
      *         if one projection could not be computed
@@ -338,8 +339,8 @@ public abstract class AbstractProjection implements IProjection {
         final List<Vector2D> result = new ArrayList<>();
         final Iterator<EllipsoidPoint> iter = list.iterator();
         while (iter.hasNext()) {
-            final EllipsoidPoint currentGeodetic = iter.next();
-            final Vector2D projected = this.applyTo(currentGeodetic);
+            final EllipsoidPoint currentEllipsoid = iter.next();
+            final Vector2D projected = this.applyTo(currentEllipsoid);
             result.add(projected);
         }
         return result;
@@ -350,7 +351,7 @@ public abstract class AbstractProjection implements IProjection {
      * 
      * @param list
      *        list of projected points
-     * @return list of geodetic points
+     * @return list of ellipsoid points
      * @throws PatriusException
      *         if one inverse projection could not be computed
      */
@@ -359,8 +360,8 @@ public abstract class AbstractProjection implements IProjection {
         final Iterator<Vector2D> iter = list.iterator();
         while (iter.hasNext()) {
             final Vector2D projected = iter.next();
-            final EllipsoidPoint geodetic = this.applyInverseTo(projected.getX(), projected.getY());
-            result.add(geodetic);
+            final EllipsoidPoint ellipsoid = this.applyInverseTo(projected.getX(), projected.getY());
+            result.add(ellipsoid);
         }
         return result;
     }
@@ -372,7 +373,7 @@ public abstract class AbstractProjection implements IProjection {
      *        x coordinates of projected points
      * @param y
      *        y coordinates of projected points
-     * @return list of geodetic points obtained by inverse projection
+     * @return list of ellipsoid points obtained by inverse projection
      * @throws PatriusException
      *         if arrays have not the same length
      */
@@ -390,10 +391,10 @@ public abstract class AbstractProjection implements IProjection {
     }
 
     /**
-     * Project a list of geodetic points and then apply the discretization.
+     * Project a list of ellipsoid points and then apply the discretization.
      * 
      * @param list
-     *        list of geodetic points
+     *        list of ellipsoid points
      * @param maxLength
      *        This distance is used when a discretization occurs : i.e : when the line property is not
      *        coherent with the projection ( {@link EnumLineProperty}). This parameter represent a <b>distance</b>
@@ -438,10 +439,10 @@ public abstract class AbstractProjection implements IProjection {
     }
 
     /**
-     * Discretize a list of geodetic points following rhumb line, and then perform the projection.
+     * Discretize a list of ellipsoid points following rhumb line, and then perform the projection.
      * 
      * @param list
-     *        list of geodetic points
+     *        list of ellipsoid points
      * @param maxLength
      *        This distance is used when a discretization occurs : i.e : when the line property is not
      *        coherent with the projection ( {@link EnumLineProperty}). This parameter represent a <b>distance</b>
@@ -461,7 +462,7 @@ public abstract class AbstractProjection implements IProjection {
         EllipsoidPoint to = null;
         for (int i = 1; i < list.size(); i++) {
             to = list.get(i);
-            // discretize GeodeticPoints
+            // discretize EllipsoidPoints
             if (maxLength > 0) {
                 final List<EllipsoidPoint> resDiscretize = ProjectionEllipsoidUtils.discretizeRhumbLine(from, to,
                     maxLength);

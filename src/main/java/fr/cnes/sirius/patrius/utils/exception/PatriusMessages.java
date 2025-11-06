@@ -18,6 +18,14 @@
  * @history creation version 1.0
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-481:25/04/2025:[PATRIUS] Problemes de codage IsisSpinBiasSlewCalculator
+ * VERSION:4.16:OPENFD-388:25/04/2025:[STELA-PATRIUS] Coefficients de frottement Cook, tabule
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-382:25/04/2025:[PATRIUS] Analyse concernant le renvoi 
+ *          des coordonnees d'entree pour EllipsoidPoint 
+ * VERSION:4.16:OPENFD-390:25/04/2025:[STELA-PATRIUS] Modeles d'atmosphere additionnels
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
+ * VERSION:4.16:OPENFD-550:25/04/2025:[PATRIUS] Detecteur de masquage par un corps celeste
  * VERSION:4.15:OPENFD-291:21/11/2024:[PATRIUS] Arguments non remontés dans une Exception
  * VERSION:4.15:OPENFD-431:21/11/2024:[PATRIUS] Reliquat messages DimensionMismatchException
  * VERSION:4.14:OPENFD-:22/08/2024:
@@ -139,39 +147,39 @@ public enum PatriusMessages implements Localizable {
     PDB_FOO_MESSAGE("foo message for testing purpose"),
     /** Frame not inertial */
     PDB_NOT_INERTIAL_FRAME_SPICE("One of the frames ( {0} or {1} ) is not inertial. "
-                               + "Non-inertial frames are not supported by this adaptation of SPICE."
-                               + "Their utilisation implies the reading of non-SPK files, which is not"
-                               + " supported for the moment."),
+            + "Non-inertial frames are not supported by this adaptation of SPICE."
+            + "Their utilisation implies the reading of non-SPK files, which is not"
+            + " supported for the moment."),
     /** Impossible to get here */
     PDB_IMPOSSIBLE_TO_GET_HERE_SPICE("Something is not working well. It is impossible to get here without "
-                                   + "reading a non SPK file"),
+            + "reading a non SPK file"),
     /** File not loaded */
     PDB_SPICE_KERNEL_NOT_LOADED("The file {0} has not been loaded. Before trying to use any SPICE file, "
-                              + "please load it by using SpiceKernelManager.loadSpiceKernel(String filepath)"),
-    /** File not found*/
+            + "please load it by using SpiceKernelManager.loadSpiceKernel(String filepath)"),
+    /** File not found */
     PDB_FILE_NOT_FOUND("File {0} cannot be found"),
     /** Ephemeris object not recognised */
     PDB_EPHEMERIS_OBJ_NOT_RECON("{0} is not a recognized name for an ephemeris object."),
     /** Frame not recognised */
     PDB_FRAME_NOT_RECOGNISED("The frame '{0}' is not recognised. If it is blank or there is a non-printable character"
-                        + "there is probably an initialisation problem. If not, the frame is probably not supported"),
-    /** Insuficient ephemeris data to compute state*/
+            + "there is probably an initialisation problem. If not, the frame is probably not supported"),
+    /** Insuficient ephemeris data to compute state */
     PDB_INSUFFICIENT_DATA_FOR_STATE("Insufficient ephemeris data has been loaded to compute the"
-                                  + " state of {0} relative to {1} at the ephemeris epoch {2}."),
+            + " state of {0} relative to {1} at the ephemeris epoch {2}."),
     /** Unnable to connect frames */
     PDB_UNNABLE_TO_CONNECT_FRAMES("There was no connection found between the frames requested"),
     /** Non-inertial frame not supported */
     PDB_NON_INERTIAL_FRAME("Non-inertial frame not supported. The reading of files of type different to SPK "
-                         + "would be needed"),
-    /** Reference frame ID not recognized*/
+            + "would be needed"),
+    /** Reference frame ID not recognized */
     PDB_UNKNOWN_FRAME_ID("The number {0} is not a recognized id-code for a reference frame."),
-    /** Intertial ID not recognized*/
+    /** Intertial ID not recognized */
     PDB_UNKNOWN_INERTIAL_ID("A request has been made to obtain the transformation from inertial reference frame {0}"
-                          + " to inertial reference frame {1}. Unfortunately {2} is not the id-code of a known "
-                          + "inertial frame."),
-    /** Spk type not supported*/
+            + " to inertial reference frame {1}. Unfortunately {2} is not the id-code of a known "
+            + "inertial frame."),
+    /** Spk type not supported */
     PDB_SPK_TYPE_NOT_SUPPORTED("Only type 2 and type 3 SPK files are supported. Type was: {0}"),
-    /** Number of coefficients is negative*/
+    /** Number of coefficients is negative */
     PDB_NCOF_SPK_RECORD_NEGATIVE("The input record coefficient count NCOF should be positive but was {0}"),
     /** SPK interval radius negative */
     PDB_SPK_INTERVAL_RADIUS_NEGATIVE("Interval radius bust be positive but was {0}"),
@@ -181,54 +189,54 @@ public enum PatriusMessages implements Localizable {
     PDB_NOT_SAME_SIZE("Arrays must have the same size"),
     /** Empty string not allowed. */
     PDB_EMPTY_STRING("Empty string not allowed"),
-    /** Comment buffer too short*/
+    /** Comment buffer too short */
     PDB_COMMENT_BUFFER_TOO_SHORT("The lineSize defined ({0}), is too short."),
     /** CounterArray overflowed */
     PDB_COUNTER_ARRAY_OVERFLOW("A subsystem state counter overflowed."),
     /** CounterArray type not recognised. */
     PDB_WRONG_COUNTER_ARRAY_TYPE("The type {0} is not recognized as a possible type for CounterArray. "
-                                 + "Only USER and SUBSYSTEM are allowed"),
-    /** Count char exceeds*/
+            + "Only USER and SUBSYSTEM are allowed"),
+    /** Count char exceeds */
     PDB_COUNT_CHARS_EXCEEDS("count of comment characters exceeds the number of comment characters in the DAF"),
-    /** Too many files in the list*/
+    /** Too many files in the list */
     PDB_TOO_MANY_FILES("Too many files in the list"),
-    /** End of comments not found*/
+    /** End of comments not found */
     PDB_EOC_NOT_FOUND("End of comments not found"),
-    /** DAF not opened**/
+    /** DAF not opened **/
     PDB_DAF_NOT_OPENED("There is not DAF opened to the handle : {0}"),
-    /** FTP check failure*/
+    /** FTP check failure */
     PDB_FTP_FAILED("FTP check failed. File probably corrupted"),
-    /** File cant't be read*/
+    /** File cant't be read */
     PDB_FILE_CANT_BE_READ("File cannot be read"),
     /** List completion method failed */
     PDB_LIST_COMPLETION_FAILED("Lists contain different number of elements. This should never happen."),
-    /** Access method not supported*/
+    /** Access method not supported */
     PDB_WRONG_ACCESS_METHOD("Access method differs from READ. Actual access method is : {0}"),
-    /** Negative address*/
+    /** Negative address */
     PDB_ILLEGAL_ADDRESS("Address must be >= 0 : Address searched : {0}"),
-    /** Negative record*/
+    /** Negative record */
     PDB_ILLEGAL_RECORD("Record must be > 0 : Record searched : {0}"),
-    /** Binary file format not supported*/
+    /** Binary file format not supported */
     PDB_BFF_NOT_SUPPORTED("Binary file format {0} is not supported"),
     /** Next array is first */
     PDB_FIRST_IS_NEXT("No array is current; the ''next'' array is the first array of DAF"),
     /** Previous array is last */
     PDB_LAST_IS_PREV("No array is current; the ''previous'' array is the last array of DAF"),
-    /** No DAF being searched*/
+    /** No DAF being searched */
     PDB_NO_DAF_SEARCHED("No DAF is being searched"),
     /** Failed to read descriptor record in DAF file */
     PDB_DESC_RECORD_FAILED("Attempt to read descriptor record {0} of DAF ''{1}'' failed; record was not found. "
             + "This condition may indicate a corrupted DAF."),
-    /** Too many agents to notify*/
+    /** Too many agents to notify */
     PDB_TOO_MANY_AGENTS("Too many agents to notify"),
-    /**Not enought bytes to read*/
+    /** Not enought bytes to read */
     PDB_NOT_ENOUGH_BYTES("Not enough bytes to read are left"),
-    /**Unable to locate file associated to handle */
+    /** Unable to locate file associated to handle */
     PDB_UNABLE_TO_LOCATE_FILE("Unable to locate file associated with handle {0}."
             + " Most likely the file has been closed"),
-    /** File type not supported*/
+    /** File type not supported */
     PDB_WRONG_TYPE("File type differs from SPK. Actual file type is : {0}"),
-    /** Architecture type not supported*/
+    /** Architecture type not supported */
     PDB_WRONG_ARCHITECTURE("File architecture differs from DAF. Actual file architecture is : {0}"),
     /** No room left for another SPICE kernel */
     PDB_ROOM_SPICE_KERNEL("No room left for another SPICE kernel"),
@@ -343,7 +351,7 @@ public enum PatriusMessages implements Localizable {
     /** easting value out of range. */
     PDB_EASTING_OUT_OF_RANGE("easting value out of range : maximum value is {0} but actual value is {1}"),
     /** points too close, cannot define azimuth. */
-    PDB_POINTS_TOO_CLOSE("geodetic points are too close, azimuth cannot be defined"),
+    PDB_POINTS_TOO_CLOSE("ellipsoid points are too close, azimuth cannot be defined"),
     /** the latitude is close or over -/+ 90°. */
     PDB_LATITUDE_CLOSE_90("the latitude is close or over -/+ 90°"),
     /** the latitude is out of range. */
@@ -820,7 +828,7 @@ public enum PatriusMessages implements Localizable {
             "STELA integration failed (probably during reentry). Try reducing allowed minimum stepsize"),
     /** Message. */
     GEOD_CONVERGENCE_FAILED(
-            "Failed to compute geodetic coordinates. The algorithm was unable to converge. 1st threshold is {0} "
+            "Failed to compute ellipsoid coordinates. The algorithm was unable to converge. 1st threshold is {0} "
                     + "(reached {1}) and 2st threshold is {2} (reached {3}). Use setAngularThreshold() or "
                     + "set2ndAngularThreshold() to adjust threshold."),
     /** Message. */
@@ -1776,7 +1784,7 @@ public enum PatriusMessages implements Localizable {
             "Abscissa array (size {0}) and ordinates array (size {1}) do not have the same dimensions."),
     /** Wrong quadratic equation */
     WRONG_QUADRATIC_EQUATION("Wrong quadratic equation: quadratic and linear coefficients are both equal to zero"),
-    /** Body not available in the bsp file*/
+    /** Body not available in the bsp file */
     BODY_NOT_AVAILABLE_IN_BSP_FILE("Body {0} is not available in BSP ephemeris file {1}."),
     /** Message. */
     WRONG_FILE_FORMAT("There is a problem with the file format: {0}"),
@@ -1968,7 +1976,7 @@ public enum PatriusMessages implements Localizable {
             "The celestial body orientation isn't an instance of CelestialBodyIAUOrientation."),
     /** Message. */
     ZERO_NORM_VECTOR_FOR_PLANE_DEFINITION(
-            "The normal vector for plane definition has a zero norm."), 
+            "The normal vector for plane definition has a zero norm."),
     /** Message. */
     UNKNOWN_ENUM_VALUE(
             "The value for the enum provided is unknown."),
@@ -1978,9 +1986,6 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     NO_ROTATING_FRAME_COMPUTED(
             "No rotating frame computed."),
-    /** Message. */
-    NO_LLHCOORDINATES_DEFINED(
-            "No LLHCoordinates defined."),
     /** Error message when an empty interval is constructed. */
     EMPTY_INTERVALS_ARE_FORBIDDEN(
             "Invalid interval: empty intervals are forbidden."),
@@ -1989,7 +1994,21 @@ public enum PatriusMessages implements Localizable {
             "Invalid interval: the lower end-point must be open when infinite."),
     /** Error message when the upper end-point of the interval is infinite and NOT OPEN. */
     UPPER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE(
-            "Invalid interval: the upper end-point must be open when infinite.");
+            "Invalid interval: the upper end-point must be open when infinite."),
+    /** Dates are inconsistent */
+    INCONSISTENT_DATE_IN_SLEW_CALCULATION("Initial and final dates are inconsistent for computing the slew duration."),
+    /** Error when an F10.7 constant solar activity can not be set with the methode #setConstantF107(inputF107) */
+    STELA_CANNOT_SET_F107(
+            "Constant equivalent solar activity : cannot set the F10.7"),
+    /** Error when an AP constant solar activity can not be set with the methode #setConstantAP(inputAP) */
+    STELA_CANNOT_SET_AP(
+            "Constant equivalent solar activity : cannot set the AP"),
+    STELA_2D_TEXO_OUT_OF_RANGE(
+            "The exospheric temperature {0} is out of range [{1} ; {2}] (temperatures table for density logarithm " +
+                    "interpolation)"),
+    /** List of masking bodies for the BodyMaskingDetector is empty */
+    EMPTY_MASKING_BODIES_LIST("The masking bodies list cannot be empty.");
+
     /**
      * Bogus string constant.
      */
@@ -2004,7 +2023,8 @@ public enum PatriusMessages implements Localizable {
      * Constructor.<br>
      * Initialises source English format.
      *
-     * @param sourceFormat source English format to use when no localized version is available
+     * @param sourceFormat
+     *        source English format to use when no localized version is available
      *
      * @since 1.0
      */
@@ -2027,7 +2047,7 @@ public enum PatriusMessages implements Localizable {
             final ResourceBundle bundle = ResourceBundle.getBundle("META-INF/localization/PatriusMessages", locale);
             if (bundle.getLocale().getLanguage().equals(locale.getLanguage())) {
                 // the value of the resource is the translated format
-                result = bundle.getString(this.toString());
+                result = bundle.getString(toString());
             } else {
                 // we throw an MRE in case the language does not exist
                 // so we are sure to go through the catch block.

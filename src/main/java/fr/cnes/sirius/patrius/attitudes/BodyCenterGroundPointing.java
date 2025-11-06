@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3174:10/05/2022:[PATRIUS] Corriger les differences de convention entre toutes les methodes...
@@ -114,9 +115,9 @@ public class BodyCenterGroundPointing extends AbstractGroundPointing {
         final Line line = new Line(center, sat);
         // inverse transform to expressed sat position in body frame
         final Vector3D satInBodyFrame = transform.getInverse().transformPosition(sat);
-        // The geodetic point on the body surface:
+        // The ellipsoid point on the body surface:
         final BodyPoint targetGeo = this.getBodyShape().getIntersectionPoint(line, satInBodyFrame, frame, date);
-        // Transform the geodetic point in cartesian coordinates in the input frame:
+        // Transform the ellipsoid point in cartesian coordinates in the input frame:
         return transform.transformPosition(targetGeo.getPosition());
     }
 

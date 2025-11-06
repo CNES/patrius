@@ -20,6 +20,7 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-551:25/04/2025:[PATRIUS] Amelioration retour methodes ParameterUtils
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -30,7 +31,11 @@ package fr.cnes.sirius.patrius.math.parameter;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import fr.cnes.sirius.patrius.orbits.OrbitType;
@@ -77,15 +82,20 @@ public final class ParameterUtils {
      *        the value to be mapped to the field descriptor
      * @param <T>
      *        the type associated with the field descriptor
-     * @return {@code true} if at least one field has replaced an existing field value, {@code false} otherwise
+     * @return Map containing the original value of the replaced fields (if any, empty Map otherwise)
      */
-    public static <T> boolean addFieldToParameters(final IParameterizable parameterizable,
-                                                   final FieldDescriptor<T> fieldDescriptor, final T fieldValue) {
-        boolean hasReplacedField = false;
+    public static <T> Map<Parameter, T> addFieldToParameters(final IParameterizable parameterizable,
+                                                             final FieldDescriptor<T> fieldDescriptor,
+                                                             final T fieldValue) {
+
+        // Empty Map initialization to store the original value of the replaced fields (if any)
+        Map<Parameter, T> replacedFieldMap = new LinkedHashMap<>();
+
         if (parameterizable != null) {
-            hasReplacedField = addFieldToParameters(parameterizable.getParameters(), fieldDescriptor, fieldValue);
+            replacedFieldMap = addFieldToParameters(parameterizable.getParameters(), fieldDescriptor, fieldValue);
         }
-        return hasReplacedField;
+
+        return replacedFieldMap;
     }
 
     /**
@@ -101,11 +111,15 @@ public final class ParameterUtils {
      *        the value to be mapped to the field descriptor
      * @param <T>
      *        the type associated with the field descriptor
-     * @return {@code true} if at least one field has replaced an existing field value, {@code false} otherwise
+     * @return Map containing the original value of the replaced fields (if any, empty Map otherwise)
      */
-    public static <T> boolean addFieldToParameters(final Collection<Parameter> parameters,
-                                                   final FieldDescriptor<T> fieldDescriptor, final T fieldValue) {
-        boolean hasReplacedField = false;
+    public static <T> Map<Parameter, T> addFieldToParameters(final Collection<Parameter> parameters,
+                                                             final FieldDescriptor<T> fieldDescriptor,
+                                                             final T fieldValue) {
+
+        // Empty Map initialization to store the original value of the replaced fields (if any)
+        final Map<Parameter, T> replacedFieldMap = new LinkedHashMap<>();
+
         if (parameters != null) {
             for (final Parameter parameter : parameters) {
                 if (parameter != null) {
@@ -116,20 +130,21 @@ public final class ParameterUtils {
                         if (previousFieldValue != null && !previousFieldValue.equals(fieldValue)) {
                             // Check if adding the field has replaced an existing field value and if this value is
                             // different
-                            hasReplacedField = true;
+                            replacedFieldMap.put(parameter, previousFieldValue);
                         }
                     }
                 }
             }
         }
-        return hasReplacedField;
+        
+        return replacedFieldMap;
     }
 
     /**
      * Adds a given field descriptor to multiple parameter descriptors and maps it to the specified
      * value (existing values are overwritten when the field descriptor is already associated with a
      * parameter descriptor; parameter descriptors which are not currently mutable are ignored).
-     * 
+     *
      * @param descriptors
      *        the parameters descriptors to be updated
      * @param fieldDescriptor
@@ -138,12 +153,18 @@ public final class ParameterUtils {
      *        the value to be mapped to the field descriptor
      * @param <T>
      *        the type associated with the field descriptor
-     * @return {@code true} if at least one field has replaced an existing field value, {@code false} otherwise
+     * @return Map containing the original value of the replaced fields (if any, empty Map otherwise)
      */
-    public static <T> boolean addFieldToParameterDescriptors(final Collection<ParameterDescriptor> descriptors,
-                                                             final FieldDescriptor<T> fieldDescriptor,
-                                                             final T fieldValue) {
-        boolean hasReplacedField = false;
+    public static <
+            T>
+            Map<ParameterDescriptor, T>
+            addFieldToParameterDescriptors(final Collection<ParameterDescriptor> descriptors,
+                                           final FieldDescriptor<T> fieldDescriptor,
+                                           final T fieldValue) {
+
+        // Empty Map initialization to store the original value of the replaced fields (if any)
+        final Map<ParameterDescriptor, T> replacedFieldMap = new LinkedHashMap<>();
+
         if (descriptors != null) {
             for (final ParameterDescriptor descriptor : descriptors) {
                 // Check if the descriptor is initialized and mutable
@@ -151,12 +172,13 @@ public final class ParameterUtils {
                     final T previousFieldValue = descriptor.addField(fieldDescriptor, fieldValue);
                     if (previousFieldValue != null && !previousFieldValue.equals(fieldValue)) {
                         // Check if adding the field has replaced an existing field value and if this value is different
-                        hasReplacedField = true;
+                        replacedFieldMap.put(descriptor, previousFieldValue);
                     }
                 }
             }
         }
-        return hasReplacedField;
+        
+        return replacedFieldMap;
     }
 
     /**
@@ -173,8 +195,7 @@ public final class ParameterUtils {
      * <b>Note:</b> This method only adds the fields when the associated field descriptors aren't already initialized in
      * the map.
      * </p>
-     * 
-     * 
+     *
      * @param parameterizable
      *        the parameterizable object whose parameters are to be updated
      * @param fieldDescriptor
@@ -183,20 +204,23 @@ public final class ParameterUtils {
      *        the value to be mapped to the field descriptor
      * @param <T>
      *        the type associated with the field descriptor
-     * @return {@code true} if at least one field couldn't have been updated as it was already existing, {@code false}
-     *         if all the fields
-     *         have been initialized for the first time
+     * @return Set containing the original value of the modified parameters (if any, empty Set otherwise)
      */
-    public static <T>
-        boolean
-        addFieldIfAbsentToParameters(final IParameterizable parameterizable,
-                                     final FieldDescriptor<T> fieldDescriptor, final T fieldValue) {
-        boolean hasReplacedField = false;
+    public static <
+            T>
+            Set<Parameter>
+            addFieldIfAbsentToParameters(final IParameterizable parameterizable,
+                                         final FieldDescriptor<T> fieldDescriptor, final T fieldValue) {
+
+        // Empty Set initialization to store the original value of the modified parameters (if any)
+        Set<Parameter> alreadyPresentFieldSet = new LinkedHashSet<>();
+        
         if (parameterizable != null) {
-            hasReplacedField = addFieldIfAbsentToParameters(parameterizable.getParameters(), fieldDescriptor,
+            alreadyPresentFieldSet = addFieldIfAbsentToParameters(parameterizable.getParameters(), fieldDescriptor,
                 fieldValue);
         }
-        return hasReplacedField;
+        
+        return alreadyPresentFieldSet;
     }
 
     /**
@@ -207,7 +231,7 @@ public final class ParameterUtils {
      * <b>Note:</b> This method only adds the fields when the associated field descriptors aren't already initialized in
      * the map.
      * </p>
-     * 
+     *
      * @param parameters
      *        the parameters whose parameter descriptor is to be updated
      * @param fieldDescriptor
@@ -216,15 +240,17 @@ public final class ParameterUtils {
      *        the value to be mapped to the field descriptor
      * @param <T>
      *        the type associated with the field descriptor
-     * @return {@code true} if at least one field couldn't have been updated as it was already existing, {@code false}
-     *         if all the fields
-     *         have been initialized for the first time
+     * @return Set containing the original value of the modified parameters (if any, empty Set otherwise)
      */
-    public static <T>
-        boolean
-        addFieldIfAbsentToParameters(final Collection<Parameter> parameters,
-                                     final FieldDescriptor<T> fieldDescriptor, final T fieldValue) {
-        boolean hasAlreadyPresentField = false;
+    public static <
+            T>
+            Set<Parameter>
+            addFieldIfAbsentToParameters(final Collection<Parameter> parameters,
+                                         final FieldDescriptor<T> fieldDescriptor, final T fieldValue) {
+
+        // Empty Set initialization to store the original value of the modified parameters (if any)
+        final Set<Parameter> alreadyPresentFieldSet = new LinkedHashSet<>();
+
         if (parameters != null) {
             for (final Parameter parameter : parameters) {
                 if (parameter != null) {
@@ -234,13 +260,14 @@ public final class ParameterUtils {
                         final T previousFieldValue = descriptor.addFieldIfAbsent(fieldDescriptor, fieldValue);
                         if (previousFieldValue != null && !previousFieldValue.equals(fieldValue)) {
                             // Check if the field to add was already present
-                            hasAlreadyPresentField = true;
+                            alreadyPresentFieldSet.add(parameter);
                         }
                     }
                 }
             }
         }
-        return hasAlreadyPresentField;
+        
+        return alreadyPresentFieldSet;
     }
 
     /**
@@ -251,7 +278,7 @@ public final class ParameterUtils {
      * <b>Note:</b> This method only adds the fields when the associated field descriptors aren't already initialized in
      * the map.
      * </p>
-     * 
+     *
      * @param descriptors
      *        the parameters descriptors to be updated
      * @param fieldDescriptor
@@ -260,14 +287,18 @@ public final class ParameterUtils {
      *        the value to be mapped to the field descriptor
      * @param <T>
      *        the type associated with the field descriptor
-     * @return {@code true} if at least one field couldn't have been updated as it was already existing, {@code false}
-     *         if all the fields
-     *         have been initialized for the first time
+     * @return Set containing the original value of the modified parameters (if any, empty Set otherwise)
      */
-    public static <T> boolean addFieldIfAbsentToParameterDescriptors(final Collection<ParameterDescriptor> descriptors,
-                                                                     final FieldDescriptor<T> fieldDescriptor,
-                                                                     final T fieldValue) {
-        boolean hasAlreadyPresentField = false;
+    public static <
+            T>
+            Set<ParameterDescriptor>
+            addFieldIfAbsentToParameterDescriptors(final Collection<ParameterDescriptor> descriptors,
+                                                   final FieldDescriptor<T> fieldDescriptor,
+                                                   final T fieldValue) {
+
+        // Empty Set initialization to store the original value of the modified parameters (if any)
+        final Set<ParameterDescriptor> alreadyPresentFieldSet = new LinkedHashSet<>();
+
         if (descriptors != null) {
             for (final ParameterDescriptor descriptor : descriptors) {
                 // Check if the descriptor is initialized and mutable
@@ -275,12 +306,13 @@ public final class ParameterUtils {
                     final T previousFieldValue = descriptor.addFieldIfAbsent(fieldDescriptor, fieldValue);
                     if (previousFieldValue != null && !previousFieldValue.equals(fieldValue)) {
                         // Check if the field to add was already present
-                        hasAlreadyPresentField = true;
+                        alreadyPresentFieldSet.add(descriptor);
                     }
                 }
             }
         }
-        return hasAlreadyPresentField;
+        
+        return alreadyPresentFieldSet;
     }
 
     /**
@@ -290,7 +322,7 @@ public final class ParameterUtils {
      * provides a copy of the parameters stored by the class implementing the {@linkplain IParameterizable} interface
      * (instead of a direct access to their reference).
      * </p>
-     * 
+     *
      * @param parameterizable
      *        the parameterizable object whose parameters are to be updated
      * @param fieldDescriptor
@@ -305,7 +337,7 @@ public final class ParameterUtils {
 
     /**
      * Removes a given field descriptor from multiple parameters.
-     * 
+     *
      * @param parameters
      *        the parameters whose parameter descriptor is to be updated
      * @param fieldDescriptor
@@ -574,10 +606,11 @@ public final class ParameterUtils {
      *        the field descriptor which must be associated to the parameters
      * @return the parameter descriptors associated with the specified field descriptor
      */
-    public static List<ParameterDescriptor>
-        extractParameterDescriptors(
-                                    final Collection<ParameterDescriptor> parameterDescriptors,
-                                    final FieldDescriptor<?> fieldDescriptor) {
+    public static
+        List<ParameterDescriptor>
+            extractParameterDescriptors(
+                                        final Collection<ParameterDescriptor> parameterDescriptors,
+                                        final FieldDescriptor<?> fieldDescriptor) {
         return extractParameterDescriptors(parameterDescriptors, fieldDescriptor, (fieldValue) -> true);
     }
 
@@ -595,11 +628,12 @@ public final class ParameterUtils {
      *        the type of fields associated with the provided field descriptor
      * @return @return the parameter descriptors matching the specified criteria
      */
-    public static <T>
-        List<ParameterDescriptor>
-        extractParameterDescriptors(
-                                    final Collection<ParameterDescriptor> descriptors,
-                                    final FieldDescriptor<T> fieldDescriptor, final Predicate<T> fieldFilter) {
+    public static <
+            T>
+            List<ParameterDescriptor>
+            extractParameterDescriptors(
+                                        final Collection<ParameterDescriptor> descriptors,
+                                        final FieldDescriptor<T> fieldDescriptor, final Predicate<T> fieldFilter) {
         final List<ParameterDescriptor> out = new ArrayList<>();
 
         if (descriptors != null) {

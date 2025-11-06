@@ -18,17 +18,18 @@
 /*
  *
  * HISTORY
-* VERSION:4.15:OPENFD-437:21/11/2024:[PATRIUS] Renaming d'un test
-* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
-* VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion 
- *          des reperes predefinis et des corps predefinis 
-* VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
-* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
-* VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
- *          de convertir les sorties de VacuumSignalPropagation 
-* VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
- *          retourner un CelestialBodyFrame 
-* VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
+ * VERSION:4.16:OPENFD-426:25/04/2025:[PATRIUS] Rendre Frame immutable et suppression de la notion de referentiel
+ * VERSION:4.15:OPENFD-437:21/11/2024:[PATRIUS] Renaming d'un test
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ *          des reperes predefinis et des corps predefinis
+ * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
+ *          de convertir les sorties de VacuumSignalPropagation
+ * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
+ *          retourner un CelestialBodyFrame
+ * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:FA:FA-3199:03/11/2022:[PATRIUS] Mise en œuvre PM 2973, gestion coordonnees et referentiel
  * VERSION:4.9:DM:DM-3093:10/05/2022:[PATRIUS] Mise en Oeuvre PM2973 , gestion coordonnees et referentiel 
@@ -79,13 +80,15 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 public class FrameTest {
 
     /**
-     * Test referential in a simple case:
+     * Test referential in a simple case (using the deprecated setReferential method):
      * - Frame1 = Transform t from frame
      * - Frame2 = Transform t from frame
      * - Referential of frame1 is frame1
      * - Referential of frame2 is a translated and rotating frame
+     * This test is deprecated because it uses the Frame.setReferential method
      */
     @Test
+    @Deprecated
     public void testReferentialSimple1() throws PatriusException {
         final Frame frame = OrphanFrame.getNewOrphanFrame("root");
 
@@ -112,12 +115,60 @@ public class FrameTest {
     }
 
     /**
-     * Test referential in a simple case:
+     * @testType UT
+     *
+     * @description Test frozen frame in a simple case (using getFrozenFrame method):
+     *              - Frame1 = Transform t from frame
+     *              - Frame2 = Transform t from frame
+     *              - Frozen frame of frame1 is frame1
+     *              - Frozen frame of frame2 is a translated and rotating frame
+     *
+     * @testPassCriteria The results match the expected values. As explained in the OPENFD-426 analysis, the old
+     *                   implementation of frozen frame considered the translation velocity between the two frames. The
+     *                   reference from the original test is kept (PLUS_J), but the translation speed between the frames
+     *                   is subtracted to match the current behavior of frozen frame
+     *
+     * @referenceVersion 4.16
+     */
+    @Test
+    public void testFrozenFrameSimple1() throws PatriusException {
+        final Frame frame = OrphanFrame.getNewOrphanFrame("root");
+
+        // Transform with velocity
+        final PVCoordinates pv = new PVCoordinates(Vector3D.PLUS_I, Vector3D.PLUS_J, Vector3D.PLUS_K);
+        final Rotation r = new Rotation(Vector3D.PLUS_K, MathLib.PI / 2.);
+        final Vector3D rotationRate = Vector3D.PLUS_K;
+        final AngularCoordinates angular = new AngularCoordinates(r, rotationRate);
+        final Transform t = new Transform(AbsoluteDate.J2000_EPOCH, pv, angular);
+
+        // Frame1 = frame and frame2 = frame but with moving referential
+        final Frame referential = new Frame(frame, t, "referentials");
+        final Frame frame1 = new Frame(frame, Transform.IDENTITY, "frame1");
+        final Frame frame2 = frame.getFrozenFrame(referential, "name2");
+
+        // Compute transform
+        final Transform tres1 = frame.getTransformTo(frame1, AbsoluteDate.J2000_EPOCH);
+        final Transform tres2 = frame.getTransformTo(frame2, AbsoluteDate.J2000_EPOCH);
+
+        // Before OPENFD-426, when creating a frozenFrame, the translation velocity between the frames was not being
+        // subtracted (error). With the new implementation, it is. To match the old results (Vector3D.PLUS_J), we need
+        // to add this translation velocity)
+        final Vector3D translationVelocity = frame.getTransformTo(referential, AbsoluteDate.J2000_EPOCH).getVelocity();
+
+        // Check velocity depends properly on referential
+        Assert.assertTrue(tres1.getCartesian().getVelocity().isZero());
+        Assert.assertTrue(tres2.getCartesian().getVelocity().equals(Vector3D.PLUS_J.subtract(translationVelocity)));
+    }
+
+    /**
+     * Test referential in a simple case (using the deprecated setReferential method):
      * - Frame1 = Transform t from frame
      * - Frame2 = Transform t from frame
      * - Referential of frame is a translated and rotating frame
+     * This test is deprecated because it uses the Frame.setReferential method
      */
     @Test
+    @Deprecated
     public void testReferentialSimple2() throws PatriusException {
         final Frame frame = OrphanFrame.getNewOrphanFrame("root");
 
@@ -142,13 +193,61 @@ public class FrameTest {
         Assert.assertTrue(tres1.getCartesian().getVelocity().isZero());
         Assert.assertTrue(tres2.getCartesian().getVelocity().equals(Vector3D.PLUS_J));
     }
-
+    
     /**
-     * Test referential using AngularCoordinates:
-     * - Position in ITRF is the same independently of referential
-     * - Velocity is the same when referential is the same
+     * @testType UT
+     *
+     * @description Test referential in a simple case (using getFrozenFrame method):
+     *              - Frame1 = Transform t from frame
+     *              - Frame2 = Transform t from frame
+     *              - Referential of frame is a translated and rotating frame
+     *
+     * @testPassCriteria The results match the expected values. As explained in the OPENFD-426 analysis, the old
+     *                   implementation of frozen frame considered the translation velocity between the two frames. The
+     *                   reference from the original test is kept (PLUS_J), but the translation speed between the frames
+     *                   is subtracted to match the current behavior of frozen frame
+     *
+     * @referenceVersion 4.16
      */
     @Test
+    public void testFrozenFrameSimple2() throws PatriusException {
+        Frame frame = OrphanFrame.getNewOrphanFrame("root");
+
+        // Transform with velocity
+        final PVCoordinates pv = new PVCoordinates(Vector3D.PLUS_I, Vector3D.PLUS_J, Vector3D.PLUS_K);
+        final Rotation r = new Rotation(Vector3D.PLUS_K, MathLib.PI / 2.);
+        final Vector3D rotationRate = Vector3D.PLUS_K;
+        final AngularCoordinates angular = new AngularCoordinates(r, rotationRate);
+        final Transform t = new Transform(AbsoluteDate.J2000_EPOCH, pv, angular);
+
+        // Frame1 = frame and frame2 = frame but with moving referential
+        final Frame referential = new Frame(frame, t, "referentials");
+        final Frame frame1 = new Frame(frame, Transform.IDENTITY, "frame1");
+        final Frame frame2 = new Frame(frame, Transform.IDENTITY, "frame2");
+
+        // Compute transform
+        final Transform tres1 = frame.getTransformTo(frame1, AbsoluteDate.J2000_EPOCH);
+        frame = frame.getFrozenFrame(referential, "root");
+        final Transform tres2 = frame.getTransformTo(frame2, AbsoluteDate.J2000_EPOCH);
+
+        // Before OPENFD-426, when creating a frozenFrame, the translation velocity between the frames was not being
+        // subtracted (error). With the new implementation, it is. To match the old results (Vector3D.PLUS_J), we need
+        // to add this translation velocity)
+        final Vector3D translationVelocity = frame2.getTransformTo(referential, AbsoluteDate.J2000_EPOCH).getVelocity();
+
+        // Check velocity depends properly on referential
+        Assert.assertTrue(tres1.getCartesian().getVelocity().isZero());
+        Assert.assertTrue(tres2.getCartesian().getVelocity().equals(Vector3D.PLUS_J.subtract(translationVelocity)));
+    }
+
+    /**
+     * Test referential using AngularCoordinates (using the deprecated setReferential method):
+     * - Position in ITRF is the same independently of referential
+     * - Velocity is the same when referential is the same
+     * This test is deprecated because it uses the Frame.setReferential method
+     */
+    @Test
+    @Deprecated
     public void testFrameReferentialAngularCoordinates() throws PatriusException {
 
         // Initialization
@@ -169,17 +268,85 @@ public class FrameTest {
 
         // Checks
         // Position in ITRF is the same independently of referential
-        Assert.assertEquals(0.,
-            orbit.getPVCoordinates(itrf).getPosition().subtract(orbit.getPVCoordinates(itrf_gcrf).getPosition())
-                .getNorm(), 1E-12);
+        Assert.assertEquals(0., orbit.getPVCoordinates(itrf).getPosition()
+            .subtract(orbit.getPVCoordinates(itrf_gcrf).getPosition()).getNorm(), 1E-12);
         // Velocity is the same when referential is the same
         Assert.assertEquals(pv.getVelocity().getNorm(), orbit.getPVCoordinates(itrf_gcrf).getVelocity().getNorm(),
             1E-12);
     }
 
     /**
-     * Check that CelestialBody associated to Predefined frames are the one expected and have same memory address (important,
-     * since it means it is the same body).
+     * @testType UT
+     *
+     * @description Test frozen frame using AngularCoordinates (using getFrozenFrame method):
+     *              - Position in ITRF is the same independently of referential
+     *              - Velocity is the same when referential is the same
+     *
+     * @testPassCriteria The results match the expected values
+     *
+     * @referenceVersion 4.16
+     */
+    @Test
+    public void testFrozenFrameAngularCoordinates() throws PatriusException {
+
+        // Initialization
+        Utils.setDataRoot("regular-dataPBASE");
+        final PVCoordinates pv = new PVCoordinates(7000000., 0., 0., 0., 7000., 0.);
+
+        // Frame definitions
+        // GCRF, GCRF referential
+        final Frame gcrf = FramesFactory.getGCRF();
+        // ITRF, ITRF referential
+        final Frame itrf = FramesFactory.getITRF();
+        // ITRF, GCRF frozen frame
+        final Frame itrf_gcrf = itrf.getFrozenFrame(gcrf, "itrf_gcrf");
+
+        final CartesianOrbit orbit = new CartesianOrbit(pv, gcrf, AbsoluteDate.J2000_EPOCH.shiftedBy(4 * 365 * 86400.),
+            Constants.GRS80_EARTH_MU);
+
+        // Checks
+        // Position in ITRF is the same independently of referential
+        Assert.assertEquals(0., orbit.getPVCoordinates(itrf).getPosition()
+            .subtract(orbit.getPVCoordinates(itrf_gcrf).getPosition()).getNorm(), 1E-12);
+        // Velocity is the same when referential is the same
+        Assert.assertEquals(pv.getVelocity().getNorm(), orbit.getPVCoordinates(itrf_gcrf).getVelocity().getNorm(),
+            1E-12);
+    }
+
+    /**
+     * @testType UT
+     *
+     * @testedMethod {@link Frame#getFrozenFrame(Frame, String)}
+     *
+     * @description Check that the constructed frozen frame matches the expected values
+     *
+     * @testPassCriteria The Frozen frame matches has the GCRF frame as parent
+     *
+     * @referenceVersion 4.16
+     */
+    @Test
+    public void testGetFrozenFrame() throws PatriusException {
+
+        // Initialization
+        Utils.setDataRoot("regular-dataPBASE");
+
+        // Frame definitions
+        // GCRF, GCRF referential
+        final Frame gcrf = FramesFactory.getGCRF();
+        // ITRF, ITRF referential
+        final Frame itrf = FramesFactory.getITRF();
+        // ITRF, GCRF frozen frame
+        final Frame itrf_gcrf = itrf.getFrozenFrame(gcrf, "itrf_gcrf");
+
+        // Checks
+        // Position in ITRF is the same independently of referential
+        Assert.assertEquals(itrf_gcrf.getName(), "itrf_gcrf");
+        Assert.assertTrue(itrf_gcrf.getParent().equals(gcrf));
+    }
+
+    /**
+     * Check that CelestialBody associated to Predefined frames are the one expected and have same memory address
+     * (important, since it means it is the same body).
      */
     @Test
     public void testCelestialBody() throws PatriusException {
@@ -283,12 +450,10 @@ public class FrameTest {
         final Transform t1 = randomTransform(random);
         final Transform t2 = randomTransform(random);
         final Transform t3 = randomTransform(random);
-        final Frame frame1 =
-            new Frame(FramesFactory.getEME2000(),
-                new Transform(t1.getDate(), new Transform(t1.getDate(), t1, t2), t3),
-                null);
+        final Frame frame1 = new Frame(FramesFactory.getEME2000(),
+            new Transform(t1.getDate(), new Transform(t1.getDate(), t1, t2), t3), null);
         final Frame frame2 =
-            new Frame(new Frame(new Frame(FramesFactory.getEME2000(), t1, null), t2, null), t3, null);
+                new Frame(new Frame(new Frame(FramesFactory.getEME2000(), t1, null), t2, null), t3, null);
         checkNoTransform(frame1.getTransformTo(frame2, new AbsoluteDate()), random);
     }
 
@@ -493,22 +658,22 @@ public class FrameTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedMethod {@link Frame#getTransformJacobian(Frame, AbsoluteDate)}
-     * 
+     *
      * @description Validation of the jacobian related to the conversion towards wished Frame at given date
-     * 
+     *
      * @input Frame from = FramesFactory.getEME2000() ,
      * @input AbsoluteDate h0 = "2011-07-01T10:42:09" ,
      * @input Rotation rot = Rotation(Vector3D.PLUS_K, FastMath.PI / 6) ,
      * @input Transform t = Transform(h0,rot) ,
      * @input Frame to = Frame(from,t,"to")
-     * 
+     *
      * @output The jacobian of the conversion
-     * 
+     *
      * @testPassCriteria the jacobian computed is the same as the one computed by the class Transform
      * @referenceVersion 3.1
-     * 
+     *
      * @nonRegressionVersion 3.1
      */
     @Test
@@ -580,11 +745,8 @@ public class FrameTest {
             FramesFactory.getITRF().getFirstCommonPseudoInertialAncestor(FramesFactory.getTIRF()));
         Assert.assertEquals(FramesFactory.getGCRF(),
             FramesFactory.getITRF().getFirstCommonPseudoInertialAncestor(FramesFactory.getVeis1950()));
-        Assert
-            .assertEquals(
-                null,
-                OrphanFrame.getNewOrphanFrame("Orphan frame").getFirstCommonPseudoInertialAncestor(
-                    FramesFactory.getGCRF()));
+        Assert.assertEquals(null, OrphanFrame.getNewOrphanFrame("Orphan frame")
+            .getFirstCommonPseudoInertialAncestor(FramesFactory.getGCRF()));
     }
 
     public static void frameEq(final Frame f1, final Frame f2) {

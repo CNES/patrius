@@ -18,6 +18,7 @@
  * @history created on 08/02/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -583,7 +584,7 @@ public abstract class AbstractStelaGaussContribution implements StelaForceModel 
             final int orderFS,
             final int quadPoints) {
         // Initializations
-        final List<double[][][]> listQuadElements = new ArrayList<double[][][]>();
+        final List<double[][][]> listQuadElements = new ArrayList<>();
         final double[][][] intgdCos = new double[6][quadPoints][orderFS];
         final double[][][] intgdSin = new double[6][quadPoints][orderFS];
 
@@ -627,7 +628,7 @@ public abstract class AbstractStelaGaussContribution implements StelaForceModel 
             final double meanMvt,
             final double deltaAngle) throws PatriusException {
         // Initialization
-        final List<double[][]> coeffs = new ArrayList<double[][]>();
+        final List<double[][]> coeffs = new ArrayList<>();
         final double[][][] intgdCos = listQuadElements.get(0);
         final double[][][] intgdSin = listQuadElements.get(1);
 

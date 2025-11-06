@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -334,7 +335,7 @@ public class LatitudeDetector extends AbstractDetector {
     @Override
     @SuppressWarnings("PMD.ShortMethodName")
     public double g(final SpacecraftState state) throws PatriusException {
-        // spacecraft position as a geodetic point
+        // spacecraft position as a ellipsoid point
         final EllipsoidPoint point = this.body.buildPoint(state.getPVCoordinates().getPosition(), state.getFrame(),
             state.getDate(), BodyPointName.DEFAULT);
         return point.getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC).getLatitude() - this.latToDetect;

@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-434:25/04/2025:[PATRIUS] Probleme threadSafety dans GCRFProvider
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche calcul position relative de 2 corps
@@ -43,14 +45,14 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <p>
  * Its parent frame is the Earth-Moon barycenter frame.
  * <p>
- * 
+ *
  * @serial serializable.
  */
 public final class GCRFProvider implements TransformProvider {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 1348242067511943173L;
-    
+
     /** A boolean stating if the verification associated to the celestial body loader type is the first one */
     private boolean isFirst = true;
 
@@ -59,7 +61,7 @@ public final class GCRFProvider implements TransformProvider {
 
     /**
      * Get the transform from GCRF to Earth-Moon barycenter frame at the specified date.
-     * 
+     *
      * @param date
      *        new value of the date
      * @param config
@@ -76,12 +78,12 @@ public final class GCRFProvider implements TransformProvider {
 
     /**
      * Get the transform from GCRF to Earth-Moon barycenter frame at the specified date.
-     * 
+     *
      * @param date
      *        new value of the date
      * @return transform at the specified date
      * @exception PatriusException
-     *         if the JPL ephemeris data cannot be retrieved
+     *            if the JPL ephemeris data cannot be retrieved
      */
     @Override
     public Transform getTransform(final AbsoluteDate date) throws PatriusException {
@@ -93,17 +95,19 @@ public final class GCRFProvider implements TransformProvider {
      * <p>
      * Spin derivative is never computed and is either 0 or null.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
-     * @param computeSpinDerivatives true if spin derivatives shall be computed, false otherwise
+     * @param computeSpinDerivatives
+     *        true if spin derivatives shall be computed, false otherwise
      * @return transform at the specified date
      * @exception PatriusException
      *            if the JPL ephemeris data cannot be retrieved
      */
     @Override
     public Transform getTransform(final AbsoluteDate date,
-                                  final boolean computeSpinDerivatives) throws PatriusException {
+                                  final boolean computeSpinDerivatives)
+        throws PatriusException {
         return this.getTransform(date, FramesFactory.getConfiguration(), computeSpinDerivatives);
     }
 
@@ -112,30 +116,34 @@ public final class GCRFProvider implements TransformProvider {
      * <p>
      * Spin derivative is never computed and is either 0 or null.
      * </p>
-     * 
+     *
      * @param date
      *        new value of the date
      * @param config
      *        frames configuration to use
-     * @param computeSpinDerivatives true if spin derivatives shall be computed, false otherwise
+     * @param computeSpinDerivatives
+     *        true if spin derivatives shall be computed, false otherwise
      * @return transform at the specified date
      * @throws PatriusException
      *         if the JPL ephemeris data cannot be retrieved
      */
     @Override
     public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
-                                  final boolean computeSpinDerivatives) throws PatriusException {
-        
+                                  final boolean computeSpinDerivatives)
+        throws PatriusException {
+
         final PVCoordinates pv;
 
         // Make the check concerning the celestial body loader type just if it has not been done before
-        if (isFirst) {
-            isFrameTreeInverted = CelestialBodyFactory.getLoader(
-                CelestialBodyFactory.EARTH) instanceof JPLCelestialBodyLoader;
-            isFirst = false;
+        if (this.isFirst) {
+            synchronized (CelestialBodyFactory.class) {
+                this.isFrameTreeInverted = CelestialBodyFactory.getLoader(
+                    CelestialBodyFactory.EARTH) instanceof JPLCelestialBodyLoader;
+            }
+            this.isFirst = false;
         }
 
-        if (isFrameTreeInverted) {
+        if (this.isFrameTreeInverted) {
             // // Compulsory use of JPL ephemeris frame tree to link GCRF and its parent frame EMB (GCRF reference frame
             // is the root)
             pv = CelestialBodyFactory.getEarthMoonBarycenter().getEphemeris().getPVCoordinates(date,
@@ -145,7 +153,7 @@ public final class GCRFProvider implements TransformProvider {
             pv = CelestialBodyFactory.getEarth().getEphemeris().getPVCoordinates(date, FramesFactory.getEMB());
 
         }
-        
+
         final AngularCoordinates angular;
         if (computeSpinDerivatives) {
             angular = AngularCoordinates.IDENTITY;

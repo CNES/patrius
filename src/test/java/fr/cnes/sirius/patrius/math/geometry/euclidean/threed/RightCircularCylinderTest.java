@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history creation 17/10/2011
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -30,31 +32,27 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
-import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
-import fr.cnes.sirius.patrius.Utils;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import fr.cnes.sirius.patrius.Utils;
-import junit.framework.Assert;
-import fr.cnes.sirius.patrius.Utils;
 
 /**
- * @description <p>
+ * @description
+ *              <p>
  *              Validation tests for the object RightCircularCylinder.
  *              </p>
- * 
+ *
  * @author Thomas Trapier
- * 
+ *
  * @version $Id: RightCircularCylinderTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class RightCircularCylinderTest {
     /** Features description. */
@@ -62,10 +60,10 @@ public class RightCircularCylinderTest {
 
         /**
          * @featureTitle Right circular cylinder shape
-         * 
+         *
          * @featureDescription Creation of a right circular cylinder shape, computation of distances and intersections
          *                     with lines and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_120, DV-GEOMETRIE_130,
          *                      DV-GEOMETRIE_140
          */
@@ -80,24 +78,24 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#RightCircularCylinder(Vector3D, Vector3D, double, double)}
-     * 
+     *
      * @description Instantiation of a an right circular cylinder from its axis, height and radius.
-     * 
+     *
      * @input a point origin, a vector direction, several doubles as radiuses and height (positive, negative, zero)
-     * 
+     *
      * @output RightCircularCylinder
-     * 
+     *
      * @testPassCriteria The cylinder can be created only if the radius and height are strictly positive, and the
      *                   direction of the axis not null. We check the returned elements with the ones given at the
      *                   construction with an epsilon of 1e-16 which takes into account the machine error only. An
      *                   exception is thrown otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -147,7 +145,7 @@ public class RightCircularCylinderTest {
         Assert.assertEquals(height, cylinder3.getLength(), 0.);
         Assert.assertEquals(radius, cylinder3.getRadius(), 0.);
         Assert.assertEquals(xSurf, cylinder3.getSurfX(), 0);
-        Assert.assertEquals(tSurf, cylinder3.getTransversalSurf());
+        Assert.assertEquals(tSurf, cylinder3.getTransversalSurf(), Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals((MathLib.sqrt(2) + 2) / 4.0 * tSurf, cylinder3.getEquivalentTransversalSurf(), 0);
         Assert.assertEquals(tSurf, RightCircularSurfaceCylinder.getTSurfaceFromRadiusAndLength(radius, height), 0);
 
@@ -200,22 +198,22 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#distanceTo(Line)}
-     * 
+     *
      * @description Compute the shortest distance between the surface of the cylinder and a Line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output doubles : the distances
-     * 
+     *
      * @testPassCriteria The output doubles must be the right distance, positive if the line does not intersects the
      *                   surface and zero otherwise with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -289,21 +287,21 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#intersects(Line)}
-     * 
+     *
      * @description Test the intersection between the cylinder and a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output booleans
-     * 
+     *
      * @testPassCriteria The output boolean must be true if the line intersects the surface, false otherwise.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -377,22 +375,22 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Compute the intersection points with a line.
-     * 
+     *
      * @input Lines of space
-     * 
+     *
      * @output Vector3D
-     * 
+     *
      * @testPassCriteria The result array is empty if there is no intersection point. The points have the expected
      *                   coordinates otherwise with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -487,23 +485,23 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#closestPointTo(Line)}
-     * 
+     *
      * @description Compute the point of the cylinder realizing the shortest distance to a line of space, and the
      *              associated point of the line.
-     * 
+     *
      * @input Points of space (Vector3D)
-     * 
+     *
      * @output Vector3D[]
-     * 
+     *
      * @testPassCriteria The output vector must be the one of the shape and the one of the line realizing the shortest
      *                   distance with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -590,22 +588,22 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -622,7 +620,8 @@ public class RightCircularCylinderTest {
         // string creation
         final String result = cylinder.toString();
 
-        final String expected = "RightCircularCylinder{Origin{0; 1; 1},Direction{1; 0; 0},Radius{2.0},Height{6.0}}";
+        final String expected =
+            "RightCircularCylinder{Origin{0.0; 1.0; 1.0},Direction{1.0; 0.0; 0.0},Radius{2.0},Height{6.0}}";
         Assert.assertEquals(expected, result);
 
         final RightCircularSurfaceCylinder cylinder2 = new RightCircularSurfaceCylinder(4, 10);
@@ -636,25 +635,25 @@ public class RightCircularCylinderTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#RIGHT_CIRCULAR_CYLINDER_SHAPE}
-     * 
+     *
      * @testedMethod {@link RightCircularCylinder#getCrossSection(Vector3D)}
-     * 
+     *
      * @description Test various cylinder cross sections computation (using rays with various orientations):
      *              - Ray from bottom
      *              - Ray from top
      *              - Rays from sides
      *              - Ray from 45° inclination
-     * 
+     *
      * @input cylinder, rays
-     * 
+     *
      * @output cross section
-     * 
+     *
      * @testPassCriteria cross sections are as expected (reference: math, STELA in random case)
-     * 
+     *
      * @referenceVersion 3.4
-     * 
+     *
      * @nonRegressionVersion 3.4
      */
     @Test
@@ -686,7 +685,6 @@ public class RightCircularCylinderTest {
         Assert.assertEquals(FastMath.PI * 2. * 2., cylinder2.getCrossSection(Vector3D.PLUS_I), 0.);
 
     }
-
 
     @Before
     public void setUp() {

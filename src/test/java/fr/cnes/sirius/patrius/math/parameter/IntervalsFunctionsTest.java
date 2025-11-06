@@ -20,6 +20,8 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-312:25/04/2025:[PATRIUS] Ajout de getter d'entry pour IntervalMapSearcher
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -49,6 +51,8 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.time.AbsoluteDateIntervalsList;
+import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.tools.cache.CacheEntry;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -348,6 +352,8 @@ public class IntervalsFunctionsTest {
      * @testedMethod {@link IntervalsFunction#getFunctions()}
      * @testedMethod {@link IntervalsFunction#getIntervalFunctionAssociation()}
      * @testedMethod {@link IntervalsFunction#toString()}
+     * @testedMethod {@link IntervalsFunction#getEntry(AbsoluteDate)}
+     * @testedMethod {@link IntervalsFunction#getEntry(AbsoluteDate, boolean)}
      * 
      * @passCriteria The function behave as expected.
      */
@@ -384,10 +390,22 @@ public class IntervalsFunctionsTest {
         final List<IParamDiffFunction> functionsFct = fct.getFunctions();
         final Map<AbsoluteDateInterval, IParamDiffFunction> intervalFunctionAssociationFct =
             fct.getIntervalFunctionAssociation();
+        final AbsoluteDate goodDate = new AbsoluteDate(2000, 1, 1, 12, 59, 27.816, TimeScalesFactory.getTAI());
+        final AbsoluteDate outOfRangeDate = new AbsoluteDate(2000, 1, 1, 10, 59, 27.816, TimeScalesFactory.getTAI());
+        final CacheEntry<AbsoluteDateInterval, IParamDiffFunction> entry1 =
+            fct.getEntry(goodDate);
+        final CacheEntry<AbsoluteDateInterval, IParamDiffFunction> entry2 =
+            fct.getEntry(goodDate, false);
+        final CacheEntry<AbsoluteDateInterval, IParamDiffFunction> entry3 =
+            fct.getEntry(outOfRangeDate, false);
 
         Assert.assertEquals(size, intervalsFct.size());
         Assert.assertEquals(size, functionsFct.size());
         Assert.assertEquals(size, intervalFunctionAssociationFct.size());
+        Assert.assertEquals("] 2000-01-01T11:59:27.816 ; 2000-01-01T15:59:27.816 [", entry1.getKey().toString());
+        Assert.assertEquals(cstFcts.get(0), entry1.getValue());
+        Assert.assertEquals(entry1, entry2);
+        Assert.assertNull(entry3);
 
         for (int i = 0; i < size; i++) {
             Assert.assertTrue(intervalsFct.contains(this.intervals.get(i)));
@@ -466,6 +484,7 @@ public class IntervalsFunctionsTest {
      * 
      * @testedMethod {@link IntervalsFunction#IntervalsFunction(List, List)}
      * @testedMethod {@link IntervalsFunction#IntervalsFunction(Map)}
+     * @testedMethod {@link IntervalsFunction#getEntry(AbsoluteDate, boolean)}
      * 
      * @passCriteria The expected exceptions are returned.
      */
@@ -604,6 +623,29 @@ public class IntervalsFunctionsTest {
         } catch (final IllegalArgumentException e) {
             // expected
             Assert.assertTrue(true);
+        }
+
+        // Try to get an entry at a date which is outside the supported intervals
+        // (outside the supported intervals)
+        try {
+            fct.getEntry(new AbsoluteDate(2000, 1, 1, 10, 59, 27.816, TimeScalesFactory.getTAI()));
+            Assert.fail();
+        } catch (final IllegalStateException e) {
+            // expected
+            Assert.assertEquals("The provided date (2000-01-01T10:59:27.816) is outside the supported intervals.",
+                e.getMessage());
+        }
+
+        // Try to get an entry at a date which doesn't belong to any of the intervals
+        // (outside the supported intervals)
+        try {
+            fct.getEntry(new AbsoluteDate(2000, 1, 1, 16, 59, 27.816, TimeScalesFactory.getTAI()));
+            Assert.fail();
+        } catch (final IllegalStateException e) {
+            // expected
+            Assert.assertEquals("The provided date (2000-01-01T16:59:27.816) does not belong to any " +
+                    "of the intervals.",
+                e.getMessage());
         }
     }
 

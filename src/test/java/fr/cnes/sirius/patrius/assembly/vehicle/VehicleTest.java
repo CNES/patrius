@@ -4,19 +4,21 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * 
+ *
+ *
  * @history creation 23/05/2018
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -27,6 +29,7 @@
  */
 package fr.cnes.sirius.patrius.assembly.vehicle;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,6 +55,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Sphere;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
@@ -59,7 +63,6 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import junit.framework.Assert;
 
 public class VehicleTest {
 
@@ -68,9 +71,9 @@ public class VehicleTest {
 
         /**
          * @featureTitle Vehicle
-         * 
+         *
          * @featureDescription Vehicle
-         * 
+         *
          * @coveredRequirements
          */
         VEHICLE,
@@ -78,21 +81,21 @@ public class VehicleTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VEHICLE}
-     * 
+     *
      * @testedMethod all {@link VehicleSurfaceModel} methods
-     * 
+     *
      * @description check that the VehicleSurfaceModel methods are correct
-     * 
+     *
      * @input VehicleSurfaceModel
-     * 
+     *
      * @output output of VehicleSurfaceModel methods
-     * 
+     *
      * @testPassCriteria result is as expected (reference computed mathematically, threshold: 1E-14)
-     * 
+     *
      * @referenceVersion 4.1
-     * 
+     *
      * @nonRegressionVersion 4.1
      */
     @Test
@@ -133,21 +136,21 @@ public class VehicleTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VEHICLE}
-     * 
+     *
      * @testedMethod all {@link AerodynamicProperties} methods
-     * 
+     *
      * @description check that the AerodynamicProperties methods are correct
-     * 
+     *
      * @input VehicleSurfaceModel
-     * 
+     *
      * @output output of AerodynamicProperties methods
-     * 
+     *
      * @testPassCriteria result is as expected (reference computed mathematically, threshold: 1E-14)
-     * 
+     *
      * @referenceVersion 4.1
-     * 
+     *
      * @nonRegressionVersion 4.1
      */
     @Test
@@ -190,20 +193,25 @@ public class VehicleTest {
         Assert.assertEquals(FastMath.PI * 2. * 2. * 2.,
             ((AeroSphereProperty) assembly1.getMainPart().getProperty(PropertyType.AERO_CROSS_SECTION))
                 .getCrossSection(state, Vector3D.PLUS_I, assembly1.getMainPart().getFrame(), assembly1.getMainPart()
-                    .getFrame()), 1E-14);
+                    .getFrame()),
+            1E-14);
         Assert.assertEquals(FastMath.PI * 2. * 2. * 3.,
             ((AeroGlobalProperty) assembly2.getMainPart().getProperty(PropertyType.AERO_GLOBAL))
-                .getCrossSection(Vector3D.PLUS_I), 1E-14);
+                .getCrossSection(Vector3D.PLUS_I),
+            1E-14);
         Assert.assertEquals(FastMath.PI * 2. * 2. * 4.,
             ((AeroGlobalProperty) assembly3.getMainPart().getProperty(PropertyType.AERO_GLOBAL))
-                .getCrossSection(Vector3D.PLUS_I), 1E-14);
+                .getCrossSection(Vector3D.PLUS_I),
+            1E-14);
 
         // Other minor checks
         Assert.assertEquals(AerodynamicCoefficientType.CONSTANT, aeroProp1.getFunctionType());
         Assert.assertEquals(AerodynamicCoefficientType.CONSTANT, aeroProp1.getDragCoef().getType());
         Assert.assertEquals(AerodynamicCoefficientType.CONSTANT, aeroProp1.getLiftCoef().getType());
-        Assert.assertEquals(cx.getAerodynamicCoefficient(), aeroProp3.getConstantDragCoef());
-        Assert.assertEquals(cz.getAerodynamicCoefficient(), aeroProp3.getConstantLiftCoef());
+        Assert.assertEquals(cx.getAerodynamicCoefficient(), aeroProp3.getConstantDragCoef(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(cz.getAerodynamicCoefficient(), aeroProp3.getConstantLiftCoef(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertNotNull(aeroProp3.toString());
         Assert.assertNotNull(aeroProp4.toString());
 
@@ -248,21 +256,21 @@ public class VehicleTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VEHICLE}
-     * 
+     *
      * @testedMethod all {@link RadiativeProperties} methods
-     * 
+     *
      * @description check that the RadiativeProperties methods are correct
-     * 
+     *
      * @input VehicleSurfaceModel
-     * 
+     *
      * @output output of RadiativeProperties methods
-     * 
+     *
      * @testPassCriteria result is as expected (reference computed mathematically, threshold: 1E-14)
-     * 
+     *
      * @referenceVersion 4.1
-     * 
+     *
      * @nonRegressionVersion 4.1
      */
     @Test
@@ -309,30 +317,38 @@ public class VehicleTest {
             .getAbsorptionCoef().getValue(), 1E-14);
         Assert.assertEquals(FastMath.PI * 2. * 2. * 2.,
             ((RadiativeSphereProperty) assembly1.getMainPart().getProperty(PropertyType.RADIATIVE_CROSS_SECTION))
-                .getCrossSection(state, Vector3D.PLUS_I, assembly1.getMainPart().getFrame()), 1E-14);
+                .getCrossSection(state, Vector3D.PLUS_I, assembly1.getMainPart().getFrame()),
+            1E-14);
+        final String surf_part = "surf{1.0; 0.0; 0.0}";
         Assert.assertEquals(0.1,
-            ((RadiativeProperty) assembly2.getPart("surf{1; 0; 0}").getProperty(PropertyType.RADIATIVE))
-                .getAbsorptionRatio().getValue(), 1E-14);
+            ((RadiativeProperty) assembly2.getPart(surf_part).getProperty(PropertyType.RADIATIVE))
+                .getAbsorptionRatio().getValue(),
+            1E-14);
         Assert.assertEquals(0.5,
-            ((RadiativeIRProperty) assembly2.getPart("surf{1; 0; 0}").getProperty(PropertyType.RADIATIVEIR))
-                .getAbsorptionCoef().getValue(), 1E-14);
+            ((RadiativeIRProperty) assembly2.getPart(surf_part).getProperty(PropertyType.RADIATIVEIR))
+                .getAbsorptionCoef().getValue(),
+            1E-14);
         Assert.assertEquals(1. * 3.,
-            ((RadiativeFacetProperty) assembly2.getPart("surf{1; 0; 0}").getProperty(PropertyType.RADIATIVE_FACET))
-                .getFacet().getCrossSection(Vector3D.MINUS_I), 1E-14);
+            ((RadiativeFacetProperty) assembly2.getPart(surf_part).getProperty(PropertyType.RADIATIVE_FACET))
+                .getFacet().getCrossSection(Vector3D.MINUS_I),
+            1E-14);
         Assert.assertEquals(0.1,
-            ((RadiativeProperty) assembly3.getPart("surf{1; 0; 0}").getProperty(PropertyType.RADIATIVE))
-                .getAbsorptionRatio().getValue(), 1E-14);
+            ((RadiativeProperty) assembly3.getPart(surf_part).getProperty(PropertyType.RADIATIVE))
+                .getAbsorptionRatio().getValue(),
+            1E-14);
         Assert.assertEquals(0.5,
-            ((RadiativeIRProperty) assembly3.getPart("surf{1; 0; 0}").getProperty(PropertyType.RADIATIVEIR))
-                .getAbsorptionCoef().getValue(), 1E-14);
-        Assert.assertEquals(FastMath.PI * 2. * 2. * 4., ((RadiativeFacetProperty) assembly3.getPart("surf{1; 0; 0}")
+            ((RadiativeIRProperty) assembly3.getPart(surf_part).getProperty(PropertyType.RADIATIVEIR))
+                .getAbsorptionCoef().getValue(),
+            1E-14);
+        Assert.assertEquals(FastMath.PI * 2. * 2. * 4., ((RadiativeFacetProperty) assembly3.getPart(surf_part)
             .getProperty(PropertyType.RADIATIVE_FACET)).getFacet().getCrossSection(Vector3D.MINUS_I), 1E-14);
 
         // Other minor checks
         Assert.assertEquals(0.1, radiativeProp1.getRadiativeProperty().getAbsorptionRatio().getValue(), 0.);
         Assert.assertEquals(0.5, radiativeProp1.getRadiativeIRProperty().getAbsorptionCoef().getValue(), 0.);
         Assert.assertEquals(FastMath.PI * 2. * 2.,
-            radiativeProp1.getVehicleSurfaceModel().getCrossSection(Vector3D.PLUS_I));
+            radiativeProp1.getVehicleSurfaceModel().getCrossSection(Vector3D.PLUS_I),
+            Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertNotNull(radiativeProp1.toString());
 
         // Exceptions

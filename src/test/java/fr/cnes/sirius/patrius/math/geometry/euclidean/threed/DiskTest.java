@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history creation 17/10/11
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-407:25/04/2025:[PATRIUS] Methode toString de Vector3D pas assez precise
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -27,23 +29,23 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
-import junit.framework.Assert;
 
 /**
  * Unit tests for the Disk class.
- * 
+ *
  * @author cardosop
- * 
+ *
  * @version $Id: DiskTest.java 17909 2017-09-11 11:57:36Z bignon $
- * 
+ *
  * @since 1.0
- * 
+ *
  */
 public class DiskTest {
 
@@ -51,10 +53,10 @@ public class DiskTest {
     public enum features {
         /**
          * @featureTitle Spherical cap shape
-         * 
+         *
          * @featureDescription Creation of a spherical cap shape, computation of distances and intersections with lines
          *                     and points.
-         * 
+         *
          * @coveredRequirements DV-GEOMETRIE_50, DV-GEOMETRIE_60, DV-GEOMETRIE_90, DV-GEOMETRIE_130, DV-GEOMETRIE_140
          */
         DISK_SHAPE
@@ -108,21 +110,21 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#intersects(Line)}
-     * 
+     *
      * @description Test the function intersects(Line) {@link Disk#intersects(Line)} with several lines.
-     * 
+     *
      * @input misc
-     * 
+     *
      * @output misc
-     * 
+     *
      * @testPassCriteria Everything as expected
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -137,22 +139,22 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#getIntersectionPoints(Line)}
-     * 
+     *
      * @description Test the function getIntersectionPoints(Line) {@link Disk#getIntersectionPoints(Line)} with several
      *              lines.
-     * 
+     *
      * @input misc
-     * 
+     *
      * @output misc
-     * 
+     *
      * @testPassCriteria Everything as expected
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -175,23 +177,23 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#distanceTo(Line)}
-     * 
+     *
      * @description Test the function distanceTo(Line) {@link Disk#distanceTo(Line)} with several lines.
-     * 
+     *
      * @input misc
-     * 
+     *
      * @output misc
-     * 
+     *
      * @testPassCriteria Everything as expected. If the line intersects the disk the distance should be exactly 0, if it
      *                   does not intersect the disk, the allowed error on the distance computation is 1e-14 due to the
      *                   computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -208,25 +210,25 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#distanceTo(Line)}
-     * 
+     *
      * @description Special case : distance to a giant disk.<br>
      *              The idea is to have the distance finder algorithm converges slowly.<br>
      *              This unit test also illustrates the relatively poor precision when the circle goes larger , due to
      *              numeric errors in small rotations, and also the precision loss when comparing large and small
      *              doubles.
-     * 
+     *
      * @input misc
-     * 
+     *
      * @output misc
-     * 
+     *
      * @testPassCriteria Everything as expected with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -244,21 +246,21 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#Disk(Vector3D, Vector3D, double)}
-     * 
+     *
      * @description Error case : illegal disk.
-     * 
+     *
      * @input Disk constructor with illegal parameters
-     * 
+     *
      * @output IllegalArgumentException {@link IllegalArgumentException}
-     * 
+     *
      * @testPassCriteria IllegalArgumentException {@link IllegalArgumentException} as expected
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test(expected = IllegalArgumentException.class)
@@ -268,23 +270,23 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#closestPointTo(Line)}
-     * 
+     *
      * @description Compute the point of the disk realizing the shortest distance to a line of space, and the associated
      *              point of the line. The output vector must be the one of the shape and the one of the line realizing
      *              the shortest distance.
-     * 
+     *
      * @input misc
-     * 
+     *
      * @output misc
-     * 
+     *
      * @testPassCriteria Everything as expected with an epsilon of 1e-14 due to the computation errors.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -348,22 +350,22 @@ public class DiskTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#DISK_SHAPE}
-     * 
+     *
      * @testedMethod {@link Disk#toString()}
-     * 
+     *
      * @description Creates a string describing the shape, the order of the informations
      *              in this output being the same as the one of the constructor
-     * 
+     *
      * @input none.
-     * 
+     *
      * @output String
-     * 
+     *
      * @testPassCriteria The output string must contain the right information.
-     * 
+     *
      * @referenceVersion 1.0
-     * 
+     *
      * @nonRegressionVersion 1.0
      */
     @Test
@@ -378,7 +380,7 @@ public class DiskTest {
         // string creation
         final String result = disk.toString();
 
-        final String expected = "Disk{center{1; 1; 1},normal{1; 0; 0},radius{4.0}}";
+        final String expected = "Disk{center{1.0; 1.0; 1.0},normal{1.0; 0.0; 0.0},radius{4.0}}";
         Assert.assertEquals(expected, result);
     }
 }

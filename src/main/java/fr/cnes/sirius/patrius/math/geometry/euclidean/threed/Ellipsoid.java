@@ -18,7 +18,7 @@
  * @history Created on 05/10/2011
  *
  * HISTORY
- * VERSION:4.15.3:OPENFD-576:02/07/2025:[PATRIUS] Problème de convergence dans Ellipsoid.runNewtonAlgorithmLine
+ * VERSION:4.16:OPENFD-576:25/04/2025:[PATRIUS] Probleme de convergence dans Ellipsoid.runNewtonAlgorithmLine
  * VERSION:4.15:OPENFD-384:21/11/2024:[PATRIUS] Non convergence de l'algo d'intersection avec un ellipsoïde
  * VERSION:4.15:OPENFD-399:21/11/2024:problème de convergence dans EllipsoidPoint.closestPointTo
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub

@@ -5,19 +5,23 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  *
  * @history created 03/03/2013
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
+ * VERSION:4.16:OPENFD-388:25/04/2025:[STELA-PATRIUS] Coefficients de frottement Cook, tabule
+ * VERSION:4.16:OPENFD-379:25/04/2025:[PATRIUS] Ajout d'une implementation basique de OrbitalCovarianceProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2499:27/01/2021:[PATRIUS] Anomalie dans la gestion des panneaux solaires de la classe Vehicle 
@@ -63,30 +67,30 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * As this class is an implementation of the {@link DragSensitive} interface, it is intended to be used in the
  * {@link StelaAtmosphericDrag} class.
  * </p>
- * 
+ *
  * @concurrency immutable
- * 
+ *
  * @see AeroModel
  * @see StelaAtmosphericDrag
- * 
+ *
  * @author Tiziana Sabatini
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.3
- * 
+ *
  */
 @SuppressWarnings("PMD.NullAssignment")
 public final class StelaAeroModel extends Parameterizable implements DragSensitive {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 4898707923970013932L;
 
     /** The spacecraft mass. */
     private final double mass;
 
     /** The spacecraft drag coefficient. */
-    private final StelaCd cd;
+    private final AbstractStelaDragCoef cd;
 
     /** The spacecraft cross section (m<sup>2</sup>). */
     private final double surface;
@@ -109,7 +113,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Constructor to be used when partial derivatives should not be computed.
-     * 
+     *
      * @param inMass
      *        the spacecraft mass.
      * @param inCd
@@ -119,7 +123,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
      * @throws PatriusException
      *         if the frame factory fails.
      */
-    public StelaAeroModel(final double inMass, final StelaCd inCd, final double inSurface) throws PatriusException {
+    public StelaAeroModel(final double inMass, final AbstractStelaDragCoef inCd, final double inSurface) throws PatriusException {
         super();
         this.mass = inMass;
         this.cd = inCd;
@@ -136,7 +140,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Constructor to be used when partial derivatives are computed using the full finite differences method.
-     * 
+     *
      * @param inMass
      *        the spacecraft mass.
      * @param inCd
@@ -150,8 +154,8 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
      * @throws PatriusException
      *         if the frame factory fails.
      */
-    public StelaAeroModel(final double inMass, final StelaCd inCd, final double inSurface,
-        final Atmosphere inAtmosphere, final double atmosDX) throws PatriusException {
+    public StelaAeroModel(final double inMass, final AbstractStelaDragCoef inCd, final double inSurface,
+                          final Atmosphere inAtmosphere, final double atmosDX) throws PatriusException {
         super();
         this.mass = inMass;
         this.cd = inCd;
@@ -166,7 +170,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Constructor to be used when partial derivatives are computed using the altitude finite differences method.
-     * 
+     *
      * @param inMass
      *        the spacecraft mass.
      * @param inCd
@@ -182,9 +186,9 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
      * @throws PatriusException
      *         if the frame factory fails.
      */
-    public StelaAeroModel(final double inMass, final StelaCd inCd, final double inSurface,
-        final Atmosphere inAtmosphere, final double atmosDH,
-        final GeodPosition inGeodPosition) throws PatriusException {
+    public StelaAeroModel(final double inMass, final AbstractStelaDragCoef inCd, final double inSurface,
+                          final Atmosphere inAtmosphere, final double atmosDH,
+                          final GeodPosition inGeodPosition) throws PatriusException {
         super();
         this.mass = inMass;
         this.cd = inCd;
@@ -198,7 +202,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Return the drag acceleration in the CIRF frame.
-     * 
+     *
      * @param state
      *        current state information: date, kinematics, attitude
      * @param density
@@ -214,7 +218,8 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
     public Vector3D dragAcceleration(final SpacecraftState state, final double density,
                                      final Vector3D relativeVelocity) throws PatriusException {
         final Vector3D velocityInTIRF = computeVelocity(state);
-        final double sCd2m = this.surface * this.cd.getCd(state.getPVCoordinates().getPosition()) / (2 * this.mass);
+        final double sCd2m =
+                this.surface * this.cd.getDragCoef(new StelaDragCoefInput(state.getPVCoordinates().getPosition())) / (2 * this.mass);
         final double vTIRFNorm = velocityInTIRF.getNorm();
         final double atmosCoeff = -(density * sCd2m * vTIRFNorm);
         return velocityInTIRF.scalarMultiply(atmosCoeff);
@@ -222,7 +227,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Compute a velocity expressed in the TIRF, given a state.
-     * 
+     *
      * @param state
      *        a state.
      * @return velocity in TIRF.
@@ -250,8 +255,8 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
     /** {@inheritDoc} */
     @Override
     public void addDDragAccDState(final SpacecraftState s, final double[][] dAccdPos, final double[][] dAccdVel,
-            final double density, final Vector3D acceleration, final Vector3D relativeVelocity,
-            final boolean computeGradientPosition, final boolean computeGradientVelocity) throws PatriusException {
+                                  final double density, final Vector3D acceleration, final Vector3D relativeVelocity,
+                                  final boolean computeGradientPosition, final boolean computeGradientVelocity) throws PatriusException {
 
         if (computeGradientPosition || computeGradientVelocity) {
             final Vector3D[] dFDECartMean = new Vector3D[6];
@@ -272,30 +277,30 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
             final Vector3D vTIRF = computeVelocity(s);
             final double vTIRFNorm = vTIRF.getNorm();
             final double omega = EarthRotation.getERADerivative(s.getDate());
-            final double sCd2m = this.surface * this.cd.getCd(pos) / (2 * this.mass);
+            final double sCd2m = this.surface * this.cd.getDragCoef(new StelaDragCoefInput(pos)) / (2 * this.mass);
 
             // V * V derivatives
             final Vector3D dVVdX = (vTIRF.scalarMultiply(MathLib.divide(-omega * (vel.getY() - omega * pos.getX()),
-                vTIRFNorm))).add(Vector3D.PLUS_J.scalarMultiply(-omega * vTIRFNorm));
+                    vTIRFNorm))).add(Vector3D.PLUS_J.scalarMultiply(-omega * vTIRFNorm));
             final Vector3D dVVdY = (vTIRF.scalarMultiply(MathLib.divide(omega * (vel.getX() + omega * pos.getY()),
-                vTIRFNorm))).add(Vector3D.PLUS_I.scalarMultiply(omega * vTIRFNorm));
+                    vTIRFNorm))).add(Vector3D.PLUS_I.scalarMultiply(omega * vTIRFNorm));
             final Vector3D dVVdZ = Vector3D.ZERO;
             final Vector3D dVVdVX = (vTIRF.scalarMultiply(MathLib.divide((vel.getX() + omega * pos.getY()),
-                vTIRFNorm))).add(Vector3D.PLUS_I.scalarMultiply(vTIRFNorm));
+                    vTIRFNorm))).add(Vector3D.PLUS_I.scalarMultiply(vTIRFNorm));
             final Vector3D dVVdVY = (vTIRF.scalarMultiply(MathLib.divide((vel.getY() - omega * pos.getX()),
-                vTIRFNorm))).add(Vector3D.PLUS_J.scalarMultiply(vTIRFNorm));
+                    vTIRFNorm))).add(Vector3D.PLUS_J.scalarMultiply(vTIRFNorm));
             final Vector3D dVVdVZ = (vTIRF.scalarMultiply(MathLib.divide(vel.getZ(), vTIRFNorm))).add(Vector3D.PLUS_K
-                .scalarMultiply(vTIRFNorm));
+                    .scalarMultiply(vTIRFNorm));
 
             // Computation in Celestial Mean of Date frame
             dFDECartMean[0] = (vTIRF.scalarMultiply(dRho.getX() * vTIRFNorm).add(dVVdX.scalarMultiply(density)))
-                .scalarMultiply(-sCd2m);
+                    .scalarMultiply(-sCd2m);
 
             dFDECartMean[1] = (vTIRF.scalarMultiply(dRho.getY() * vTIRFNorm).add(dVVdY.scalarMultiply(density)))
-                .scalarMultiply(-sCd2m);
+                    .scalarMultiply(-sCd2m);
 
             dFDECartMean[2] = (vTIRF.scalarMultiply(dRho.getZ() * vTIRFNorm).add(dVVdZ.scalarMultiply(density)))
-                .scalarMultiply(-sCd2m);
+                    .scalarMultiply(-sCd2m);
 
             dFDECartMean[3] = dVVdVX.scalarMultiply(-sCd2m * density);
             dFDECartMean[4] = dVVdVY.scalarMultiply(-sCd2m * density);
@@ -354,7 +359,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Compute density derivatives with respect to x, y, z. Two methods are possible.
-     * 
+     *
      * @param date
      *        the current date
      * @param pos
@@ -410,7 +415,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Compute t derivatives coordinates.
-     * 
+     *
      * @param vel
      *        the spacecraft velocity
      * @param velNorm
@@ -424,18 +429,18 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
         res[1] = Vector3D.ZERO;
         res[2] = Vector3D.ZERO;
         res[3] = (vel.scalarMultiply(MathLib.divide(-vel.getX(), MathLib.pow(velNorm, 3)))).add(Vector3D.PLUS_I
-            .scalarMultiply(1 / velNorm));
+                .scalarMultiply(1 / velNorm));
         res[4] = (vel.scalarMultiply(MathLib.divide(-vel.getY(), MathLib.pow(velNorm, 3)))).add(Vector3D.PLUS_J
-            .scalarMultiply(1 / velNorm));
+                .scalarMultiply(1 / velNorm));
         res[5] = (vel.scalarMultiply(MathLib.divide(-vel.getZ(), MathLib.pow(velNorm, 3)))).add(Vector3D.PLUS_K
-            .scalarMultiply(1 / velNorm));
+                .scalarMultiply(1 / velNorm));
 
         return res;
     }
 
     /**
      * Compute w derivatives coordinates.
-     * 
+     *
      * @param pos
      *        the spacecraft position
      * @param vel
@@ -447,7 +452,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
      * @return w derivatives
      */
     private static Vector3D[] computeWDerivatives(final Vector3D pos, final Vector3D vel, final Vector3D posCrossVel,
-                                           final double posCrossVelNorm) {
+                                                  final double posCrossVelNorm) {
         // initialization
         final Vector3D[] res = new Vector3D[6];
         // Get spacecraft position
@@ -481,7 +486,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
             pCrossVNormInvDeriv[i] *= MathLib.divide(-1, MathLib.pow(posCrossVelNorm, 3));
 
             res[i] = (pCrossVDeriv[i].scalarMultiply(MathLib.divide(1., posCrossVelNorm))).add(posCrossVel
-                .scalarMultiply(pCrossVNormInvDeriv[i]));
+                    .scalarMultiply(pCrossVNormInvDeriv[i]));
         }
         // return w derivatives in Celestial Mean of Date frame
         return res;
@@ -489,7 +494,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
 
     /**
      * Compute n derivatives coordinates.
-     * 
+     *
      * @param t
      *        t vector
      * @param w
@@ -501,7 +506,7 @@ public final class StelaAeroModel extends Parameterizable implements DragSensiti
      * @return n derivatives
      */
     private static Vector3D[] computeNDerivatives(final Vector3D t, final Vector3D w, final Vector3D[] tDeriv,
-                                           final Vector3D[] wDeriv) {
+                                                  final Vector3D[] wDeriv) {
         final Vector3D[] res = new Vector3D[6];
         for (int i = 0; i < 6; i++) {
             res[i] = (Vector3D.crossProduct(wDeriv[i], t)).add(Vector3D.crossProduct(w, tDeriv[i]));

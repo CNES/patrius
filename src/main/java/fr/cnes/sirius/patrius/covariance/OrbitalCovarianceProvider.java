@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-379:25/04/2025:[PATRIUS] Ajout d'une implementation basique de OrbitalCovarianceProvider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * END-HISTORY
  */
@@ -38,7 +39,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * </p>
  *
  * @author veuillh
- * 
+ *
  * @since 4.13
  */
 public interface OrbitalCovarianceProvider extends PVCoordinatesProvider {
@@ -52,7 +53,7 @@ public interface OrbitalCovarianceProvider extends PVCoordinatesProvider {
      * @throws PatriusException
      *         if orbital covariance cannot be computed at the given date
      */
-    public OrbitalCovariance getOrbitalCovariance(AbsoluteDate date) throws PatriusException;
+    OrbitalCovariance getOrbitalCovariance(AbsoluteDate date) throws PatriusException;
 
     /** {@inheritDoc} */
     @Override

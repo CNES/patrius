@@ -1,23 +1,25 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * 
+ *
+ *
  * @history created 07/03/12
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-489:25/04/2025:[PATRIUS] Adaptation de l'evenement LocalTime pour une direction zenithale
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
  * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
@@ -82,27 +84,27 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * This detector can takes into account signal propagation duration through
  * {@link #setPropagationDelayType(PropagationDelayType, Frame)} (default is signal being instantaneous).
  * </p>
- * 
+ *
  * @concurrency not thread-safe
- * 
+ *
  * @concurrency.comment attributes are mutable and related to propagation.
- * 
+ *
  * @see EventDetector
- * 
+ *
  * @author Tiziana Sabatini
- * 
+ *
  * @version $Id: LocalTimeAngleDetector.java 17582 2017-05-10 12:58:16Z bignon $
- * 
+ *
  * @since 1.1
  */
 public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -8185366674138568798L;
 
     /** Delta-time for local time derivative computation (by centered finite differences). */
     private static final double DT = 1E-3;
-    
+
     /** Local time angle triggering the event. */
     private final double time;
 
@@ -111,18 +113,22 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /** Action performed. */
     private final Action actionLocalTime;
-    
+
     /** Frame in relation to which the calculations are made */
     private final CelestialBodyFrame frame;
 
     /**
      * Constructor for a LocalTimeDetector instance.
-     * <p>Local time will be computed in satellite orbit frame.</p>
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     * <p>
+     * Local time will be computed in satellite orbit frame.
+     * </p>
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[
      */
     public LocalTimeAngleDetector(final double localTimeAngle) throws PatriusException {
@@ -135,72 +141,98 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
      * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the local time
      * is reached.
      * </p>
-     * <p>Local time will be computed in satellite orbit frame.</p>
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     * <p>
+     * Local time will be computed in satellite orbit frame.
+     * </p>
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
-        final double threshold) throws PatriusException {
+                                  final double threshold)
+        throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, Action.STOP);
     }
-    
+
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters.
      * <p>
      * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the local time
      * is reached.
      * </p>
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param frame in relation to which the calculations are made
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param frame
+     *        in relation to which the calculations are made
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[ or frame not null and not inertial
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
-                                  final double threshold, final CelestialBodyFrame frame) throws PatriusException {
+                                  final double threshold, final CelestialBodyFrame frame)
+        throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, frame, Action.STOP);
     }
 
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters.
-     * <p>Local time will be computed in satellite orbit frame.</p>
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     * <p>
+     * Local time will be computed in satellite orbit frame.
+     * </p>
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
-        final double threshold, final Action action) throws PatriusException {
+                                  final double threshold, final Action action)
+        throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, action, false);
     }
 
-    
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters.
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @param frame in relation to which the calculations are made
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @param frame
+     *        in relation to which the calculations are made
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[ or frame not null and not inertial
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
@@ -208,85 +240,119 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
         throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, frame, action, false);
     }
-    
-    
+
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters.
-     * <p>Local time will be computed in satellite orbit frame.</p>
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     * <p>
+     * Local time will be computed in satellite orbit frame.
+     * </p>
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @param remove true if detector should be removed
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @param remove
+     *        true if detector should be removed
      * @since 3.1
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
-        final double threshold, final Action action, final boolean remove) throws PatriusException {
+                                  final double threshold, final Action action, final boolean remove)
+        throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, action, remove, CelestialBodyFactory.getSun());
     }
-    
+
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters.
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @param remove true if detector should be removed
-     * @param frame in relation to which the calculations are made
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @param remove
+     *        true if detector should be removed
+     * @param frame
+     *        in relation to which the calculations are made
      * @since 3.1
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[ or frame not null and not inertial
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
                                   final double threshold, final CelestialBodyFrame frame, final Action action,
-                                  final boolean remove) throws PatriusException {
+                                  final boolean remove)
+        throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, frame, action, remove, CelestialBodyFactory.getSun());
     }
 
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters including Sun choice.
-     * <p>Local time will be computed in satellite orbit frame.</p>
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     * <p>
+     * Local time will be computed in satellite orbit frame.
+     * </p>
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @param remove true if detector should be removed
-     * @param sun Sun
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @param remove
+     *        true if detector should be removed
+     * @param sun
+     *        Sun
      * @since 4.5
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
-        final double threshold, final Action action, final boolean remove, final PVCoordinatesProvider sun)
+                                  final double threshold, final Action action, final boolean remove,
+                                  final PVCoordinatesProvider sun)
         throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, null, action, remove, sun);
     }
-    
+
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters including Sun choice.
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @param remove true if detector should be removed
-     * @param sun Sun
-     * @param frame in relation to which the calculations are made
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @param remove
+     *        true if detector should be removed
+     * @param sun
+     *        Sun
+     * @param frame
+     *        in relation to which the calculations are made
      * @since 4.5
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[ or frame not null and not inertial
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
@@ -298,33 +364,42 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Constructor for a LocalTimeDetector instance with complimentary parameters including Sun choice.
-     * 
-     * @param localTimeAngle satellite local time angle triggering the event (in the range [-&Pi;,
+     *
+     * @param localTimeAngle
+     *        satellite local time angle triggering the event (in the range [-&Pi;,
      *        &Pi;[). Angle between the projections of the Sun and the satellite in the equatorial
      *        plane (Local Time In Hours = 12.00h + localTimeAngle * 12 / &Pi;)
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold threshold (see {@link AbstractDetector})
-     * @param action action performed at local time detection
-     * @param remove true if detector should be removed
-     * @param sun Sun
-     * @param frame in relation to which the calculations are made
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        threshold (see {@link AbstractDetector})
+     * @param action
+     *        action performed at local time detection
+     * @param remove
+     *        true if detector should be removed
+     * @param sun
+     *        Sun
+     * @param frame
+     *        in relation to which the calculations are made
      * @param slopeSelection
      *        {@link NodeDetector#ASCENDING} for ascending node detection,<br>
      *        {@link NodeDetector#DESCENDING} for descending node detection,<br>
      *        {@link NodeDetector#ASCENDING_DESCENDING} for both ascending and descending node
      *        detection.
      * @since 4.5
-     * @throws PatriusException error when loading the ephemeris files or local time angle not in
+     * @throws PatriusException
+     *         error when loading the ephemeris files or local time angle not in
      *         the range [-&Pi;, &Pi;[ or frame not null and not inertial
      */
     public LocalTimeAngleDetector(final double localTimeAngle,
-            final double maxCheck,
-            final double threshold,
-            final CelestialBodyFrame frame,
-            final Action action,
-            final boolean remove,
-            final PVCoordinatesProvider sun,
-            final int slopeSelection) throws PatriusException {
+                                  final double maxCheck,
+                                  final double threshold,
+                                  final CelestialBodyFrame frame,
+                                  final Action action,
+                                  final boolean remove,
+                                  final PVCoordinatesProvider sun,
+                                  final int slopeSelection)
+        throws PatriusException {
         // the local time event is triggered when the g-function slope is positive at its zero:
         super(slopeSelection, maxCheck, threshold, new LinkTypeHandler(SignalPropagationRole.RECEIVER, sun));
         this.time = localTimeAngle;
@@ -345,17 +420,22 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Handle a local time angle event and choose what to do next.
-     * 
-     * @param s the current state information : date, kinematics, attitude
-     * @param increasing if true, the value of the switching function increases when time increases
+     *
+     * @param s
+     *        the current state information : date, kinematics, attitude
+     * @param increasing
+     *        if true, the value of the switching function increases when time increases
      *        around event
-     * @param forward if true, the integration variable (time) increases during integration.
+     * @param forward
+     *        if true, the integration variable (time) increases during integration.
      * @return the action performed when the expected local time is reached
-     * @exception PatriusException if some specific error occurs
+     * @exception PatriusException
+     *            if some specific error occurs
      */
     @Override
     public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                final boolean forward) throws PatriusException {
+                                final boolean forward)
+        throws PatriusException {
         return this.actionLocalTime;
     }
 
@@ -376,8 +456,9 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
     /** {@inheritDoc} */
     @Override
     public boolean filterEvent(final SpacecraftState state,
-            final boolean increasing,
-            final boolean forward) throws PatriusException {
+                               final boolean increasing,
+                               final boolean forward)
+        throws PatriusException {
         // Event is filtered if g function has not the right slope (being local time velocity)
         // Local time derivative
         final double ltSlope = getLocalTimeDerivative(state);
@@ -392,12 +473,16 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Compute the local time.
-     * @param state current state
+     *
+     * @param state
+     *        current state
      * @return local time
-     * @throws PatriusException thrown if computation failed
+     * @throws PatriusException
+     *         thrown if computation failed
      */
-    private double computeLocalTime(final SpacecraftState state) throws PatriusException {
+    protected double computeLocalTime(final SpacecraftState state) throws PatriusException {
         final AbsoluteDate sunDate = getSignalEmissionDate(state);
+
         final Vector3D satPos;
         final Vector3D sunPos;
         if (this.frame == null) {
@@ -411,6 +496,20 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
             // Compute Sun position in the right frame:
             sunPos = this.sun.getPVCoordinates(sunDate, this.frame).getPosition();
         }
+
+        return computeSunSatAngle(satPos, sunPos);
+    }
+
+    /**
+     * Compute the angle between the sun and the satellite projections over the equatiorial plane
+     *
+     * @param satPos
+     *        satellite position
+     * @param sunPos
+     *        sun position
+     * @return the angle between the sun and the satellite
+     */
+    protected double computeSunSatAngle(final Vector3D satPos, final Vector3D sunPos) {
         // Compute satellite position projection
         final Vector3D satPosProj = new Vector3D(satPos.getX(), satPos.getY(), .0);
         // Compute sun position projection
@@ -427,9 +526,12 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Compute the local time derivative with respect to time (by centered finite differences).
-     * @param state current state
+     *
+     * @param state
+     *        current state
      * @return local time derivative with respect to time
-     * @throws PatriusException thrown if computation failed
+     * @throws PatriusException
+     *         thrown if computation failed
      */
     private double getLocalTimeDerivative(final SpacecraftState state) throws PatriusException {
         // Local time at t- and t+ in [0, 2Pi[
@@ -448,9 +550,9 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Get local time angle to detect.
-     * 
+     *
      * @return the local time angle triggering the event (in the range [-&Pi, &Pi[).
-     * 
+     *
      * @since 1.2
      */
     public double getTime() {
@@ -459,7 +561,7 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Return the action at detection.
-     * 
+     *
      * @return action at detection
      */
     public Action getAction() {
@@ -468,18 +570,28 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
 
     /**
      * Returns the frame used for solar time computation.
+     *
      * @return the frame used for solar time computation
      */
     public CelestialBodyFrame getFrame() {
         return this.frame;
     }
 
+    /**
+     * Return the sun
+     *
+     * @return the sun
+     */
+    public PVCoordinatesProvider getSun() {
+        return this.sun;
+    }
+
     /** {@inheritDoc} */
     @Override
     public EventDetector copy() {
         try {
-            final LocalTimeAngleDetector res = new LocalTimeAngleDetector(this.time, this.getMaxCheckInterval(),
-                this.getThreshold(), getFrame(), this.actionLocalTime, this.shouldBeRemovedFlag, this.sun);
+            final LocalTimeAngleDetector res = new LocalTimeAngleDetector(this.time, getMaxCheckInterval(),
+                getThreshold(), getFrame(), this.actionLocalTime, this.shouldBeRemovedFlag, this.sun);
             res.setPropagationDelayType(getPropagationDelayType(), getInertialFrame());
             return res;
         } catch (final PatriusException e) {

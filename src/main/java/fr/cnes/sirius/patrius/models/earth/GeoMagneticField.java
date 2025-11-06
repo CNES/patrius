@@ -18,6 +18,7 @@
 /* Copyright 2011-2012 Space Applications Services
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au 
  *          lieu de getLLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC) 
@@ -51,7 +52,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
- * Used to calculate the geomagnetic field at a given geodetic point on earth.
+ * Used to calculate the geomagnetic field at a given ellipsoid point on earth.
  * The calculation is estimated using spherical harmonic expansion of the
  * geomagnetic potential with coefficients provided by an actual geomagnetic
  * field model (e.g. IGRF, WMM).
@@ -276,7 +277,7 @@ public class GeoMagneticField {
      *        the longitude in decimal degrees
      * @param altitude
      *        the altitude in kilometers above mean sea level
-     * @return the {@link GeoMagneticElements} at the given geodetic point
+     * @return the {@link GeoMagneticElements} at the given ellipsoid point
      */
     public GeoMagneticElements calculateField(final double latitude, final double longitude, final double altitude) {
         return calculateFieldInternal(MathLib.toRadians(latitude), MathLib.toRadians(longitude), altitude * KM_TO_M);
@@ -305,7 +306,7 @@ public class GeoMagneticField {
      *        the longitude in decimal radians
      * @param altitude
      *        the altitude in meters above mean sea level
-     * @return the {@link GeoMagneticElements} at the given geodetic point
+     * @return the {@link GeoMagneticElements} at the given ellipsoid point
      */
     private GeoMagneticElements calculateFieldInternal(final double latitude, final double longitude,
                                                        final double altitude) {
@@ -315,7 +316,7 @@ public class GeoMagneticField {
 
         // sum up the magnetic field vector components
         final Vector3D magFieldSph = summation(sph, vars, legendre);
-        // rotate the field to geodetic coordinates
+        // rotate the field to ellipsoid coordinates
         final Vector3D magFieldGeo = rotateMagneticVector(sph, latitude, magFieldSph);
         // return the magnetic elements
         return new GeoMagneticElements(magFieldGeo);
@@ -489,7 +490,7 @@ public class GeoMagneticField {
     }
 
     /**
-     * Transform geodetic coordinates to spherical coordinates.
+     * Transform ellipsoid coordinates to spherical coordinates.
      *
      * @param latitude
      *        the latitude
@@ -502,7 +503,7 @@ public class GeoMagneticField {
     private static SphericalCoordinates transformToSpherical(final double latitude, final double longitude,
                                                              final double altitude) {
 
-        // Convert geodetic coordinates (defined by the WGS-84 reference ellipsoid)
+        // Convert ellipsoid coordinates (defined by the WGS-84 reference ellipsoid)
         // to Earth Centered Earth Fixed Cartesian coordinates, and then to spherical coordinates.
 
         final double heightAboveEllipsoid = altitude / KM_TO_M;
@@ -524,7 +525,7 @@ public class GeoMagneticField {
     }
 
     /**
-     * Rotate the magnetic vectors to geodetic coordinates.
+     * Rotate the magnetic vectors to ellipsoid coordinates.
      *
      * @param sph
      *        the spherical coordinates
@@ -532,19 +533,19 @@ public class GeoMagneticField {
      *        the latitude
      * @param field
      *        the magnetic field in spherical coordinates
-     * @return the magnetic field in geodetic coordinates
+     * @return the magnetic field in ellipsoid coordinates
      */
     private static Vector3D rotateMagneticVector(final SphericalCoordinates sph, final double latitude,
                                                  final Vector3D field) {
 
-        // difference between the spherical and geodetic latitudes
+        // difference between the spherical and ellipsoid latitudes
         final double psi = sph.phi - latitude;
 
         final double[] sincos = MathLib.sinAndCos(psi);
         final double sin = sincos[0];
         final double cos = sincos[1];
 
-        // rotate spherical field components to the geodetic system
+        // rotate spherical field components to the ellipsoid system
         final double bz = field.getX() * sin + field.getZ() * cos;
         final double bx = field.getX() * cos - field.getZ() * sin;
         final double by = field.getY();

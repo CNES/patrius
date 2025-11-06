@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -97,13 +98,13 @@ public class AbstractProjectionTest {
     /** Point used in the tests (somewhere else). */
     private static EllipsoidPoint point3;
 
-    /** Projection of first geodetic point used in the tests (Toulouse). */
+    /** Projection of first ellipsoid point used in the tests (Toulouse). */
     private static Vector2D proj1;
 
-    /** Projection of second geodetic point used in the tests (somewhere else). */
+    /** Projection of second ellipsoid point used in the tests (somewhere else). */
     private static Vector2D proj2;
 
-    /** Projection of third geodetic point used in the tests (somewhere else). */
+    /** Projection of third ellipsoid point used in the tests (somewhere else). */
     private static Vector2D proj3;
 
     /** List of points. */
@@ -133,7 +134,7 @@ public class AbstractProjectionTest {
         point3 = new EllipsoidPoint(ellipsoid, ellipsoid.getLLHCoordinatesSystem(), 0.5, 0.2, 345., "");
         proj3 = projection.applyTo(point3);
 
-        // List of geodetic points and Vector2D
+        // List of ellipsoid points and Vector2D
         listPoints = new ArrayList<>();
         listPoints.add(point1);
         listPoints.add(point2);
@@ -386,7 +387,7 @@ public class AbstractProjectionTest {
      * 
      * @input ellipsoid, projection
      * 
-     * @output geodetic coordinates
+     * @output ellipsoid coordinates
      * 
      * @testPassCriteria result is identical to reference (reference : LibKernel library 10.0.0, tolerance: 1E-15)
      * 
@@ -422,8 +423,8 @@ public class AbstractProjectionTest {
         expected.add(new EllipsoidPoint(ellipsoid, ellipsoid.getLLHCoordinatesSystem(), MathLib
             .toRadians(28.64788975654117), MathLib.toRadians(11.459155902616464), 0., ""));
 
-        checkListGeodeticPoint(expected, actual1, eps);
-        checkListGeodeticPoint(expected, actual2, eps);
+        checkListEllipsoidPoint(expected, actual1, eps);
+        checkListEllipsoidPoint(expected, actual2, eps);
 
         // Check exception thrown if x.length != y.length
         try {
@@ -454,7 +455,7 @@ public class AbstractProjectionTest {
     }
 
     /**
-     * Check list of GeodeticPoint.
+     * Check list of EllipsoidPoint.
      * 
      * @param expected
      *        expected list
@@ -463,7 +464,7 @@ public class AbstractProjectionTest {
      * @param eps
      *        comparison epsilon (relative)
      */
-    private static void checkListGeodeticPoint(final List<EllipsoidPoint> expected, final List<EllipsoidPoint> actual,
+    private static void checkListEllipsoidPoint(final List<EllipsoidPoint> expected, final List<EllipsoidPoint> actual,
                                                final double eps) {
         Assert.assertEquals(expected.size(), actual.size());
         for (int i = 0; i < expected.size(); i++) {

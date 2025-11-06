@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-389:25/04/2025:[STELA-PATRIUS] Activites solaires additionnelles
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -157,13 +158,11 @@ public class InterpolationTableLoader implements DataLoader {
                 case StreamTokenizer.TT_NUMBER:
                     if (headerRow) {
                         yValues.add(tokenizer.nval);
+                    } else if (tokenCount == 0) {
+                        xValues.add(tokenizer.nval);
+                        cellValues.add(new LinkedList<>());
                     } else {
-                        if (tokenCount == 0) {
-                            xValues.add(tokenizer.nval);
-                            cellValues.add(new LinkedList<Double>());
-                        } else {
-                            cellValues.getLast().add(tokenizer.nval);
-                        }
+                        cellValues.getLast().add(tokenizer.nval);
                     }
                     tokenCount++;
                     break;

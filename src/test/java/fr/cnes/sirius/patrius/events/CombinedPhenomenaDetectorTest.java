@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.16:OPENFD-442:25/04/2025:[PATRIUS] Calcul des eclipses d'un corps celeste
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
  * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
  * des reperes predefinis et des corps predefinis
@@ -75,14 +77,14 @@ import junit.framework.Assert;
  * <p>
  * Unit tests for {@link CombinedPhenomenaDetector}.<br>
  * </p>
- * 
+ *
  * @author Julie Anton
  * @author Tiziana Sabatini
- * 
+ *
  * @version $Id$
- * 
+ *
  * @since 1.1
- * 
+ *
  */
 public class CombinedPhenomenaDetectorTest {
 
@@ -90,9 +92,9 @@ public class CombinedPhenomenaDetectorTest {
     public enum features {
         /**
          * @featureTitle Validate the combined phenomena detector
-         * 
+         *
          * @featureDescription Validate the combined phenomena detector
-         * 
+         *
          * @coveredRequirements DV-EVT_100
          */
         VALIDATE_COMBINED_PHENOMENA_DETECTOR
@@ -129,30 +131,31 @@ public class CombinedPhenomenaDetectorTest {
     private static EventsLogger logger;;
 
     /**
-     * @throws PatriusException when using the propagator
+     * @throws PatriusException
+     *         when using the propagator
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VALIDATE_COMBINED_PHENOMENA_DETECTOR}
-     * 
+     *
      * @testedMethod {@link CombinedPhenomenaDetector#CombinedPhenomenaDetector(EventDetector, boolean, EventDetector, boolean, boolean)}
      * @testedMethod {@link CombinedPhenomenaDetector#g(SpacecraftState)}
      * @testedMethod {@link CombinedPhenomenaDetector#eventOccurred(SpacecraftState, boolean, boolean)}
-     * 
+     *
      * @description tests the combination of two phenomena (satellite in total eclipse and satellite
      *              in penumbra) when detecting events during propagation; the boolean operator used
      *              for the phenomena combination is AND, therefore the test checks if the combined
      *              events detector triggers an event when satellite enters umbra (umbra AND
      *              penumbra = umbra).
-     * 
+     *
      * @input two {@link EclipseDetector}, two {@link EventsLogger}
-     * 
+     *
      * @output a list of {@link LoggedEvent} generated during propagation
-     * 
+     *
      * @testPassCriteria the {@link LoggedEvent} are successfully created and they coincide with the {@link LoggedEvent}
      *                   for umbra.
-     * 
+     *
      * @referenceVersion 1.1
-     * 
+     *
      * @nonRegressionVersion 1.1
      */
     @Test
@@ -194,30 +197,31 @@ public class CombinedPhenomenaDetectorTest {
     }
 
     /**
-     * @throws PatriusException when using the propagator
+     * @throws PatriusException
+     *         when using the propagator
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VALIDATE_COMBINED_PHENOMENA_DETECTOR}
-     * 
+     *
      * @testedMethod {@link CombinedPhenomenaDetector#CombinedPhenomenaDetector(EventDetector, boolean, EventDetector, boolean, boolean)}
      * @testedMethod {@link CombinedPhenomenaDetector#g(SpacecraftState)}
      * @testedMethod {@link CombinedPhenomenaDetector#eventOccurred(SpacecraftState, boolean, boolean)}
-     * 
+     *
      * @description tests the combination of two phenomena (satellite in total eclipse and satellite
      *              in penumbra) when detecting events during propagation; the boolean operator used
      *              for the phenomena combination is OR, therefore the test checks if the combined
      *              events detector triggers an event when satellite enters penumbra (umbra OR
      *              penumbra = penumbra).
-     * 
+     *
      * @input two {@link EclipseDetector}, two {@link EventsLogger}
-     * 
+     *
      * @output a list of {@link LoggedEvent} generated during propagation
-     * 
+     *
      * @testPassCriteria the {@link LoggedEvent} are successfully created and they coincide with the {@link LoggedEvent}
      *                   for penumbra.
-     * 
+     *
      * @referenceVersion 1.1
-     * 
+     *
      * @nonRegressionVersion 1.1
      */
     @Test
@@ -260,23 +264,24 @@ public class CombinedPhenomenaDetectorTest {
     }
 
     /**
-     * @throws PatriusException when using the propagator
+     * @throws PatriusException
+     *         when using the propagator
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#VALIDATE_COMBINED_PHENOMENA_DETECTOR}
-     * 
+     *
      * @testedMethod {@link CombinedPhenomenaDetector#CombinedPhenomenaDetector(EventDetector, boolean, EventDetector, boolean, boolean)}
-     * 
+     *
      * @description simple constructor test
-     * 
+     *
      * @input constructor parameters
-     * 
+     *
      * @output a {@link CombinedPhenomenaDetector}
-     * 
+     *
      * @testPassCriteria the {@link CombinedPhenomenaDetector} is successfully created
-     * 
+     *
      * @referenceVersion 3.0
-     * 
+     *
      * @nonRegressionVersion 3.0
      */
     @Test
@@ -297,8 +302,9 @@ public class CombinedPhenomenaDetectorTest {
     /**
      * Setup for all the tests in the class. Provides two {@link EclipseDetector}, a {@link NumericalPropagator} and an
      * {@link Orbit}.
-     * 
-     * @throws PatriusException should not happen here
+     *
+     * @throws PatriusException
+     *         should not happen here
      */
     @Before
     public void setUp() throws PatriusException {
@@ -343,7 +349,7 @@ public class CombinedPhenomenaDetectorTest {
 
             @Override
             public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                        final boolean forward) throws PatriusException {
+                                        final boolean forward) {
                 return Action.CONTINUE;
             }
         };
@@ -356,14 +362,14 @@ public class CombinedPhenomenaDetectorTest {
 
             @Override
             public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                        final boolean forward) throws PatriusException {
+                                        final boolean forward) {
                 return Action.CONTINUE;
             }
         };
 
         // Orbital period
         final double t = MathUtils.TWO_PI
-            * MathLib.sqrt(MathLib.pow(orbit.getA(), 3) / Constants.EGM96_EARTH_MU);
+                * MathLib.sqrt(MathLib.pow(orbit.getA(), 3) / Constants.EGM96_EARTH_MU);
 
         // Set the propagation interval
         interval = new AbsoluteDateInterval(IntervalEndpointType.CLOSED, date,

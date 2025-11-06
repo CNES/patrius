@@ -18,6 +18,7 @@
 
 /*
  * HISTORY
+ * VERSION:4.16:OPENFD-468:25/04/2025:[PATRIUS] Renommer toutes les mentions du GeodeticPoint
 * VERSION:4.13:FA:FA-130:08/12/2023:[PATRIUS] Appel incorrect de getLLHCoordinates() dans la classe AeroModel
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -163,7 +164,7 @@ public final class AeroModel extends Parameterizable implements DragSensitive {
      * @param inAtmosphere
      *        the atmospheric model
      * @param earthShapeIn
-     *        the spacecraft geodetic position model
+     *        the spacecraft ellipsoid position model
      * @param altStep
      *        atmospheric density derivatives altitude finite differences computation
      */
@@ -188,7 +189,7 @@ public final class AeroModel extends Parameterizable implements DragSensitive {
      * @param inAtmosphere
      *        the atmospheric model
      * @param inGeodPos
-     *        the spacecraft geodetic position model
+     *        the spacecraft ellipsoid position model
      */
     public AeroModel(final Assembly inAssembly, final Atmosphere inAtmosphere, final OneAxisEllipsoid inGeodPos) {
         this(inAssembly, inAtmosphere, inGeodPos, DEFAULT_ALT_STEP);
