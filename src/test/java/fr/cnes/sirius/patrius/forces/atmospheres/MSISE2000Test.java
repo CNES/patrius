@@ -18,6 +18,9 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -54,8 +57,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.io.InputStream;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -97,6 +99,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Test the {@link MSISE2000} class for the MSIS2000 Atmosphere model
@@ -249,14 +252,15 @@ public class MSISE2000Test {
      */
     @Test
     public void testGetDensity() throws PatriusException {
-
+        
         FramesFactory.setConfiguration(FramesConfigurationFactory.getStelaConfiguration());
 
         Report.printMethodHeader("testGetDensity", "Density computation", "STELA", EPS, ComparisonType.RELATIVE);
         this.testSetup();
+        
         final double density = this.atmosModel.getDensity(this.date, this.pos, this.frame);
         // Old STELA reference: 1.1905176552175417E-16;
-        final double ref = 1.1905176215889153E-16;
+        final double ref = 1.1905176215778793E-16;
         // test the exception when density is not properly computed:
         boolean rez = false;
         try {
@@ -336,11 +340,12 @@ public class MSISE2000Test {
      */
     @Test
     public void testGetSpeedOfSound() throws PatriusException {
-
+        
         this.testSetup();
+        
         final Vector3D position = new Vector3D(6478000., 0., 0.);
         final double speedOfSound = this.atmosModel.getSpeedOfSound(this.date, position, this.frame);
-        final double ref = 279.7687996868958;
+        final double ref = 279.7687996866554;
         Assert.assertEquals(0, MathLib.abs((speedOfSound - ref) / MathLib.max(speedOfSound, ref)), EPS);
     }
 
@@ -655,7 +660,7 @@ public class MSISE2000Test {
     public void testSeveralCalls() throws PatriusException {
         // Adding Patrius Dataset
         Utils.setDataRoot("regular-dataPBASE");
-
+        
         // De-activate EOP
         final FramesConfiguration config = FramesFactory.getConfiguration();
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder(
@@ -718,9 +723,9 @@ public class MSISE2000Test {
         final double pres = atmo.getPressure(date, position, frame);
         final double dens = atmData.getDensity();
 
-        assertEquals(399.69913810256685, temp, 0);
-        assertEquals(0.0019899540368168264, pres, 0);
-        assertEquals(1.5242823809150096E-8, dens, 0);
+        assertEquals(399.6991381003697, temp, 0);
+        assertEquals(0.0019899540368077634, pres, 0);
+        assertEquals(1.524282380917132E-8, dens, 0);
     }
 
     /**
@@ -888,5 +893,10 @@ public class MSISE2000Test {
         Assert.assertEquals(exp.getX(), act.getX(), eps);
         Assert.assertEquals(exp.getY(), act.getY(), eps);
         Assert.assertEquals(exp.getZ(), act.getZ(), eps);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

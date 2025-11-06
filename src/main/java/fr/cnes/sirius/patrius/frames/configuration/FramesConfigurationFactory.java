@@ -17,6 +17,10 @@
  * @history creation 28/11/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
@@ -77,16 +81,6 @@ public final class FramesConfigurationFactory {
         // Configurations builder
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
 
-        // Tides and libration
-        final TidalCorrectionModel tides = TidalCorrectionModelFactory.TIDE_IERS2010_INTERPOLATED;
-        final LibrationCorrectionModel lib = LibrationCorrectionModelFactory.LIBRATION_IERS2010;
-
-        // Polar Motion
-        final PolarMotion defaultPolarMotion = new PolarMotion(true, tides, lib, SPrimeModelFactory.SP_IERS2010);
-
-        // Diurnal rotation
-        final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
-
         // Declare the precession/nutation
         final PrecessionNutation precNut;
 
@@ -111,8 +105,18 @@ public final class FramesConfigurationFactory {
                     UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
         }
 
+        // Tides and libration
+        final TidalCorrectionModel tides = TidalCorrectionModelFactory.TIDE_IERS2010_INTERPOLATED;
+        final LibrationCorrectionModel lib = LibrationCorrectionModelFactory.LIBRATION_IERS2010;
+        
+        // Diurnal rotation
+        final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
         builder.setDiurnalRotation(defaultDiurnalRotation);
+
+        // Polar Motion
+        final PolarMotion defaultPolarMotion = new PolarMotion(true, tides, lib, SPrimeModelFactory.SP_IERS2010);
         builder.setPolarMotion(defaultPolarMotion);
+        
         try {
             builder.setEOPHistory(EOPHistoryFactory.getEOP2000History(EOPInterpolators.LAGRANGE4));
         } catch (final PatriusException e) {
@@ -133,18 +137,6 @@ public final class FramesConfigurationFactory {
 
         // Configurations builder
         final FramesConfigurationBuilder builder = new FramesConfigurationBuilder();
-
-        // Tides and libration
-        final TidalCorrectionModel tides =
-            ignoreTides ? TidalCorrectionModelFactory.NO_TIDE
-                : TidalCorrectionModelFactory.TIDE_IERS2003_INTERPOLATED;
-        final LibrationCorrectionModel lib = LibrationCorrectionModelFactory.NO_LIBRATION;
-
-        // Polar Motion
-        final PolarMotion defaultPolarMotion = new PolarMotion(true, tides, lib, SPrimeModelFactory.SP_IERS2003);
-
-        // Diurnal rotation
-        final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
 
         // Declare the precession/nutation
         final PrecessionNutation precNut;
@@ -170,8 +162,25 @@ public final class FramesConfigurationFactory {
                     UNSUPPORTED_MODE_EXCEPTION + PatriusConfiguration.getPatriusCompatibilityMode());
         }
 
+        // Tides and libration
+        final TidalCorrectionModel tides;
+        
+        if (ignoreTides) {
+            tides = TidalCorrectionModelFactory.NO_TIDE;
+        } else {
+            tides = TidalCorrectionModelFactory.TIDE_IERS2003_INTERPOLATED;
+        }
+        
+        final LibrationCorrectionModel lib = LibrationCorrectionModelFactory.NO_LIBRATION;
+        
+        // Diurnal rotation
+        final DiurnalRotation defaultDiurnalRotation = new DiurnalRotation(tides, lib);
         builder.setDiurnalRotation(defaultDiurnalRotation);
+
+        // Polar Motion
+        final PolarMotion defaultPolarMotion = new PolarMotion(true, tides, lib, SPrimeModelFactory.SP_IERS2003);
         builder.setPolarMotion(defaultPolarMotion);
+        
         try {
             builder.setEOPHistory(EOPHistoryFactory.getEOP2000History(EOPInterpolators.LAGRANGE4));
         } catch (final PatriusException e) {

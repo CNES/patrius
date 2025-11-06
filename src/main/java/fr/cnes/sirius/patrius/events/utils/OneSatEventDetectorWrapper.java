@@ -18,7 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
- * VERSION:4.13.3:FA:FA-283:27/03/2024:[PATRIUS] Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3172:10/05/2022:[PATRIUS] Ajout d'un throws PatriusException a la methode init de l'interface EDet

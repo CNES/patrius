@@ -18,6 +18,7 @@
  * @history creation 22/10/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:FA:FA-3201:03/11/2022:[PATRIUS] Prise en compte de l'aberration stellaire dans l'interface ITargetDirection
@@ -1305,6 +1306,7 @@ public class EarthCenterDirectionTest {
     /** Set up. */
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
     }
 }

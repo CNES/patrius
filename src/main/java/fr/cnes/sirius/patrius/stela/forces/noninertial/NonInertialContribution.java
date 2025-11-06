@@ -18,6 +18,7 @@
  * @history created 02/03/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
@@ -198,7 +199,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
      *        orbit eccentric anomaly
      * @return adjustment coefficient
      */
-    private static double computeAdjustCoef(final StelaEquinoctialOrbit orbit, final double eAnom) {
+    private double computeAdjustCoef(final StelaEquinoctialOrbit orbit, final double eAnom) {
         final double ex = orbit.getEquinoctialEx();
         final double ey = orbit.getEquinoctialEy();
         return 1.0 - MathLib.sqrt(ex * ex + ey * ey) * MathLib.cos(eAnom);
@@ -297,7 +298,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
      *        a date
      * @return rotation vector from ICRF to CIRF
      */
-    private static Vector3D computeOmegaICRFToCIRF(final AbsoluteDate date) {
+    private Vector3D computeOmegaICRFToCIRF(final AbsoluteDate date) {
 
         // Compute coefficients
         final CIPCoordinates cipCoordinates = FramesFactory.getConfiguration().getCIPCoordinates(date);
@@ -330,7 +331,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
      *        a date
      * @return rotation vector from MOD to EME2000
      */
-    private static Vector3D computeOmegaMODToEME2000(final AbsoluteDate date) {
+    private Vector3D computeOmegaMODToEME2000(final AbsoluteDate date) {
         final double[] euler = getEulerAngles(date);
         final double[] theta = { euler[2], -euler[1], euler[0] };
         final double[] dtheta = { euler[5], -euler[4], euler[3] };
@@ -348,7 +349,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
      *        a date
      * @return Euler angles (3, 2, 3) of MOD => GCRF/EME2000 transformation and their derivatives with respect to time
      */
-    private static double[] getEulerAngles(final AbsoluteDate date) {
+    private double[] getEulerAngles(final AbsoluteDate date) {
 
         // Get model
         final FramesConfiguration config = FramesFactory.getConfiguration();
@@ -390,7 +391,7 @@ public class NonInertialContribution extends AbstractStelaGaussContribution {
      *        Euler angles derivatives
      * @return rotation vector
      */
-    private static Vector3D computeOmega(final double[] theta, final double[] dtheta) {
+    private Vector3D computeOmega(final double[] theta, final double[] dtheta) {
         final double[] sincos2 = MathLib.sinAndCos(theta[1]);
         final double sin2 = sincos2[0];
         final double cos2 = sincos2[1];

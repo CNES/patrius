@@ -16,6 +16,14 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -57,7 +65,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -76,17 +86,26 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
+import fr.cnes.sirius.patrius.attitudes.directions.BasicPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProviderWrapper;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.events.MultiEventDetector;
 import fr.cnes.sirius.patrius.events.detectors.DateDetector;
+import fr.cnes.sirius.patrius.events.detectors.DistanceDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaGenericDetector;
+import fr.cnes.sirius.patrius.events.detectors.ExtremaGenericDetector.ExtremumType;
 import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEvent;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
 import fr.cnes.sirius.patrius.events.sensor.SatToSatMutualVisibilityTest;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
@@ -124,11 +143,14 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.propagation.AbstractPropagator;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.MultiPropagator;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.propagation.SpacecraftStateProvider;
+import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation.AttitudeType;
@@ -170,11 +192,6 @@ public class MultiNumericalPropagatorTest {
      * Tolerance 1e-14
      */
     private static final double E_14 = Precision.DOUBLE_COMPARISON_EPSILON;
-
-    /**
-     * Tolerance 1e-13
-     */
-    private static final double E_13 = 1.0e-13;
 
     /**
      * First state name
@@ -1509,7 +1526,7 @@ public class MultiNumericalPropagatorTest {
         final RungeKuttaIntegrator rki = new ClassicalRungeKuttaIntegrator(step);
 
         this.firstPropagator = new NumericalPropagator(rki1, this.state1.getFrame(), type, angle);
-        this.multiNumericalPropagator = new MultiNumericalPropagator(rki, new HashMap<String, Frame>(), type, angle);
+        this.multiNumericalPropagator = new MultiNumericalPropagator(rki, new HashMap<>(), type, angle);
 
         // Add initial state
         this.firstPropagator.setInitialState(this.state1);
@@ -1604,24 +1621,22 @@ public class MultiNumericalPropagatorTest {
         // b) Third Body attraction
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
-        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
+        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
 
         final GravityModel sunGravityModel = sun.getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         final GravityModel moonGravityModel = moon.getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
 
         final ForceModel newtonianAttraction = new DirectBodyAttraction(new NewtonianGravityModel(provider.getMu()));
@@ -2486,7 +2501,7 @@ public class MultiNumericalPropagatorTest {
         // Check
         Assert.assertEquals(0, finalState.getDate().durationFrom(finalDate), 0);
     }
-
+    
     /**
      * FA492: propagation must stop exactly at required date in master mode.
      *
@@ -2557,7 +2572,7 @@ public class MultiNumericalPropagatorTest {
         final Orbit orbit = new KeplerianOrbit(1, 0.0, 0.0, 0.0, 0.0, 0.0, PositionAngle.MEAN, FramesFactory.getGCRF(),
             initialDate, 1.0);
         final FirstOrderIntegrator ode = new DormandPrince853Integrator(0.1, 10.0, 1.0e-3, 1e-6);
-        final MultiNumericalPropagator propagator = new MultiNumericalPropagator(ode, new HashMap<String, Frame>(),
+        final MultiNumericalPropagator propagator = new MultiNumericalPropagator(ode, new HashMap<>(),
             OrbitType.EQUINOCTIAL, PositionAngle.TRUE);
         propagator.setEphemerisMode();
         propagator.addInitialState(new SpacecraftState(orbit), "1");
@@ -2645,7 +2660,7 @@ public class MultiNumericalPropagatorTest {
     public void testSetNonInertialFrame() throws PatriusException {
         // Propagator
         final FirstOrderIntegrator ode = new DormandPrince853Integrator(0.1, 10.0, 1.0e-3, 1e-6);
-        final Map<String, Frame> propFrameMap = new HashMap<String, Frame>();
+        final Map<String, Frame> propFrameMap = new HashMap<>();
         propFrameMap.put("1", FramesFactory.getTIRF());
 
         // An exception should occur here !
@@ -2752,7 +2767,7 @@ public class MultiNumericalPropagatorTest {
         final double[] relTolerance = { 1.0e-7, 1.0e-4, 1.0e-4, 1.0e-7, 1.0e-7, 1.0e-7 };
         final AdaptiveStepsizeIntegrator dop = new DormandPrince853Integrator(0.001, 200, absTolerance, relTolerance);
         dop.setInitialStepSize(60);
-        final Map<String, Frame> propFrameMap = new HashMap<String, Frame>();
+        final Map<String, Frame> propFrameMap = new HashMap<>();
         propFrameMap.put("key1", propFrame);
         propFrameMap.put("key2", propFrame);
         final MultiNumericalPropagator propagator = new MultiNumericalPropagator(dop, propFrameMap);
@@ -2993,6 +3008,434 @@ public class MultiNumericalPropagatorTest {
     }
 
     /**
+     * This test is a copy of testSlaveMode(). However spacecraft state providers are added to check the
+     * compatibility of such objects with the multi numerical propagator.
+     * Propagation of two simple SpacecraftState in slave mode: Comparison between two numerical
+     * propagation and one multi-sat numerical propagation
+     *
+     * @throws PatriusException
+     * @testType UT
+     *
+     * @testedFeature {@link features#MULTI_SAT_PROPAGATION_MODE}
+     *
+     * @testedMethod {@link MultiNumericalPropagator#propagate(AbsoluteDate)}
+     *
+     * @description Propagation in slave mode of a simple SpacecraftState composed of an orbit and a
+     *              simple mass provider.
+     *
+     * @input two Numerical propagator and one multi-sat numerical propagator
+     *
+     * @output final equinoctial parameters from multi-sat propagation
+     *
+     * @testPassCriteria final equinoctial parameters from numerical propagation and from multi-sat
+     *                   propagation should be equal, as well as results between provider and multi propagator with
+     *                   added providers
+     *
+     * @referenceVersion 4.14
+     *
+     * @nonRegressionVersion 4.14
+     */
+    @Test
+    public void testSlaveModeWithAdditionalAnalyticalProviders() throws PatriusException {
+        
+        /*
+         * Added part with analytical propagator
+         */
+        final double[] absT = { 0.01 };
+        final double[] relT = { 1.0e-7 };
+        final String eqName = this.defaultMassModel.getAdditionalEquation(DEFAULT).getName();
+        final KeplerianPropagator kepProp = new KeplerianPropagator(this.orbit2);
+        final String analyticalId = "analytical";
+        final MyDateDetector dateDetector = new MyDateDetector(initialDate.shiftedBy(30.), 2, AbstractDetector.DEFAULT_MAXCHECK,
+            AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, false);
+        kepProp.addEventDetector(dateDetector);
+        
+        final MultiNumericalPropagator multiProp = new MultiNumericalPropagator(this.integratorMultiSat);
+        multiProp.addInitialState(this.state1, STATE1);
+        multiProp.addInitialState(this.state2, STATE2);
+        multiProp.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.state1.getMu())), STATE1);
+        multiProp.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.state2.getMu())), STATE2);
+        multiProp.setMassProviderEquation(this.defaultMassModel, STATE1);
+        multiProp.setAdditionalStateTolerance(eqName, absT, relT, STATE1);
+        multiProp.setAttitudeProvider(this.attProv, STATE2);
+        multiProp.addStateProvider(kepProp, analyticalId);
+        
+        /*
+         * End of the added part.
+         * Check that we have same results with historical test that uses numerical method.
+         */
+
+        /*
+         * TWO PROPAGATIONS WITH TWO NUMERICAL PROPAGATOR
+         */
+        final SpacecraftState finalState1 = this.firstPropagator.propagate(this.finalDate);
+        final SpacecraftState finalState2 = this.secondPropagator.propagate(this.finalDate);
+
+        /*
+         * ONE SINGLE PROPAGATION WITH A MULTI-SAT PROPAGATOR
+         */
+        final Map<String, SpacecraftState> finalMultiSatState = multiProp.propagate(this.finalDate);
+
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getA(), finalState1.getA(), 2E-8);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getEquinoctialEx(), finalState1.getEquinoctialEx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getEquinoctialEy(), finalState1.getEquinoctialEy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getHx(), finalState1.getHx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getHy(), finalState1.getHy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getLM(), finalState1.getLM(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getMass(DEFAULT), finalState1.getMass(DEFAULT), E_14);
+
+        Assert.assertEquals(finalMultiSatState.get(STATE2).getA(), finalState2.getA(), 3E-8);
+        Assert.assertEquals(finalMultiSatState.get(STATE2).getEquinoctialEx(), finalState2.getEquinoctialEx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE2).getEquinoctialEy(), finalState2.getEquinoctialEy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE2).getHx(), finalState2.getHx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE2).getHy(), finalState2.getHy(), E_14);
+        // Error due to the AdaptativeStepSizeIntegrator
+        // No forces models added => low error
+        Assert.assertEquals(finalMultiSatState.get(STATE2).getLM(), finalState2.getLM(), 2E-13);
+
+        Assert.assertEquals(multiProp.getMode(), MultiPropagator.SLAVE_MODE);
+
+        // Test exception raised by getGeneratedEphemeriq
+        boolean testOk = false;
+        // 1-A the test should fail because a force attitude provider is already defined in
+        // the propagator:
+        try {
+            multiProp.getGeneratedEphemeris(STATE1);
+            Assert.fail();
+        } catch (final IllegalStateException e) {
+            testOk = true;
+            Assert.assertEquals(PatriusMessages.PROPAGATOR_NOT_IN_EPHEMERIS_GENERATION_MODE.getSourceString(),
+                e.getMessage());
+        }
+        Assert.assertTrue(testOk);
+        
+        /*
+         * Added checks: compute results with different target dates.
+         */
+        
+        final int nSteps = 10;
+        final double stepDuration = 200.;
+        for (int i = 0; i < nSteps; i++) {
+            final AbsoluteDate target = this.initialDate.shiftedBy(i * stepDuration);
+            final PVCoordinates pvMultiSatExpected = kepProp.propagate(target).getPVCoordinates();
+            final PVCoordinates pvMultiSatActual = multiProp.propagate(target).get(analyticalId).getPVCoordinates();
+            checkVectors(pvMultiSatExpected.getPosition(), pvMultiSatActual.getPosition(), new Vector3D(E_14, E_14, E_14));
+            checkVectors(pvMultiSatExpected.getVelocity(), pvMultiSatActual.getVelocity(), new Vector3D(E_14, E_14, E_14));
+        }
+
+    }
+
+    /**
+     * This test is a copy of testEphemerisMode(). However spacecraft state providers are added to check the
+     * compatibility of such objects with the multi numerical propagator.
+     * Propagation of two simple SpacecraftState in ephemeris mode: Comparison between ephemeris
+     * generated during simple numerical propagation and during multi-sat numerical propagation
+     *
+     * @throws PatriusException if position cannot be computed in given frame
+     *
+     * @testedFeature {@link features#MULTI_SAT_PROPAGATION_MODE}
+     *
+     * @testedMethod {@link MultiNumericalPropagator#propagate(AbsoluteDate)}
+     * @testedMethod {@link MultiNumericalPropagator#setEphemerisMode()}
+     * @testedMethod {@link MultiNumericalPropagator#getGeneratedEphemeris(String)}
+     *
+     * @description Propagation in ephemeris mode of a simple SpacecraftState composed of an orbit
+     *              and a simple mass provider.
+     *
+     * @input a numerical propagator, an analytical propagator and one multi-sat numerical propagator
+     *
+     * @output ephemeris generated during simple numerical propagation and during multi-sat
+     *         numerical propagation
+     *
+     * @testPassCriteria position/velocity from ephemeris generated during simple numerical
+     *                   position/velocity from ephemeris generated during simple analytical
+     *                   propagation and during multi-sat numerical propagation should be equal.
+     *
+     * @referenceVersion 4.14
+     *
+     * @nonRegressionVersion 4.14
+     */
+    @Test
+    public void testEphemerisModeWithAdditionalAnalyticalProviders() throws PatriusException {
+
+        // Set ephemeris mode
+        final double[] absT = { 0.01 };
+        final double[] relT = { 1.0e-7 };
+        final String eqName = this.defaultMassModel.getAdditionalEquation(DEFAULT).getName();
+        final MultiNumericalPropagator multiProp = new MultiNumericalPropagator(this.integratorMultiSat);
+        multiProp.setEphemerisMode();
+        multiProp.addInitialState(this.state1, STATE1);
+        multiProp.addInitialState(this.state2, STATE2);
+        multiProp.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.state1.getMu())), STATE1);
+        multiProp.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.state2.getMu())), STATE2);
+        multiProp.setMassProviderEquation(this.defaultMassModel, STATE1);
+        multiProp.setAdditionalStateTolerance(eqName, absT, relT, STATE1);
+        multiProp.setAttitudeProvider(this.attProv, STATE2);
+
+        /*
+         * Added part with analytical propagator
+         */
+        
+        final double dt = this.orbit2.getKeplerianPeriod() / 2;
+        
+        final KeplerianPropagator kepProp = new KeplerianPropagator(this.orbit2);
+        final String analyticalId = "analytical";
+        final MyDateDetector dateDetector = new MyDateDetector(initialDate.shiftedBy(30.), 2, AbstractDetector.DEFAULT_MAXCHECK,
+            AbstractDetector.DEFAULT_THRESHOLD, Action.STOP, false);
+        kepProp.addEventDetector(dateDetector);
+        multiProp.addStateProvider(kepProp, analyticalId);
+        
+        /*
+         * End of the added part.
+         */
+
+        this.firstPropagator.setEphemerisMode();
+        this.firstPropagator.propagate(this.initialDate.shiftedBy(dt));
+        final BoundedPropagator ephemeris = this.firstPropagator.getGeneratedEphemeris();
+        final PVCoordinates pv = ephemeris.getPVCoordinates(this.initialDate.shiftedBy(0.5 * dt),
+            FramesFactory.getEME2000());
+        final Vector3D pos = pv.getPosition();
+        final Vector3D vel = pv.getVelocity();
+        
+        multiProp.propagate(this.initialDate.shiftedBy(dt));
+
+        final BoundedPropagator ephemerisMultiSat = multiProp.getGeneratedEphemeris(STATE1);
+        Assert.assertEquals(this.initialDate, ephemerisMultiSat.getMinDate());
+        Assert.assertEquals(this.initialDate.shiftedBy(dt), ephemerisMultiSat.getMaxDate());
+
+        final PVCoordinates pvMultiSat = ephemerisMultiSat.getPVCoordinates(this.initialDate.shiftedBy(0.5 * dt),
+            FramesFactory.getEME2000());
+        final Vector3D posMultiSat = pvMultiSat.getPosition();
+        final Vector3D velMultiSat = pvMultiSat.getVelocity();
+
+        checkVectors(pos, posMultiSat, new Vector3D(3E-14, E_14, E_14));
+        checkVectors(vel, velMultiSat, new Vector3D(E_14, 2E-14, E_14));
+        Assert.assertEquals(multiProp.getMode(), MultiPropagator.EPHEMERIS_GENERATION_MODE);
+        
+        /*
+         * Added checks.
+         * Perform additional tests for coverage and functional reasons.
+         * For instance, cover blocks with exceptions.
+         */
+        
+        final int nSteps = 10;
+        final Frame gcrf = FramesFactory.getGCRF();
+        for (int i = 0; i < nSteps; i++) {
+            final double duration = i * dt / nSteps;
+            final PVCoordinates pvMultiSat2Expected = this.orbit2.shiftedBy(duration).getPVCoordinates();
+            final BoundedPropagator ephemerisMultiSat2 = multiProp.getGeneratedEphemeris(analyticalId);
+            final PVCoordinates pvMultiSat2 = ephemerisMultiSat2.getPVCoordinates(this.initialDate.shiftedBy(duration), gcrf);
+            checkVectors(pvMultiSat2Expected.getPosition(), pvMultiSat2.getPosition(), new Vector3D(E_14, E_14, E_14));
+            checkVectors(pvMultiSat2Expected.getVelocity(), pvMultiSat2.getVelocity(), new Vector3D(E_14, E_14, E_14));
+        }
+        
+        // Assertions to check the multi propagator returns the appropriate objects
+        Assert.assertEquals(1, multiProp.getStateProviders().size());
+        final SpacecraftStateProvider theProvider = multiProp.getStateProviders().get(analyticalId);
+        Assert.assertNotNull(theProvider);
+        Assert.assertTrue(kepProp == theProvider); // compare same memory address
+        
+        // Null ID not authorized
+        try {
+            multiProp.addStateProvider(ephemerisMultiSat, null);
+        } catch (final PatriusException pe) {
+            Assert.assertTrue("The input sat ID is null".equals(pe.getMessage()));
+        }
+        // Empty String ID not authorized
+        try {
+            multiProp.addStateProvider(ephemerisMultiSat, "");
+        } catch (final PatriusException pe) {
+            Assert.assertTrue("The input sat ID is null".equals(pe.getMessage()));
+        }
+        // Already added ID not authorized
+        try {
+            multiProp.addStateProvider(ephemerisMultiSat, analyticalId);
+        } catch (final PatriusException pe) {
+            Assert.assertTrue("The input sat ID is already used".equals(pe.getMessage()));
+        }
+        
+    }
+
+    /**
+     * This test is a inspired from testSlaveModeWithAdditionalAnalyticalProviders().
+     * Events are generated between a numerical object and an analytical object.
+     * The events generated must agree between the MultiNumericalPropagator and the NumericalPropagator.
+     * 
+     * Propagation of two simple SpacecraftState in slave mode: Comparison between two numerical
+     * propagation and one multi-sat numerical propagation
+     *
+     * @throws PatriusException
+     * @testType UT
+     *
+     * @testedFeature {@link features#MULTI_SAT_PROPAGATION_MODE}
+     *
+     * @testedMethod {@link MultiNumericalPropagator#propagate(AbsoluteDate)}
+     *
+     * @description Propagation in slave mode of a simple SpacecraftState composed of an orbit and a
+     *              simple mass provider.
+     *
+     * @input two Numerical propagator and one multi-sat numerical propagator
+     *
+     * @output final equinoctial parameters from multi-sat propagation
+     *
+     * @testPassCriteria final equinoctial parameters from numerical propagation and from multi-sat
+     *                   propagation should be equal, as well as results between provider and multi propagator with
+     *                   added providers.
+     *                   Events are generated between a numerical object and an analytical object.
+     *
+     * @referenceVersion 4.14
+     *
+     * @nonRegressionVersion 4.14
+     */
+    @Test
+    public void testSlaveModeWithAdditionalAnalyticalProvidersEvents() throws PatriusException {
+        
+        // Analytical propagator
+        final double[] absT = { 0.01 };
+        final double[] relT = { 1.0e-7 };
+        final String eqName = this.defaultMassModel.getAdditionalEquation(DEFAULT).getName();
+        final KeplerianPropagator kepProp = new KeplerianPropagator(this.orbit2);
+        final String analyticalId = "analytical";
+
+        // Create event logger for mono propagations
+        final CodedEventsLogger codedEventsLoggerMono = new CodedEventsLogger();
+        
+        // Distance to 2nd satellite using the analytical orbit
+        final DistanceDetector distDetect12mono = new DistanceDetector(kepProp.getPvProvider(), 0., AbstractDetector.DEFAULT_MAXCHECK,
+                AbstractDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+        final ExtremaGenericDetector<DistanceDetector> extremDistDetect12mono = new ExtremaGenericDetector<>(distDetect12mono,
+                ExtremumType.MIN_MAX, ExtremaGenericDetector.DEFAULT_HALF_COMPUTATION_STEP,
+                ExtremaGenericDetector.DEFAULT_MAXCHECK, ExtremaGenericDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+        final GenericCodingEventDetector codingExtremDistDetect12mono = new GenericCodingEventDetector(extremDistDetect12mono, "increasing", "decreasing");
+        this.firstPropagator.addEventDetector(codedEventsLoggerMono.monitorDetector(codingExtremDistDetect12mono));
+        
+        // PROPAGATIONS WITH ONE NUMERICAL PROPAGATOR AND ONE ANALYTICAL PROPAGATOR
+        final SpacecraftState finalState1 = this.firstPropagator.propagate(this.finalDate);
+
+        // ONE SINGLE PROPAGATION WITH A MULTI-SAT PROPAGATOR
+        // Build MultiNumericalPropagator in order to propagate both the numerical and analytical orbits
+        final MultiNumericalPropagator multiProp = new MultiNumericalPropagator(this.integratorMultiSat);
+        multiProp.addInitialState(this.state1, STATE1);
+        multiProp.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.state1.getMu())), STATE1);
+        multiProp.setMassProviderEquation(this.defaultMassModel, STATE1);
+        multiProp.setAdditionalStateTolerance(eqName, absT, relT, STATE1);
+        multiProp.addStateProvider(kepProp, analyticalId);
+
+        // Create event logger for multi-propagation using mono-detector pointing to the Keplerian orbit within the multi-propagator
+        final CodedEventsLogger codedEventsLoggerMulti = new CodedEventsLogger();
+        
+        // Distance to 2nd satellite using the analytical orbit
+        final DistanceDetector distDetect12multi = new DistanceDetector(((AbstractPropagator) multiProp.getStateProviders().get(analyticalId)).getPvProvider(), 0., AbstractDetector.DEFAULT_MAXCHECK,
+                AbstractDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+        final ExtremaGenericDetector<DistanceDetector> extremDistDetect12multi = new ExtremaGenericDetector<>(distDetect12multi,
+                ExtremumType.MIN_MAX, ExtremaGenericDetector.DEFAULT_HALF_COMPUTATION_STEP,
+                ExtremaGenericDetector.DEFAULT_MAXCHECK, ExtremaGenericDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+        final GenericCodingEventDetector codingExtremDistDetect12multi = new GenericCodingEventDetector(extremDistDetect12multi, "increasing", "decreasing");
+        multiProp.addEventDetector(codedEventsLoggerMulti.monitorDetector(codingExtremDistDetect12multi), STATE1);
+        
+        // Propagate using MultiNumericalPropagator
+        final Map<String, SpacecraftState> finalMultiSatState = multiProp.propagate(this.finalDate);
+
+        // Check final orbit of numerical object
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getA(), finalState1.getA(), 2E-8);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getEquinoctialEx(), finalState1.getEquinoctialEx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getEquinoctialEy(), finalState1.getEquinoctialEy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getHx(), finalState1.getHx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getHy(), finalState1.getHy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getLM(), finalState1.getLM(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getMass(DEFAULT), finalState1.getMass(DEFAULT), E_14);
+        
+        // Check mode of MultiNumericalPropagator
+        Assert.assertEquals(multiProp.getMode(), MultiPropagator.SLAVE_MODE);
+
+        // Compare events generated by the MultiNumericalPropagator and those generated by the MonoPropagator
+        checkEventList(codedEventsLoggerMono.getCodedEventsList().getList(), codedEventsLoggerMulti.getCodedEventsList().getList(), 1e-3);
+    }
+    
+    /**
+     * This test is a inspired from testSlaveModeWithAdditionalAnalyticalProviders().
+     * Events are generated between a numerical object and an analytical object.
+     * The events generated must agree between the MultiNumericalPropagator and the NumericalPropagator.
+     *
+     * @throws PatriusException
+     * @testType UT
+     *
+     * @testedFeature {@link features#MULTI_SAT_PROPAGATION_MODE}
+     *
+     * @testedMethod {@link MultiNumericalPropagator#propagate(AbsoluteDate)}
+     *
+     * @description Propagation in slave mode of a simple SpacecraftState composed of an orbit and a
+     *              simple mass provider.
+     *
+     * @input one Numerical propagator and one analytical propagator and one multi-sat numerical propagator
+     *
+     * @output final equinoctial parameters from multi-sat propagation and list of events
+     *
+     * @testPassCriteria final equinoctial parameters from numerical propagation and from multi-sat
+     *                   propagation should be equal, as well as results between provider and multi propagator with
+     *                   added providers.
+     *                   Generated events are the same between multi-detector on multi-propagator and mono-detector on mono-propagator.
+     *
+     * @referenceVersion 4.14
+     *
+     * @nonRegressionVersion 4.14
+     */
+    @Test
+    public void testSlaveModeWithAdditionalAnalyticalProvidersEventsMultiDetector() throws PatriusException {
+        
+        // Analytical propagator
+        final double[] absT = { 0.01 };
+        final double[] relT = { 1.0e-7 };
+        final String eqName = this.defaultMassModel.getAdditionalEquation(DEFAULT).getName();
+        final KeplerianPropagator kepProp = new KeplerianPropagator(this.orbit2);
+        final String analyticalId = "analytical";
+
+        // Create event logger for mono propagations
+        final CodedEventsLogger codedEventsLoggerMono = new CodedEventsLogger();
+        
+        // Distance to 2nd satellite using the analytical orbit
+        final double distThreshold = 1.5e7;
+        final DistanceDetector distDetect12mono = new DistanceDetector(kepProp.getPvProvider(), distThreshold, AbstractDetector.DEFAULT_MAXCHECK,
+                AbstractDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+        final GenericCodingEventDetector codingDistDetect12mono = new GenericCodingEventDetector(distDetect12mono, "increasing", "decreasing");
+        this.firstPropagator.addEventDetector(codedEventsLoggerMono.monitorDetector(codingDistDetect12mono));
+        
+        // PROPAGATIONS WITH ONE NUMERICAL PROPAGATOR AND ONE ANALYTICAL PROPAGATOR
+        final SpacecraftState finalState1 = this.firstPropagator.propagate(this.finalDate);
+
+        // ONE SINGLE PROPAGATION WITH A MULTI-SAT PROPAGATOR
+        // Build MultiNumericalPropagator in order to propagate both the numerical and analytical orbits
+        final MultiNumericalPropagator multiProp = new MultiNumericalPropagator(this.integratorMultiSat);
+        multiProp.addInitialState(this.state1, STATE1);
+        multiProp.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(this.state1.getMu())), STATE1);
+        multiProp.setMassProviderEquation(this.defaultMassModel, STATE1);
+        multiProp.setAdditionalStateTolerance(eqName, absT, relT, STATE1);
+        multiProp.addStateProvider(kepProp, analyticalId);
+
+        // Distance to 2nd satellite using the analytical orbit
+        final SatToSatDistanceDetector distDetect12multi = new SatToSatDistanceDetector(distThreshold, 10, 1e-6);
+        multiProp.addEventDetector(distDetect12multi);
+        
+        // Propagate using MultiNumericalPropagator
+        final Map<String, SpacecraftState> finalMultiSatState = multiProp.propagate(this.finalDate);
+
+        // Check final orbit of numerical object
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getA(), finalState1.getA(), 2E-8);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getEquinoctialEx(), finalState1.getEquinoctialEx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getEquinoctialEy(), finalState1.getEquinoctialEy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getHx(), finalState1.getHx(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getHy(), finalState1.getHy(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getLM(), finalState1.getLM(), E_14);
+        Assert.assertEquals(finalMultiSatState.get(STATE1).getMass(DEFAULT), finalState1.getMass(DEFAULT), E_14);
+        
+        // Check mode of MultiNumericalPropagator
+        Assert.assertEquals(multiProp.getMode(), MultiPropagator.SLAVE_MODE);
+
+        // Compare events generated by the MultiNumericalPropagator and those generated by the MonoPropagator
+        checkEventList(codedEventsLoggerMono.getCodedEventsList().getList(), distDetect12multi.getCodedEventList(), 1e-3);
+    }
+    
+    /**
      * Initializations
      *
      * @throws PatriusException
@@ -3001,6 +3444,7 @@ public class MultiNumericalPropagatorTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Initializations
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
@@ -3131,4 +3575,151 @@ public class MultiNumericalPropagatorTest {
         Assert.assertEquals(0., MathLib.abs((expected.getY() - actual.getY()) / expected.getY()), tol.getY());
         Assert.assertEquals(0., MathLib.abs((expected.getZ() - actual.getZ()) / expected.getZ()), tol.getZ());
     }
+    
+    /**
+     * Compare dates by absolute value of the duration between them.
+     */
+    private static void checkDates(final AbsoluteDate expected, final AbsoluteDate actual, final double tol) {
+        Assert.assertTrue(MathLib.abs(actual.durationFrom(expected)) < tol);
+    }
+    
+    /**
+     * Compare two event lists : number of events in each list, and that each event is found in both lists (type and date). 
+     * 
+     * @param eventList1 First event list.
+     * @param eventList2 Second event list.
+     */
+    private static void checkEventList(final List<CodedEvent> eventList1, final List<CodedEvent> eventList2, final double tol) {
+        Assert.assertEquals(eventList1.size(), eventList2.size());
+        
+        for (int i = 0 ; i < eventList1.size() ; i++) {
+            final CodedEvent evt1 = eventList1.get(i);
+            final CodedEvent evt2 = eventList2.get(i);
+            Assert.assertEquals(evt1.getCode(), evt2.getCode());
+            checkDates(evt1.getDate(), evt2.getDate(), tol);
+        }
+    }
+    
+    /**
+     * This detector triggers an event when reaching a given date.
+     */
+    private class MyDateDetector extends AbstractDetector {
+
+        private static final long serialVersionUID = 2194486837569694560L;
+        /**
+         * Date triggering event.
+         */
+        AbsoluteDate date;
+        
+        /**
+         * @param date
+         * @param slopeSelectionIn
+         * @param maxCheckIn
+         * @param thresholdIn
+         * @param actionIn
+         * @param removeIn
+         */
+        public MyDateDetector(final AbsoluteDate date, final int slopeSelectionIn, final double maxCheckIn,
+                              final double thresholdIn, final Action actionIn, final boolean removeIn) {
+            super(slopeSelectionIn, maxCheckIn, thresholdIn, actionIn, removeIn);
+            this.date = date;
+        }
+
+        @Override
+        public EventDetector copy() {
+            return null;
+        }
+
+        @Override
+        public double g(final SpacecraftState s) throws PatriusException {
+            return s.getDate().durationFrom(this.date);
+        }
+        
+    }
+    
+    /**
+     * This class implements a simple sat to sat distance detector for testing with the MultiNumericalPropagator.
+     */
+    private class SatToSatDistanceDetector extends AbstractDetector implements MultiEventDetector {
+
+        private static final long serialVersionUID = -2293652650651569570L;
+        private DistanceDetector distDetect12;
+        private final List<CodedEvent> codedEventList;
+        private final double distThreshold;
+        
+        public SatToSatDistanceDetector(final double distThresholdIn, final double maxCheckIn, final double thresholdIn) {
+            super(maxCheckIn, thresholdIn);
+            codedEventList = new ArrayList<CodedEvent>();
+            distThreshold = distThresholdIn;
+        }
+
+        @Override
+        public void init(final Map<String, SpacecraftState> s0, final AbsoluteDate t) throws PatriusException {
+            // Get sat 2 state
+            final SpacecraftState sat2state = s0.get(s0.keySet().toArray()[1]);
+            
+            // Distance between sat 1 and sat 2
+            distDetect12 = new DistanceDetector(new BasicPVCoordinatesProvider(sat2state.getPVCoordinates(), sat2state.getFrame()), distThreshold, AbstractDetector.DEFAULT_MAXCHECK,
+                    AbstractDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+            codedEventList.clear();
+        }
+
+        @Override
+        public double g(final Map<String, SpacecraftState> s) throws PatriusException {
+            // Get sat 1 and 2 states separately
+            final SpacecraftState sat1state = s.get(s.keySet().toArray()[0]);
+            final SpacecraftState sat2state = s.get(s.keySet().toArray()[1]);
+            
+            // Distance between sat 1 and sat 2
+            distDetect12 = new DistanceDetector(new BasicPVCoordinatesProvider(sat2state.getPVCoordinates(), sat2state.getFrame()), distThreshold, AbstractDetector.DEFAULT_MAXCHECK,
+                    AbstractDetector.DEFAULT_THRESHOLD, Action.CONTINUE, Action.CONTINUE);
+            return distDetect12.g(sat1state);
+        }
+        
+        /** {@inheritDoc} */
+        @Override
+        public Action eventOccurred(final Map<String, SpacecraftState> s, final boolean increasing,
+                                    final boolean forward) throws PatriusException {
+            // Get SpacecraftState for sat 1
+            final SpacecraftState sat1state = s.get(s.keySet().toArray()[0]);
+            
+            // Store a CodedEvent in the list for further analysis (can't do it with the regular monitoring class for multipropagation)
+            this.codedEventList.add(new CodedEvent((increasing) ? "increasing" : "decreasing", "", sat1state.getDate(), increasing));
+            
+            return Action.CONTINUE;
+        }
+
+        public List<CodedEvent> getCodedEventList() {
+            return this.codedEventList;
+        }
+        
+        /** {@inheritDoc} */
+        @Override
+        public Map<String, SpacecraftState>
+                resetStates(final Map<String, SpacecraftState> oldStates)
+                                                                         throws PatriusException {
+            return oldStates;
+        }
+        
+        /** {@inheritDoc} */
+        @Override
+        public EventDetector copy() {
+            return new SatToSatDistanceDetector(this.distThreshold, getMaxCheckInterval(), getThreshold());
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean filterEvent(final Map<String, SpacecraftState> states,
+                final boolean increasing,
+                final boolean forward) throws PatriusException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public double g(final SpacecraftState s) throws PatriusException {
+            throw PatriusException.createInternalError(null);
+        }
+        
+    };
 }

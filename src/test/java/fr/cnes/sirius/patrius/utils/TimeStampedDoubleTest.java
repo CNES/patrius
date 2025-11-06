@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-30:08/12/2023:[PATRIUS] Deplacement et modification des
  * classes TimeStampedString et TimeStampedDouble
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
@@ -22,9 +23,14 @@
 package fr.cnes.sirius.patrius.utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 
 public class TimeStampedDoubleTest {
 
@@ -46,5 +52,10 @@ public class TimeStampedDoubleTest {
         final TimeStampedDouble timeStamped = new TimeStampedDouble(double1, date);
         Assert.assertEquals(date, timeStamped.getDate());
         Assert.assertEquals(double1, timeStamped.getDouble(),0);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

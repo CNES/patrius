@@ -16,6 +16,10 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * END-HISTORY
  */
@@ -25,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -106,30 +111,17 @@ public class UserTabulatedCelestialBodyTest {
         AbstractCelestialBody body = new UserTabulatedCelestialBody("testName", Constants.EGM96_EARTH_MU, orientation,
             icrf);
 
-        // Extract the 6 inertial/rotating frames from the evaluated model
-        CelestialBodyFrame constantInertialFrame = body.getInertialFrame(IAUPoleModelType.CONSTANT);
-        final CelestialBodyFrame meanInertialFrame = body.getInertialFrame(IAUPoleModelType.MEAN);
-        final CelestialBodyFrame trueInertialFrame = body.getInertialFrame(IAUPoleModelType.TRUE);
+        // Extract the inertial/rotating frames from the evaluated model
+        CelestialBodyFrame inertialFrame = body.getInertialFrame();
+        final CelestialBodyFrame rotatingFrame = body.getRotatingFrame();
 
-        CelestialBodyFrame constantRotatingFrame = body.getRotatingFrame(IAUPoleModelType.CONSTANT);
-        final CelestialBodyFrame meanRotatingFrame = body.getRotatingFrame(IAUPoleModelType.MEAN);
-        final CelestialBodyFrame trueRotatingFrame = body.getRotatingFrame(IAUPoleModelType.TRUE);
+        // Evaluate the inertial frame
+        Assert.assertEquals("testName Inertial frame", inertialFrame.getName());
+        Assert.assertEquals(body.getICRF(), inertialFrame.getParent());
+        Assert.assertTrue(inertialFrame.isPseudoInertial());
+        Assert.assertEquals(body, inertialFrame.getCelestialPoint());
 
-        // The 3 inertial frames should be the same instance
-        Assert.assertEquals(constantInertialFrame, meanInertialFrame);
-        Assert.assertEquals(constantInertialFrame, trueInertialFrame);
-
-        // The 3 rotating frames should be the same instance
-        Assert.assertEquals(constantRotatingFrame, meanRotatingFrame);
-        Assert.assertEquals(constantRotatingFrame, trueRotatingFrame);
-
-        // Evaluate the inertial frames
-        Assert.assertEquals("testName Inertial frame", constantInertialFrame.getName());
-        Assert.assertEquals(body.getICRF(), constantInertialFrame.getParent());
-        Assert.assertTrue(constantInertialFrame.isPseudoInertial());
-        Assert.assertEquals(body, constantInertialFrame.getCelestialPoint());
-
-        TransformProvider inertialFrameTransformProvider = constantInertialFrame.getTransformProvider();
+        TransformProvider inertialFrameTransformProvider = inertialFrame.getTransformProvider();
         Transform transform = inertialFrameTransformProvider.getTransform(date1);
 
         AngularCoordinates angularCoord = orientation.getAngularCoordinates(date1, OrientationType.ICRF_TO_INERTIAL);
@@ -138,13 +130,13 @@ public class UserTabulatedCelestialBodyTest {
 
         evaluateTransform(transform, expectedTransform);
 
-        // Evaluate the rotating frames
-        Assert.assertEquals("testName Rotating frame", constantRotatingFrame.getName());
-        Assert.assertEquals(body.getICRF(), constantRotatingFrame.getParent());
-        Assert.assertFalse(constantRotatingFrame.isPseudoInertial());
-        Assert.assertEquals(body, constantRotatingFrame.getCelestialPoint());
+        // Evaluate the rotating frame
+        Assert.assertEquals("testName Rotating frame", rotatingFrame.getName());
+        Assert.assertEquals(body.getICRF(), rotatingFrame.getParent());
+        Assert.assertFalse(rotatingFrame.isPseudoInertial());
+        Assert.assertEquals(body, rotatingFrame.getCelestialPoint());
 
-        final TransformProvider rotatingFrameTransformProvider = constantRotatingFrame.getTransformProvider();
+        final TransformProvider rotatingFrameTransformProvider = rotatingFrame.getTransformProvider();
         transform = rotatingFrameTransformProvider.getTransform(date1);
 
         angularCoord = orientation.getAngularCoordinates(date1, OrientationType.ICRF_TO_ROTATING);
@@ -162,13 +154,10 @@ public class UserTabulatedCelestialBodyTest {
         attLeg = new TabulatedAttitude(attList, 4);
 
         orientation = new CelestialBodyTabulatedOrientation(attLeg);
-
         body = new UserTabulatedCelestialBody("testName", Constants.EGM96_EARTH_MU, orientation, icrf);
+        inertialFrame = body.getInertialFrame();
 
-        constantInertialFrame = body.getInertialFrame(IAUPoleModelType.CONSTANT);
-        constantRotatingFrame = body.getRotatingFrame(IAUPoleModelType.CONSTANT);
-
-        inertialFrameTransformProvider = constantInertialFrame.getTransformProvider();
+        inertialFrameTransformProvider = inertialFrame.getTransformProvider();
         transform = inertialFrameTransformProvider.getTransform(date1);
 
         angularCoord = attLeg.getAttitude(date1).getOrientation();
@@ -185,13 +174,10 @@ public class UserTabulatedCelestialBodyTest {
         attLeg = new TabulatedAttitude(attList, 2);
 
         orientation = new CelestialBodyTabulatedOrientation(attLeg);
-
         body = new UserTabulatedCelestialBody("testName", Constants.EGM96_EARTH_MU, orientation, icrf);
+        inertialFrame = body.getInertialFrame();
 
-        constantInertialFrame = body.getInertialFrame(IAUPoleModelType.CONSTANT);
-        constantRotatingFrame = body.getRotatingFrame(IAUPoleModelType.CONSTANT);
-
-        inertialFrameTransformProvider = constantInertialFrame.getTransformProvider();
+        inertialFrameTransformProvider = inertialFrame.getTransformProvider();
         transform = inertialFrameTransformProvider.getTransform(date1);
 
         angularCoord = attLeg.getAttitude(date1).getOrientation();
@@ -307,5 +293,10 @@ public class UserTabulatedCelestialBodyTest {
         public AngularCoordinates getAngularCoordinates(final AbsoluteDate date, final OrientationType orientationType) {
             return null;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

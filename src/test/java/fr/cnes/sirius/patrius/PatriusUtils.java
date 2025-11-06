@@ -20,6 +20,7 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -31,41 +32,79 @@
 package fr.cnes.sirius.patrius;
 
 import java.io.File;
+import fr.cnes.sirius.patrius.Utils;
 import java.lang.reflect.Field;
+import fr.cnes.sirius.patrius.Utils;
 import java.lang.reflect.Modifier;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.URL;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DirectoryCrawler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.tides.coefficients.OceanTidesCoefficientsFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.variations.coefficients.VariableGravityFieldFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.DiurnalRotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.PolarMotion;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistoryFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPInterpolators;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.NoEOP2000History;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.models.earth.GeoMagneticFieldFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScale;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Utility class for the configuration of Patrius.
@@ -661,5 +700,10 @@ public final class PatriusUtils {
      * This private constructor avoids the creation of new instances.
      */
     private PatriusUtils() {
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

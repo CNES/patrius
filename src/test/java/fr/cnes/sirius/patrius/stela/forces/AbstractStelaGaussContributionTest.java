@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -26,18 +27,32 @@
 package fr.cnes.sirius.patrius.stela.forces;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.DateComponents;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeComponents;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
@@ -314,5 +329,10 @@ public class AbstractStelaGaussContributionTest {
                 }
             }
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

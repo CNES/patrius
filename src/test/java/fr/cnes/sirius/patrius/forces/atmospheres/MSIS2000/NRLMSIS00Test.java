@@ -26,6 +26,7 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3126:10/05/2022:[PATRIUS] Imports obsoletes suite a suppression de reflexion Java dans Patrius 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -44,15 +45,26 @@
 package fr.cnes.sirius.patrius.forces.atmospheres.MSIS2000;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.ComparisonType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.Report;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @author Vincent Ruch, Rami Houdroge
@@ -401,4 +413,9 @@ public class NRLMSIS00Test {
         Assert.assertEquals(0, inputs.getApA().getAp()[0], 0.0);
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

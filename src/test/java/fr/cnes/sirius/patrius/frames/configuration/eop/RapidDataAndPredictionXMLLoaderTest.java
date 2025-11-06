@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3260:22/05/2023:[PATRIUS] Harmonisation des EOP2000HistoryLoader
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -23,14 +24,23 @@
 package fr.cnes.sirius.patrius.frames.configuration.eop;
 
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.data.AbstractFilesLoaderTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class RapidDataAndPredictionXMLLoaderTest extends AbstractFilesLoaderTest {
 
@@ -146,5 +156,10 @@ public class RapidDataAndPredictionXMLLoaderTest extends AbstractFilesLoaderTest
                 "regular-data/Earth-orientation-parameters/yearly/finals2000A.2002.xml"));
         Assert.assertEquals(new AbsoluteDate(2002, 12, 31, TimeScalesFactory.getUTC()),
             history.getEndDate());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

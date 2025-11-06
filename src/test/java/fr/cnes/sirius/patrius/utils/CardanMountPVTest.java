@@ -17,6 +17,7 @@
  * @history creation 18/10/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -26,11 +27,18 @@
 package fr.cnes.sirius.patrius.utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.CardanMountPV;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Cardan pv mount test class.
@@ -197,5 +205,10 @@ public class CardanMountPVTest {
         final CardanMountPV cardan = new CardanMountPV(0.1, 0.5, 2., 1.3, 1.2, 0.3);
         final CardanMountPV deserializedCardan = TestUtils.serializeAndRecover(cardan);
         Assert.assertEquals(cardan, deserializedCardan);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

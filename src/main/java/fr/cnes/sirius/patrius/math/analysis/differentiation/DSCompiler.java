@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
@@ -39,6 +41,7 @@ import fr.cnes.sirius.patrius.math.util.ArithmeticUtils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Class holding "compiled" computation rules for derivative structures.
@@ -624,7 +627,8 @@ public final class DSCompiler {
 
         // safety check
         if (orders.length != this.getFreeParameters()) {
-            throw new DimensionMismatchException(orders.length, this.getFreeParameters());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_COMPILER_ORDERS_FREE_PARAMETERS,
+                orders.length, this.getFreeParameters());
         }
 
         return getPartialDerivativeIndex(this.parameters, this.order, this.sizes, orders);
@@ -2175,10 +2179,11 @@ public final class DSCompiler {
      */
     public void checkCompatibility(final DSCompiler compiler) {
         if (this.parameters != compiler.parameters) {
-            throw new DimensionMismatchException(this.parameters, compiler.parameters);
+            throw new DimensionMismatchException(PatriusMessages.DIFFERENT_COMPILER_NUMBER_OF_FREE_PARAMETERS,
+                this.parameters, compiler.parameters);
         }
         if (this.order != compiler.order) {
-            throw new DimensionMismatchException(this.order, compiler.order);
+            throw new DimensionMismatchException(PatriusMessages.DIFFERENT_COMPILER_ORDERS, this.order, compiler.order);
         }
     }
     

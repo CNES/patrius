@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.11:DM:DM-3254:22/05/2023:[PATRIUS] AngularCoordinates - Distinction entre acceleration rotationelle nulle et ZERO
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -35,27 +36,49 @@
 package fr.cnes.sirius.patrius.utils;
 
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderDifferentialEquations;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderIntegrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.FixedStepHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepNormalizer;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.RandomGenerator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.Well1024a;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class AngularCoordinatesTest {
 
@@ -716,5 +739,10 @@ public class AngularCoordinatesTest {
         final double y = random.nextDouble();
         final double z = random.nextDouble();
         return new Vector3D(n, new Vector3D(x, y, z).normalize());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,7 @@
  * @history created 17/10/2014
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
@@ -999,6 +1000,11 @@ public final class ConstantThrustError extends JacobiansParameterizable implemen
                     // Convert it into inertial frame
                     tder = state.getAttitude().getRotation().applyTo(der);
                 } else {
+                    // Verify that the spacecraftFrame is pseudo-inertial
+                    if (!state.getFrame().isPseudoInertial()) {
+                        // If frame is not pseudo-inertial, an exception is thrown
+                        throw new PatriusException(PatriusMessages.NOT_INERTIAL_FRAME);
+                    }
                     // the maneuver frame is defined by a LOF type
                     final Transform tranform = this.frameLofType.transformFromInertial(state.getDate(),
                         state.getPVCoordinates()).getInverse();

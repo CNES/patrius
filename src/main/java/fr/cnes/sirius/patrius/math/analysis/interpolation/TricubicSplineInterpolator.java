@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2687:18/05/2021:Traitement de modèles de gravité, autres que les harmoniques sphériques
@@ -30,6 +32,7 @@ package fr.cnes.sirius.patrius.math.analysis.interpolation;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Generates a tricubic interpolating function.
@@ -57,7 +60,8 @@ public class TricubicSplineInterpolator implements TrivariateGridInterpolator {
         }
         if (xval.length != fval.length) {
             // Exception on input data compatibility
-            throw new DimensionMismatchException(xval.length, fval.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                xval.length, fval.length);
         }
 
         // Check that the arrays xval, yval and zval are sorted in strictly increasing order
@@ -82,7 +86,8 @@ public class TricubicSplineInterpolator implements TrivariateGridInterpolator {
         for (int i = 1; i < xLen - 1; i++) {
             if (fval[i].length != yLen) {
                 // Exception on input data compatibility
-                throw new DimensionMismatchException(fval[i].length, yLen);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                    yLen, fval[i].length);
             }
 
             final int nI = i + 1;
@@ -97,7 +102,8 @@ public class TricubicSplineInterpolator implements TrivariateGridInterpolator {
             for (int j = 1; j < yLen - 1; j++) {
                 if (fval[i][j].length != zLen) {
                     // Exception on input data compatibility
-                    throw new DimensionMismatchException(fval[i][j].length, zLen);
+                    throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                        zLen, fval[i][j].length);
                 }
 
                 final int nJ = j + 1;

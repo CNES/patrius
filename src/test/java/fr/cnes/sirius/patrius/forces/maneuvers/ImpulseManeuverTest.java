@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -45,6 +47,9 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.forces.maneuvers;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -107,6 +112,7 @@ import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
 
 public class ImpulseManeuverTest {
@@ -772,6 +778,7 @@ public class ImpulseManeuverTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         eme2000 = FramesFactory.getEME2000();
         initialDate = new AbsoluteDate(new DateComponents(2005, 06, 23),
@@ -865,6 +872,34 @@ public class ImpulseManeuverTest {
         Assert.assertEquals(maneuver3.hasFired(), false);
         Assert.assertEquals(maneuver3.getFrame(), null);
         Assert.assertEquals(maneuver3.getLofType(), null);
+    }
+
+    /**
+     * @description This test is implemented for the FA307. It ensures the provided state for resetState method is based
+     *              on an orbit expressed in an inertial frame.
+     * 
+     * @testedMethod {@link ImpulseManeuver#resetState(SpacecraftState)}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testFA307() throws PatriusException {
+        final EventDetector detector = new DateDetector(AbsoluteDate.J2000_EPOCH);
+        final MassProvider massProvider = new MassModel(ForceModelsDataTest.getAssembly());
+        final double isp = 30;
+        // Case frame
+        final ImpulseManeuver maneuver = new ImpulseManeuver(detector,
+            Vector3D.MINUS_I, FramesFactory.getEME2000(), isp, massProvider, "Tank");
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+        final Orbit orbit = new KeplerianOrbit(7000000, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getTIRF(),
+            date, Constants.EGM96_EARTH_MU);
+        final SpacecraftState oldState = new SpacecraftState(orbit);
+        try {
+            maneuver.resetState(oldState);
+            fail();
+        } catch (final Exception e) {
+            assertEquals(e.getMessage(), PatriusMessages.NOT_INERTIAL_FRAME.getSourceString());
+        }
     }
 
     private static final String thruster = "thruster";

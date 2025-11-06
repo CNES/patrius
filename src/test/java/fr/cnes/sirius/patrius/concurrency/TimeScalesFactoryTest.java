@@ -17,6 +17,7 @@
  * @history creation 02/04/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:FA:FA-2959:15/11/2021:[PATRIUS] Levee d'exception NullPointerException lors du calcul d'intersection a altitude
@@ -27,19 +28,33 @@
 package fr.cnes.sirius.patrius.concurrency;
 
 import java.net.URL;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.LocalDateTime;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.AfterClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.BeforeMethod;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScale;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * TestNG demonstrating the TimeScalesFactory issues.
@@ -173,5 +188,10 @@ public class TimeScalesFactoryTest {
         System.out.println();
         System.out.println("Number of times a test went wrong : " + wrongsCounter);
         System.out.println();
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

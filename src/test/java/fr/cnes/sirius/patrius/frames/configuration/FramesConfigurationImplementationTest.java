@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,6 +34,7 @@
 package fr.cnes.sirius.patrius.frames.configuration;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -127,5 +129,10 @@ public class FramesConfigurationImplementationTest {
         Assert.assertTrue(FramesFactory.getGCRF().getTransformTo(FramesFactory.getCIRF(), AbsoluteDate.J2000_EPOCH).getRotation().isIdentity());
         // TIRF = ITRF
         Assert.assertTrue(FramesFactory.getITRF().getTransformTo(FramesFactory.getTIRF(), AbsoluteDate.J2000_EPOCH).getRotation().isIdentity());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

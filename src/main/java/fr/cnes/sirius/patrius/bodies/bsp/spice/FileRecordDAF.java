@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
@@ -29,7 +30,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
- * This class is used to store the file record of a DAF in a object.<br
+ * This class is used to store the file record of a DAF in a object.
  * It is based on the SPICE library.
  * 
  * @author T0281925

@@ -18,6 +18,9 @@
  * @history created 17/02/2017
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -31,6 +34,7 @@
 package fr.cnes.sirius.patrius.bodies;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,17 +66,17 @@ public class IAUPoleFactoryTest {
             ComparisonType.ABSOLUTE);
 
         // Actual data
-        final CelestialBodyIAUOrientation sunActual = IAUPoleFactory.getIAUPole(EphemerisType.SUN);
-        final CelestialBodyIAUOrientation mercuryActual = IAUPoleFactory.getIAUPole(EphemerisType.MERCURY);
-        final CelestialBodyIAUOrientation venusActual = IAUPoleFactory.getIAUPole(EphemerisType.VENUS);
-        final CelestialBodyIAUOrientation earthActual = IAUPoleFactory.getIAUPole(EphemerisType.EARTH);
-        final CelestialBodyIAUOrientation moonActual = IAUPoleFactory.getIAUPole(EphemerisType.MOON);
-        final CelestialBodyIAUOrientation marsActual = IAUPoleFactory.getIAUPole(EphemerisType.MARS);
-        final CelestialBodyIAUOrientation jupiterActual = IAUPoleFactory.getIAUPole(EphemerisType.JUPITER);
-        final CelestialBodyIAUOrientation saturnActual = IAUPoleFactory.getIAUPole(EphemerisType.SATURN);
-        final CelestialBodyIAUOrientation uranusActual = IAUPoleFactory.getIAUPole(EphemerisType.URANUS);
-        final CelestialBodyIAUOrientation neptuneActual = IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE);
-        final CelestialBodyIAUOrientation plutoActual = IAUPoleFactory.getIAUPole(EphemerisType.PLUTO);
+        final CelestialBodyIAUOrientation sunActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.SUN);
+        final CelestialBodyIAUOrientation mercuryActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MERCURY);
+        final CelestialBodyIAUOrientation venusActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.VENUS);
+        final CelestialBodyIAUOrientation earthActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.EARTH);
+        final CelestialBodyIAUOrientation moonActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MOON);
+        final CelestialBodyIAUOrientation marsActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MARS);
+        final CelestialBodyIAUOrientation jupiterActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.JUPITER);
+        final CelestialBodyIAUOrientation saturnActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.SATURN);
+        final CelestialBodyIAUOrientation uranusActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.URANUS);
+        final CelestialBodyIAUOrientation neptuneActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.NEPTUNE);
+        final CelestialBodyIAUOrientation plutoActual = IAUPoleFactory.getIAUPole(PredefinedEphemerisType.PLUTO);
 
         // Expected
         final double[] sunExpected = { 4.9939105887313753, 1.1147417932487782, 306.963719657295144 };
@@ -135,5 +139,10 @@ public class IAUPoleFactoryTest {
      */
     private static double mod(final double value) {
         return (value + 2. * FastMath.PI) % (2. * FastMath.PI);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

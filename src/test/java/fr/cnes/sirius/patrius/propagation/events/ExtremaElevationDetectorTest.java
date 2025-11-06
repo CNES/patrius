@@ -18,6 +18,10 @@
  * @history created 16/05/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
@@ -38,6 +42,7 @@
 package fr.cnes.sirius.patrius.propagation.events;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -49,7 +54,7 @@ import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.ExtremaElevationDetector;
 import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
@@ -339,7 +344,7 @@ public class ExtremaElevationDetectorTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(topoFrame, eventDetector1Up.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1Up.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1Up.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1Up.getEventDatationType());
 
         // DOWNLINK
 
@@ -368,6 +373,11 @@ public class ExtremaElevationDetectorTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(finalState.getOrbit(), eventDetector1Down.getEmitter(finalState));
         Assert.assertEquals(topoFrame, eventDetector1Down.getReceiver(null));
-        Assert.assertEquals(DatationChoice.EMITTER, eventDetector1Down.getDatationChoice());
+        Assert.assertEquals(EventDatationType.EMITTER, eventDetector1Down.getEventDatationType());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

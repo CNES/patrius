@@ -16,6 +16,9 @@
  * @history 01/10/2014:creation
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -384,13 +387,15 @@ public class TriLinearIntervalsFunction extends AbstractLinearIntervalsFunction 
 
         // first component vector and function values should have the same length
         if (xLength != this.ftab.length) {
-            throw new DimensionMismatchException(xLength, this.ftab.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION,
+                xLength, this.ftab.length);
         }
         // second component vector and function values should have the same length
         final int yLength = this.ytab.length;
         for (int i = 0; i < xLength; i++) {
             if (yLength != this.ftab[i].length) {
-                throw new DimensionMismatchException(yLength, this.ftab[i].length);
+                throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION, yLength,
+                    this.ftab[i].length);
             }
         }
         // third component vector and function values should have the same length
@@ -398,7 +403,8 @@ public class TriLinearIntervalsFunction extends AbstractLinearIntervalsFunction 
         for (int i = 0; i < xLength; i++) {
             for (int j = 0; j < yLength; j++) {
                 if (zLength != this.ftab[i][j].length) {
-                    throw new DimensionMismatchException(zLength, this.ftab[i][j].length);
+                    throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION, zLength,
+                        this.ftab[i][j].length);
                 }
             }
         }

@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -40,23 +41,41 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import java.util.LinkedHashMap;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map.Entry;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.complex.Quaternion;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.Well1024a;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class RotationTest {
 
@@ -1000,5 +1019,10 @@ public class RotationTest {
             final double q2, final double q3) {
         Assert.assertEquals(0, Rotation.distance(r, new Rotation(false, q0, q1, q2, q3)),
             Precision.DOUBLE_COMPARISON_EPSILON);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

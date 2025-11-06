@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-17:22/05/2023:[PATRIUS] Detecteur de distance a la surface d'un corps celeste
@@ -52,8 +53,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * This class finds altitude events (i.e. satellite crossing a predefined altitude level above ground).
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when ascending
- * and to {@link EventDetector.Action#STOP stop} propagation when descending. This can be changed by using provided
+ * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when ascending
+ * and to {@link EventDetector.Action#STOP} stop propagation when descending. This can be changed by using provided
  * constructors.
  * </p>
  * 
@@ -92,8 +93,8 @@ public class AltitudeDetector extends AbstractDetector {
      * convergence threshold ({@link #DEFAULT_THRESHOLD}).
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when
-     * ascending and to {@link EventDetector.Action#STOP stop} propagation when descending.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when
+     * ascending and to {@link EventDetector.Action#STOP} stop propagation when descending.
      * </p>
      * 
      * @param altitudeIn
@@ -112,8 +113,8 @@ public class AltitudeDetector extends AbstractDetector {
      * handle, otherwise some short passes could be missed.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when
-     * ascending and to {@link EventDetector.Action#STOP stop} propagation when descending.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when
+     * ascending and to {@link EventDetector.Action#STOP} stop propagation when descending.
      * </p>
      * 
      * @param altitudeIn

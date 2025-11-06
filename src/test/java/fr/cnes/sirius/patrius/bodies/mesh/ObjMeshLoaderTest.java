@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3288:22/05/2023:[PATRIUS] ID de facette pour un FacetBodyShape
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3167:10/05/2022:[PATRIUS] La methode ObJMeshLoader ne permet pas de lire des fichiers .obj 
@@ -27,17 +28,27 @@
  */
 /*
  */
+/*
+ */
 
 package fr.cnes.sirius.patrius.bodies.mesh;
 
 import java.util.HashMap;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /*
  *
@@ -88,5 +99,10 @@ public class ObjMeshLoaderTest {
             Assert.assertEquals(new Vector3D(0, 1000, 1000), last.getVertices()[2].getPosition());
             Assert.assertEquals(genericFile.getTriangles().length, last.getID());
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

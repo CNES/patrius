@@ -14,6 +14,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:FA:FA-3279:22/05/2023:[PATRIUS] Absence de TU pour JPLHistoricEphemerisLoader
@@ -66,7 +74,7 @@ public class JPLHistoricEphemerisLoaderTest {
 
         final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(
             JPLHistoricEphemerisLoader.DEFAULT_DE_SUPPORTED_NAMES,
-                EphemerisType.SUN);
+                PredefinedEphemerisType.SUN);
         Assert.assertEquals(149597870691.0, loader.getLoadedAstronomicalUnit(), 0.1);
         Assert.assertEquals(81.30056, loader.getLoadedEarthMoonMassRatio(), 1.0e-8);
     }
@@ -89,7 +97,7 @@ public class JPLHistoricEphemerisLoaderTest {
         Utils.setDataRoot("inpop");
         final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(
             JPLHistoricEphemerisLoader.DEFAULT_INPOP_SUPPORTED_NAMES,
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         Assert.assertEquals(149597870691.0, loader.getLoadedAstronomicalUnit(), 0.1);
         Assert.assertEquals(81.30057, loader.getLoadedEarthMoonMassRatio(), 1.0e-8);
     }
@@ -112,41 +120,61 @@ public class JPLHistoricEphemerisLoaderTest {
 
         final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(
             JPLHistoricEphemerisLoader.DEFAULT_DE_SUPPORTED_NAMES,
-                EphemerisType.SUN);
+                PredefinedEphemerisType.SUN);
         Assert.assertEquals(22032.080e9, loader
-                .getLoadedGravitationalCoefficient(EphemerisType.MERCURY),
+                .getLoadedGravitationalCoefficient(PredefinedEphemerisType.MERCURY),
                 1.0e6);
         Assert.assertEquals(324858.599e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.VENUS),
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.VENUS),
                 1.0e6);
         Assert.assertEquals(42828.314e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.MARS),
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS),
                 1.0e6);
+        Assert.assertEquals(42828.314e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS_BARY),
+            1.0e6);
         Assert.assertEquals(126712767.863e9, loader
-                .getLoadedGravitationalCoefficient(EphemerisType.JUPITER),
+                .getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER),
                 6.0e7);
+        Assert.assertEquals(126712767.863e9, loader
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER_BARY),
+            6.0e7);
         Assert.assertEquals(
                 37940626.063e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.SATURN),
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN),
                 2.0e6);
         Assert.assertEquals(
+            37940626.063e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN_BARY),
+            2.0e6);
+        Assert.assertEquals(
                 5794549.007e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.URANUS),
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS),
+                1.0e6);
+        Assert.assertEquals(
+            5794549.007e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS_BARY),
+            1.0e6);
+        Assert.assertEquals(6836534.064e9, loader
+                .getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE),
                 1.0e6);
         Assert.assertEquals(6836534.064e9, loader
-                .getLoadedGravitationalCoefficient(EphemerisType.NEPTUNE),
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE_BARY),
+            1.0e6);
+        Assert.assertEquals(981.601e9,
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO),
                 1.0e6);
         Assert.assertEquals(981.601e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.PLUTO),
-                1.0e6);
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO_BARY),
+            1.0e6);
         Assert.assertEquals(132712440017.987e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.SUN),
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN),
                 1.0e6);
         Assert.assertEquals(4902.801e9,
-                loader.getLoadedGravitationalCoefficient(EphemerisType.MOON),
+                loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MOON),
                 1.0e6);
         Assert.assertEquals(403503.233e9, loader
-                .getLoadedGravitationalCoefficient(EphemerisType.EARTH_MOON),
+                .getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH_MOON),
                 1.0e6);
     }
 
@@ -169,41 +197,61 @@ public class JPLHistoricEphemerisLoaderTest {
 
         final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(
             JPLHistoricEphemerisLoader.DEFAULT_INPOP_SUPPORTED_NAMES,
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         Assert.assertEquals(22032.081e9, loader
-            .getLoadedGravitationalCoefficient(EphemerisType.MERCURY),
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.MERCURY),
             1.0e6);
         Assert.assertEquals(324858.597e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.VENUS),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.VENUS),
             1.0e6);
         Assert.assertEquals(42828.376e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.MARS),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS),
+            1.0e6);
+        Assert.assertEquals(42828.376e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS_BARY),
             1.0e6);
         Assert.assertEquals(126712764.535e9, loader
-            .getLoadedGravitationalCoefficient(EphemerisType.JUPITER),
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER),
+            6.0e7);
+        Assert.assertEquals(126712764.535e9, loader
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER_BARY),
             6.0e7);
         Assert.assertEquals(
             37940585.443e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.SATURN),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN),
+            2.0e6);
+        Assert.assertEquals(
+            37940585.443e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN_BARY),
             2.0e6);
         Assert.assertEquals(
             5794549.099e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.URANUS),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS),
+            1.0e6);
+        Assert.assertEquals(
+            5794549.099e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS_BARY),
             1.0e6);
         Assert.assertEquals(6836527.128e9, loader
-            .getLoadedGravitationalCoefficient(EphemerisType.NEPTUNE),
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE),
+            1.0e6);
+        Assert.assertEquals(6836527.128e9, loader
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE_BARY),
             1.0e6);
         Assert.assertEquals(971.114e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.PLUTO),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO),
+            1.0e6);
+        Assert.assertEquals(971.114e9,
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO_BARY),
             1.0e6);
         Assert.assertEquals(132712442110.032e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.SUN),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN),
             1.0e6);
         Assert.assertEquals(4902.800e9,
-            loader.getLoadedGravitationalCoefficient(EphemerisType.MOON),
+            loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MOON),
             1.0e6);
         Assert.assertEquals(403503.250e9, loader
-            .getLoadedGravitationalCoefficient(EphemerisType.EARTH_MOON),
+            .getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH_MOON),
             1.0e6);
     }
 
@@ -214,7 +262,7 @@ public class JPLHistoricEphemerisLoaderTest {
      * 
      * @testType UT
      * @description Test for the validation of the derivative for the de405-ephemerides file.
-     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, EphemerisType)}
+     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, PredefinedEphemerisType)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#loadCelestialBodyEphemeris(String)}
      * @testPassCriteria The derivative for the de405-ephemerides file is as expected.
      * @referenceVersion 4.11
@@ -223,6 +271,7 @@ public class JPLHistoricEphemerisLoaderTest {
     @Test
     public void testDerivative405() throws PatriusException {
         Utils.setDataRoot("regular-data/de405-ephemerides");
+        
         checkDerivative(JPLHistoricEphemerisLoader.DEFAULT_DE_SUPPORTED_NAMES, new AbsoluteDate(1969, 6,
                 25, TimeScalesFactory.getTT()));
     }
@@ -234,7 +283,7 @@ public class JPLHistoricEphemerisLoaderTest {
      * 
      * @testType UT
      * @description Test for the validation of the derivative for the de406-ephemerides file.
-     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, EphemerisType)}
+     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, PredefinedEphemerisType)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#loadCelestialBodyEphemeris(String)}
      * @testPassCriteria The derivative for the de406-ephemerides file is as expected.
      * @referenceVersion 4.11
@@ -243,6 +292,7 @@ public class JPLHistoricEphemerisLoaderTest {
     @Test
     public void testDerivative406() throws PatriusException {
         Utils.setDataRoot("regular-data:regular-data/de406-ephemerides");
+        
         checkDerivative(JPLHistoricEphemerisLoader.DEFAULT_DE_SUPPORTED_NAMES, new AbsoluteDate(2964, 9,
                 26, TimeScalesFactory.getTT()));
     }
@@ -254,7 +304,7 @@ public class JPLHistoricEphemerisLoaderTest {
      * 
      * @testType UT
      * @description Test for the validation of the inpop big and little endians.
-     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, EphemerisType)}
+     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, PredefinedEphemerisType)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#loadCelestialBodyEphemeris(String)}
      * @testPassCriteria The inpop big and little endians are as expected.
      * @referenceVersion 4.11
@@ -263,7 +313,7 @@ public class JPLHistoricEphemerisLoaderTest {
     @Test
     public void testEndianness() throws PatriusException {
         Utils.setDataRoot("inpop");
-        final EphemerisType type = EphemerisType.MARS;
+        final PredefinedEphemerisType type = PredefinedEphemerisType.MARS;
         final JPLHistoricEphemerisLoader loaderInpopTCBBig = new JPLHistoricEphemerisLoader(
             "^inpop.*_TCB_.*_bigendian\\.dat$", type);
         final CelestialBodyEphemeris bodysInpopTCBBig = loaderInpopTCBBig
@@ -297,7 +347,7 @@ public class JPLHistoricEphemerisLoaderTest {
      * 
      * @testType UT
      * @description Test for the validation of the inpop vs JPL big and little endians.
-     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, EphemerisType)}
+     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, PredefinedEphemerisType)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#loadCelestialBodyEphemeris(String)}
      * @testPassCriteria The inpop vs JPL big and little endians are as expected.
      * @referenceVersion 4.11
@@ -306,7 +356,7 @@ public class JPLHistoricEphemerisLoaderTest {
     @Test
     public void testInpopvsJPL() throws PatriusException {
         Utils.setDataRoot("regular-data:inpop");
-        final EphemerisType type = EphemerisType.MARS;
+        final PredefinedEphemerisType type = PredefinedEphemerisType.MARS;
         final JPLHistoricEphemerisLoader loaderDE405 = new JPLHistoricEphemerisLoader(
             "^unxp(\\d\\d\\d\\d)\\.405$", type);
         final CelestialBodyEphemeris bodysDE405 = loaderDE405.loadCelestialBodyEphemeris(CelestialBodyFactory.MARS);
@@ -344,7 +394,7 @@ public class JPLHistoricEphemerisLoaderTest {
      * 
      * @testType UT
      * @description Test which covers the methods mentioned here below.
-     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, EphemerisType)}
+     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, PredefinedEphemerisType)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#setCacheSize(int)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#getLoadedConstant(String)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#getMaxChunksDuration()}
@@ -358,7 +408,7 @@ public class JPLHistoricEphemerisLoaderTest {
 
         final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(
                 JPLHistoricEphemerisLoader.DEFAULT_DE_SUPPORTED_NAMES,
-                EphemerisType.EARTH);
+                PredefinedEphemerisType.EARTH);
         loader.setCacheSize(40);
 
         Assert.assertEquals(Double.NaN, loader.getLoadedConstant("Mock"), 0.0);
@@ -409,7 +459,7 @@ public class JPLHistoricEphemerisLoaderTest {
     private static void checkDerivative(final String supportedNames, final AbsoluteDate date)
             throws PatriusException {
         final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(supportedNames,
-                EphemerisType.MERCURY);
+                PredefinedEphemerisType.MERCURY);
         final CelestialBodyEphemeris body = loader.loadCelestialBodyEphemeris(CelestialBodyFactory.MERCURY);
         final double h = 20;
 
@@ -431,7 +481,7 @@ public class JPLHistoricEphemerisLoaderTest {
         final Vector3D estimatedV = new Vector3D(-3 * c, d4, 32 * c, d3, -168 * c, d2, 672 * c, d1);
 
         final Vector3D loadedV = body.getPVCoordinates(date, eme2000).getVelocity();
-        Assert.assertEquals(0, loadedV.subtract(estimatedV).getNorm(), 5.0e-11 * loadedV.getNorm());
+        Assert.assertEquals(0, loadedV.subtract(estimatedV).getNorm(), 5.0e-10 * loadedV.getNorm());
     }
 
     /**
@@ -441,7 +491,7 @@ public class JPLHistoricEphemerisLoaderTest {
      * 
      * @testType UT
      * @description Evaluate the loader serialization and deserialization processes.
-     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, EphemerisType)}
+     * @testedMethod {@link JPLHistoricEphemerisLoader#JPLHistoricEphemerisLoader(String, PredefinedEphemerisType)}
      * @testedMethod {@link JPLHistoricEphemerisLoader#loadCelestialBodyEphemeris(String)}
      * @testPassCriteria The loader can be serialized and deserialized.
      * @referenceVersion 4.11
@@ -454,7 +504,7 @@ public class JPLHistoricEphemerisLoaderTest {
         final Frame frame = FramesFactory.getGCRF();
 
         // Loop over each ephemeris types
-        for (final EphemerisType type : EphemerisType.values()) {
+        for (final PredefinedEphemerisType type : PredefinedEphemerisType.values()) {
             final JPLHistoricEphemerisLoader loader = new JPLHistoricEphemerisLoader(
                     JPLHistoricEphemerisLoader.DEFAULT_DE_SUPPORTED_NAMES, type);
             final JPLHistoricEphemerisLoader deserializedLoader = TestUtils.serializeAndRecover(loader);
@@ -463,8 +513,8 @@ public class JPLHistoricEphemerisLoaderTest {
                     deserializedLoader.getLoadedAstronomicalUnit(), 0.);
             Assert.assertEquals(loader.getLoadedEarthMoonMassRatio(),
                     deserializedLoader.getLoadedEarthMoonMassRatio(), 0.);
-            Assert.assertEquals(loader.getLoadedGravitationalCoefficient(EphemerisType.SUN),
-                    deserializedLoader.getLoadedGravitationalCoefficient(EphemerisType.SUN), 0.);
+            Assert.assertEquals(loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN),
+                    deserializedLoader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN), 0.);
             Assert.assertEquals(loader.getLoadedConstant("GMS", "GM_Sun"),
                     deserializedLoader.getLoadedConstant("GMS", "GM_Sun"), 0.);
             Assert.assertEquals(loader.getMaxChunksDuration(),
@@ -489,6 +539,7 @@ public class JPLHistoricEphemerisLoaderTest {
      */
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
     }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3154:10/05/2022:[PATRIUS] Amelioration des methodes permettant l'extraction d'une sous-sequence 
  * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
@@ -22,15 +23,23 @@
 package fr.cnes.sirius.patrius.utils.legs;
 
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.NoSuchElementException;
+import fr.cnes.sirius.patrius.Utils;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link Sequences} class.
@@ -842,5 +851,10 @@ public class SequencesTest {
             return new LinearLeg(newInterval, this.a, this.b
                     + (newInterval.getLowerData().durationFrom(getTimeInterval().getLowerData())) * this.a);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

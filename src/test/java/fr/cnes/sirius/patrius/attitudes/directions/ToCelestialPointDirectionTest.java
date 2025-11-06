@@ -18,6 +18,7 @@
  * @history creation 06/12/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
@@ -951,6 +952,7 @@ public class ToCelestialPointDirectionTest {
     /** Set up. */
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
     }
 }

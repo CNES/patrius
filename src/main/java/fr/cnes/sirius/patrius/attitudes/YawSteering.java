@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-:22/08/2024:
+* VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 

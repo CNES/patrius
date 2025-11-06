@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -1373,6 +1374,7 @@ public class EcksteinHechlerPropagatorTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         Utils.setDataRoot("regular-data:potential/shm-format");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
@@ -1404,5 +1406,4 @@ public class EcksteinHechlerPropagatorTest {
     private double c40;
     private double c50;
     private double c60;
-
 }

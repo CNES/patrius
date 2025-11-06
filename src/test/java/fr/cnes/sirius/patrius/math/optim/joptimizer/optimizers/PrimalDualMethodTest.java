@@ -1,10 +1,13 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -46,7 +49,9 @@ package fr.cnes.sirius.patrius.math.optim.joptimizer.optimizers;
 
 import java.util.Arrays;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
 import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
 import fr.cnes.sirius.patrius.math.linear.BlockRealMatrix;
@@ -59,8 +64,8 @@ import fr.cnes.sirius.patrius.math.optim.joptimizer.functions.LinearMultivariate
 import fr.cnes.sirius.patrius.math.optim.joptimizer.functions.PDQuadraticMultivariateRealFunction;
 import fr.cnes.sirius.patrius.math.optim.joptimizer.functions.PSDQuadraticMultivariateRealFunction;
 import fr.cnes.sirius.patrius.math.optim.joptimizer.functions.StrictlyConvexMultivariateRealFunction;
-import fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.TestCase;
 
 /**
  * @author alberto trivellato (alberto.trivellato@gmail.com)
@@ -476,8 +481,10 @@ public class PrimalDualMethodTest extends TestCase {
         final int dim = 10;
 
         // Objective function
-        final RealMatrix p = Utils.randomValuesPositiveMatrix(dim, dim, -0.5, 0.5, 7654321L);
-        final RealVector q = Utils.randomValuesMatrix(1, dim, -0.5, 0.5, 7654321L).getRowVector(0);
+        final RealMatrix p = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                .randomValuesPositiveMatrix(dim, dim, -0.5, 0.5, 7654321L);
+        final RealVector q = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                .randomValuesMatrix(1, dim, -0.5, 0.5, 7654321L).getRowVector(0);
 
         final PDQuadraticMultivariateRealFunction objectiveFunction = new PDQuadraticMultivariateRealFunction(
                 p.getData(false), q.toArray(), 0);
@@ -741,5 +748,10 @@ public class PrimalDualMethodTest extends TestCase {
             return;
         }
         fail();
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

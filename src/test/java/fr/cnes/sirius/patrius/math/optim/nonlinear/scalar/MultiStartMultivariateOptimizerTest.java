@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -27,22 +28,40 @@
 package fr.cnes.sirius.patrius.math.optim.nonlinear.scalar;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.MultivariateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.Vector2D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.InitialGuess;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.MaxEval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.PointValuePair;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.SimpleValueChecker;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.gradient.CircleScalar;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.GaussianRandomGenerator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.JDKRandomGenerator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.RandomVectorGenerator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.UncorrelatedRandomVectorGenerator;
+import fr.cnes.sirius.patrius.Utils;
 
 public class MultiStartMultivariateOptimizerTest {
     @Test
@@ -126,5 +145,10 @@ public class MultiStartMultivariateOptimizerTest {
         public int getCount() {
             return this.count;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

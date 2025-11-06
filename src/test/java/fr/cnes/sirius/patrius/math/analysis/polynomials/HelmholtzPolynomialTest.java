@@ -22,6 +22,7 @@
  * @history Created 02/10/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -32,13 +33,19 @@
  */
 package fr.cnes.sirius.patrius.math.analysis.polynomials;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 public class HelmholtzPolynomialTest {
 
@@ -697,4 +704,9 @@ public class HelmholtzPolynomialTest {
         { 31, 27, -2.3593025169680900E+00, 7.7476406586439300E+01, 1.8930975582806000E+03 },
         { 31, 28, 5.0432845000980300E+00, 1.2323015474650400E+02, 1.1442647823546700E+03 },
     };
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
@@ -67,7 +68,7 @@ public interface CelestialPoint extends PVCoordinatesProvider {
      * @return an inertially oriented, celestial point centered frame
      * @exception PatriusException
      *            if frame cannot be retrieved
-     * @see #getRotatingFrame(IAUPoleModelType.TRUE)
+     * @see CelestialBody#getRotatingFrame()
      */
     CelestialBodyFrame getICRF() throws PatriusException;
 

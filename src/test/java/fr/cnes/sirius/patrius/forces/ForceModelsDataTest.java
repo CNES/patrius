@@ -15,6 +15,7 @@
  *
  */
 /* HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
 * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -49,8 +51,8 @@ import fr.cnes.sirius.patrius.assembly.properties.PropulsiveProperty;
 import fr.cnes.sirius.patrius.assembly.properties.TankProperty;
 import fr.cnes.sirius.patrius.attitudes.AttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.US76;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
@@ -355,5 +357,10 @@ public class ForceModelsDataTest {
         // Create the assembly with default multiplicative factors on mass,
         // drag/SPR area equals to 1.
         return vehicle.createAssembly(FramesFactory.getGCRF());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

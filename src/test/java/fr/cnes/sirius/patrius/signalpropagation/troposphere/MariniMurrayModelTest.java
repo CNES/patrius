@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les AbstractTropoFactory
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Ajout de conditions meteorologiques variables dans les modeles de troposphere
@@ -26,17 +27,30 @@
 package fr.cnes.sirius.patrius.signalpropagation.troposphere;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.signalpropagation.ConstantMeteorologicalConditionsProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditions;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditionsProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This class includes the tests concerning the Marini-Murray model for the laser range tracking
@@ -245,5 +259,10 @@ public class MariniMurrayModelTest {
             deserializedModel.computeSignalDelay(this.defaultDate, MathUtils.HALF_PI - 0.1), 0.);
         Assert.assertEquals(model.computeSignalDelay(this.defaultDate, MathUtils.HALF_PI - 0.2),
             deserializedModel.computeSignalDelay(this.defaultDate, MathUtils.HALF_PI - 0.2), 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

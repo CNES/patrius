@@ -19,9 +19,11 @@
  */
 /*
  *          HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
+* VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
+* VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  *          VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
  *          VERSION::FA:178:06/01/2013:Corrected log id format
  *          VERSION::FA:106:16/07/2013:Account of massless parts with
@@ -347,7 +349,7 @@ public final class DirectRadiativeModel extends Parameterizable implements Radia
      * @throws PatriusException
      *         thrown if computation failed
      */
-    protected static Vector3D forceOnSphere(final SpacecraftState state, final IPart part,
+    protected Vector3D forceOnSphere(final SpacecraftState state, final IPart part,
                                             final Vector3D flux)
         throws PatriusException {
 
@@ -371,7 +373,7 @@ public final class DirectRadiativeModel extends Parameterizable implements Radia
      * @throws PatriusException
      *         orekit frame exception
      */
-    protected static Vector3D forceOnFacet(final SpacecraftState state, final IPart part,
+    protected Vector3D forceOnFacet(final SpacecraftState state, final IPart part,
                                            final Vector3D flux) throws PatriusException {
 
         Vector3D facetComputedForce = Vector3D.ZERO;
@@ -433,7 +435,7 @@ public final class DirectRadiativeModel extends Parameterizable implements Radia
      * @throws PatriusException
      *         thrown if computation failed
      */
-    private static double computeSphereKP(final SpacecraftState state, final IPart part,
+    private double computeSphereKP(final SpacecraftState state, final IPart part,
                                           final Vector3D flux) throws PatriusException {
 
         // get the radiative properties of the part
@@ -468,7 +470,7 @@ public final class DirectRadiativeModel extends Parameterizable implements Radia
      * @throws PatriusException
      *         thrown if computation failed
      */
-    private static void computeDAccDParamSphere(final Parameter param, final SpacecraftState s,
+    private void computeDAccDParamSphere(final Parameter param, final SpacecraftState s,
                                                 final IPart part, final Vector3D satSunVector, final double[] dAcc)
         throws PatriusException {
 
@@ -515,7 +517,7 @@ public final class DirectRadiativeModel extends Parameterizable implements Radia
      * @throws PatriusException
      *         if some frame specific error occurs
      */
-    private static void computeDAccDParamFacet(final Parameter param, final SpacecraftState state,
+    private void computeDAccDParamFacet(final Parameter param, final SpacecraftState state,
                                                final IPart part, final Vector3D satSunVector, final double[] dAcc)
         throws PatriusException {
 
@@ -552,7 +554,7 @@ public final class DirectRadiativeModel extends Parameterizable implements Radia
      *         if some frame specific error occurs or if the parameter name
      *         is not supported
      */
-    private static void computeDAccDThermoOpticFacet(final Parameter param,
+    private void computeDAccDThermoOpticFacet(final Parameter param,
                                                      final SpacecraftState state, final IPart part,
                                                      final Vector3D satSunVector, final double[] dAcc)
         throws PatriusException {

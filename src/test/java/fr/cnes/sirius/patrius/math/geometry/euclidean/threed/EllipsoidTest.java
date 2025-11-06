@@ -18,6 +18,12 @@
  * @history Created on 06/10/2011
  *
  * HISTORY
+ * VERSION:4.15.3:OPENFD-576:02/07/2025:[PATRIUS] Problème de convergence dans Ellipsoid.runNewtonAlgorithmLine
+ * VERSION:4.15.1:OPENFD-399:28/01/2025:problème de convergence dans EllipsoidPoint.closestPointTo
+ * VERSION:4.15:OPENFD-399:21/11/2024:problème de convergence dans EllipsoidPoint.closestPointTo
+ * VERSION:4.15:OPENFD-384:21/11/2024:[PATRIUS] Non convergence de l'algo d'intersection avec un ellipsoïde
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-399:21/11/2024:problème de convergence dans EllipsoidPoint.closestPointTo
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -27,15 +33,26 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Random;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
+import fr.cnes.sirius.patrius.bodies.LLHCoordinates;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.math.exception.MaxCountExceededException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
  * <p>
@@ -106,6 +123,12 @@ public class EllipsoidTest {
 
     /** Epsilon for double comparison. */
     private final double comparisonEpsilon = Precision.DOUBLE_COMPARISON_EPSILON;
+
+    /** A list of 5000 random points very close to the center of a spherical Earth */
+    private ArrayList<Vector3D> points;
+
+    /** The points nearest neighbors on the Earth's surface before OPENFD-399 */
+    private ArrayList<Vector3D> coords;
 
     /**
      * @testType UT
@@ -430,15 +453,15 @@ public class EllipsoidTest {
         this.assertEq(new Vector3D(0, 0, 1.3), pts[1]);
 
         // Same test with semi-finite line
-        Vector3D minAbsP = new Vector3D(4, 0, 5);
+        final Vector3D minAbsP = new Vector3D(4, 0, 5);
         line = new Line(pt1, pt2, minAbsP);
         pts = ellipsoid.closestPointTo(line);
 
         Assert.assertFalse(ellipsoid.intersects(line));
         this.assertEq(minAbsP, pts[0]);
         this.assertEq(ellipsoid.closestPointTo(minAbsP), pts[1]);
-        
-     // Same test with semi-finite line and with line's closest point with abscissa > min abscissa
+
+        // Same test with semi-finite line and with line's closest point with abscissa > min abscissa
         line = new Line(pt1, pt2, pt1);
         pts = ellipsoid.closestPointTo(line);
 
@@ -538,6 +561,153 @@ public class EllipsoidTest {
     }
 
     /**
+     * Test for the closest point on the ellipsoid to a line where the line is defined with a point
+     * that is very far away from the ellipsoid.
+     * This is a case that can happen in interplanetary settings.
+     * @throws NoSuchFieldException
+     * @throws SecurityException
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     */
+    @Test
+    public void testLineDistanceInterplanetary()
+        throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+        // Create ellipsoid with the dimensions of Phobos
+        final Ellipsoid ellipsoid =
+            new Ellipsoid(Vector3D.ZERO, Vector3D.PLUS_K, Vector3D.PLUS_I, 26.8e3 / 2, 22.4e3 / 2, 18.4e3 / 2);
+
+        // Create a line
+        final Line line = new Line(Vector3D.PLUS_I, Vector3D.PLUS_J);
+
+        // Set the origin and direction directly through introspection to use the exact values
+        // encountered in the FDS where the problem was first seen
+        // Direction
+        java.lang.reflect.Field field = Line.class.getDeclaredField("direction");
+        field.setAccessible(true);
+        field.set(line, new Vector3D(0.9413931066584893, -0.2680739184724201, -0.2047324912433796));
+
+        // Origin
+        field = Line.class.getDeclaredField("zero");
+        field.setAccessible(true);
+        field.set(line, new Vector3D(4.975192403933805E10, 5.882337081855984E10, 1.517448775808159E11));
+
+        // Set an appropriate threshold given the large values involved in the line definition
+        ellipsoid.setNewtonThreshold(1e-9);
+
+        // Compute the closest point to line
+        ellipsoid.distanceTo(line);
+
+        // The code is expected to complete successfully without throwing any exception, especially
+        // the MaxCountExceededException.
+        // If the exception is thrown, the test will fail automatically, no need to add try/catch
+        // blocks here.
+    }
+
+    /**
+     * This test aims to check proper Newton's algorithm convergence for computing the closest point
+     * on the ellipsoid's surface when the point of interest is very close to it's center. It was
+     * implemented due to OPENFD-399.
+     */
+
+    @Test
+    public void testClosestPointInsideConvergence() {
+        // This point cause issues before OPENFD-399 implementation
+        final Vector3D point = new Vector3D(33148.50802297387, -25919.51638901363, 3128.4907145896764);
+        // This point did not cause issues before OPENFD-399 implementation
+        final Vector3D point2 = point.add(new Vector3D(0, 0, 100));
+
+        try {
+            // the method should work with both points after OPENFD-399 implementation
+            computeClosestPoint(point);
+            computeClosestPoint(point2);
+        } catch (final PatriusException e) {
+            Assert.fail();
+        }
+    }
+
+    /**
+     * This test aims to check proper Newton's algorithm convergence for computing the point on the line that is the
+     * closest to the ellipsoid. The primary algorithm failed to converge before OPENFD-576 and after this, a new backup
+     * algorithm should resolve this specific case.<br>
+     * It was implemented due to OPENFD-576.
+     */
+    @Test
+    public void testClosestPointLineInsideConvergence() {
+        final Spheroid earthShape = new Spheroid(Vector3D.ZERO, Vector3D.PLUS_K, 6378137.0, 6356752.314140356);
+        earthShape.setNewtonThreshold(1.0E-11);
+        final Vector3D direction = new Vector3D(-0.9895496521188716, 0.001513449610784831, 0.14418458815593221);
+
+        // This point caused issues before OPENFD-576 implementation
+        final Vector3D point1 = new Vector3D(887619.7170645071 - 0.000001, -1528279.2119383009, 6107842.502980271); //
+        // This point did not cause issues before OPENFD-576 implementation
+        final Vector3D point2 = new Vector3D(887619.7170645071, -1528279.2119383009, 6107842.502980271);
+
+        final Line line1 = Line.createLine(point1, direction);
+        final Line line2 = Line.createLine(point2, direction);
+
+        try {
+            // The method should work with both points after OPENFD-576 implementation
+            earthShape.distanceTo(line1);
+            earthShape.distanceTo(line2);
+        } catch (final MaxCountExceededException e) {
+            Assert.fail();
+        }
+    }
+
+    /**
+     * This test aims to check for proper Newton's algorithm precision when it comes to compute a
+     * point's nearest neighbor on a sphere surface. It was implemented for OPENFD-399.
+     * We compute 5000 points' nearest neighbors and we compare the results with before the
+     * modifications.
+     * Both points and results lists are stored in .txt files in ./ressources.
+     * @throws PatriusException
+     * @throws IOException
+     */
+    @Test
+    public void testClosestPointInsidePrecision() throws PatriusException, IOException {
+        // Loading old results (before OPENFD-399)
+        setUpSources();
+        Assert.assertEquals(this.points.size(), this.coords.size());
+        for (int i = 0; i < Math.min(this.points.size(), this.coords.size()); i++) {
+            final LLHCoordinates newCoords = computeClosestPointSphere(this.points.get(i));
+            assertEq(this.coords.get(i), new Vector3D(newCoords.getLatitude(),
+                newCoords.getLongitude(), newCoords.getHeight()));
+        }
+    }
+
+
+    /**
+     * Compute one point's the closest neighbor on an ellipsoid's surface.
+     * 
+     * @param point
+     *        Point of interest
+     * @throws PatriusException
+     */
+    public LLHCoordinates computeClosestPoint(final Vector3D point) throws PatriusException {
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+            Constants.WGS84_EARTH_FLATTENING, FramesFactory.getITRF(), "Earth");
+        final EllipsoidPoint ellipsoidPoint = new EllipsoidPoint(earth, point, null);
+        final LLHCoordinates lhhc = ellipsoidPoint.getLLHCoordinates();
+        return lhhc;
+    }
+
+    /**
+     * Compute one point's the closest neighbor on an sphere surface.
+     * It should be the intersection of the line center - point and the sphere's surface
+     * 
+     * @param point
+     *        Point of interest
+     * @throws PatriusException
+     */
+    public LLHCoordinates computeClosestPointSphere(final Vector3D point) throws PatriusException {
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+            0, FramesFactory.getITRF(), "Earth");
+        final EllipsoidPoint ellipsoidPoint = new EllipsoidPoint(earth, point, null);
+        final LLHCoordinates lhhc = ellipsoidPoint.getLLHCoordinates();
+        return lhhc;
+    }
+
+    /**
      * Test equality of vectors
      * 
      * @param v1
@@ -553,4 +723,35 @@ public class EllipsoidTest {
 
     }
 
+    public void setUpSources() throws NumberFormatException, IOException {
+        final String pointsFileName = "./points.txt";
+        final String coordsFileName = "./coords.txt";
+        final InputStream pointsInputStream =
+            EllipsoidTest.class.getClassLoader().getResourceAsStream(pointsFileName);
+        final BufferedReader pointReader = new BufferedReader(new InputStreamReader(pointsInputStream));
+
+        final InputStream coordsInputStream =
+            EllipsoidTest.class.getClassLoader().getResourceAsStream(coordsFileName);
+        final BufferedReader coordsReader = new BufferedReader(new InputStreamReader(coordsInputStream));
+
+        String pointsLine;
+        this.points = new ArrayList<Vector3D>();
+        this.coords = new ArrayList<Vector3D>();
+
+        while ((pointsLine = pointReader.readLine()) != null) {
+            final String[] parts = pointsLine.split(" ");
+            final double x = Double.parseDouble(parts[0].replace(",", "."));
+            final double y = Double.parseDouble(parts[1].replace(",", "."));
+            final double z = Double.parseDouble(parts[2].replace(",", "."));
+            this.points.add(new Vector3D(x, y, z));
+        }
+        String coordsLine;
+        while ((coordsLine = coordsReader.readLine()) != null) {
+            final String[] parts = coordsLine.split(" ");
+            final double lat = Double.parseDouble(parts[0].replace(",", "."));
+            final double lon = Double.parseDouble(parts[1].replace(",", "."));
+            final double height = Double.parseDouble(parts[2].replace(",", "."));
+            this.coords.add(new Vector3D(lat, lon, height));
+        }
+    }
 }

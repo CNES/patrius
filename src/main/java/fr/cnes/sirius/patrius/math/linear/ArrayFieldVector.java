@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -77,7 +80,7 @@ public class ArrayFieldVector<T extends FieldElement<T>> implements FieldVector<
      * Build a 0-length vector.
      * Zero-length vectors may be used to initialize construction of vectors
      * by data gathering. We start with zero-length and use either the
-     * {@link #ArrayFieldVector(ArrayFieldVector, ArrayFieldVector)} constructor
+     * {@link #ArrayFieldVector(Field, int)} constructor
      * or one of the {@code append} methods ({@link #add(FieldVector)} or {@link #append(ArrayFieldVector)}) to gather
      * data into this vector.
      * 
@@ -945,7 +948,7 @@ public class ArrayFieldVector<T extends FieldElement<T>> implements FieldVector<
      */
     protected void checkVectorDimensions(final int n) {
         if (this.data.length != n) {
-            throw new DimensionMismatchException(this.data.length, n);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_VECTOR_DIMENSION, n, this.data.length);
         }
     }
 

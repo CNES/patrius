@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -27,18 +28,32 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.differentiation.DerivativeStructure;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.UnitSphereRandomVectorGenerator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.Well1024a;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.Utils;
 
 public class FieldRotationDSTest {
 
@@ -901,4 +916,9 @@ public class FieldRotationDSTest {
         Assert.assertEquals(u.getZ().getReal(), v.getZ().getReal(), 1.0e-12);
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

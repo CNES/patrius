@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-360:21/11/2024:[PATRIUS] Erreur de lecture des EOP 1980 C04
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -92,11 +93,11 @@ public class EOPC04FilesLoader implements EOP1980HistoryLoader, EOP2000HistoryLo
     /** LoD field. */
     private static final int LOD_FIELD = 7;
 
-    /** Correction for nutation in obliquity field. */
-    private static final int DDEPS_FIELD = 8;
-
     /** Correction for nutation in longitude field. */
-    private static final int DDPSI_FIELD = 9;
+    private static final int DDPSI_FIELD = 8;
+
+    /** Correction for nutation in obliquity field. */
+    private static final int DDEPS_FIELD = 9;
 
     /** Correction for nutation dx. */
     private static final int DX_FIELD = 8;

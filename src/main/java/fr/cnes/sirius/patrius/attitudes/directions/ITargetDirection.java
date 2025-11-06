@@ -18,6 +18,7 @@
  * @history creation 30/11/2011
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -336,7 +337,7 @@ public interface ITargetDirection extends IDirection {
 
         // Apply stellar aberration correction if required
         if (correction.hasStellarAberration()) {
-            if (fixedDateType.equals(FixedDate.EMISSION)) {
+            if (fixedDateType == FixedDate.EMISSION) {
                 // Fixed date is emission date
                 // Apply stellar aberration correction to the direction vector
                 dirVector = LightAberrationTransformation.applyTo(dirVector, emitter.getPVCoordinates(date, propFrame)

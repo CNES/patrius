@@ -21,8 +21,10 @@
 /*
  * 
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -194,7 +196,7 @@ public class BlockRealMatrix extends AbstractRealMatrix {
             final int iHeight = this.blockHeight(iBlock);
             for (int jBlock = 0; jBlock < this.blockColumns; ++jBlock, ++index) {
                 if (blockData[index].length != iHeight * this.blockWidth(jBlock)) {
-                    throw new DimensionMismatchException(blockData[index].length,
+                    throw new DimensionMismatchException(PatriusMessages.WRONG_BLOCK_LENGTH, blockData[index].length,
                         iHeight * this.blockWidth(jBlock));
                 }
                 if (copyArray) {
@@ -233,7 +235,7 @@ public class BlockRealMatrix extends AbstractRealMatrix {
         for (final double[] element : rawData) {
             final int length = element.length;
             if (length != columns) {
-                throw new DimensionMismatchException(columns, length);
+                throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, columns, length);
             }
         }
 
@@ -848,7 +850,7 @@ public class BlockRealMatrix extends AbstractRealMatrix {
         MatrixUtils.checkSubMatrixIndex(this, row, endRow, column, endColumn);
         for (final double[] subRow : subMatrix) {
             if (subRow.length != refLength) {
-                throw new DimensionMismatchException(refLength, subRow.length);
+                throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, refLength, subRow.length);
             }
         }
 
@@ -1299,7 +1301,8 @@ public class BlockRealMatrix extends AbstractRealMatrix {
     @Override
     public double[] operate(final double[] v) {
         if (v.length != this.columns) {
-            throw new DimensionMismatchException(v.length, this.columns);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                v.length, this.columns);
         }
         final double[] out = new double[this.rows];
 
@@ -1338,7 +1341,8 @@ public class BlockRealMatrix extends AbstractRealMatrix {
     @Override
     public double[] preMultiply(final double[] v) {
         if (v.length != this.rows) {
-            throw new DimensionMismatchException(v.length, this.rows);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, v.length,
+                this.rows);
         }
         final double[] out = new double[this.columns];
 

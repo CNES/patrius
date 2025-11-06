@@ -16,6 +16,10 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
+ * VERSION:4.14:OPENFD-299:22/08/2024: [PATRIUS] Boucle infinie lors de l'interpolation
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -36,13 +40,15 @@
  */
 package fr.cnes.sirius.patrius.assembly.models;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -90,6 +96,8 @@ import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.time.UTCTAILoader;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import junit.framework.Assert;
 
 /**
  * Test class for the {@link GlobalAeroModel} class.
@@ -118,13 +126,12 @@ public class GlobalAeroModelTest {
     }
 
     @BeforeClass
-    public static void setUpBeforeClass() {
+    public static void setUpBeforeClass() throws URISyntaxException {
         // Root resource
-        final String aeroFolder = "coeffaero/";
-
+        final String aeroFolder = "coeffaero" + File.separator;
         // 1) Read aero file without header
-        pathToAeroData = GlobalAeroModelTest.class.getClassLoader()
-            .getResource(aeroFolder + "CoeffAeroGlobalModel.txt").getFile();
+        pathToAeroData =
+            new File(ClassLoader.getSystemResource(aeroFolder + "CoeffAeroGlobalModel.txt").toURI()).getAbsolutePath();
         Report.printClassHeader(GlobalAeroModelTest.class.getSimpleName(), "Global aero model");
     }
 
@@ -517,7 +524,6 @@ public class GlobalAeroModelTest {
             date, Constants.EGM96_EARTH_MU);
         final SpacecraftState state = new SpacecraftState(orbit, new ConstantAttitudeLaw(FramesFactory.getMOD(false),
             Rotation.IDENTITY).getAttitude(orbit));
-
         final double rho = atmosphere.getDensity(state.getDate(), state.getPVCoordinates().getPosition(),
             state.getFrame());
         final Vector3D vAtm =
@@ -952,6 +958,51 @@ public class GlobalAeroModelTest {
     }
 
     /**
+     * @description This test was created for the FA307 resolution to assess the use of a non-inertial frame in the
+     *              state in addDDragAccDState generates the correct error.
+     * 
+     * @testedMethod {@link GlobalAeroModel#addDDragAccDState(SpacecraftState, double[][], double[][], double, Vector3D, Vector3D, boolean, boolean)}
+     * @throws PatriusException
+     * @throws IOException
+     */
+    @Test
+    public void testFA307() throws PatriusException, IOException {
+        // Initialization
+        final double mass = 1.;
+        final AssemblyBuilder builder = new AssemblyBuilder();
+        builder.addMainPart("Main");
+        builder.addProperty(new MassProperty(mass), "Main");
+        builder.addProperty(new AeroProperty(0.11, 300, new AlphaConstant(1.)), "Main");
+
+        final ExtendedAtmosphere atmosphere = new MyAtmosphere3();
+        final GlobalAeroModel model = new GlobalAeroModel(builder.returnAssembly(), new GlobalDragCoefficientProvider(
+            INTERP.LINEAR, pathToAeroData), atmosphere);
+
+        // Computation
+        final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
+
+        final Orbit orbit = new KeplerianOrbit(7000000, 0, 0, 0, 0, 0, PositionAngle.TRUE, FramesFactory.getTIRF(),
+            date, Constants.EGM96_EARTH_MU);
+        final SpacecraftState state = new SpacecraftState(orbit, new ConstantAttitudeLaw(FramesFactory.getTIRF(),
+            Rotation.IDENTITY).getAttitude(orbit));
+        final double rho = atmosphere.getDensity(state.getDate(), state.getPVCoordinates().getPosition(),
+            state.getFrame());
+        final Vector3D vAtm =
+            atmosphere.getVelocity(state.getDate(), state.getPVCoordinates().getPosition(), state.getFrame());
+        final Vector3D relvel = vAtm.subtract(state.getPVCoordinates().getVelocity());
+
+        // Actual data
+        final double[][] dAccdPos = new double[3][3];
+        final double[][] dAccdVel = new double[3][3];
+        try {
+            model.addDDragAccDState(state, dAccdPos, dAccdVel, rho, Vector3D.PLUS_I, relvel, true, true);
+        } catch (final Exception e) {
+            assertEquals(e.getMessage(), PatriusMessages.NOT_INERTIAL_FRAME.getSourceString());
+        }
+
+    }
+
+    /**
      * Local drag coefficient for tests.
      */
     private class MyDragCoefficient implements DragCoefficientProvider {
@@ -1119,4 +1170,5 @@ public class GlobalAeroModelTest {
             // Nothing to do
         }
     }
+
 }

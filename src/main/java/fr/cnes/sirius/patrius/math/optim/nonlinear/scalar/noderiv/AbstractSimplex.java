@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -163,7 +165,8 @@ public abstract class AbstractSimplex implements OptimizationData {
 
             // Safety checks.
             if (refI.length != this.dimension) {
-                throw new DimensionMismatchException(refI.length, this.dimension);
+                throw new DimensionMismatchException(PatriusMessages.INCONPATIBLE_SIMPLEX_DIMENSION, this.dimension,
+                    refI.length);
             }
             for (int j = 0; j < i; j++) {
                 final double[] refJ = referenceSimplex[j];
@@ -236,7 +239,8 @@ public abstract class AbstractSimplex implements OptimizationData {
     public void build(final double[] startPoint) {
         if (this.dimension != startPoint.length) {
             // Exception : the dimensions don't match
-            throw new DimensionMismatchException(this.dimension, startPoint.length);
+            throw new DimensionMismatchException(PatriusMessages.INCONPATIBLE_SIMPLEX_DIMENSION, this.dimension,
+                startPoint.length);
         }
 
         // Initialize simplex
@@ -356,7 +360,8 @@ public abstract class AbstractSimplex implements OptimizationData {
      */
     protected void setPoints(final PointValuePair[] points) {
         if (points.length != this.simplex.length) {
-            throw new DimensionMismatchException(points.length, this.simplex.length);
+            throw new DimensionMismatchException(PatriusMessages.INCONPATIBLE_SIMPLEX_DIMENSION, this.simplex.length,
+                points.length);
         }
         this.simplex = points;
     }

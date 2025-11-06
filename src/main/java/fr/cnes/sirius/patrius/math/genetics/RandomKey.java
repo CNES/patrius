@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -134,22 +137,24 @@ public abstract class RandomKey<T> extends AbstractListChromosome<Double> implem
     private static <S> List<S> decodeGeneric(final List<S> sequence, final List<Double> representation,
                                              final List<Double> sortedRepr) {
 
-        final int l = sequence.size();
+        final int length = sequence.size();
 
         // the size of the three lists must be equal
-        if (representation.size() != l) {
-            throw new DimensionMismatchException(representation.size(), l);
+        if (representation.size() != length) {
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_LIST_DIMENSION, representation.size(),
+                length);
         }
-        if (sortedRepr.size() != l) {
-            throw new DimensionMismatchException(sortedRepr.size(), l);
+        if (sortedRepr.size() != length) {
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_LIST_DIMENSION,
+                sortedRepr.size(), length);
         }
 
         // do not modify the original representation
         final List<Double> reprCopy = new ArrayList<>(representation);
 
         // now find the indices in the original repr and use them for permuting
-        final List<S> res = new ArrayList<>(l);
-        for (int i = 0; i < l; i++) {
+        final List<S> res = new ArrayList<>(length);
+        for (int i = 0; i < length; i++) {
             final int index = reprCopy.indexOf(sortedRepr.get(i));
             res.add(sequence.get(index));
             reprCopy.set(index, null);
@@ -287,7 +292,8 @@ public abstract class RandomKey<T> extends AbstractListChromosome<Double> implem
 
         if (originalData.size() != permutedData.size()) {
             // Exception
-            throw new DimensionMismatchException(permutedData.size(), originalData.size());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_LIST_DIMENSION, permutedData.size(),
+                originalData.size());
         }
         final int l = originalData.size();
 

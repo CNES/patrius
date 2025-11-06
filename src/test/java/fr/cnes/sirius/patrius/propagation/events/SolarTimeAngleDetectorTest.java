@@ -17,6 +17,17 @@
  *
  *
  * HISTORY
+ * VERSION:4.15.5:OPENFD-668:23/07/2025:[PATRIUS] Suite problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15:OPENFD-307:21/11/2024:[Patrius] Repère de la vitesse non inertiel (suite)
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -45,7 +56,7 @@
 package fr.cnes.sirius.patrius.propagation.events;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -55,9 +66,12 @@ import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
+import fr.cnes.sirius.patrius.bodies.UserIAUCelestialBody;
+import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
 import fr.cnes.sirius.patrius.events.detectors.SolarTimeAngleDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
@@ -71,10 +85,12 @@ import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
+import fr.cnes.sirius.patrius.orbits.EquinoctialOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -130,8 +146,8 @@ public class SolarTimeAngleDetectorTest {
      * @throws PatriusException
      *         should not happen here
      */
-    @BeforeClass
-    public static void setUpBeforeClass() throws PatriusException {
+    @Before
+    public void setUpBeforeClass() throws PatriusException {
         // Orekit initialization
         CelestialBodyFactory.clearCelestialBodyLoaders();
         Utils.setDataRoot("regular-dataCNES-2003");
@@ -140,7 +156,7 @@ public class SolarTimeAngleDetectorTest {
         iniDate = new AbsoluteDate("2010-10-10T12:00:00Z", TimeScalesFactory.getTT());
         final double mu = CelestialBodyFactory.getEarth().getGM();
 
-        orbit = new CircularOrbit(9000000, 0, 0, 0.3, 0, FastMath.PI / 2,
+        orbit = new CircularOrbit(9000000, 0, 0, 0.3, 0, MathLib.PI / 2,
             PositionAngle.TRUE, FramesFactory.getGCRF(), iniDate, mu);
         state = new SpacecraftState(orbit);
     }
@@ -203,7 +219,7 @@ public class SolarTimeAngleDetectorTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(sun, eventDetector1.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
     }
 
     /**
@@ -228,7 +244,7 @@ public class SolarTimeAngleDetectorTest {
      */
     @Test
     public void testSolarTimeAngleDetectorCtor1() throws PatriusException {
-        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(-FastMath.PI);
+        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(-MathLib.PI);
         // The constructor did not crash...
         Assert.assertNotNull(detector);
     }
@@ -256,7 +272,7 @@ public class SolarTimeAngleDetectorTest {
      */
     @Test
     public void testSolarTimeAngleDetectorCtor2() throws PatriusException {
-        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(-FastMath.PI, 500, 0.001);
+        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(-MathLib.PI, 500, 0.001);
         // The constructor did not crash...
         Assert.assertNotNull(detector);
     }
@@ -284,11 +300,10 @@ public class SolarTimeAngleDetectorTest {
      */
     @Test
     public void testSolarTimeAngleDetectorCtor3() throws PatriusException {
-        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(-FastMath.PI, 500, 0.001, Action.STOP);
+        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(-MathLib.PI, 500, 0.001, Action.STOP);
         final SolarTimeAngleDetector detector2 = (SolarTimeAngleDetector) detector.copy();
         // Test getters
-        Assert.assertEquals(-FastMath.PI, detector2.getTime(), Utils.epsilonTest);
-
+        Assert.assertEquals(-MathLib.PI, detector2.getTime(), Utils.epsilonTest);
     }
 
     /**
@@ -296,8 +311,7 @@ public class SolarTimeAngleDetectorTest {
      * 
      * @testedFeature {@link features#VALIDATE_SOLAR_TIME_ANGLE_DETECTOR}
      * 
-     * @testedMethod {@link SolarTimeAngleDetector#SolarTimeAngleDetector(double, double, double, 
-     *                fr.cnes.sirius.patrius.frames.CelestialBodyFrame) }
+     * @testedMethod {@link SolarTimeAngleDetector#SolarTimeAngleDetector(double, double, double, CelestialBodyFrame)}
      * 
      * @description simple constructor test
      * 
@@ -308,7 +322,8 @@ public class SolarTimeAngleDetectorTest {
      * 
      * @testPassCriteria the {@link SolarTimeAngleDetector} is successfully created
      * 
-     * @throws PatriusException If an error occurs at the detector or at the CelestialBody creation
+     * @throws PatriusException
+     *         If an error occurs at the detector or at the CelestialBody creation
      * 
      * @referenceVersion 4.11
      * 
@@ -318,7 +333,7 @@ public class SolarTimeAngleDetectorTest {
     public void testSolarTimeAngleDetectorCelestialBodyFrame() throws PatriusException {
         final CelestialPoint earth = CelestialBodyFactory.getEarth();
         final CelestialBodyFrame frame = new CelestialBodyFrame(earth.getICRF(), Transform.IDENTITY, "Frame", earth);
-        final SolarTimeAngleDetector detectorCelestialBody = new SolarTimeAngleDetector(-FastMath.PI, 
+        final SolarTimeAngleDetector detectorCelestialBody = new SolarTimeAngleDetector(-MathLib.PI,
             600, 1.e-6, frame);
         // The constructor did not crash...
         Assert.assertNotNull(detectorCelestialBody);
@@ -391,8 +406,8 @@ public class SolarTimeAngleDetectorTest {
      * 
      * @testPassCriteria the {@link SolarTimeAngleDetector} is successfully created
      * 
-     * @throws PatriusException If an error occurs in the detector or the CelestialBody creation
-     * 
+     * @throws PatriusException
+     *         If an error occurs in the detector or the CelestialBody creation
      */
     @Test
     public void testSolarTimeAngleCelestialBodyFrameDetectorSun() throws PatriusException {
@@ -487,7 +502,7 @@ public class SolarTimeAngleDetectorTest {
         final double period = orbit.getKeplerianPeriod();
         final Propagator propagator = new KeplerianPropagator(orbit);
         // detects the solar angle = 0:
-        final SolarTimeAngleDetector detector0 = new SolarTimeAngleDetector(FastMath.PI * 0){
+        final SolarTimeAngleDetector detector0 = new SolarTimeAngleDetector(MathLib.PI * 0){
 
             private static final long serialVersionUID = 7773544228003299956L;
 
@@ -497,7 +512,7 @@ public class SolarTimeAngleDetectorTest {
             }
         };
         // detects the solar angle = 0.4 * PI:
-        final SolarTimeAngleDetector detector04 = new SolarTimeAngleDetector(FastMath.PI * 0.4){
+        final SolarTimeAngleDetector detector04 = new SolarTimeAngleDetector(MathLib.PI * 0.4){
 
             private static final long serialVersionUID = 4129999659502008758L;
 
@@ -507,7 +522,7 @@ public class SolarTimeAngleDetectorTest {
             }
         };
         // detects the solar angle = PI:
-        final SolarTimeAngleDetector detectorPI = new SolarTimeAngleDetector(-FastMath.PI){
+        final SolarTimeAngleDetector detectorPI = new SolarTimeAngleDetector(-MathLib.PI){
 
             private static final long serialVersionUID = 7858561671574682046L;
 
@@ -517,7 +532,7 @@ public class SolarTimeAngleDetectorTest {
             }
         };
         // detects the solar angle = - PI * 0.2:
-        final SolarTimeAngleDetector detector18 = new SolarTimeAngleDetector(-FastMath.PI * 0.2){
+        final SolarTimeAngleDetector detector18 = new SolarTimeAngleDetector(-MathLib.PI * 0.2){
 
             private static final long serialVersionUID = -1255736652138424166L;
 
@@ -546,12 +561,12 @@ public class SolarTimeAngleDetectorTest {
             final double time = ((SolarTimeAngleDetector) event.getEventDetector()).getTime();
             if (time == 0) {
                 Assert.assertEquals(0, angle, ANGEPS);
-            } else if (time == 0.4 * FastMath.PI) {
-                Assert.assertEquals(0.4 * FastMath.PI, angle, ANGEPS);
-            } else if (time == FastMath.PI) {
-                Assert.assertEquals(FastMath.PI, angle, ANGEPS);
-            } else if (time == -0.2 * FastMath.PI) {
-                Assert.assertEquals(1.8 * FastMath.PI, 2 * FastMath.PI - angle, ANGEPS);
+            } else if (time == 0.4 * MathLib.PI) {
+                Assert.assertEquals(0.4 * MathLib.PI, angle, ANGEPS);
+            } else if (time == MathLib.PI) {
+                Assert.assertEquals(MathLib.PI, angle, ANGEPS);
+            } else if (time == -0.2 * MathLib.PI) {
+                Assert.assertEquals(1.8 * MathLib.PI, 2 * MathLib.PI - angle, ANGEPS);
             }
         }
     }
@@ -627,43 +642,42 @@ public class SolarTimeAngleDetectorTest {
     @Test
     public void testOutOfRangeSolarTime() {
         try {
-            new SolarTimeAngleDetector(-FastMath.PI - 1E-14);
+            new SolarTimeAngleDetector(-MathLib.PI - 1E-14);
             Assert.fail();
         } catch (final PatriusException e) {
             Assert.assertTrue(true);
         }
         try {
-            new SolarTimeAngleDetector(-FastMath.PI);
+            new SolarTimeAngleDetector(-MathLib.PI);
             Assert.assertTrue(true);
         } catch (final PatriusException e) {
             Assert.fail();
         }
         try {
-            new SolarTimeAngleDetector(FastMath.PI);
+            new SolarTimeAngleDetector(MathLib.PI);
             Assert.fail();
         } catch (final PatriusException e) {
             Assert.assertTrue(true);
         }
         try {
-            new SolarTimeAngleDetector(FastMath.PI - 1E-14);
+            new SolarTimeAngleDetector(MathLib.PI - 1E-14);
             Assert.assertTrue(true);
         } catch (final PatriusException e1) {
             Assert.fail();
         }
     }
-    
+
     /**
      * @testType UT
      * 
      * @testedFeature {@link features#VALIDATE_SOLAR_TIME_ANGLE_DETECTOR}
      * 
-     * @testedMethod {@link SolarTimeAngleDetector#g(fr.cnes.sirius.patrius.propagation.SpacecraftState) }
+     * @testedMethod {@link SolarTimeAngleDetector#g(SpacecraftState)}
      * 
      * @description When the central body is not the reference frame:
      *              With Mars as central body, check that g function is exactly 0 with sun aligned with spacecraft and a
-     *              moon of Mars for an angle of 0.
-     *              and check that g function is not close to 0 with sun aligned with spacecraft and Mars but not with a
-     *              moon of Mars.
+     *              moon of Mars for an angle of 0 and check that g function is not close to 0 with sun aligned with
+     *              spacecraft and Mars but not with a moon of Mars.
      * 
      * @input sun model
      * 
@@ -704,8 +718,8 @@ public class SolarTimeAngleDetectorTest {
             IAUPoleFactory.getIAUPole(null),
             FramesFactory.getEME2000(), null);
         // Creation of the SolarTimeAngleDetector with the Mars moon as reference
-        final SolarTimeAngleDetector detectorCelestialBody = new SolarTimeAngleDetector(-FastMath.PI, 600, 1.e-6,
-            moonCelestialBody.getRotatingFrame(IAUPoleModelType.TRUE));
+        final SolarTimeAngleDetector detectorCelestialBody = new SolarTimeAngleDetector(-MathLib.PI, 600, 1.e-6,
+            moonCelestialBody.getRotatingFrame());
 
         // Create a spacecraft orbit
         final PVCoordinates spacecraftPV =
@@ -722,13 +736,197 @@ public class SolarTimeAngleDetectorTest {
             new PVCoordinates(sunPVShifted.getPosition().scalarMultiply(0.08), new Vector3D(7000, 0, 0));
         final Orbit moonOrbitShifted = new CartesianOrbit(moonPVShifted, marsFrame, date,
             Constants.JPL_SSD_MARS_SYSTEM_GM);
-        final UserCelestialBody moonShiftedCelestialBody = new UserCelestialBody("", moonOrbitShifted, 0,
+        final UserIAUCelestialBody moonShiftedCelestialBody = new UserIAUCelestialBody("", moonOrbitShifted, 0,
             IAUPoleFactory.getIAUPole(null),
             FramesFactory.getEME2000(), null);
 
         // Creation of the SolarTimeAngleDetector with the shifted Mars moon as reference
-        final SolarTimeAngleDetector detectorShiftedCelestialBody = new SolarTimeAngleDetector(-FastMath.PI, 600,
+        final SolarTimeAngleDetector detectorShiftedCelestialBody = new SolarTimeAngleDetector(-MathLib.PI, 600,
             1.e-6, moonShiftedCelestialBody.getRotatingFrame(IAUPoleModelType.TRUE));
         Assert.assertFalse(MathLib.abs(detectorShiftedCelestialBody.g(state)) < 1E-15);
+    }
+
+    /**
+     * @description This test is implemented to ensure the provided state to the detection function of
+     *              SolarTimeAngleDetector is based on an orbit in an inertial frame.
+     * 
+     * @testedMethod {@link ApsideDetector#g(SpacecraftState)}
+     * @throws PatriusException
+     */
+    @Test
+    public void testDetectorFrame() throws PatriusException {
+
+        // Initialization
+        final double mu = 3.9860047e14;
+        final double maxCheck = AbstractDetector.DEFAULT_MAXCHECK;
+        final double thres = AbstractDetector.DEFAULT_THRESHOLD;
+        final double eps = Precision.DOUBLE_COMPARISON_EPSILON;
+        final Vector3D position = new Vector3D(-6142438.668, 3492467.560, -25767.25680);
+        final Vector3D velocity = new Vector3D(505.8479685, 942.7809215, 7435.922231);
+        final AbsoluteDate date = new AbsoluteDate(2000, 7, 28, 4, 0, 0.0, TimeScalesFactory.getTT());
+        final Frame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame eme2000 = FramesFactory.getEME2000();
+        final CelestialBodyFrame tirf = FramesFactory.getTIRF();
+        final Orbit orbit = new EquinoctialOrbit(new PVCoordinates(position, velocity), itrf, date, mu);
+        final SpacecraftState state = new SpacecraftState(orbit);
+
+        final PVCoordinates pvSun = CelestialBodyFactory.getSun().getPVCoordinates(date, itrf);
+        final PVCoordinates pv1 = // Aligned in the direction toward the sun
+            new PVCoordinates(pvSun.getPosition().scalarMultiply(10e-6), velocity);
+        final Orbit orbit1 = new CircularOrbit(pv1, itrf, date, mu);
+        final SpacecraftState state1 = new SpacecraftState(orbit1);
+        final PVCoordinates pv2 = // Aligned in the opposite direction of the sun
+            new PVCoordinates(pvSun.getPosition().scalarMultiply(-10e-6), velocity);
+        final Orbit orbit2 = new CircularOrbit(pv2, itrf, date, mu);
+        final SpacecraftState state2 = new SpacecraftState(orbit2);
+
+        /*
+         * Detector with a non-inertial frame (the state's frame isn't used)
+         */
+        final SolarTimeAngleDetector detectorNonInertial =
+            new SolarTimeAngleDetector(MathLib.toRadians(25.), maxCheck, thres, tirf);
+        Assert.assertNotNull(detectorNonInertial.getFrame());
+        Assert.assertFalse(detectorNonInertial.getFrame().isPseudoInertial());
+        // Non regression
+        Assert.assertEquals(-0.7482413882462224, detectorNonInertial.g(state), eps);
+
+        // Thematic test:
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres, tirf).g(state1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres, tirf).g(state2), eps);
+
+        Assert.assertEquals(1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres, tirf).g(state1), eps);
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres, tirf).g(state2), eps);
+
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres, tirf).g(state1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres, tirf).g(state2), eps);
+
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres, tirf).g(state1), eps);
+        Assert.assertEquals(1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres, tirf).g(state2), eps);
+
+        /*
+         * Detector with a inertial frame (the state's frame isn't used)
+         */
+        final SolarTimeAngleDetector detectorInertial =
+            new SolarTimeAngleDetector(MathLib.toRadians(25.), maxCheck, thres, eme2000);
+        Assert.assertNotNull(detectorInertial.getFrame());
+        Assert.assertTrue(detectorInertial.getFrame().isPseudoInertial());
+        // Non regression
+        Assert.assertEquals(-0.7482413881344717, detectorInertial.g(state), eps);
+
+        // Thematic test:
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres, eme2000).g(state1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres, eme2000).g(state2), eps);
+
+        Assert.assertEquals(1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres, eme2000).g(state1),
+            eps);
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres, eme2000).g(state2),
+            eps);
+
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres, eme2000).g(state1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres, eme2000).g(state2), eps);
+
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres, eme2000).g(state1),
+            eps);
+        Assert.assertEquals(1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres, eme2000).g(state2), eps);
+    }
+
+    /**
+     * @description This test is implemented to ensure the provided state to the detection function of
+     *              SolarTimeAngleDetector is based on an orbit in an inertial frame when no Frame is provided to the
+     *              given detector (test to ensure that the coverage of the code is OK).
+     * 
+     * @testedMethod {@link ApsideDetector#g(SpacecraftState)}
+     * @throws PatriusException
+     */
+    @Test
+    public void testNoDetectorFrame() throws PatriusException {
+        // Initialization
+        final double mu = 3.9860047e14;
+        final double maxCheck = AbstractDetector.DEFAULT_MAXCHECK;
+        final double thres = AbstractDetector.DEFAULT_THRESHOLD;
+        final double eps = Precision.DOUBLE_COMPARISON_EPSILON;
+        final Vector3D position = new Vector3D(-6142438.668, 3492467.560, -25767.25680);
+        final Vector3D velocity = new Vector3D(505.8479685, 942.7809215, 7435.922231);
+        final AbsoluteDate date = new AbsoluteDate(2000, 7, 28, 4, 0, 0.0, TimeScalesFactory.getTT());
+        final Frame itrf = FramesFactory.getITRF();
+        final Frame eme2000 = FramesFactory.getEME2000();
+
+        // Build a detector with no frame (use the state's frame instead which can be pseudo-inertial or not)
+        final SolarTimeAngleDetector detector = new SolarTimeAngleDetector(MathLib.toRadians(25.), maxCheck, thres);
+        Assert.assertNull(detector.getFrame());
+
+        /*
+         * Orbit with a non-inertial frame
+         */
+        final Orbit orbitNonInertial = new EquinoctialOrbit(new PVCoordinates(position, velocity), itrf, date, mu);
+        Assert.assertFalse(orbitNonInertial.getFrame().isPseudoInertial());
+        final SpacecraftState stateNonInertial = new SpacecraftState(orbitNonInertial);
+        Assert.assertFalse(stateNonInertial.getFrame().isPseudoInertial());
+        // Non regression
+        Assert.assertEquals(-0.7482413882462223, detector.g(stateNonInertial), eps);
+
+        // Thematic test:
+        final PVCoordinates pvSunNonInertial = CelestialBodyFactory.getSun().getPVCoordinates(date, itrf);
+        final PVCoordinates pvNonInertial1 = // Aligned in the direction toward the sun
+            new PVCoordinates(pvSunNonInertial.getPosition().scalarMultiply(10e-6), velocity);
+        final Orbit orbitNonInertial1 = new CircularOrbit(pvNonInertial1, itrf, date, mu);
+        final SpacecraftState stateNonInertial1 = new SpacecraftState(orbitNonInertial1);
+        final PVCoordinates pvNonInertial2 = // Aligned in the opposite direction of the sun
+            new PVCoordinates(pvSunNonInertial.getPosition().scalarMultiply(-10e-6), velocity);
+        final Orbit orbitNonInertial2 = new CircularOrbit(pvNonInertial2, itrf, date, mu);
+        final SpacecraftState stateNonInertial2 = new SpacecraftState(orbitNonInertial2);
+
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres).g(stateNonInertial1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres).g(stateNonInertial2), eps);
+
+        Assert.assertEquals(1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres).g(stateNonInertial1),
+            eps);
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres).g(stateNonInertial2),
+            eps);
+
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres).g(stateNonInertial1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres).g(stateNonInertial2), eps);
+
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres).g(stateNonInertial1),
+            eps);
+        Assert.assertEquals(1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres).g(stateNonInertial2),
+            eps);
+
+        /*
+         * Orbit with an inertial frame
+         */
+        final Orbit orbitInertial = new EquinoctialOrbit(new PVCoordinates(position, velocity), eme2000, date, mu);
+        Assert.assertTrue(orbitInertial.getFrame().isPseudoInertial());
+        final SpacecraftState stateInertial = new SpacecraftState(orbitInertial);
+        Assert.assertTrue(stateInertial.getFrame().isPseudoInertial());
+        // Non regression
+        Assert.assertEquals(-0.7469283023603851, detector.g(stateInertial), eps);
+
+        // Thematic test:
+        final PVCoordinates pvSunInertial = CelestialBodyFactory.getSun().getPVCoordinates(date, eme2000);
+        final PVCoordinates pvInertial1 = // Aligned in the direction toward the sun
+            new PVCoordinates(pvSunInertial.getPosition().scalarMultiply(10e-6), velocity);
+        final Orbit orbitInertial1 = new CircularOrbit(pvInertial1, eme2000, date, mu);
+        final SpacecraftState stateInertial1 = new SpacecraftState(orbitInertial1);
+        final PVCoordinates pvInertial2 = // Aligned in the opposite direction of the sun
+            new PVCoordinates(pvSunInertial.getPosition().scalarMultiply(-10e-6), velocity);
+        final Orbit orbitInertial2 = new CircularOrbit(pvInertial2, eme2000, date, mu);
+        final SpacecraftState stateInertial2 = new SpacecraftState(orbitInertial2);
+
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres).g(stateInertial1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(-MathLib.PI, maxCheck, thres).g(stateInertial2), eps);
+
+        Assert.assertEquals(1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres).g(stateInertial1),
+            eps);
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(-MathUtils.HALF_PI, maxCheck, thres).g(stateInertial2),
+            eps);
+
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres).g(stateInertial1), eps);
+        Assert.assertEquals(0., new SolarTimeAngleDetector(0., maxCheck, thres).g(stateInertial2), eps);
+
+        Assert.assertEquals(-1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres).g(stateInertial1),
+            eps);
+        Assert.assertEquals(1., new SolarTimeAngleDetector(MathUtils.HALF_PI, maxCheck, thres).g(stateInertial2),
+            eps);
     }
 }

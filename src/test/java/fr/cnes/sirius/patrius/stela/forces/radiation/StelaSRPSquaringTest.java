@@ -19,6 +19,7 @@
  * VERSION::DM:596:12/04/2016:Improve test coherence
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
@@ -406,5 +407,10 @@ public class StelaSRPSquaringTest {
         for (int i = 0; i < exp.length; i++) {
             this.assertEquals(exp[i], act[i], eps);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

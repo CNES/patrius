@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
  * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
@@ -86,7 +89,8 @@ public abstract class AbstractBodyPoint implements BodyPoint {
      * Constructor from lat/long/height coordinates.
      *
      * @param bodyShape
-     *        body shape on which the point is defined, expected ellipsoidal if the {@link LatLongSystem#ELLIPSODETIC}
+     *        body shape on which the point is defined, expected ellipsoidal if the
+     *        {@link LLHCoordinatesSystem#ELLIPSODETIC}
      *        system is used
      * @param coordIn
      *        lat/long/height coordinates associated with the coordinates system in which they are expressed
@@ -376,10 +380,27 @@ public abstract class AbstractBodyPoint implements BodyPoint {
     }
 
     /**
+     * Getter for the input LLHCoordinates. It enables to get LLHCoordinates without recomputing it to the correct
+     * LLHCoordinatesSystem as in {@link AbstractBodyPoint#getLLHCoordinates(LLHCoordinatesSystem)}.
+     * <p>
+     * <b>WARN</b> : if the input coordinates for the point have not been initialized an exception is thrown.
+     * 
+     * @return the input LLH coordinates in the same system they were provided.
+     * @throws PatriusException
+     */
+    public LLHCoordinates getInputLLHCoordinates() throws PatriusException {
+        if (inputCoord == null) {
+            throw new PatriusException(PatriusMessages.NO_LLHCOORDINATES_DEFINED);
+        }
+        return inputCoord;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * <p>
-     * Also sets the normal height if the requested coordinates system has the {@link HeightSystem#NORMAL} system.
+     * Also sets the normal height if the requested coordinates system has the
+     * {@link LLHCoordinatesSystem#BODYCENTRIC_NORMAL} system.
      * </p>
      *
      * @throws IllegalArgumentException
@@ -510,12 +531,43 @@ public abstract class AbstractBodyPoint implements BodyPoint {
     public String toString() {
         return toString(this.bodyShape.getLLHCoordinatesSystem());
     }
-
+    
     /** {@inheritDoc} */
     @Override
     public String toString(final LLHCoordinatesSystem coordSystem) {
         return String.format("%s: name='%s', %s, body='%s'", getClass().getSimpleName(), getName(),
             getLLHCoordinates(coordSystem).toString(), getBodyShape().getName());
+    }
+
+    /**
+     * @return Returns a String with the LLHCoordinatesSystem used but based directly on the provided input coordinates
+     *         without recomputation. Throws an exception if inputCoord are null.
+     * @throws PatriusException
+     */
+    public String toStringWithInputCoords() throws PatriusException {
+        if (inputCoord == null) {
+            throw new PatriusException(PatriusMessages.NO_LLHCOORDINATES_DEFINED);
+        }
+        return String.format("%s: name='%s', %s, body='%s'", getClass().getSimpleName(), getName(),
+            inputCoord.toString(), getBodyShape().getName());
+    }
+
+    /**
+     * <strong>WARNING</strong> : if the coordinates system provided in input is equal to the coordinates system of
+     * inputCoord, results are recomputed. Please use this method just if you want to transform inputCoord in another
+     * coordinates system and display it in a String format.
+     * 
+     * @return Returns a String with the LLHCoordinatesSystem used but based on the coordinate system provided. Beware
+     *         computation are made here to transform the coordinate system. Throws an exception if inputCoord are null.
+     * 
+     * 
+     * @throws PatriusException
+     */
+    public String toStringWithInputCoords(final LLHCoordinatesSystem coordSystem) throws PatriusException {
+        if (inputCoord == null) {
+            throw new PatriusException(PatriusMessages.NO_LLHCOORDINATES_DEFINED);
+        }
+        return toString(coordSystem);
     }
 
     /**

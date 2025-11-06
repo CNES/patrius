@@ -18,6 +18,8 @@
  * @history created 10/02/12
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2801:18/05/2021:Suppression des classes et methodes depreciees suite au refactoring des slews
@@ -40,8 +42,10 @@ package fr.cnes.sirius.patrius.validation.attitudes;
 import static fr.cnes.sirius.patrius.math.util.MathLib.sqrt;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.AttitudeLawLeg;
@@ -57,6 +61,7 @@ import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.math.complex.Quaternion;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -229,17 +234,14 @@ public class ConstantSpinSlewValTest {
 
         // reference date
         final AbsoluteDate refDate = new AbsoluteDate(2012, 2, 10, TimeScalesFactory.getTAI());
-        // refernece frame
+        // Reference frame
         final Frame refFrame = FramesFactory.getEME2000();
 
         // initial attitude
-        final Attitude attInitial = new Attitude(refDate, refFrame,
-            r0, Vector3D.ZERO);
-        final AttitudeProvider iLaw = new FixedRate(attInitial);
+        final Attitude attInitial = new Attitude(refDate, refFrame, r0, Vector3D.ZERO);
 
         // final attitude
         final Attitude attFinal = new Attitude(refDate.shiftedBy(120.), refFrame, r1, Vector3D.ZERO);
-        final AttitudeProvider fLaw = new FixedRate(attFinal);
 
         // maneuver profile
         final Slew slerp = new ConstantSpinSlew(attInitial, attFinal);
@@ -356,30 +358,22 @@ public class ConstantSpinSlewValTest {
 
         // reference date
         final AbsoluteDate refDate = new AbsoluteDate(2012, 2, 10, TimeScalesFactory.getTAI());
-        // refernece frame
+        // Reference frame
         final Frame refFrame = FramesFactory.getEME2000();
 
         // initial attitude
         final Quaternion qInitial = new Quaternion(1 / 4., -MathLib.sqrt(3) / 4., 0., MathLib.sqrt(3) / 2.);
         final Attitude attInitial = new Attitude(refDate, refFrame,
             new Rotation(false, qInitial), Vector3D.ZERO);
-        final AttitudeProvider iLaw = new FixedRate(attInitial);
 
         // final attitude
         final Quaternion qFinal = new Quaternion(MathLib.sqrt(3) / 8., (-3. + 2 * MathLib.sqrt(3)) / 8., 1. / 8.,
             (MathLib.sqrt(3) + 6) / 8.);
-        final Attitude attFinal = new Attitude(refDate.shiftedBy(300.), refFrame, new Rotation(false,
-            qFinal), Vector3D.ZERO);
-        final AttitudeProvider fLaw = new FixedRate(attFinal);
+        final Attitude attFinal =
+            new Attitude(refDate.shiftedBy(300.), refFrame, new Rotation(false, qFinal), Vector3D.ZERO);
 
         // maneuver profile
         final Slew slerp = new ConstantSpinSlew(attInitial, attFinal);
-
-        // orbit
-        final double mu = Constants.EGM96_EARTH_MU;
-        final Orbit circOrbit = new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(50.),
-            MathLib.toRadians(270.), MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(),
-            refDate, mu);
 
         // small angle : 0.1°
         final double theta = MathLib.toRadians(0.1);
@@ -446,7 +440,6 @@ public class ConstantSpinSlewValTest {
         final Quaternion qInitial = new Quaternion(1 / 4., -MathLib.sqrt(3) / 4., 0., MathLib.sqrt(3) / 2.);
         final Rotation r0 = new Rotation(false, qInitial);
         final Attitude attInitial = new Attitude(refDate, refFrame, r0, Vector3D.ZERO);
-        final AttitudeProvider iLaw = new FixedRate(attInitial);
 
         // large angle : 179° (near to PI)
         final double theta = MathLib.toRadians(179);
@@ -456,24 +449,16 @@ public class ConstantSpinSlewValTest {
         final Quaternion qFinal = Quaternion.multiply(qRot, qInitial);
         final Rotation r1 = new Rotation(false, qFinal);
         final Attitude attFinal = new Attitude(refDate.shiftedBy(44.75), refFrame, r1, Vector3D.ZERO);
-        final AttitudeProvider fLaw = new FixedRate(attFinal);
 
         // maneuver profile
         final Slew slerp = new ConstantSpinSlew(attInitial, attFinal);
-
-        // orbit
-        final double mu = Constants.EGM96_EARTH_MU;
-        final Orbit circOrbit = new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(50.),
-            MathLib.toRadians(270.), MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(),
-            refDate, mu);
 
         Quaternion intermediateRot;
         Quaternion intermediateRefRot;
         boolean isEqual;
 
         // intermediate rotation of 178°
-        intermediateRot = slerp.getAttitude(refDate.shiftedBy(44.5), refFrame)
-            .getRotation().getQuaternion();
+        intermediateRot = slerp.getAttitude(refDate.shiftedBy(44.5), refFrame).getRotation().getQuaternion();
 
         // reference
         final double t = 178 / 179.;
@@ -515,7 +500,8 @@ public class ConstantSpinSlewValTest {
 
         // attitude laws
         final AttitudeLaw law1 = new BodyCenterPointing(gcrf);
-        final AttitudeLaw law2 = new LofOffset(gcrf, LOFType.LVLH, RotationOrder.ZXY, 0, MathLib.toRadians(20), 0);
+        final AttitudeLaw law2 =
+            new LofOffset(gcrf, LOFType.LVLH, new EulerRotation(RotationOrder.ZXY, 0., MathLib.toRadians(20.), 0.));
 
         // orbit
         final AbsoluteDate date = new AbsoluteDate(2012, 3, 7, 12, 02, 0.0, TimeScalesFactory.getTT());
@@ -643,5 +629,10 @@ public class ConstantSpinSlewValTest {
             }
         }
         return rez;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
@@ -455,7 +456,7 @@ public abstract class AbstractEllipsoidBodyShape extends AbstractBodyShape imple
         AbsoluteDate emissionDate = date;
 
         // Case of light speed propagation (dedicated in order to optimize computation times)
-        if (propagationDelayType.equals(PropagationDelayType.LIGHT_SPEED)) {
+        if (propagationDelayType == PropagationDelayType.LIGHT_SPEED) {
             // Native frames
             final Frame nativeFrameObserver = pvObserver.getNativeFrame(date);
             final Frame nativeFrameOccultingBody = getNativeFrame(date);

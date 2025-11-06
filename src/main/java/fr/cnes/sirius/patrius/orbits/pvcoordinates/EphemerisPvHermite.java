@@ -18,6 +18,9 @@
  * @history created 25/09/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
  * VERSION:4.13.1:FA:FA-199:17/01/2024:[PATRIUS] Utilisation du dernier point utilisable dans EphemerisPvHermite
  * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -31,8 +34,6 @@
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.transformations.Transform;
-import fr.cnes.sirius.patrius.math.analysis.interpolation.HermiteInterpolator;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.utils.BinarySearchIndexOpenClosed;
 import fr.cnes.sirius.patrius.math.utils.ISearchIndex;
@@ -66,16 +67,13 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @since 3.1
  * 
  */
-public class EphemerisPvHermite extends AbstractBoundedPVProvider {
+public class EphemerisPvHermite extends AbstractEphemerisPvHermiteLagrange {
 
     /** Serializable UID. */
     private static final long serialVersionUID = -6571044858180517866L;
 
     /** Default samples number. */
     private static final int DEFAULT_SAMPLES_NUMBER = 2;
-
-    /** Ephemeris Hermite interpolator */
-    private HermiteInterpolator interpolatorPV;
 
     /** Acceleration table */
     private final Vector3D[] tAcc;
@@ -181,67 +179,13 @@ public class EphemerisPvHermite extends AbstractBoundedPVProvider {
     /** {@inheritDoc} */
     @Override
     public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
-
+        // Duration from reference to search index
         final double duration = date.durationFrom(this.getDateRef());
 
         // If input date is out of bounds throw illegal argument exception
         if ((duration < 0) || (date.durationFrom(this.getMaxDate()) > 0)) {
             throw PatriusException.createIllegalArgumentException(PatriusMessages.DATE_OUTSIDE_INTERVAL);
         }
-
-        // Check if date is exactly on validity interval bounds, in that case (!= null) returns boundary state
-        PVCoordinates interpolPV = this.checkBounds(date);
-
-        if (interpolPV == null) {
-            // Search the index
-            final int index = this.getSearchIndex().getIndex(duration);
-
-            // the interpolation is valid only if 0<= index +1 -interpoOrder/2 or index + order/2 <= maximalIndex
-            final int i0 = this.indexValidity(index);
-
-            // Duration from closest date in order to minimize numerical quality issues
-            final double durationI0 = date.durationFrom(this.tDate[i0]);
-
-            // If the last call was already for a date between the interpolator dates,
-            // reuse the last interpolator instance
-            if (index != this.getPreviousIndex()) {
-
-                this.interpolatorPV = new HermiteInterpolator();
-                this.setPreviousIndex(index);
-
-                // get the PV coordinates and the delta t from startDate
-                double deltat;
-                double[] pos;
-                double[] vit;
-                double[] acc;
-                for (int i = 0; i < this.polyOrder; i++) {
-                    deltat = this.tDate[i0 + i].durationFrom(this.tDate[i0]);
-                    pos = this.tPVCoord[i0 + i].getPosition().toArray();
-                    vit = this.tPVCoord[i0 + i].getVelocity().toArray();
-
-                    // If acceleration table is available, compute interpolation using acceleration
-                    if (this.tAcc == null) {
-                        this.interpolatorPV.addSamplePoint(deltat, pos, vit);
-                    } else {
-                        acc = this.tAcc[i0 + i].toArray();
-                        this.interpolatorPV.addSamplePoint(deltat, pos, vit, acc);
-                    }
-                }
-            }
-
-            // Get the hermite interpolation results
-            final Vector3D p = new Vector3D(this.interpolatorPV.value(durationI0));
-            final Vector3D v = new Vector3D(this.interpolatorPV.derivative(durationI0));
-
-            interpolPV = new PVCoordinates(p, v);
-
-            // If needed, convert position, velocity to the right frame
-            if ((frame != null) && (this.getFrame() != frame)) {
-                final Transform t = this.getFrame().getTransformTo(frame, date);
-                interpolPV = t.transformPVCoordinates(interpolPV);
-            }
-        }
-
-        return interpolPV;
+        return super.getPVCoordinates(date, frame, this.tAcc, true);
     }
 }

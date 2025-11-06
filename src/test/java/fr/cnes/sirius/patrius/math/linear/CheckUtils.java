@@ -20,9 +20,12 @@
  */
 /* 
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.7:DM:DM-2818:18/05/2021:[PATRIUS|COLOSUS] Classe GatesModel
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -32,34 +35,63 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.io.ByteArrayInputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.ByteArrayOutputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.ObjectInputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.ObjectOutputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.Serializable;
+import fr.cnes.sirius.patrius.Utils;
 import java.text.DecimalFormat;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Arrays;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Collection;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Iterator;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.function.Function;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.stream.IntStream;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.ComparisonType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRowSymmetricMatrix.SymmetryType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Utilities for miscellaneous checks in JUnit tests.
@@ -84,7 +116,22 @@ public final class CheckUtils {
     private static final String OUT_OF_RANGE_COLUMN_INDEX_FORMAT = "column index (%d)";
 
     /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
-    private static final String DIMENSION_MISMATCH_FORMAT = "%d != %d";
+    private static final String INCOMPATIBLE_MATRIX_ROW_DIMENSION = "Matrices row dimensions are not equal: %d != %d.";
+
+    /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
+    private static final String INCOMPATIBLE_MATRIX_COLUMN_DIMENSION = "Matrices column dimensions are not equal: %d != %d.";
+
+    /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
+    private static final String INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS = "The vector dimension (%d) and the matrix row dimension (%d) are not equal.";
+
+    /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
+    private static final String INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS = "The vector dimension (%d) and the matrix column dimension (%d) are not equal.";
+
+    /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
+    private static final String INCOMPATIBLE_DIMENSIONS_MULTIPLICATION = "The dimensions are incompatible for multiplication: %d rows and %d columns.";
+
+    /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
+    private static final String DIFFERENT_ROWS_LENGTHS = "Some rows have length %d while others have length %d";
 
     /** Expected message format for exceptions thrown when a dimension mismatch is detected. */
     private static final String MATRIX_DIMENSION_MISMATCH_FORMAT = "got %dx%d but expected %dx%d";
@@ -2442,7 +2489,7 @@ public final class CheckUtils {
             matrix.setSubMatrix(invalidData, 0, 0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, 2, 1);
+            final String expectedMessage = String.format(DIFFERENT_ROWS_LENGTHS, 2, 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4662,7 +4709,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nc - 1, nr));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4671,7 +4718,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nc - 1, nr), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4680,7 +4727,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nr, nc - 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4689,7 +4736,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nc - 1, nr), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4698,7 +4745,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nr, nc - 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4708,7 +4755,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nc + 1, nc));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4717,7 +4764,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nc + 1, nr), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4726,7 +4773,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nr, nc + 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4735,7 +4782,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nc + 1, nr), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4744,7 +4791,7 @@ public final class CheckUtils {
             matrix.multiply(new Array2DRowRealMatrix(nr, nc + 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4774,7 +4821,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4783,7 +4830,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc - 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4792,7 +4839,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc - 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4801,7 +4848,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc - 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4810,7 +4857,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc - 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4820,7 +4867,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4829,7 +4876,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc + 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4838,7 +4885,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc + 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4847,7 +4894,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc + 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4856,7 +4903,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricMatrix(nc + 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4886,7 +4933,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4895,7 +4942,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc - 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4904,7 +4951,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc - 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4913,7 +4960,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc - 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4922,7 +4969,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc - 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4932,7 +4979,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4941,7 +4988,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc + 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4950,7 +4997,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc + 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4959,7 +5006,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc + 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4968,7 +5015,7 @@ public final class CheckUtils {
             matrix.multiply(new ArrayRowSymmetricPositiveMatrix(nc + 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -4998,7 +5045,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5007,7 +5054,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc - 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5016,7 +5063,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc - 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5025,7 +5072,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc - 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5034,7 +5081,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc - 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5044,7 +5091,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5053,7 +5100,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc + 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5062,7 +5109,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc + 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5071,7 +5118,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc + 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5080,7 +5127,7 @@ public final class CheckUtils {
             matrix.multiply(new DecomposedSymmetricPositiveMatrix(nc + 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5109,7 +5156,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5118,7 +5165,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc - 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5127,7 +5174,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc - 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5136,7 +5183,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc - 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5145,7 +5192,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc - 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5155,7 +5202,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5164,7 +5211,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc + 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5173,7 +5220,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc + 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5182,7 +5229,7 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc + 1), false, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5191,7 +5238,118 @@ public final class CheckUtils {
             matrix.multiply(new DiagonalMatrix(nc + 1), true, 1.0);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nc + 1, nc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+    }
+
+    /**
+     * Tests the methods that multiply a symmetric matrix by another matrix, using standard real
+     * matrices which are not multiplication compatible.
+     *
+     * <p>
+     * Tested methods:<br>
+     * {@linkplain RealMatrix#multiply(RealMatrix)}<br>
+     * {@linkplain RealMatrix#multiply(RealMatrix, boolean)}<br>
+     * {@linkplain RealMatrix#multiply(RealMatrix, boolean, double)}<br>
+     * </p>
+     *
+     * @param matrix
+     *        the matrix to be tested
+     */
+    public static void checkMultiplySymmetricIncompatibleRealMatrix(final SymmetricMatrix matrix) {
+        // Dimension
+        final int nrc = matrix.getRowDimension();
+
+        // Matching dimension is too low
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc - 1, nrc));
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc - 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc - 1, nrc), false);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc - 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc, nrc - 1), true);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc - 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc - 1, nrc), false, 1.0);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc - 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc, nrc - 1), true, 1.0);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc - 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        // Matching dimension is too large
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc + 1, nrc));
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc + 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc + 1, nrc), false);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc + 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc, nrc + 1), true);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc + 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc + 1, nrc), false, 1.0);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc + 1, nrc);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.multiply(new Array2DRowRealMatrix(nrc, nrc + 1), true, 1.0);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nrc + 1, nrc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5220,7 +5378,7 @@ public final class CheckUtils {
             matrix.preMultiply(new Array2DRowRealMatrix(nc, nr - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5230,7 +5388,7 @@ public final class CheckUtils {
             matrix.preMultiply(new Array2DRowRealMatrix(nc, nr + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5258,7 +5416,7 @@ public final class CheckUtils {
             matrix.preMultiply(new ArrayRowSymmetricMatrix(nr - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5268,7 +5426,7 @@ public final class CheckUtils {
             matrix.preMultiply(new ArrayRowSymmetricMatrix(nr + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5296,7 +5454,7 @@ public final class CheckUtils {
             matrix.preMultiply(new ArrayRowSymmetricPositiveMatrix(nr - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5306,7 +5464,7 @@ public final class CheckUtils {
             matrix.preMultiply(new ArrayRowSymmetricPositiveMatrix(nr + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5334,7 +5492,7 @@ public final class CheckUtils {
             matrix.preMultiply(new DecomposedSymmetricPositiveMatrix(nr - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5344,7 +5502,7 @@ public final class CheckUtils {
             matrix.preMultiply(new DecomposedSymmetricPositiveMatrix(nr + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5372,7 +5530,7 @@ public final class CheckUtils {
             matrix.preMultiply(new DiagonalMatrix(nr - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5382,7 +5540,7 @@ public final class CheckUtils {
             matrix.preMultiply(new DiagonalMatrix(nr + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr, nr + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5409,7 +5567,7 @@ public final class CheckUtils {
             matrix.operate(new ArrayRealVector(nc - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5418,7 +5576,7 @@ public final class CheckUtils {
             matrix.operate(new double[nc - 1]);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS, nc - 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5428,7 +5586,7 @@ public final class CheckUtils {
             matrix.operate(new ArrayRealVector(nc + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5437,7 +5595,7 @@ public final class CheckUtils {
             matrix.operate(new double[nc + 1]);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS, nc + 1, nc);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5464,7 +5622,7 @@ public final class CheckUtils {
             matrix.preMultiply(new ArrayRealVector(nr - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr - 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, nr - 1, nr);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5473,7 +5631,7 @@ public final class CheckUtils {
             matrix.preMultiply(new double[nr - 1]);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr - 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, nr - 1, nr);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5483,7 +5641,7 @@ public final class CheckUtils {
             matrix.preMultiply(new ArrayRealVector(nr + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr + 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, nr + 1, nr);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5492,7 +5650,7 @@ public final class CheckUtils {
             matrix.preMultiply(new double[nr + 1]);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr + 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, nr + 1, nr);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5515,7 +5673,7 @@ public final class CheckUtils {
             matrix.quadraticMultiplication(new Array2DRowRealMatrix(2 * dim, dim - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, dim, dim - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, dim, dim - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5524,7 +5682,7 @@ public final class CheckUtils {
             matrix.quadraticMultiplication(new Array2DRowRealMatrix(2 * dim, dim - 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, dim, dim - 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, dim, dim - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5533,7 +5691,7 @@ public final class CheckUtils {
             matrix.quadraticMultiplication(new Array2DRowRealMatrix(dim - 1, 2 * dim), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, dim - 1, dim);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, dim - 1, dim);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5543,7 +5701,7 @@ public final class CheckUtils {
             matrix.quadraticMultiplication(new Array2DRowRealMatrix(2 * dim, dim + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, dim, dim + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, dim, dim + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5552,7 +5710,7 @@ public final class CheckUtils {
             matrix.quadraticMultiplication(new Array2DRowRealMatrix(2 * dim, dim + 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, dim, dim + 1);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, dim, dim + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5561,7 +5719,7 @@ public final class CheckUtils {
             matrix.quadraticMultiplication(new Array2DRowRealMatrix(dim + 1, 2 * dim), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, dim + 1, dim);
+            final String expectedMessage = String.format(INCOMPATIBLE_DIMENSIONS_MULTIPLICATION, dim + 1, dim);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5745,7 +5903,7 @@ public final class CheckUtils {
             matrix.concatenateHorizontally(new Array2DRowRealMatrix(nr - 1, nc));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr - 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_ROW_DIMENSION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5754,7 +5912,7 @@ public final class CheckUtils {
             matrix.concatenateHorizontally(new Array2DRowRealMatrix(nr - 1, nc), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr - 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_ROW_DIMENSION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5763,7 +5921,7 @@ public final class CheckUtils {
             matrix.concatenateHorizontally(new Array2DRowRealMatrix(nr - 1, nc), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr - 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_ROW_DIMENSION, nr, nr - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5773,7 +5931,7 @@ public final class CheckUtils {
             matrix.concatenateHorizontally(new Array2DRowRealMatrix(nr + 1, nc));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr + 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_ROW_DIMENSION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5782,7 +5940,7 @@ public final class CheckUtils {
             matrix.concatenateHorizontally(new Array2DRowRealMatrix(nr + 1, nc), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr + 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_ROW_DIMENSION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5791,7 +5949,7 @@ public final class CheckUtils {
             matrix.concatenateHorizontally(new Array2DRowRealMatrix(nr + 1, nc), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nr + 1, nr);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_ROW_DIMENSION, nr, nr + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5820,7 +5978,7 @@ public final class CheckUtils {
             matrix.concatenateVertically(new Array2DRowRealMatrix(nr, nc - 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_COLUMN_DIMENSION, nc, nc - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5829,7 +5987,7 @@ public final class CheckUtils {
             matrix.concatenateVertically(new Array2DRowRealMatrix(nr, nc - 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_COLUMN_DIMENSION, nc, nc - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5838,7 +5996,7 @@ public final class CheckUtils {
             matrix.concatenateVertically(new Array2DRowRealMatrix(nr, nc - 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc - 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_COLUMN_DIMENSION, nc, nc - 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5848,7 +6006,7 @@ public final class CheckUtils {
             matrix.concatenateVertically(new Array2DRowRealMatrix(nr, nc + 1));
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_COLUMN_DIMENSION, nc, nc + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5857,7 +6015,7 @@ public final class CheckUtils {
             matrix.concatenateVertically(new Array2DRowRealMatrix(nr, nc + 1), true);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_COLUMN_DIMENSION, nc, nc + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -5866,7 +6024,7 @@ public final class CheckUtils {
             matrix.concatenateVertically(new Array2DRowRealMatrix(nr, nc + 1), false);
             Assert.fail();
         } catch (final DimensionMismatchException e) {
-            final String expectedMessage = String.format(DIMENSION_MISMATCH_FORMAT, nc + 1, nc);
+            final String expectedMessage = String.format(INCOMPATIBLE_MATRIX_COLUMN_DIMENSION, nc, nc + 1);
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
@@ -7022,5 +7180,10 @@ public final class CheckUtils {
         public long getResult() {
             return this.result;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,9 @@
  * @history creation 27/07/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -36,10 +39,11 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.forces.gravity.tides.ReferencePointsDisplacement;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -200,6 +204,7 @@ public class ReferencePointsDisplacementTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException {
+        Utils.clear();
 
         fr.cnes.sirius.patrius.Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
@@ -211,19 +216,20 @@ public class ReferencePointsDisplacementTest {
         final String fileName = "unxp2000.405";
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderMoon = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SUN, loaderSun);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.MOON, loaderMoon);
     }
+
 }

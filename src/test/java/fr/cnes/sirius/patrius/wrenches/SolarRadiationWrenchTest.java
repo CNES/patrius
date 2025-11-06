@@ -18,6 +18,8 @@
  * @history creation 23/07/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
@@ -240,6 +242,7 @@ public class SolarRadiationWrenchTest {
 
             // inertia simple prop
             final MassProperty mp = new MassProperty(1500);
+            builder.addProperty(mp, this.mainBody);
             final InertiaSimpleProperty prop = new InertiaSimpleProperty(Vector3D.PLUS_I, new Matrix3D(new double[][] {
                 { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } }), mp);
             builder.addProperty(prop, this.mainBody);
@@ -385,6 +388,7 @@ public class SolarRadiationWrenchTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException {
+        Utils.clear();
         // Orekit data initialization
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));

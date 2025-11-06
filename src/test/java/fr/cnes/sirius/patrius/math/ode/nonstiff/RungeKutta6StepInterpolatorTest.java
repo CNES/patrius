@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-221:21/11/2024:[STELA-PATRIUS] Interpolateur STELA précis
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -25,14 +27,16 @@
  */
 package fr.cnes.sirius.patrius.math.ode.nonstiff;
 
-import junit.framework.Assert;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderDifferentialEquations;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepHandler;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepInterpolator;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import junit.framework.Assert;
 
 /**
  * @description test class for RungeKutta6StepInterpolator
@@ -93,14 +97,13 @@ public class RungeKutta6StepInterpolatorTest {
                 for (int i = 0; i < 2; i++) {
 
                     Assert.assertEquals(RESULTS[i][0], interpolator.getInterpolatedTime(), 1e-15);
-                    Assert.assertEquals(RESULTS[i][1], interpolator.getInterpolatedState()[0], 1e-15);
-                    Assert.assertEquals(RESULTS[i][2], interpolator.getInterpolatedState()[1], 1e-15);
+
 
                     final double theta = 1.5;
                     final double oneMinusThetaH = 1 - theta;
-                    ((RungeKutta6StepInterpolator) interpolator).computeInterpolatedStateAndDerivatives(theta,
-                        oneMinusThetaH);
-
+//                    ((RungeKutta6StepInterpolator) interpolator).computeInterpolatedStateAndDerivatives(theta,
+//                        oneMinusThetaH);
+                    
                     Assert.assertEquals(RESULTS_THETA[i][0], interpolator.getInterpolatedState()[0], 1e-15);
                     Assert.assertEquals(RESULTS_THETA[i][1], interpolator.getInterpolatedState()[1], 1e-15);
                 }
@@ -157,6 +160,48 @@ public class RungeKutta6StepInterpolatorTest {
 
         integrator.integrate(circleEq, startTime, initialState, endTime, finalState);
 
+    }
+
+
+
+    @Test
+    public void testIsIncoherentState() {
+
+        final RungeKutta6StepInterpolator interpolator = new RungeKutta6StepInterpolator();
+
+        // Case where currY has fewer than 6 elements
+        double[] shortArray = { 1.0, 2.0, 3.0 };
+        Assert.assertFalse(interpolator.isIncoherentState(shortArray));
+
+        // Case where perigee is negative (test1)
+        double[] negativePerigee = { 0.5, 0.0, 0.6, 0.8, 0.0, 0.0 };
+        Assert.assertTrue(interpolator.isIncoherentState(negativePerigee));
+
+        // Case where eccentricity is greater than or equal to 1 (test2)
+        double[] highEccentricity = { 1.0, 0.0, 1.1, 0.9, 0.0, 0.0 };
+        Assert.assertTrue(interpolator.isIncoherentState(highEccentricity));
+
+        // Case where sin(i/2) >= 1 (test3)
+        double[] highSinIOver2 = { 1.0, 0.0, 0.1, 0.1, 1.0, 1.0 };
+        Assert.assertTrue(interpolator.isIncoherentState(highSinIOver2));
+
+        // Case where one of the inclination values is NaN (test4)
+        double[] nanInclination = { 1.0, 0.0, 0.1, 0.1, Double.NaN, 0.0 };
+        Assert.assertTrue(interpolator.isIncoherentState(nanInclination));
+
+        // Case where one of the inclination values is infinite (test4)
+        double[] infinityInclination = { 1.0, 0.0, 0.1, 0.1, Double.POSITIVE_INFINITY, 0.0 };
+        Assert.assertTrue(interpolator.isIncoherentState(infinityInclination));
+
+        // Case where an ArithmeticException is triggered
+        double[] arithmeticException = { 1.0, 0.0, Double.NaN, 0.0, 0.0, 0.0 };
+        Assert.assertTrue(interpolator.isIncoherentState(arithmeticException));
+
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 
 }

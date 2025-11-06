@@ -18,6 +18,16 @@
  * @history creation 23/03/2017
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -48,8 +58,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -72,9 +81,9 @@ import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
@@ -115,6 +124,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Additional tests for event detectors: check that two intermingled eclipse detectors with different parameters
@@ -414,6 +424,7 @@ public class TwoEclipseDetectorsTest {
 
         // Initialization
         Utils.setDataRoot("regular-dataPBASE");
+        
         FramesFactory.setConfiguration(new FramesConfigurationBuilder().getConfiguration());
 
         final AbsoluteDate initDate = new AbsoluteDate("2014-06-01T00:00:00.000", TimeScalesFactory.getTAI());
@@ -595,7 +606,7 @@ public class TwoEclipseDetectorsTest {
 
         // Check
         Assert.assertEquals(0., enterDate1.durationFrom(enterDate2), 0.001);
-        Assert.assertEquals(0., exitDate1.durationFrom(exitDate2), 0.001);
+        Assert.assertEquals(0., exitDate1.durationFrom(exitDate2), 0.002);
         Assert.assertTrue(resetState1);
         Assert.assertTrue(resetState2);
         Assert.assertTrue(resetState3);
@@ -638,20 +649,18 @@ public class TwoEclipseDetectorsTest {
             // b) Attraction des troisiemes corps
             CelestialBodyFactory.clearCelestialBodyLoaders();
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-                EphemerisType.SUN);
+                PredefinedEphemerisType.SUN);
             final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-                EphemerisType.EARTH_MOON);
+                PredefinedEphemerisType.EARTH_MOON);
             final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-                EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+                PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
             CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
             CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
-            final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
-            final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
+            final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+            final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
             final GravityModel sunGravityModel = sun.getGravityModel();
-            ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
             this.addForceModel(new ThirdBodyAttraction(sunGravityModel));
             final GravityModel moonGravityModel = moon.getGravityModel();
-            ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
             this.addForceModel(new ThirdBodyAttraction(moonGravityModel));
 
             // c) Pression de radiation solaire
@@ -730,5 +739,10 @@ public class TwoEclipseDetectorsTest {
         Assert.assertEquals(0.,
             actual.get(1).durationFrom(new AbsoluteDate("2000-01-01T13:12:19.203", TimeScalesFactory.getTAI())),
             0.001);
+    }
+    
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

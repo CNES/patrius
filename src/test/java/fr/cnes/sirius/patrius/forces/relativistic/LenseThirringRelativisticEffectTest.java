@@ -18,6 +18,8 @@
  * @history Created 17/02/2016
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -204,7 +206,17 @@ public class LenseThirringRelativisticEffectTest {
         try {
             force.computeAcceleration(state);
             Assert.fail();
-        } catch (PatriusException pe) {
+        } catch (final PatriusException pe) {
+            Assert.assertEquals(pe.getMessage(), PatriusMessages.NOT_INERTIAL_FRAME.getSourceString());
+        }
+
+        // FA307
+        final double[][] dAccdPos = new double[3][3];
+        final double[][] dAccdVel = new double[3][3];
+        try {
+            force.addDAccDState(state, dAccdPos, dAccdVel);
+            Assert.fail();
+        } catch (final PatriusException pe) {
             Assert.assertEquals(pe.getMessage(), PatriusMessages.NOT_INERTIAL_FRAME.getSourceString());
         }
     }
@@ -354,6 +366,7 @@ public class LenseThirringRelativisticEffectTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
 
         Utils.setDataRoot("regular-dataCNES-2003");
 

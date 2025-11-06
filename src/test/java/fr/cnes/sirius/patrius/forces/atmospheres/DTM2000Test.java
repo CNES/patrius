@@ -18,6 +18,9 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer 
+ *          les polynemes de Chebyshev des fichiers JPL historiques 
 * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
  *          de convertir les sorties de VacuumSignalPropagation 
@@ -313,7 +316,7 @@ public class DTM2000Test {
 
         final Vector3D position = new Vector3D(6500000., 0., 0.);
         final double speedOfSound = atm.getSpeedOfSound(date, position, gcrf);
-        final double ref = 391.1109242375076;
+        final double ref = 391.11092424091726;
         Assert.assertEquals(ref, speedOfSound, 1E-14);
     }
 
@@ -445,23 +448,24 @@ public class DTM2000Test {
         Assert.assertEquals(0., (expected - density) / expected, 2E-16);
 
         // Non-regression
-        Assert.assertEquals(8.743030418768094E-17, density, 0.);
-        Assert.assertEquals(1176.5772892517557, localTemperature, 0.);
-        Assert.assertEquals(1176.5772892565271, exosphericTemperature, 0.);
-        Assert.assertEquals(4.5195134429592930E-17, densityHe, 0.);
-        Assert.assertEquals(1.003251773895717E-22, densityO, 0.);
-        Assert.assertEquals(2.5130906021254690E-31, densityN2, 0.);
-        Assert.assertEquals(2.4603723554743347E-35, densityO2, 0.);
+        Assert.assertEquals(8.74303041905283E-17, density, 0.);
+        Assert.assertEquals(1176.5772892551327, localTemperature, 0.);
+        Assert.assertEquals(1176.577289259904, exosphericTemperature, 0.);
+        Assert.assertEquals(4.519513443195579E-17, densityHe, 0.);
+        Assert.assertEquals(1.0032517739967005E-22, densityO, 0.);
+        Assert.assertEquals(2.5130906024184856E-31, densityN2, 0.);
+        Assert.assertEquals(2.4603723559445216E-35, densityO2, 0.);
         Assert.assertEquals(0., densityAr, 0.);
-        Assert.assertEquals(4.223506943291037E-17, densityH, 0.);
+        Assert.assertEquals(4.223506943339484E-17, densityH, 0.);
         Assert.assertEquals(0., densityN, 0.);
         Assert.assertEquals(0., densityAnomalousOxygen, 0.);
-        Assert.assertEquals(2.5507999134418067, meanAtomicMass, 0.);
+        Assert.assertEquals(2.5507999134723796, meanAtomicMass, 0.);
     }
 
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
             FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
 
@@ -470,5 +474,4 @@ public class DTM2000Test {
         }
 
     }
-
 }

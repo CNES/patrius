@@ -14,18 +14,26 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.bodies.bsp.spice;
 
 import java.util.Arrays;
+import fr.cnes.sirius.patrius.Utils;
 
-import org.junit.Test;
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This class has as its objective to do the unit tests to different basic class of the SPICE library translation
@@ -318,4 +326,9 @@ public class SpiceUnitTest {
              Assert.assertTrue(true);
          }
      }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

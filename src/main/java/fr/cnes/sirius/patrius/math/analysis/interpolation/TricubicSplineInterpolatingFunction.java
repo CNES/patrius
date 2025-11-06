@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2687:18/05/2021:Traitement de modèles de gravité, autres que les harmoniques sphériques
@@ -34,6 +36,7 @@ import fr.cnes.sirius.patrius.math.exception.NoDataException;
 import fr.cnes.sirius.patrius.math.exception.NonMonotonicSequenceException;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Function that implements the
@@ -251,26 +254,26 @@ public class TricubicSplineInterpolatingFunction implements TrivariateFunction {
         this.splines = new TricubicSplineFunction[lastI][lastJ][lastK];
 
         for (int i = 0; i < lastI; i++) {
-            checkLength(f[i].length, yLen);
-            checkLength(dFdX[i].length, yLen);
-            checkLength(dFdY[i].length, yLen);
-            checkLength(dFdZ[i].length, yLen);
-            checkLength(d2FdXdY[i].length, yLen);
-            checkLength(d2FdXdZ[i].length, yLen);
-            checkLength(d2FdYdZ[i].length, yLen);
-            checkLength(d3FdXdYdZ[i].length, yLen);
+            checkLength(yLen, f[i].length);
+            checkLength(yLen, dFdX[i].length);
+            checkLength(yLen, dFdY[i].length);
+            checkLength(yLen, dFdZ[i].length);
+            checkLength(yLen, d2FdXdY[i].length);
+            checkLength(yLen, d2FdXdZ[i].length);
+            checkLength(yLen, d2FdYdZ[i].length);
+            checkLength(yLen, d3FdXdYdZ[i].length);
 
             final int ip1 = i + 1;
             final double xR = this.xval[ip1] - this.xval[i];
             for (int j = 0; j < lastJ; j++) {
-                checkLength(f[i][j].length, zLen);
-                checkLength(dFdX[i][j].length, zLen);
-                checkLength(dFdY[i][j].length, zLen);
-                checkLength(dFdZ[i][j].length, zLen);
-                checkLength(d2FdXdY[i][j].length, zLen);
-                checkLength(d2FdXdZ[i][j].length, zLen);
-                checkLength(d2FdYdZ[i][j].length, zLen);
-                checkLength(d3FdXdYdZ[i][j].length, zLen);
+                checkLength(zLen, f[i][j].length);
+                checkLength(zLen, dFdX[i][j].length);
+                checkLength(zLen, dFdY[i][j].length);
+                checkLength(zLen, dFdZ[i][j].length);
+                checkLength(zLen, d2FdXdY[i][j].length);
+                checkLength(zLen, d2FdXdZ[i][j].length);
+                checkLength(zLen, d2FdYdZ[i][j].length);
+                checkLength(zLen, d3FdXdYdZ[i][j].length);
 
                 final int jp1 = j + 1;
                 final double yR = this.yval[jp1] - this.yval[j];
@@ -383,7 +386,8 @@ public class TricubicSplineInterpolatingFunction implements TrivariateFunction {
      */
     private static void checkLength(final int length1, final int length2) {
         if (length1 != length2) {
-            throw new DimensionMismatchException(length1, length2);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS, length1,
+                length2);
         }
     }
 

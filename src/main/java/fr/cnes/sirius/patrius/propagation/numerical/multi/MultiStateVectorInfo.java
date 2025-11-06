@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2415:27/05/2020:Gestion des PartialderivativesEquations avec MultiPropagateur 
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.multi.MultiAttitudeProvider;
@@ -44,6 +46,7 @@ import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.propagation.SpacecraftStateProvider;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalStateInfo;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -64,7 +67,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  */
 public final class MultiStateVectorInfo implements Serializable {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -7988745506943818839L;
 
     /** State vector size. */
@@ -82,35 +85,40 @@ public final class MultiStateVectorInfo implements Serializable {
     /** Map of frame for each spacecraft. */
     private final Map<String, Frame> propagationFrameMap;
 
+    /** Map of additional spacecraft state providers. */
+    private final Map<String, SpacecraftStateProvider> addStateProviders;
+
     /**
      * Build a MultiSatStateVectorInfo instance using the spacecraft states' map.
      * 
-     * @param s the spacecraft states' map.
-     * @param mus the mu map
+     * @param s the spacecraft states' map
      * @param frames the frame map
+     * @param addStateProviders spacecraft providers used to compute additional spacecraft states
      */
-    public MultiStateVectorInfo(final Map<String, SpacecraftState> s,
-        final Map<String, Double> mus, final Map<String, Frame> frames) {
+    public MultiStateVectorInfo(final Map<String, SpacecraftState> s, final Map<String, Frame> frames,
+                                final Map<String, SpacecraftStateProvider> addStateProviders) {
         this.satInfos = new HashMap<>();
         this.satIDList = new ArrayList<>();
         this.muMap = new HashMap<>();
         this.propagationFrameMap = new HashMap<>();
+        this.addStateProviders = new HashMap<>();
         int globalSize = 0;
-        int satNb = 0;
         for (final Map.Entry<String, SpacecraftState> entry : s.entrySet()) {
-            final int oneSatSize = entry.getValue().getStateVectorSize();
-            final OneSatVectorInfo oneSatInfo = new OneSatVectorInfo(globalSize, satNb, oneSatSize,
-                entry.getValue().getAdditionalStatesInfos());
-            this.satInfos.put(entry.getKey(), oneSatInfo);
-            this.satIDList.add(entry.getKey());
-            final double mu = s.get(entry.getKey()).getMu();
-            this.muMap.put(entry.getKey(), mu);
-            final Frame frame = frames.get(entry.getKey());
-            this.propagationFrameMap.put(entry.getKey(), frame);
-            globalSize += oneSatSize;
-            satNb++;
+            if (!addStateProviders.containsKey(entry.getKey())) {
+                final int oneSatSize = entry.getValue().getStateVectorSize();
+                final OneSatVectorInfo oneSatInfo =
+                    new OneSatVectorInfo(globalSize, oneSatSize, entry.getValue().getAdditionalStatesInfos());
+                this.satInfos.put(entry.getKey(), oneSatInfo);
+                this.satIDList.add(entry.getKey());
+                final double mu = s.get(entry.getKey()).getMu();
+                this.muMap.put(entry.getKey(), mu);
+                final Frame frame = frames.get(entry.getKey());
+                this.propagationFrameMap.put(entry.getKey(), frame);
+                globalSize += oneSatSize;
+            }
         }
         this.vectorSize = globalSize;
+        this.addStateProviders.putAll(addStateProviders);
     }
 
     /**
@@ -129,6 +137,15 @@ public final class MultiStateVectorInfo implements Serializable {
      */
     public List<String> getIdList() {
         return this.satIDList;
+    }
+
+    /**
+     * Get the list of added spacecraft providers ID.
+     * 
+     * @return the list of added spacecraft providers ID.
+     */
+    public List<String> getIdListAddedProviders() {
+        return new ArrayList<String>(this.addStateProviders.keySet());
     }
 
     /**
@@ -202,17 +219,20 @@ public final class MultiStateVectorInfo implements Serializable {
      */
     @SuppressWarnings("PMD.UseConcurrentHashMap")
     public Map<String, SpacecraftState> mapArrayToStates(final double[] y, final AbsoluteDate currentDate,
-            final OrbitType orbitType, final PositionAngle angleType,
-            final Map<String, MultiAttitudeProvider> attProvidersForces,
-            final Map<String, MultiAttitudeProvider> attProvidersEvents, final Map<String, Double> mu,
-            final Map<String, Frame> integrationFrame) throws PatriusException {
-        // init map
-        final Map<String, SpacecraftState> states = new LinkedHashMap<>();
-        final Map<String, Orbit> orbits = new LinkedHashMap<>();
+                                                         final OrbitType orbitType, final PositionAngle angleType,
+                                                         final Map<String, MultiAttitudeProvider> attProvidersForces,
+                                                         final Map<String, MultiAttitudeProvider> attProvidersEvents,
+                                                         final Map<String, Double> mu,
+                                                         final Map<String, Frame> integrationFrame)
+        throws PatriusException {
 
         // Loop on all spacecraft ID
         final List<String> list = this.getIdList();
         final int sizeList = list.size();
+
+        // Initialize maps
+        final Map<String, Orbit> orbits = new LinkedHashMap<>(sizeList);
+        final Map<String, SpacecraftState> states = new LinkedHashMap<>(sizeList + this.addStateProviders.size());
 
         // Build orbits
         for (int i = 0; i < sizeList; i++) {
@@ -220,12 +240,17 @@ public final class MultiStateVectorInfo implements Serializable {
             final int satRank = this.getSatRank(satId);
             final double[] orbitY = new double[SpacecraftState.ORBIT_DIMENSION];
             System.arraycopy(y, satRank, orbitY, 0, SpacecraftState.ORBIT_DIMENSION);
+            
             // Build SpacecraftState instance from state vector
             final Frame frame = integrationFrame.get(satId);
             final double muI = mu.get(satId);
-            final Orbit orbit = orbitType.mapArrayToOrbit(orbitY, angleType, currentDate, muI,
-                frame);
+            final Orbit orbit = orbitType.mapArrayToOrbit(orbitY, angleType, currentDate, muI, frame);
             orbits.put(satId, orbit);
+        }
+        
+        // Add additional states orbits
+        for (final Entry<String, SpacecraftStateProvider> entry : this.addStateProviders.entrySet()) {
+            orbits.put(entry.getKey(), entry.getValue().getSpacecraftState(currentDate).getOrbit());
         }
 
         for (int i = 0; i < sizeList; i++) {
@@ -234,26 +259,32 @@ public final class MultiStateVectorInfo implements Serializable {
             final int satRank = sat.getSatRank();
             final int satSize = sat.getSatStateVectSize();
             final double[] localY = new double[satSize];
+
             // Copy part of state vector representing the current state
             System.arraycopy(y, satRank, localY, 0, satSize);
+
             // Build SpacecraftState instance from state vector
             Attitude attForces = null;
             Attitude attEvents = null;
-            if (attProvidersForces != null && attProvidersForces.get(satId) != null
-                && (attProvidersForces.containsKey(satId))) {
+            if (attProvidersForces != null && attProvidersForces.get(satId) != null) {
                 final MultiAttitudeProvider attProvForces = attProvidersForces.get(satId);
                 attForces = attProvForces.getAttitude(orbits);
             }
-            if (attProvidersEvents != null && attProvidersEvents.get(satId) != null
-                && (attProvidersEvents.containsKey(satId))) {
+            if (attProvidersEvents != null && attProvidersEvents.get(satId) != null) {
                 final MultiAttitudeProvider attProvEvents = attProvidersEvents.get(satId);
                 attEvents = attProvEvents.getAttitude(orbits);
             }
-            final SpacecraftState state = new SpacecraftState(localY, orbitType, angleType,
-                currentDate, mu.get(satId), integrationFrame.get(satId),
-                sat.getAddStatesInfos(), attForces, attEvents);
+
+            final SpacecraftState state = new SpacecraftState(localY, orbitType, angleType, currentDate, mu.get(satId),
+                integrationFrame.get(satId), sat.getAddStatesInfos(), attForces, attEvents);
+
             // Add state to map
             states.put(satId, state);
+        }
+
+        // Add additional states
+        for (final Entry<String, SpacecraftStateProvider> entry : this.addStateProviders.entrySet()) {
+            states.put(entry.getKey(), entry.getValue().getSpacecraftState(currentDate));
         }
 
         // Returns built map
@@ -286,50 +317,73 @@ public final class MultiStateVectorInfo implements Serializable {
                                            final OrbitType orbitType, final PositionAngle angleType,
                                            final MultiAttitudeProvider attProviderForces,
                                            final MultiAttitudeProvider attProviderEvents,
-                                           final String id) throws PatriusException {
+                                           final String id)
+        throws PatriusException {
+        
+        final SpacecraftState resultState;
 
-        // Initialization
-        final Map<String, Orbit> orbits = new LinkedHashMap<>();
-        // Loop on all spacecraft ID
-        final List<String> list = this.getIdList();
-        final int sizeList = list.size();
+        // Check if the requested state is given by a provider
+        final SpacecraftStateProvider stateProvider = this.addStateProviders.get(id);
+        if (stateProvider != null) {
+            // Compute the spacecraft state from the provider
+            resultState = stateProvider.getSpacecraftState(currentDate);
+        } else {
 
-        for (int i = 0; i < sizeList; i++) {
-            final String satId = list.get(i);
-            final int satRank = this.getSatRank(satId);
-            final int satSize = this.getSatSize(satId);
-            // final double[] orbitY = new double[SpacecraftState.ORBIT_DIMENSION];
-            final double[] orbitY = new double[satSize];
-            System.arraycopy(y, satRank, orbitY, 0, satSize);
-            // Build SpacecraftState instance from state vector
-            final Frame frame = this.propagationFrameMap.get(satId);
-            final double muI = this.muMap.get(satId);
-            final Orbit orbit = orbitType.mapArrayToOrbit(orbitY, angleType, currentDate, muI,
-                frame);
-            orbits.put(satId, orbit);
+            // Loop on all spacecraft ID
+            final List<String> list = this.getIdList();
+            final int sizeList = list.size();
+
+            // Initialization
+            final Map<String, Orbit> orbits = new LinkedHashMap<>(sizeList + this.addStateProviders.size());
+
+            for (int i = 0; i < sizeList; i++) {
+                final String satId = list.get(i);
+                /*
+                 * The if clause is needed because some instances of this, based on initial states, may contain IDs of
+                 * added providers. As a result they need to be sorted again.
+                 */
+                if (!this.addStateProviders.containsKey(satId)) {
+                    final int satRank = this.getSatRank(satId);
+                    final int satSize = this.getSatSize(satId);
+                    final double[] orbitY = new double[satSize];
+                    System.arraycopy(y, satRank, orbitY, 0, satSize);
+                    // Build SpacecraftState instance from state vector
+                    final Frame frame = this.propagationFrameMap.get(satId);
+                    final double muI = this.muMap.get(satId);
+                    final Orbit orbit = orbitType.mapArrayToOrbit(orbitY, angleType, currentDate, muI, frame);
+                    orbits.put(satId, orbit);
+                }
+            }
+
+            // Add additional states orbits
+            for (final Entry<String, SpacecraftStateProvider> entry : this.addStateProviders.entrySet()) {
+                orbits.put(entry.getKey(), entry.getValue().getSpacecraftState(currentDate).getOrbit());
+            }
+            
+            // Array values selection
+            final OneSatVectorInfo sat = this.satInfos.get(id);
+            final int spacecraftRank = this.getSatRank(id);
+            final int spacecraftSize = this.getSatSize(id);
+            final double[] localY = new double[spacecraftSize];
+            System.arraycopy(y, spacecraftRank, localY, 0, spacecraftSize);
+
+            // SpacecraftState building
+            Attitude attForces = null;
+            Attitude attEvents = null;
+            if (attProviderForces != null) {
+                attForces = attProviderForces.getAttitude(orbits);
+            }
+            if (attProviderEvents != null) {
+                attEvents = attProviderEvents.getAttitude(orbits);
+            }
+
+            // Build state
+            resultState = new SpacecraftState(localY, orbitType, angleType, currentDate, this.muMap.get(id),
+                this.propagationFrameMap.get(id), sat.getAddStatesInfos(), attForces, attEvents);
+
         }
-
-        // array values selection
-        final OneSatVectorInfo sat = this.satInfos.get(id);
-        final int spacecraftRank = this.getSatRank(id);
-        final int spacecraftSize = this.getSatSize(id);
-        final double[] localY = new double[spacecraftSize];
-        System.arraycopy(y, spacecraftRank, localY, 0, spacecraftSize);
-
-        // SpacecraftState building
-        Attitude attForces = null;
-        Attitude attEvents = null;
-        if (attProviderForces != null) {
-            attForces = attProviderForces.getAttitude(orbits);
-        }
-        if (attProviderEvents != null) {
-            attEvents = attProviderEvents.getAttitude(orbits);
-        }
-
-        // Build state
-        return new SpacecraftState(localY, orbitType, angleType,
-            currentDate, this.muMap.get(id), this.propagationFrameMap.get(id), sat.getAddStatesInfos(),
-            attForces, attEvents);
+        
+        return resultState;
     }
 
     /**
@@ -379,7 +433,7 @@ public final class MultiStateVectorInfo implements Serializable {
      */
     private static final class OneSatVectorInfo implements Serializable {
 
-         /** Serializable UID. */
+        /** Serializable UID. */
         private static final long serialVersionUID = 2930848178518048692L;
 
         /**
@@ -401,18 +455,14 @@ public final class MultiStateVectorInfo implements Serializable {
          * Simple constructor.
          * 
          * @param satIndex
-         *        index of the state vector representing the current spacecraft in the global state
-         *        vector.
-         * @param satNumber
-         *        Spacecraft number in the global state vector.
+         *        index of the state vector representing the current spacecraft in the global state vector.
          * @param satStateVectorSize
          *        size of the state vector representing the current spacecraft.
          * @param additionalStates
          *        additional states informations.
          */
-        private OneSatVectorInfo(final int satIndex, final int satNumber,
-            final int satStateVectorSize,
-            final Map<String, AdditionalStateInfo> additionalStates) {
+        private OneSatVectorInfo(final int satIndex, final int satStateVectorSize,
+                                 final Map<String, AdditionalStateInfo> additionalStates) {
             this.satRank = satIndex;
             this.satStateVectSize = satStateVectorSize;
             this.addStates = additionalStates;

@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3318:22/05/2023:[PATRIUS] Besoin de forcer la normalisation dans la classe QuaternionPolynomialSegment
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3156:10/05/2022:[Patrius] Erreur dans le calcul de l'attitude par QuaternionPolynomialProfile ...
@@ -27,21 +28,38 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.attitudes.profiles;
 
 import java.io.Serializable;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.attitudes.AttitudeLeg;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.StrictAttitudeLegsSequence;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunctionLagrangeForm;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * The class aims at computing polynomial attitude quaternion profiles.
@@ -254,4 +272,9 @@ public class QuaternionLagrangePolynomialProfileComputer implements Serializable
 
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

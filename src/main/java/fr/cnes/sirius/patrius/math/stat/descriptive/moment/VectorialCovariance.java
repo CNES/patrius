@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -31,6 +33,7 @@ import java.util.Arrays;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Returns the covariance matrix of the available vectors.
@@ -82,7 +85,8 @@ public class VectorialCovariance implements Serializable {
     public void increment(final double[] v) {
         if (v.length != this.sums.length) {
             // Exception : the vector does not have the right dimension
-            throw new DimensionMismatchException(v.length, this.sums.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSION_SAMPLE, v.length,
+                this.sums.length);
         }
         int k = 0;
         // loop on the vector elements

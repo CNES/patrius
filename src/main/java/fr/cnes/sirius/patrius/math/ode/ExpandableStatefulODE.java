@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -30,6 +33,7 @@ import java.util.List;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.exception.MaxCountExceededException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * This class represents a combined set of first order differential equations,
@@ -228,7 +232,8 @@ public class ExpandableStatefulODE {
 
         // safety checks
         if (primaryStateIn.length != this.primaryState.length) {
-            throw new DimensionMismatchException(primaryStateIn.length, this.primaryState.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_PRIMARY_PART_STATE_DIMENSION,
+                primaryStateIn.length, this.primaryState.length);
         }
 
         // set the data
@@ -272,7 +277,8 @@ public class ExpandableStatefulODE {
 
         // safety checks
         if (secondaryState.length != localArray.length) {
-            throw new DimensionMismatchException(secondaryState.length, localArray.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_SECONDARY_PART_STATE_DIMENSION,
+                secondaryState.length, localArray.length);
         }
 
         // set the data
@@ -314,8 +320,11 @@ public class ExpandableStatefulODE {
     public void setCompleteState(final double[] completeState) {
 
         // safety checks
-        if (completeState.length != this.getTotalDimension()) {
-            throw new DimensionMismatchException(completeState.length, this.getTotalDimension());
+        final int totalDimension = this.getTotalDimension();
+        final int length = completeState.length;
+        if (length != totalDimension) {
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_STATE_EQUATIONS_DIMENSION,
+                length, totalDimension);
         }
 
         // set the data

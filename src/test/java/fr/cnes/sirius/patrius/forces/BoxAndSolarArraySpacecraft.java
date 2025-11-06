@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-:22/08/2024:
+* VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -35,22 +38,41 @@
 package fr.cnes.sirius.patrius.forces;
 
 import java.io.Serializable;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.assembly.Assembly;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.drag.DragSensitive;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.radiation.RadiationSensitive;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * experimental class representing the features of a classical satellite
@@ -718,5 +740,10 @@ public class BoxAndSolarArraySpacecraft implements RadiationSensitive, DragSensi
     public DragSensitive copy(final Assembly assembly) {
         // Unused
         return null;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,7 @@
  * @history Created 16/10/2014
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -37,8 +38,6 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.forces.atmospheres;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -62,6 +61,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Test the {@link US76} class for the US76 Atmosphere model
@@ -766,5 +766,10 @@ public class US76Test {
         Assert.assertEquals(exp.getX(), act.getX(), eps);
         Assert.assertEquals(exp.getY(), act.getY(), eps);
         Assert.assertEquals(exp.getZ(), act.getZ(), eps);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

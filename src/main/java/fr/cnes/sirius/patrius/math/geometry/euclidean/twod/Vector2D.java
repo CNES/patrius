@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-452:21/11/2024:Vector2D
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3134:10/05/2022:[PATRIUS] ameliorations mineures de Vector2D 
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -113,7 +116,7 @@ public class Vector2D implements Vector<Euclidean2D> {
      */
     public Vector2D(final double[] v) {
         if (v.length != 2) {
-            throw new DimensionMismatchException(v.length, 2);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ARRAY_VECTOR, 2, v.length);
         }
         this.x = v[0];
         this.y = v[1];
@@ -468,7 +471,7 @@ public class Vector2D implements Vector<Euclidean2D> {
         final double threshold = normProduct * 0.9999;
 
         // default case
-        double angle = MathLib.acos(dot / normProduct);
+        final double angle;
         if ((dot < -threshold) || (dot > threshold)) {
             // the vectors are almost aligned, compute using the sine
             final Vector3D v3 = Vector3D.crossProduct(new Vector3D(p1.x, p1.y, 0), new Vector3D(p2.x, p2.y, 0));
@@ -477,6 +480,8 @@ public class Vector2D implements Vector<Euclidean2D> {
             } else {
                 angle = FastMath.PI - MathLib.asin(v3.getNorm() / normProduct);
             }
+        } else {
+            angle = MathLib.acos(dot / normProduct);
         }
 
         return angle;

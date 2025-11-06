@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
@@ -47,8 +48,9 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -616,6 +618,7 @@ public class StelaThirdBodyAttractionTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException {
+        Utils.clear();
         final DateComponents datec = new DateComponents(2011, 04, 01);
         final TimeComponents timec = new TimeComponents(0, 0, 0.0);
         date = new AbsoluteDate(datec, timec, TimeScalesFactory.getTAI());

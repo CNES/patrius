@@ -18,6 +18,8 @@
  * @history Created 16/02/2016
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
@@ -174,8 +176,13 @@ public class SchwarzschildRelativisticEffect extends JacobiansParameterizable im
 
         if (this.computeGradientPosition() || this.computeGradientVelocity()) {
 
-            // Constants
-            final double c2 = Constants.SPEED_OF_LIGHT * Constants.SPEED_OF_LIGHT;
+            
+
+            // Check if frame for SpacecraftState is pseudo-inertial
+            if (!s.getFrame().isPseudoInertial()) {
+                // If frame is not pseudo-inertial, an exception is thrown
+                throw new PatriusException(PatriusMessages.NOT_INERTIAL_FRAME);
+            }
 
             // Get position and velocity
             final Vector3D position = s.getPVCoordinates().getPosition();
@@ -186,6 +193,10 @@ public class SchwarzschildRelativisticEffect extends JacobiansParameterizable im
             final double r = MathLib.sqrt(r2);
             final double r3 = r * r2;
             final double v2 = velocity.getNormSq();
+            
+            // Constants
+            final double c2 = Constants.SPEED_OF_LIGHT * Constants.SPEED_OF_LIGHT;
+            
             final double factor = this.bodymu / (c2 * r3);
 
             // Map vectors to arrays

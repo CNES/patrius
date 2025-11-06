@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -26,8 +29,15 @@
  */
 package fr.cnes.sirius.patrius.math.linear;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.ArithmeticUtils;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This class implements inverses of Hilbert Matrices as {@link RealLinearOperator}.
@@ -86,7 +96,8 @@ public class InverseHilbertMatrix
     @Override
     public RealVector operate(final RealVector x) {
         if (x.getDimension() != this.n) {
-            throw new DimensionMismatchException(x.getDimension(), this.n);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_MATRIX_ROW_DIMENSION, x.getDimension(),
+                this.n);
         }
         final double[] y = new double[this.n];
         for (int i = 0; i < this.n; i++) {
@@ -108,5 +119,10 @@ public class InverseHilbertMatrix
             y[i] = pos + neg;
         }
         return new ArrayRealVector(y, false);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

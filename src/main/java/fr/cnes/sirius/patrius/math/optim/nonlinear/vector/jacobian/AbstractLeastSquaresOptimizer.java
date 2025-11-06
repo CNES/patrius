@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -42,6 +44,7 @@ import fr.cnes.sirius.patrius.math.optim.PointVectorValuePair;
 import fr.cnes.sirius.patrius.math.optim.nonlinear.vector.JacobianMultivariateVectorOptimizer;
 import fr.cnes.sirius.patrius.math.optim.nonlinear.vector.Weight;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Base class for implementing least-squares optimizers.
@@ -235,14 +238,13 @@ public abstract class AbstractLeastSquaresOptimizer
      *        array argument contains the model parameters).
      * @return the residuals.
      * @throws DimensionMismatchException
-     *         if {@code params} has a wrong
-     *         length.
+     *         if {@code params} has a wrong length.
      */
     protected double[] computeResiduals(final double[] objectiveValue) {
         final double[] target = this.getTarget();
         if (objectiveValue.length != target.length) {
-            throw new DimensionMismatchException(target.length,
-                objectiveValue.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_RESIDUALS_ARRAYS_DIMENSION,
+                target.length, objectiveValue.length);
         }
 
         final double[] residuals = new double[target.length];

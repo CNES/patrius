@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -30,11 +31,19 @@
  */
 package fr.cnes.sirius.patrius.validation.events;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
@@ -132,5 +141,10 @@ public class EventDetectorMock extends AbstractDetector {
     @Override
     public EventDetector copy() {
         return null;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -15,6 +15,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
@@ -92,8 +96,8 @@ import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
-import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
+import fr.cnes.sirius.patrius.bodies.UserIAUCelestialBody;
+import fr.cnes.sirius.patrius.bodies.mesh.BodyShapeFitter.EllipsoidType;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
@@ -140,11 +144,14 @@ public class FacetBodyShapeTest {
     /** Body radius (m). */
     private final double bodyRadius = 10000.;
 
-    /** User celestial body used for tests. */
-    private UserCelestialBody celestialBody;
+    /** User IAU celestial body used for tests. */
+    private UserIAUCelestialBody celestialBody;
 
     /** Facet celestial body used for tests. */
     private StarConvexFacetBodyShape body;
+
+    /** Body shape fitter used for tests. */
+    private BodyShapeFitter fitter;
 
     /** Mesh loader. */
     private MeshProvider meshProv;
@@ -160,6 +167,8 @@ public class FacetBodyShapeTest {
      */
     @Before
     public void setUp() throws PatriusException, IOException {
+
+        Utils.clear();
 
         // Build body file
         final String spherBodyObjPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator
@@ -184,11 +193,12 @@ public class FacetBodyShapeTest {
             }
         };
 
-        this.celestialBody = new UserCelestialBody("My body", pvCoordinates, 0, IAUPoleFactory.getIAUPole(null),
+        this.celestialBody = new UserIAUCelestialBody("My body", pvCoordinates, 0, IAUPoleFactory.getIAUPole(null),
             FramesFactory.getGCRF(), null);
         this.meshProv = new ObjMeshLoader(modelFile);
         this.body = new StarConvexFacetBodyShape("My body", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
             new ObjMeshLoader(modelFile));
+        this.fitter = new BodyShapeFitter(this.body);
     }
 
     /**
@@ -586,11 +596,14 @@ public class FacetBodyShapeTest {
     public void transformTest() throws PatriusException {
         // builds the map of the ellipsoid type and the expected BodyShape
         final Map<EllipsoidType, EllipsoidBodyShape> map = new HashMap<>();
-        map.put(EllipsoidType.INNER_SPHERE, this.body.getEllipsoid(EllipsoidType.INNER_SPHERE));
-        map.put(EllipsoidType.OUTER_SPHERE, this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE));
-        map.put(EllipsoidType.INNER_ELLIPSOID, this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID));
-        map.put(EllipsoidType.OUTER_ELLIPSOID, this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID));
-        map.put(EllipsoidType.FITTED_ELLIPSOID, this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID));
+        map.put(EllipsoidType.SPHERE_INNER, (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER));
+        map.put(EllipsoidType.SPHERE_OUTER, (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER));
+        map.put(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER,
+            (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER));
+        map.put(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER,
+            (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER));
+        map.put(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED,
+            (EllipsoidBodyShape) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED));
 
         // Initialization
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -620,33 +633,6 @@ public class FacetBodyShapeTest {
             final Vector3D expected2 = expected1.getPosition();
             Assert.assertEquals(0., Vector3D.distance(expected2, actual2), EPS);
         }
-    }
-
-    /** Test for a flattened sphere */
-    @Test
-    public void ellipsoidTest() throws PatriusException, IOException {
-
-        // Flattening used in this test
-        final double flattening = 0.2;
-        // Build body file
-        final String spherBodyObjPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator
-                + "mnt" + File.separator + "EllipsoidBody.obj";
-        final String modelFile = System.getProperty("user.dir") + File.separator + spherBodyObjPath;
-        writeBodyFile(modelFile, 51, 100, this.bodyRadius / 1E3, flattening);
-
-        this.meshProv = new ObjMeshLoader(modelFile);
-        this.body = new StarConvexFacetBodyShape("My body", this.celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
-            new ObjMeshLoader(modelFile));
-
-        final double eps = 1E-6;
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getARadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getARadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getARadius(), eps);
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getCRadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getARadius(), eps);
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getCRadius(), eps);
-        Assert.assertEquals(10000., this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getARadius(), eps);
-        Assert.assertEquals(8000., this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getCRadius(), eps);
     }
 
     /**
@@ -743,7 +729,9 @@ public class FacetBodyShapeTest {
         checkTriangles(actual4, triangle, 100);
 
         // getNeighbors(BodyPoint, distance)
-        final OneAxisEllipsoid fittedEllipsoid = this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
+        final BodyShapeFitter fitter = new BodyShapeFitter(this.body);
+        final OneAxisEllipsoid fittedEllipsoid =
+            (OneAxisEllipsoid) fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED);
 
         // Max distance = this.body.getFittedEllipsoid()100m with far ellipsoid point: no neighbors are included
         final EllipsoidPoint point5 = new EllipsoidPoint(fittedEllipsoid, LLHCoordinatesSystem.BODYCENTRIC_NORMAL, 1,
@@ -1689,86 +1677,6 @@ public class FacetBodyShapeTest {
     /**
      * @testType UT
      *
-     * @description check that inner ellipsoid is as expected.
-     *
-     * @testPassCriteria inner ellipsoid is an ellipsoid of radius, the radius and the flattening of the ellipsoidal
-     *                   body (reference math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void innerEllipsoidTest() {
-        final OneAxisEllipsoid innerEllipsoid = this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
-        Assert.assertEquals(0., (innerEllipsoid.getEquatorialRadius() - this.bodyRadius) / this.bodyRadius, EPS);
-        Assert.assertEquals(0., innerEllipsoid.getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening(),
-            innerEllipsoid.getFlattening(), EPS);
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that outer ellipsoid is as expected.
-     *
-     * @testPassCriteria outer ellipsoid is an ellipsoid of radius, the radius and the flattening of the ellipsoidal
-     *                   body (reference math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void outerEllipsoidTest() {
-        final OneAxisEllipsoid outerEllipsoid = this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
-        Assert.assertEquals(0., (outerEllipsoid.getEquatorialRadius() - this.bodyRadius) / this.bodyRadius, EPS);
-        Assert.assertEquals(0., outerEllipsoid.getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening(),
-            outerEllipsoid.getFlattening(), EPS);
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that inner sphere is as expected.
-     *
-     * @testPassCriteria inner sphere is a sphere of radius, the radius and the flattening of the spherical body
-     *                   (reference math)
-     *
-     * @referenceVersion 4.6
-     *
-     * @nonRegressionVersion 4.6
-     */
-    @Test
-    public void innerSphereTest() {
-        final OneAxisEllipsoid innerSphere = this.body.getEllipsoid(EllipsoidType.INNER_SPHERE);
-        Assert.assertEquals(0., (innerSphere.getEquatorialRadius() - this.bodyRadius) / this.bodyRadius, EPS);
-        Assert.assertEquals(0., innerSphere.getFlattening(), EPS);
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that outer sphere is as expected.
-     *
-     * @testPassCriteria outer sphere is a sphere of radius, the radius and the flattening of the spherical body
-     *                   (reference math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void outerSphereTest() {
-        final OneAxisEllipsoid outerSphere = this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE);
-        Assert.assertEquals(0., (outerSphere.getEquatorialRadius() - this.bodyRadius) / this.bodyRadius, EPS);
-        Assert.assertEquals(0., outerSphere.getFlattening(), EPS);
-    }
-
-    /**
-     * @testType UT
-     *
      * @description check that the resized body sphere is as expected.
      *
      * @testPassCriteria resized body differs from the original body by the defined margin value and type (reference
@@ -1814,43 +1722,51 @@ public class FacetBodyShapeTest {
         // Case with a positive margin scale factor smaller than 1
         final double marginValue6 = 0.5;
         final FacetBodyShape body6 = this.body.resize(MarginType.SCALE_FACTOR, marginValue6);
+        final BodyShapeFitter fitter6 = new BodyShapeFitter(body6);
         checkTriangles(body6.getTriangles(), MarginType.SCALE_FACTOR, marginValue6);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius() * marginValue6,
-            body6.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getFlattening(),
-            body6.getEllipsoid(EllipsoidType.INNER_SPHERE).getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius() * marginValue6,
-            body6.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getFlattening(),
-            body6.getEllipsoid(EllipsoidType.OUTER_SPHERE).getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius() * marginValue6,
-            body6.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius(), EPS_OPTIMIZER);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening(),
-            body6.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() * marginValue6,
-            body6.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening(),
-            body6.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius() * marginValue6,
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(),
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius() * marginValue6,
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(),
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius() * marginValue6,
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius(), EPS_OPTIMIZER);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(),
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius() * marginValue6,
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(),
+            ((OneAxisEllipsoid)fitter6.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(), EPS);
         // Case with a positive margin scale factor larger than 1
         final double marginValue7 = 2.;
         final FacetBodyShape body7 = this.body.resize(MarginType.SCALE_FACTOR, marginValue7);
+        final BodyShapeFitter fitter7 = new BodyShapeFitter(body7);
         checkTriangles(body7.getTriangles(), MarginType.SCALE_FACTOR, marginValue7);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius() * marginValue7,
-            body7.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_SPHERE).getFlattening(),
-            body7.getEllipsoid(EllipsoidType.INNER_SPHERE).getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius() * marginValue7,
-            body7.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getFlattening(),
-            body7.getEllipsoid(EllipsoidType.OUTER_SPHERE).getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius() * marginValue7,
-            body7.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius(), EPS_OPTIMIZER);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening(),
-            body7.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() * marginValue7,
-            body7.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius(), EPS);
-        Assert.assertEquals(this.body.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening(),
-            body7.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius() * marginValue7,
+        ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.SPHERE_INNER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.SPHERE_INNER)).getFlattening(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius() * marginValue7,
+        ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getFlattening(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius() * marginValue7,
+            ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getEquatorialRadius(), EPS_OPTIMIZER);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER)).getFlattening(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid)this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius() * marginValue7,
+            ((OneAxisEllipsoid)fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getEquatorialRadius(), EPS);
+        Assert.assertEquals(
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(),
+            ((OneAxisEllipsoid) fitter7.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER)).getFlattening(), EPS);
         // Case with a negative margin scale
         final double marginValue8 = -0.5;
         try {
@@ -1912,7 +1828,8 @@ public class FacetBodyShapeTest {
         final double apparentRadius = this.body.getApparentRadius(new ConstantPVCoordinatesProvider(scPosition, frame),
             date, pvCoordinatesCel, PropagationDelayType.INSTANTANEOUS);
         // Retrieve the expected radius
-        final double expectedRadius = this.body.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius();
+        final double expectedRadius =
+            ((OneAxisEllipsoid) this.fitter.getEllipsoid(EllipsoidType.SPHERE_OUTER)).getEquatorialRadius();
         // Check that the apparent radius coincides with the radius of the outer sphere
         Assert.assertEquals(0., (apparentRadius - expectedRadius) / expectedRadius, EPS);
 
@@ -1930,7 +1847,7 @@ public class FacetBodyShapeTest {
                 new ConstantPVCoordinatesProvider(Vector3D.PLUS_I, frame), date, pvCoordinatesCel,
                 PropagationDelayType.LIGHT_SPEED);
         Assert.assertTrue(true);
-        } catch (ArithmeticException e) {
+        } catch (final ArithmeticException e) {
             Assert.fail();
         }
         
@@ -2072,32 +1989,41 @@ public class FacetBodyShapeTest {
         writeBodyFile(modelFile, 51, 100, this.bodyRadius / 1E3, 0.);
 
         final PVCoordinatesProvider sunPV = new MeeusSun();
-        final UserCelestialBody celestialBodyBis = new UserCelestialBody("My body", sunPV, 0,
+        final UserIAUCelestialBody celestialBodyBis = new UserIAUCelestialBody("My body", sunPV, 0,
             IAUPoleFactory.getIAUPole(null), frame, null);
 
         final StarConvexFacetBodyShape bodyBis = new StarConvexFacetBodyShape("My body",
-            celestialBodyBis.getRotatingFrame(IAUPoleModelType.TRUE),
-            new ObjMeshLoader(modelFile));
+            celestialBodyBis.getRotatingFrame(IAUPoleModelType.TRUE), new ObjMeshLoader(modelFile));
+        final BodyShapeFitter fitterBis = new BodyShapeFitter(bodyBis);
         final StarConvexFacetBodyShape deserializedBody = TestUtils.serializeAndRecover(bodyBis);
+        final BodyShapeFitter fitterDeserialized = new BodyShapeFitter(deserializedBody);
 
-        final OneAxisEllipsoid fittedEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
-        final OneAxisEllipsoid fittedEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
+        final OneAxisEllipsoid fittedEllipsoid1 =
+            (OneAxisEllipsoid) fitterBis.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED);
+        final OneAxisEllipsoid fittedEllipsoid2 =
+            (OneAxisEllipsoid) fitterDeserialized.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED);
         checkEllipsoid(fittedEllipsoid1, fittedEllipsoid2);
 
-        final OneAxisEllipsoid innerEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
-        final OneAxisEllipsoid innerEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.INNER_ELLIPSOID);
+        final OneAxisEllipsoid innerEllipsoid1 =
+            (OneAxisEllipsoid) fitterBis.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER);
+        final OneAxisEllipsoid innerEllipsoid2 =
+            (OneAxisEllipsoid) fitterDeserialized.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_INNER);
         checkEllipsoid(innerEllipsoid1, innerEllipsoid2);
 
-        final OneAxisEllipsoid outerEllipsoid1 = bodyBis.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
-        final OneAxisEllipsoid outerEllipsoid2 = deserializedBody.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID);
+        final OneAxisEllipsoid outerEllipsoid1 =
+            (OneAxisEllipsoid) fitterBis.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER);
+        final OneAxisEllipsoid outerEllipsoid2 =
+            (OneAxisEllipsoid) fitterDeserialized.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_OUTER);
         checkEllipsoid(outerEllipsoid1, outerEllipsoid2);
 
-        final OneAxisEllipsoid innerSphere1 = bodyBis.getEllipsoid(EllipsoidType.INNER_SPHERE);
-        final OneAxisEllipsoid innerSphere2 = deserializedBody.getEllipsoid(EllipsoidType.INNER_SPHERE);
+        final OneAxisEllipsoid innerSphere1 = (OneAxisEllipsoid) fitterBis.getEllipsoid(EllipsoidType.SPHERE_INNER);
+        final OneAxisEllipsoid innerSphere2 =
+            (OneAxisEllipsoid) fitterDeserialized.getEllipsoid(EllipsoidType.SPHERE_INNER);
         checkEllipsoid(innerSphere1, innerSphere2);
 
-        final OneAxisEllipsoid outerSphere1 = bodyBis.getEllipsoid(EllipsoidType.OUTER_SPHERE);
-        final OneAxisEllipsoid outerSphere2 = deserializedBody.getEllipsoid(EllipsoidType.OUTER_SPHERE);
+        final OneAxisEllipsoid outerSphere1 = (OneAxisEllipsoid) fitterBis.getEllipsoid(EllipsoidType.SPHERE_OUTER);
+        final OneAxisEllipsoid outerSphere2 =
+            (OneAxisEllipsoid) fitterDeserialized.getEllipsoid(EllipsoidType.SPHERE_OUTER);
         checkEllipsoid(outerSphere1, outerSphere2);
 
         Assert.assertEquals(bodyBis.getPVCoordinates(date, frame), deserializedBody.getPVCoordinates(date, frame));
@@ -2249,7 +2175,7 @@ public class FacetBodyShapeTest {
     // final String fullName1 = this.getClass().getClassLoader().getResource(modelFile1).toURI().getPath();
     // final ObjMeshLoader loader = new ObjMeshLoader(fullName1);
     // final FacetBodyShape facetShape = new FacetBodyShape("Facet body shape", FramesFactory.getITRF(),
-    // EllipsoidType.INNER_SPHERE, loader);
+    // EllipsoidType.SPHERE_INNER, loader);
     // // Input planetocentric latitude and longitude
     // final double planetocentricLatitude = 0.04008717791700243;
     // final double planetocentricLongitude = 1.3591551872957268;
@@ -2270,4 +2196,5 @@ public class FacetBodyShapeTest {
     // Assert.assertNotNull(facetShape.getIntersectionPoint(halfLine, position,
     // facetShape.getBodyFrame(), null));
     // }
+
 }

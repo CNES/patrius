@@ -18,6 +18,7 @@
  * @history creation 27/09/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
  * VERSION:4.13:FA:FA-159:08/12/2023:[PATRIUS] Probleme de normalisation dans TopocentricFrame
@@ -726,6 +727,8 @@ public class TopocentricFrameTest {
     @Before
     public void setUp() {
         try {
+
+            Utils.clear();
 
             Utils.setDataRoot("regular-dataPBASE");
             FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));

@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.6:DM:DM-2563:27/01/2021:[PATRIUS] Ajout de la matrice de transition J2Secular 
@@ -535,7 +536,7 @@ public class TLETest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
     }
-
 }

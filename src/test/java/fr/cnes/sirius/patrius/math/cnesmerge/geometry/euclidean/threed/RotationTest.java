@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -30,26 +31,45 @@
 package fr.cnes.sirius.patrius.math.cnesmerge.geometry.euclidean.threed;
 
 import java.util.LinkedHashMap;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map.Entry;
+import fr.cnes.sirius.patrius.Utils;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.complex.Quaternion;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.NotARotationMatrixException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.BlockRealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @description <p>
@@ -1360,5 +1380,10 @@ public class RotationTest {
     private static void checkRotation(final Rotation r, final double q0, final double q1, final double q2,
                                       final double q3) {
         Assert.assertEquals(0, Rotation.distance(r, new Rotation(false, q0, q1, q2, q3)), 1.0e-12);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

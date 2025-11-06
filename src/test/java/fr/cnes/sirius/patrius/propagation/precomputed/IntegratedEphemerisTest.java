@@ -32,6 +32,7 @@
  * limitations under the License.
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
 * VERSION:4.11:DM:DM-38:22/05/2023:[PATRIUS] Suppression de setters pour le MultiNumericalPropagator
@@ -52,6 +53,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
@@ -267,6 +269,7 @@ public class IntegratedEphemerisTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Definition of initial conditions with position and velocity
         final Vector3D position = new Vector3D(7.0e6, 1.0e6, 4.0e6);
         final Vector3D velocity = new Vector3D(-500.0, 8000.0, 1000.0);
@@ -293,5 +296,4 @@ public class IntegratedEphemerisTest {
     private Attitude initialAttitude;
     private NumericalPropagator numericalPropagator;
     private AdaptiveStepsizeIntegrator integrator;
-
 }

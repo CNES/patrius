@@ -18,6 +18,10 @@
  * @history created 02/08/12
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -76,7 +80,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  * @since 1.1
  */
-public class MeeusMoon extends AbstractCelestialBody {
+public class MeeusMoon extends AbstractIAUCelestialBody {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 755708934677699377L;
@@ -106,7 +110,7 @@ public class MeeusMoon extends AbstractCelestialBody {
      */
     public MeeusMoon(final int numberOfLongitudeTerms, final int numberOfLatitudeTerms, final int numberOfDistanceTerms)
         throws PatriusException {
-        super("Meeus Moon", Constants.JPL_SSD_MOON_GM, IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory
+        super("Meeus Moon", Constants.JPL_SSD_MOON_GM, IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MOON), FramesFactory
             .getEclipticMOD(true));
         this.setShape(new OneAxisEllipsoid(MOON_RADIUS, 0., this.getRotatingFrame(IAUPoleModelType.TRUE), "Moon"));
         setEphemeris(new MeeusMoonEphemeris(numberOfLongitudeTerms, numberOfLatitudeTerms, numberOfDistanceTerms,

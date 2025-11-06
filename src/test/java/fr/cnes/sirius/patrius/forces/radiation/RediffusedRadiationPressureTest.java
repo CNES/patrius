@@ -18,6 +18,8 @@
  * @history creation 12/03/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -42,6 +44,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.CNESUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.assembly.AssemblyBuilder;
 import fr.cnes.sirius.patrius.assembly.IPartProperty;
 import fr.cnes.sirius.patrius.assembly.properties.GeometricProperty;
@@ -497,8 +500,6 @@ public class RediffusedRadiationPressureTest {
         final RediffusedRadiationPressure rediffusedRadPressure = new RediffusedRadiationPressure(
             otherInstance, builder.returnAssembly());
 
-        Assert.assertEquals(CelestialBodyFactory.getSun().getName(),
-            rediffusedRadPressure.getInSun().getName());
         Assert.assertEquals("Satellite", rediffusedRadPressure.getAssembly()
             .getMainPart().getName());
     }
@@ -540,6 +541,7 @@ public class RediffusedRadiationPressureTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException {
+        Utils.clear();
         CNESUtils.clearNewFactoriesAndCallSetDataRoot("regular-dataCNES-2003");
     }
 }

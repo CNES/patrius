@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-39:08/12/2023:[PATRIUS] Generalisation de DotProductDetector et ExtremaDotProductDetector
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.11:FA:FA-3277:22/05/2023:[PATRIUS] Ellipsoïde ajuste sur un FacetBodyShape
@@ -39,6 +40,7 @@
 package fr.cnes.sirius.patrius.events;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -336,4 +338,9 @@ public class DotProductDetectorTest {
         Assert.assertEquals(Action.CONTINUE, detectorMin2.eventOccurred(s, true, false));
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

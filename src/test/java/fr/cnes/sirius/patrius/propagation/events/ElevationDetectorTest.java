@@ -18,6 +18,7 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
@@ -50,7 +51,6 @@ import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.ElevationDetector;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
-import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -177,6 +177,7 @@ public class ElevationDetectorTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
         this.mu = 3.9860047e14;

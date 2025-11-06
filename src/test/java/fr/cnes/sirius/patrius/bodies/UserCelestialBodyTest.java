@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * 
+ *
  * @history creation 03/03/2017
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
+ * VERSION:4.14:OPENFD-245:22/08/2024: Ajout d'un constructeur dans AbstractCelestialBody
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -59,11 +71,13 @@
 package fr.cnes.sirius.patrius.bodies;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URISyntaxException;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -78,6 +92,7 @@ import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.ThirdBodyAttraction;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -86,6 +101,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.ClassicalRungeKuttaIntegrator;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
@@ -97,18 +113,20 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Test class for the class UserCelestialBody.
- * 
+ *
  * @author Emmanuel Bignon
- * 
+ *
  * @version $Id: UserCelestialBodyTest.java 17910 2017-09-11 11:58:16Z bignon $
- * 
+ *
  * @since 1.2
- * 
+ *
  */
 public class UserCelestialBodyTest {
 
@@ -116,9 +134,9 @@ public class UserCelestialBodyTest {
     public enum features {
         /**
          * @featureTitle User-defined celestial body
-         * 
+         *
          * @featureDescription Test user-defined celestial body.
-         * 
+         *
          * @coveredRequirements
          */
         USER_CELESTIAL_BODY
@@ -126,6 +144,7 @@ public class UserCelestialBodyTest {
 
     @BeforeClass
     public static void setUpBeforeClass() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         Report.printClassHeader(UserCelestialBodyTest.class.getSimpleName(), "User-defined celestial body");
     }
@@ -133,21 +152,21 @@ public class UserCelestialBodyTest {
     /**
      * @throws PatriusException
      * @testType UT
-     * 
+     *
      * @testedFeature {@link features#USER_CELESTIAL_BODY}
-     * 
+     *
      * @description check that user-defined Neptune returns the exact same results as JPL-built
      *              Neptune planet
-     * 
+     *
      * @input Neptune input data (pole, gm)
-     * 
+     *
      * @output Neptune output data (frame, position at a random date)
-     * 
+     *
      * @testPassCriteria output data between JPL-built Neptune and user-defined Neptune are exactly
      *                   the same.
-     * 
+     *
      * @referenceVersion 3.4
-     * 
+     *
      * @nonRegressionVersion 3.4
      */
     @Test
@@ -158,7 +177,7 @@ public class UserCelestialBodyTest {
             "Celestial body data (Neptune case)", "JPL body", 1E-15, ComparisonType.ABSOLUTE);
 
         // Build bodies
-        final CelestialBody neptuneExpected = CelestialBodyFactory.getNeptune();
+        final IAUCelestialBody neptuneExpected = (IAUCelestialBody) CelestialBodyFactory.getNeptune();
         final PVCoordinatesProvider pvProvider = new PVCoordinatesProvider(){
             /** Serializable UID. */
             private static final long serialVersionUID = 3983409421506898178L;
@@ -182,12 +201,12 @@ public class UserCelestialBodyTest {
         final BodyShape neptuneShape = new OneAxisEllipsoid(ae, (ae - ap) / ae,
             neptuneExpected.getRotatingFrame(IAUPoleModelType.TRUE), "Neptune");
         // UserCelestialBody with GM
-        final UserCelestialBody neptuneActual = new UserCelestialBody("Neptune", pvProvider,
-            neptuneExpected.getGM(), IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE),
+        final UserIAUCelestialBody neptuneActual = new UserIAUCelestialBody("Neptune", pvProvider,
+            neptuneExpected.getGM(), IAUPoleFactory.getIAUPole(PredefinedEphemerisType.NEPTUNE),
             FramesFactory.getICRF(), neptuneShape);
         // UserCelestialBody with attraction model
         final UserCelestialBody neptuneActualAttractionModel = new UserCelestialBody("Neptune", pvProvider,
-            neptuneExpected.getGravityModel(), IAUPoleFactory.getIAUPole(EphemerisType.NEPTUNE),
+            neptuneExpected.getGravityModel(), IAUPoleFactory.getIAUPole(PredefinedEphemerisType.NEPTUNE),
             FramesFactory.getICRF(), neptuneShape);
 
         // Check (GM, PV and frames)
@@ -329,26 +348,27 @@ public class UserCelestialBodyTest {
     /**
      * @throws PatriusException
      * @throws IOException
+     * @throws URISyntaxException
      * @testType VT
-     * 
+     *
      * @testedFeature {@link features#USER_CELESTIAL_BODY}
-     * 
+     *
      * @description performs a propagation (including Sun perturbation) around a user-defined
      *              celestial body (Mars)
-     * 
+     *
      * @input Mars input data (pole, gm)
-     * 
+     *
      * @output ephemeris of object orbiting Mars
-     * 
+     *
      * @testPassCriteria ephemeris is as expected (non-regression). Ephemeris has been check before
      *                   to be consistent
-     * 
+     *
      * @referenceVersion 4.11.1
-     * 
+     *
      * @nonRegressionVersion 4.11.1
      */
     @Test
-    public void testPropagation() throws PatriusException, IOException {
+    public void testPropagation() throws PatriusException, IOException, URISyntaxException {
         Utils.setDataRoot("regular-dataCNES-2003");
 
         // Build bodies
@@ -369,9 +389,9 @@ public class UserCelestialBodyTest {
                 throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
             }
         };
-        // UserCelestialBody with GM
-        final CelestialBody mars = new UserCelestialBody("Mars", pvProvider, CelestialBodyFactory
-            .getMars().getGM(), IAUPoleFactory.getIAUPole(EphemerisType.MARS),
+        // UserIAUCelestialBody with GM
+        final IAUCelestialBody mars = new UserIAUCelestialBody("Mars", pvProvider,
+            CelestialBodyFactory.getMars().getGM(), IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MARS),
             FramesFactory.getICRF(), CelestialBodyFactory.getMars().getShape());
 
         // Build initial state
@@ -385,7 +405,6 @@ public class UserCelestialBodyTest {
             new ClassicalRungeKuttaIntegrator(30), initialState.getFrame());
         final AbstractHarmonicGravityModel gravityModel = (AbstractHarmonicGravityModel) CelestialBodyFactory.getSun()
             .getGravityModel();
-        gravityModel.setCentralTermContribution(false);
         propagator.addForceModel(new ThirdBodyAttraction(gravityModel));
         propagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(initialState.getFrame(), mars
             .getGM())));
@@ -399,9 +418,10 @@ public class UserCelestialBodyTest {
         BoundedPropagator ephemeris = propagator.getGeneratedEphemeris();
 
         // Retrieve and check ephemeris (non-regression)
-        final URL url = UserCelestialBodyTest.class.getClassLoader().getResource(
-            "userCelestialBody/UserCelestialBodyMarsRes.txt");
-        BufferedReader reader = new BufferedReader(new FileReader(url.getPath()));
+        final String url = new File(ClassLoader
+            .getSystemResource("userCelestialBody" + File.separator + "UserCelestialBodyMarsRes.txt").toURI())
+                .getAbsolutePath();
+        BufferedReader reader = new BufferedReader(new FileReader(url));
         final double step = 100;
         for (int i = 0; i < duration / step; i++) {
             final AbsoluteDate date = initialDate.shiftedBy(step * i);
@@ -411,17 +431,18 @@ public class UserCelestialBodyTest {
             final String[] arrayString = reader.readLine().split("[ ]+");
             final PVCoordinates expected = new PVCoordinates(new Vector3D(
                 Double.parseDouble(arrayString[0]), Double.parseDouble(arrayString[1]),
-                Double.parseDouble(arrayString[2])), new Vector3D(
-                Double.parseDouble(arrayString[3]), Double.parseDouble(arrayString[4]),
-                Double.parseDouble(arrayString[5])));
+                Double.parseDouble(arrayString[2])),
+                new Vector3D(
+                    Double.parseDouble(arrayString[3]), Double.parseDouble(arrayString[4]),
+                    Double.parseDouble(arrayString[5])));
             Assert.assertEquals(0., expected.getPosition().subtract(actual.getPosition()).getNorm(), 0.);
             Assert.assertEquals(0., expected.getVelocity().subtract(actual.getVelocity()).getNorm(), 0.);
         }
         reader.close();
 
-        // UserCelestialBody with attractionModel
-        final CelestialBody marsAttractionModel = new UserCelestialBody("Mars", pvProvider, CelestialBodyFactory
-            .getMars().getGravityModel(), IAUPoleFactory.getIAUPole(EphemerisType.MARS),
+        // UserIAUCelestialBody with attractionModel
+        final IAUCelestialBody marsAttractionModel = new UserIAUCelestialBody("Mars", pvProvider,
+            CelestialBodyFactory.getMars().getGravityModel(), IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MARS),
             FramesFactory.getICRF(), CelestialBodyFactory.getMars().getShape());
 
         // Set initial state for the propagator
@@ -432,18 +453,19 @@ public class UserCelestialBodyTest {
         ephemeris = propagator.getGeneratedEphemeris();
 
         // Retrieve and check ephemeris (non-regression)
-        reader = new BufferedReader(new FileReader(url.getPath()));
+        reader = new BufferedReader(new FileReader(url));
         for (int i = 0; i < duration / step; i++) {
             final AbsoluteDate date = initialDate.shiftedBy(step * i);
             final SpacecraftState state = ephemeris.propagate(date);
-            final PVCoordinates actual = state.getPVCoordinates(marsAttractionModel
-                .getInertialFrame(IAUPoleModelType.CONSTANT));
+            final PVCoordinates actual =
+                state.getPVCoordinates(marsAttractionModel.getInertialFrame(IAUPoleModelType.CONSTANT));
             final String[] arrayString = reader.readLine().split("[ ]+");
             final PVCoordinates expected = new PVCoordinates(new Vector3D(
                 Double.parseDouble(arrayString[0]), Double.parseDouble(arrayString[1]),
-                Double.parseDouble(arrayString[2])), new Vector3D(
-                Double.parseDouble(arrayString[3]), Double.parseDouble(arrayString[4]),
-                Double.parseDouble(arrayString[5])));
+                Double.parseDouble(arrayString[2])),
+                new Vector3D(
+                    Double.parseDouble(arrayString[3]), Double.parseDouble(arrayString[4]),
+                    Double.parseDouble(arrayString[5])));
             Assert.assertEquals(0.,
                 expected.getPosition().subtract(actual.getPosition()).getNorm(), 0.);
             Assert.assertEquals(0.,
@@ -454,44 +476,45 @@ public class UserCelestialBodyTest {
 
     /**
      * @testType UT
-     * 
+     *
      * @description check that toString methods of bodies return readable data
-     * 
+     *
      * @testPassCriteria toString() method does not return null string and the UserCelestialBody
      *                   generate the expected string.
-     * 
+     *
      * @referenceVersion 4.8
-     * 
+     *
      * @nonRegressionVersion 4.8
      */
     @Test
     public void testToString() throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
         // JPL (Moon)
-        final CelestialPoint body1 = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody body1 = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         Assert.assertNotNull(body1.toString());
         // Meeus Moon
-        final CelestialPoint body2 = new MeeusMoon();
+        final IAUCelestialBody body2 = new MeeusMoon();
         Assert.assertNotNull(body2.toString());
         // Meeus Sun
-        final CelestialPoint body3 = new MeeusSun(MODEL.BOARD);
+        final IAUCelestialBody body3 = new MeeusSun(MODEL.BOARD);
         Assert.assertNotNull(body3.toString());
 
         // UserCelestialBody (Moon) with GM
-        final CelestialPoint body4 = new UserCelestialBody("My body", new MeeusMoon(), 1.23456789,
-            IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory.getICRF(),
+        final IAUCelestialBody body4 = new UserIAUCelestialBody("My body", new MeeusMoon(), 1.23456789,
+            IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MOON), FramesFactory.getICRF(),
             new MeeusMoon().getShape());
 
         // UserCelestialBody (Moon) with attraction model
-        final CelestialPoint body5 = new UserCelestialBody("My body", new MeeusMoon(), new NewtonianGravityModel(
-            1.23456789), IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory.getICRF(),
+        final IAUCelestialBody body5 = new UserIAUCelestialBody("My body", new MeeusMoon(),
+            new NewtonianGravityModel(1.23456789), IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MOON),
+            FramesFactory.getICRF(),
             new MeeusMoon().getShape());
 
         final String end = "\n";
         final StringBuilder builder = new StringBuilder();
         builder.append("- Name: My body");
         builder.append(end);
-        builder.append("- Corps type: UserCelestialBody class");
+        builder.append("- Corps type: UserIAUCelestialBody class");
         builder.append(end);
         builder.append("- GM: 1.23456789");
         builder.append(end);
@@ -501,20 +524,21 @@ public class UserCelestialBodyTest {
         builder.append(end);
         builder.append("- Ecliptic J2000 frame: My body EclipticJ2000 frame");
         builder.append(end);
-        builder.append("- Inertial frame: My body Inertial frame (constant model)");
+        builder
+            .append(
+                "- orientation: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
         builder.append(end);
-        builder.append("- Mean equator frame: My body Inertial frame (mean model)");
+        builder.append("- Constant inertial frame: My body Inertial frame (constant model)");
         builder.append(end);
-        builder.append("- True equator frame: My body Inertial frame (true model)");
+        builder.append("- Mean inertial frame: My body Inertial frame (mean model)");
+        builder.append(end);
+        builder.append("- True inertial frame: My body Inertial frame (true model)");
         builder.append(end);
         builder.append("- Constant rotating frame: My body Rotating frame (constant model)");
         builder.append(end);
         builder.append("- Mean rotating frame: My body Rotating frame (mean model)");
         builder.append(end);
         builder.append("- True rotating frame: My body Rotating frame (true model)");
-        builder.append(end);
-        builder
-            .append("- orientation: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
         builder.append(end);
         builder.append("- Ephemeris origin: - Name: Meeus Moon");
         builder.append(end);
@@ -528,20 +552,21 @@ public class UserCelestialBodyTest {
         builder.append(end);
         builder.append("- Ecliptic J2000 frame: Meeus Moon EclipticJ2000 frame");
         builder.append(end);
-        builder.append("- Inertial frame: Meeus Moon Inertial frame (constant model)");
+        builder
+            .append(
+                "- orientation: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
         builder.append(end);
-        builder.append("- Mean equator frame: Meeus Moon Inertial frame (mean model)");
+        builder.append("- Constant inertial frame: Meeus Moon Inertial frame (constant model)");
         builder.append(end);
-        builder.append("- True equator frame: Meeus Moon Inertial frame (true model)");
+        builder.append("- Mean inertial frame: Meeus Moon Inertial frame (mean model)");
+        builder.append(end);
+        builder.append("- True inertial frame: Meeus Moon Inertial frame (true model)");
         builder.append(end);
         builder.append("- Constant rotating frame: Meeus Moon Rotating frame (constant model)");
         builder.append(end);
         builder.append("- Mean rotating frame: Meeus Moon Rotating frame (mean model)");
         builder.append(end);
         builder.append("- True rotating frame: Meeus Moon Rotating frame (true model)");
-        builder.append(end);
-        builder
-            .append("- orientation: 2009 NT from IAU/IAG Working Group (IAUPoleFactory) (class fr.cnes.sirius.patrius.bodies.IAUPoleFactory$4)");
         builder.append(end);
         builder.append("- Ephemeris origin: Meeus Moon model (class fr.cnes.sirius.patrius.bodies.MeeusMoon)");
         final String expected = builder.toString();
@@ -571,7 +596,7 @@ public class UserCelestialBodyTest {
         final PVCoordinatesProvider marsPV = CelestialBodyFactory.getMars();
 
         final UserCelestialBody mars = new UserCelestialBody("Mars", marsPV, CelestialBodyFactory
-            .getMars().getGM(), IAUPoleFactory.getIAUPole(EphemerisType.MARS),
+            .getMars().getGM(), IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MARS),
             FramesFactory.getICRF(), CelestialBodyFactory.getMars().getShape());
         final UserCelestialBody deserializedMars = TestUtils.serializeAndRecover(mars);
 
@@ -581,5 +606,39 @@ public class UserCelestialBodyTest {
             Assert.assertEquals(mars.getPVCoordinates(currentDate, frame),
                 deserializedMars.getPVCoordinates(currentDate, frame));
         }
+    }
+
+    /**
+     * This method aims at testing the constructor with user-defined ICRF frame calling the inherited equivalent
+     * constructor from AbstractCelestialBody.
+     *
+     * @throws PatriusException
+     */
+    @Test
+    public void testConstructorWithUserDefinedICRF() throws PatriusException {
+        // Builds the parameters for constructor
+        final String name = "test_body";
+
+        final CelestialBodyFrame parentFrame = FramesFactory.getICRF();
+        final PVCoordinatesProvider aPVCoordinatesProvider = CelestialBodyFactory.getVenus();
+        final double gm = CelestialBodyFactory.getVenus().getGM();
+
+        // Builds the UserCelestialBody using constructor to test
+        final UserCelestialBody celestialBody = new UserCelestialBody(name, gm, parentFrame, aPVCoordinatesProvider);
+
+        // Comparison of built object and expected attributes
+        Assert.assertEquals(celestialBody.getGM(), CelestialBodyFactory.getVenus().getGM(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(celestialBody.getName(), name);
+        Assert.assertEquals(celestialBody.getICRF().getName(), parentFrame.getName());
+
+        final AbsoluteDate testDate = new AbsoluteDate();
+        Assert.assertEquals(celestialBody.getEphemeris().getPVCoordinates(testDate, parentFrame),
+            aPVCoordinatesProvider.getPVCoordinates(testDate, parentFrame));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

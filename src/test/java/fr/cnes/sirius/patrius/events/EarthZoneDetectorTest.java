@@ -18,6 +18,7 @@
  * @history creation 06/08/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -353,5 +355,10 @@ public class EarthZoneDetectorTest {
 
         final EarthZoneDetector detectorCopy = (EarthZoneDetector) detector3.copy();
         Assert.assertEquals(detector3.getMaxCheckInterval(), detectorCopy.getMaxCheckInterval(), 0);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

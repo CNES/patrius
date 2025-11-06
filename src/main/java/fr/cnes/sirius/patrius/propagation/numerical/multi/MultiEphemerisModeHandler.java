@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -193,10 +194,12 @@ public class MultiEphemerisModeHandler implements MultiModeHandler, StepHandler 
 
             // Get state vector informations
             final List<String> list = this.stateInfo.getIdList();
+            list.addAll(this.stateInfo.getIdListAddedProviders());
             final int sizeList = list.size();
-
+            
             // Reset ephemeris
             this.ephemeris = new HashMap<>();
+            
             // Loop on ID list
             for (int i = 0; i < sizeList; i++) {
                 final String satId = list.get(i);

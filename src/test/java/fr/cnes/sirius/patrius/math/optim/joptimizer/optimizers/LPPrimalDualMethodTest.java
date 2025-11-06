@@ -1,9 +1,12 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:FA:FA-2954:15/11/2021:[PATRIUS] Problemes lors de l'integration de JOptimizer dans Patrius 
  * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -46,15 +49,17 @@ package fr.cnes.sirius.patrius.math.optim.joptimizer.optimizers;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
 import fr.cnes.sirius.patrius.math.optim.joptimizer.TestUtils;
-import fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import junit.framework.TestCase;
 
 /**
  * @author alberto trivellato (alberto.trivellato@gmail.com)
@@ -811,8 +816,10 @@ public class LPPrimalDualMethodTest extends TestCase {
 
         // the unbounded bounds are saved on the files with NaN values, so substitute them with
         // acceptable values
-        lb = Utils.replaceValues(lb, Double.NaN, LPPrimalDualMethod.DEFAULT_MIN_LOWER_BOUND);
-        ub = Utils.replaceValues(ub, Double.NaN, LPPrimalDualMethod.DEFAULT_MAX_UPPER_BOUND);
+        lb = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.replaceValues(lb, Double.NaN,
+                LPPrimalDualMethod.DEFAULT_MIN_LOWER_BOUND);
+        ub = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.replaceValues(ub, Double.NaN,
+                LPPrimalDualMethod.DEFAULT_MAX_UPPER_BOUND);
 
         final LPOptimizationRequest or = new LPOptimizationRequest();
         or.setC(c);
@@ -904,8 +911,10 @@ public class LPPrimalDualMethodTest extends TestCase {
 
         // the unbounded bounds are saved on the files with NaN values, so substitute them with
         // acceptable values
-        lb = Utils.replaceValues(lb, Double.NaN, LPPrimalDualMethod.DEFAULT_MIN_LOWER_BOUND);
-        ub = Utils.replaceValues(ub, Double.NaN, LPPrimalDualMethod.DEFAULT_MAX_UPPER_BOUND);
+        lb = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.replaceValues(lb, Double.NaN,
+                LPPrimalDualMethod.DEFAULT_MIN_LOWER_BOUND);
+        ub = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.replaceValues(ub, Double.NaN,
+                LPPrimalDualMethod.DEFAULT_MAX_UPPER_BOUND);
 
         final LPOptimizationRequest or = new LPOptimizationRequest();
         or.setC(c);
@@ -991,8 +1000,10 @@ public class LPPrimalDualMethodTest extends TestCase {
 
         // the unbounded bounds are saved on the files with NaN values, so substitute them with
         // acceptable values
-        lb = Utils.replaceValues(lb, Double.NaN, LPPrimalDualMethod.DEFAULT_MIN_LOWER_BOUND);
-        ub = Utils.replaceValues(ub, Double.NaN, LPPrimalDualMethod.DEFAULT_MAX_UPPER_BOUND);
+        lb = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.replaceValues(lb, Double.NaN,
+                LPPrimalDualMethod.DEFAULT_MIN_LOWER_BOUND);
+        ub = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.replaceValues(ub, Double.NaN,
+                LPPrimalDualMethod.DEFAULT_MAX_UPPER_BOUND);
 
         final LPOptimizationRequest or = new LPOptimizationRequest();
         or.setC(c);
@@ -1668,5 +1679,10 @@ public class LPPrimalDualMethodTest extends TestCase {
         assertEquals(0.39999, sol[1], 0.01);
         assertEquals(-0.799, value, 0.01);
 
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

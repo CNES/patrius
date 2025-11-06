@@ -20,8 +20,11 @@
  */
 /* 
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
  * VERSION:4.5.1:FA:FA-2540:04/08/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear
@@ -36,22 +39,39 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.util.Arrays;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.function.Function;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathUnsupportedOperationException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooLargeException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRowSymmetricMatrix.SymmetryType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@code DiagonalMatrix}
@@ -252,7 +272,7 @@ public class DiagonalMatrixTest {
             Assert.fail();
         } catch (final DimensionMismatchException e) {
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
-            Assert.assertEquals("2 != 3", e.getMessage());
+            Assert.assertEquals("Matrix dimension is invalid: expected = 3, actual = 2.", e.getMessage());
         }
     }
 
@@ -1233,7 +1253,7 @@ public class DiagonalMatrixTest {
     @Test
     public void testMultiplyByIncompatibleMatrix() {
         final DiagonalMatrix matrix = new DiagonalMatrix(3);
-        CheckUtils.checkMultiplyIncompatibleRealMatrix(matrix);
+        CheckUtils.checkMultiplySymmetricIncompatibleRealMatrix(matrix);
         CheckUtils.checkMultiplyIncompatibleSymmetricMatrix(matrix);
         CheckUtils.checkMultiplyIncompatibleSymmetricPositiveMatrix(matrix);
         CheckUtils.checkMultiplyIncompatibleDecomposedMatrix(matrix);
@@ -1359,7 +1379,49 @@ public class DiagonalMatrixTest {
     @Test
     public void testOperateIncompatibleVector() {
         final DiagonalMatrix matrix = new DiagonalMatrix(3);
-        CheckUtils.checkOperateIncompatibleVector(matrix);
+        final int nr = matrix.getRowDimension();
+
+        // As DiagonalMatrix exception handling is a bit different, we will not use the common
+        // CheckUtils.checkOperateIncompatibleVector() method.
+        final String exceptionFormat = "The vector dimension (%d) and the square matrix dimension (%d) are not equal.";
+
+        // Matching dimension is too low
+        try {
+            matrix.operate(new ArrayRealVector(nr - 1));
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr - 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.operate(new double[nr - 1]);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr - 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        // Matching dimension is too large
+        try {
+            matrix.operate(new ArrayRealVector(nr + 1));
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr + 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.operate(new double[nr + 1]);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr + 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
     }
 
     /**
@@ -1398,7 +1460,47 @@ public class DiagonalMatrixTest {
     @Test
     public void testPreMultiplyByIncompatibleVector() {
         final DiagonalMatrix matrix = new DiagonalMatrix(3);
-        CheckUtils.checkPreMultiplyIncompatibleVector(matrix);
+        final int nr = matrix.getRowDimension();
+
+        // As DiagonalMatrix exception handling is a bit different, we will not use the common
+        // CheckUtils.checkPreMultiplyIncompatibleVector() method.
+        final String exceptionFormat = "The vector dimension (%d) and the square matrix dimension (%d) are not equal.";
+        try {
+            matrix.preMultiply(new ArrayRealVector(nr - 1));
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr - 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.preMultiply(new double[nr - 1]);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr - 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        // Matching dimension is too large
+        try {
+            matrix.preMultiply(new ArrayRealVector(nr + 1));
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr + 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
+
+        try {
+            matrix.preMultiply(new double[nr + 1]);
+            Assert.fail();
+        } catch (final DimensionMismatchException e) {
+            final String expectedMessage = String.format(exceptionFormat, nr + 1, nr);
+            Assert.assertEquals(DimensionMismatchException.class, e.getClass());
+            Assert.assertEquals(expectedMessage, e.getMessage());
+        }
     }
 
     /**
@@ -2417,5 +2519,10 @@ public class DiagonalMatrixTest {
         public long getResult() {
             return this.result;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

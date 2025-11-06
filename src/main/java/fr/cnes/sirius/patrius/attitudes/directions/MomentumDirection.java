@@ -18,6 +18,8 @@
  * @history creation 01/12/2011
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.4:DM:DM-339:10/06/2024:[PATRIUS] Complément OPENFD-99 sur MomentumDirection
  * pour débloquer le FDS STD 2.10
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp

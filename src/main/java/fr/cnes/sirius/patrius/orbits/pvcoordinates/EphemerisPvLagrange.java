@@ -18,6 +18,9 @@
  * @history created 25/09/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
  * VERSION:4.13.1:FA:FA-199:17/01/2024:[PATRIUS] Utilisation du dernier point utilisable dans EphemerisPvHermite
  * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -30,9 +33,6 @@
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.transformations.Transform;
-import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunctionLagrangeForm;
-import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.utils.BinarySearchIndexOpenClosed;
 import fr.cnes.sirius.patrius.math.utils.ISearchIndex;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
@@ -62,12 +62,10 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * @since 3.1
  * 
  */
-public class EphemerisPvLagrange extends AbstractBoundedPVProvider {
+public class EphemerisPvLagrange extends AbstractEphemerisPvHermiteLagrange {
 
     /** Serializable UID. */
     private static final long serialVersionUID = -6755794029652850329L;
-    /** Ephemeris Lagrange interpolator */
-    private PolynomialFunctionLagrangeForm interpolatorPV;
 
     /**
      * Creates an instance of EphemerisPvLagrange
@@ -115,76 +113,13 @@ public class EphemerisPvLagrange extends AbstractBoundedPVProvider {
     }
 
     /**
-     * Frame can be null : by default the frame of expression is the frame used at instantiation
+     * {@inheritDoc}
+     * <br>
+     * Note: Frame can be null : by default the frame of expression is the frame used at instantiation
      * (which is the frame of the first spacecraft state when instantiation is done from a table of spacecraft states).
-     * 
-     * @param date
-     *        date of interpolation
-     * @param frame
-     *        frame of coordinates expression. (can be null)
-     * @throws PatriusException
-     *         if date of interpolation is too near from min and max input dates
-     *         compare to Lagrange order
-     * @return PVcoordinates at interpolation date in the chosen frame
      */
     @Override
     public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame) throws PatriusException {
-
-        // Check if date is exactly on validity interval bounds, in that case (!= null) returns boundary state
-        PVCoordinates interpolPV = this.checkBounds(date);
-
-        if (interpolPV == null) {
-            // Duration from reference to search index
-            final double duration = date.durationFrom(this.getDateRef());
-
-            // get the nearest index for this duration
-            final int index = this.getSearchIndex().getIndex(duration);
-            // the interpolation is valid only if 0<= index +1 -interpoOrder/2 or index + order/2 <= maximalIndex
-            final int i0 = this.indexValidity(index);
-
-            // checks if this index has already been considered and stores for future computations
-            if (index != this.getPreviousIndex()) {
-                this.setPreviousIndex(index);
-
-                // computes the abscissa values (t) and the y values which will be used to compute the Lagrange
-                // coefficients
-                final double[] tDateExtract = new double[this.polyOrder];
-                final double[][] tPVExtract = new double[SpacecraftState.ORBIT_DIMENSION][this.polyOrder];
-
-                // gets the PV coordinates and the delta t from startDate
-                for (int i = 0; i < this.polyOrder; i++) {
-                    tDateExtract[i] = this.tDate[i0 + i].durationFrom(this.tDate[i0]);
-                    final PVCoordinates currentPV = this.tPVCoord[i0 + i];
-                    tPVExtract[0][i] = currentPV.getPosition().getX();
-                    tPVExtract[1][i] = currentPV.getPosition().getY();
-                    tPVExtract[2][i] = currentPV.getPosition().getZ();
-                    tPVExtract[3][i] = currentPV.getVelocity().getX();
-                    tPVExtract[4][i] = currentPV.getVelocity().getY();
-                    tPVExtract[5][i] = currentPV.getVelocity().getZ();
-                }
-                this.interpolatorPV = new PolynomialFunctionLagrangeForm(tDateExtract, tPVExtract);
-            }
-
-            // computes the interpolated orbit
-            final double[] y = new double[SpacecraftState.ORBIT_DIMENSION];
-
-            for (int i = 0; i < SpacecraftState.ORBIT_DIMENSION; i++) {
-                y[i] = this.interpolatorPV.valueIndex(i, date.durationFrom(this.tDate[i0]));
-            }
-
-            // Get the Lagrange interpolation results
-            final Vector3D p = new Vector3D(y[0], y[1], y[2]);
-            final Vector3D v = new Vector3D(y[3], y[4], y[5]);
-
-            interpolPV = new PVCoordinates(p, v);
-        }
-
-        // If needed, convert position, velocity to the right frame
-        if ((frame != null) && (this.getFrame() != frame)) {
-            final Transform t = this.getFrame().getTransformTo(frame, date);
-            interpolPV = t.transformPVCoordinates(interpolPV);
-        }
-
-        return interpolPV;
+        return super.getPVCoordinates(date, frame, null, false);
     }
 }

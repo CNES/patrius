@@ -18,6 +18,7 @@
  * @history Created 04/04/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.4:DM:DM-2231:04/10/2019:[PATRIUS] Creation d'un cache dans les profils de vitesse angulaire
@@ -42,22 +43,37 @@
  */
 package fr.cnes.sirius.patrius.attitudes.profiles;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.attitudes.Attitude;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.profiles.AbstractAngularVelocitiesAttitudeProfile.AngularVelocityIntegrationType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunctionLagrangeForm;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link AngularVelocitiesPolynomialProfileLeg} class.
@@ -141,5 +157,10 @@ public class AngularVelocitiesPolynomialProfileLegTest {
         Assert.assertEquals(0, Rotation.distance(expected.getRotation(), actual.getRotation()), 2E-10);
         Assert.assertEquals(0, expected.getSpin().subtract(actual.getSpin()).getNorm(), 1E-15);
         Assert.assertEquals(0, expected.getRotationAcceleration().subtract(actual.getRotationAcceleration()).getNorm(), 1E-15);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

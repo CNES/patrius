@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3286:22/05/2023:[PATRIUS] Ajout d'une methode toString() a la classe Pair
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -28,7 +29,11 @@
 package fr.cnes.sirius.patrius.math.util;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test for {@link Pair}.
@@ -134,5 +139,10 @@ public class PairTest {
         public String toString() {
             return "" + this.i + "";
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

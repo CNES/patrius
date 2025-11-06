@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -102,6 +103,7 @@ public class IERSTransformationsValTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("testIERS");
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(false));
     }
@@ -609,4 +611,5 @@ public class IERSTransformationsValTest {
         final double[][] mult = multiplyMatrix33(transposed1, matrix2);
         assertMatrixI(mult, epsilon);
     }
+
 }

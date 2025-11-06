@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -100,7 +102,7 @@ public class ChiSquareTest {
         // Check there is enough data
         if (expected.length < 2) {
             // Exception
-            throw new DimensionMismatchException(expected.length, 2);
+            throw new DimensionMismatchException(PatriusMessages.ARRAY_AT_LEAST_N_ROWS, 2, expected.length);
         }
         // Check data size is consistent
         if (expected.length != observed.length) {
@@ -465,7 +467,7 @@ public class ChiSquareTest {
 
         // Make sure lengths are same
         if (observed1.length < 2) {
-            throw new DimensionMismatchException(observed1.length, 2);
+            throw new DimensionMismatchException(PatriusMessages.ARRAY_AT_LEAST_N_ROWS, 2, observed1.length);
         }
         if (observed1.length != observed2.length) {
             throw new DimensionMismatchException(observed1.length, observed2.length);
@@ -641,10 +643,10 @@ public class ChiSquareTest {
     private static void checkArray(final long[][] array) {
 
         if (array.length < 2) {
-            throw new DimensionMismatchException(array.length, 2);
+            throw new DimensionMismatchException(PatriusMessages.ARRAY_AT_LEAST_N_ROWS, 2, array.length);
         }
         if (array[0].length < 2) {
-            throw new DimensionMismatchException(array[0].length, 2);
+            throw new DimensionMismatchException(PatriusMessages.ARRAY_AT_LEAST_N_COLUMNS, 2, array[0].length);
         }
 
         MathArrays.checkRectangular(array);

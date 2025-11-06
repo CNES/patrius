@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-350:21/11/2024:[PATRIUS] IsisSpinBiasSlew - Renvoi d'un
+ * message lorsque le nombre max d'itérations est atteint
  * VERSION:4.13:DM:DM-109:08/12/2023:[PATRIUS] IsisSpinBiasSlew - Renvoi du
  * profil de ralliement lorsque le nombre max d'iterations est atteint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -35,18 +38,25 @@
  */
 package fr.cnes.sirius.patrius.attitudes;
 
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.slew.IsisSpinBiasSlewComputer;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.Orbit;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -62,6 +72,10 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  */
 public class IsisSpinBiasSlewTest {
+    
+
+    /** Logger for this class */
+    private static final Logger LOGGER = Logger.getLogger(IsisSpinBiasSlewComputer.class.getName());
 
     /** Features description. */
     public enum features {
@@ -833,23 +847,28 @@ public class IsisSpinBiasSlewTest {
      * @testedFeature {@link features#ISIS_SPIN_BIAS_SLEW}
      * 
      * @testedMethod {@link IsisSpinBiasSlewComputer#computeDuration(PVCoordinatesProvider,AttitudeProvider,
-     *                                                          AbsoluteDate, AttitudeProvider, AbsoluteDate)}
+     *               AbsoluteDate, AttitudeProvider, AbsoluteDate)}
      * 
      * @description This test checks an exception is raised due to no convergence and that the exception is not
-     *              raised when the attribute setThrowExceptionOnMaxIterations is set to false.
+     *              raised but a WARNING message is displayed when the attribute setThrowExceptionOnMaxIterations is set
+     *              to false.
      * 
      * @input {@link IsisSpinBiasSlewComputer} data
      * 
      * @output exception + duration
      * 
-     * @testPassCriteria an exception is thrown at first, then, the good value is returned
+     * @testPassCriteria an exception is thrown at first, then, the good value is returned with a WARNING message at the
+     *                   console
      * 
-     * @referenceVersion 4.13
+     * @referenceVersion 4.15
      * 
-     * @nonRegressionVersion 4.13
+     * @nonRegressionVersion 4.15
      */
     @Test
     public void testExceptionMaxIterations() throws PatriusException {
+        // Setting the Locale
+        Locale.setDefault(new Locale("ENG"));
+
         // Initialization
         final AttitudeLaw initialLaw = new ConstantAttitudeLaw(FramesFactory.getEME2000(), new Rotation(new Vector3D(
             1., 0., 1.), MathLib.toRadians(20.)));
@@ -870,23 +889,31 @@ public class IsisSpinBiasSlewTest {
             { -0.258819, -0.258819, 0.258819, 0.258819 }
         };
         final double tranquillisationTime = 100.;
-        
+
         // Max iterations is set to 1 so it cannot converge
         final IsisSpinBiasSlewComputer computer = new IsisSpinBiasSlewComputer(dtSCAO, thetaMaxAllowed, durationMax,
             dtConvergenceThreshold, inertiaMatrix, rwTorqueAllocAccel, rwTorqueAllocDecel, rwDeltaMomentumAlloc,
             rwMatrix, tranquillisationTime, 1);
-        
-        //First check an exception is thrown
+
+        // First check if the correct warning message is displayed
         try {
             computer.computeDuration(null, initialLaw, initialDate, finalLaw, null);
             Assert.fail();
-        } catch(PatriusException e) {
-            Assert.assertTrue(true);
+        } catch (PatriusException e) {
+            Assert.assertEquals("Exception message is not the expected one!", e.getMessage(),
+                "Failed to converge after 1 iterations");
         }
-        
+
         // Now change the boolean and test that we get what is calculated in the first iteration
         computer.setThrowExceptionOnMaxIterations(false);
+        // Activate the logger of the IsisSpinBiasSlewComputer to the WARNING level to have the message
+        LOGGER.setLevel(Level.WARNING);
         Assert.assertEquals(153.33818, computer.computeDuration(null, initialLaw, initialDate, finalLaw, null),
-                            1.E-5);
+            1.E-5);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

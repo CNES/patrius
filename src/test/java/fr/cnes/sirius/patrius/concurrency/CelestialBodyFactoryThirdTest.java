@@ -17,6 +17,7 @@
  * @history creation 05/04/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -26,15 +27,25 @@
 package fr.cnes.sirius.patrius.concurrency;
 
 import java.net.URL;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.concurrent.CountDownLatch;
+import fr.cnes.sirius.patrius.Utils;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.Test;
+import fr.cnes.sirius.patrius.Utils;
 
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * TestNG for use of the CelestialBodyFactory in a multi-threaded environment.
@@ -139,4 +150,9 @@ public class CelestialBodyFactoryThirdTest {
         }
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

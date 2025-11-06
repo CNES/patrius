@@ -18,6 +18,7 @@
  * @history creation 30/11/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
@@ -34,6 +35,7 @@ package fr.cnes.sirius.patrius.attitudes.directions;
 
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -1110,5 +1112,10 @@ public class GenericTargetDirectionTest {
         final Vector3D dir = direction.getVector(origin, signalDirection, aberrationCorrection, originDate, fixedDate,
             frame, 1E-12);
         Assert.assertEquals(0., dir.normalize().subtract(expected).getNorm(), 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

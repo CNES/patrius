@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-171:22/08/2024: [PATRIUS] Lecture d'un corps celeste quelconque dans un fichier bsp
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
@@ -25,7 +28,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
+import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -68,9 +75,6 @@ public final class SpiceBody {
     /** Name of variables to watch in the kernel manager. */
     private static final String[] WNAMES = { "NAIF_BODY_NAME", "NAIF_BODY_CODE" };
 
-    /** Size of the internal id-name database lists. */
-    private static final int MAXBOD = 853;
-
     /** Space for the kernel id-name lists. */
     private static final int NROOM = 14983;
 
@@ -82,13 +86,13 @@ public final class SpiceBody {
 
     // Body-code lists
     /** Table of ids in the database. */
-    private static int[] defcod = new int[NPERM];
+    private static int[] defcod;
 
     /** Table of normalized names in the database. */
-    private static String[] defnor = new String[NPERM];
+    private static String[] defnor;
 
     /** Table of original names in the database. */
-    private static String[] defnam = new String[NPERM];
+    private static String[] defnam;
 
     /** Constructed list of body names (no repetition). */
     private static List<String> nameList;
@@ -120,6 +124,9 @@ public final class SpiceBody {
     /** Regex to trim string and not allow more than 1 space in a row. */
     private static final String REGEX_SPACE = "^ +|( )+";
 
+    /** Complementary (body code, body name) mapping. */
+    private static final Map<Integer, String> BODY_CODE_NAME_MAPPING = new ConcurrentHashMap<Integer, String>();
+    
     /**
      * Constructor.
      */
@@ -134,19 +141,26 @@ public final class SpiceBody {
      *         if there is a problem with the counter array or the pool initialization
      */
     private static void init() throws PatriusException {
+    	// Build body code name mapping arrays taking into account default size and user mapping
+    	final int bodyNumber = NPERM + BODY_CODE_NAME_MAPPING.size();
+        defcod = new int[bodyNumber];
+        defnor = new String[bodyNumber];
+        defnam = new String[bodyNumber];
+    	
         // Initialize the arrays
         Arrays.fill(kernam, "");
         Arrays.fill(kernor, "");
         Arrays.fill(kercod, 0);
-        // Populate the initial values of the DEFNAM, DEFNOR, and DEFCOD arrays from the built-in code list.
+        // Populate the initial values of the DEFNAM, DEFNOR, and DEFCOD arrays from the built-in code list
+        // Including user-added mapping
         populateBodies();
 
         // Populate the initial built-in code-name lists.
         // Loop through the input arrays to populate lists. We do it backwards to pick and register only the highest
         // priority (latest) values for each normalized name.
-        nameList = new ArrayList<>(MAXBOD);
-        norList = new ArrayList<>(MAXBOD);
-        idList = new ArrayList<>(MAXBOD);
+        nameList = new ArrayList<>(bodyNumber);
+        norList = new ArrayList<>(bodyNumber);
+        idList = new ArrayList<>(bodyNumber);
         for (int i = defnor.length - 1; i >= 0; i--) {
             if (!norList.contains(defnor[i])) {
                 norList.add(defnor[i]);
@@ -166,6 +180,15 @@ public final class SpiceBody {
         first = false;
     }
 
+    /**
+     * Gets the BodyCodeNameMapping
+     * 
+     * @return a copy of the original bodyCodeNameMapping
+     */
+    public static Map<Integer, String> getBodycodenamemapping() {
+        return new ConcurrentHashMap<Integer, String>(BODY_CODE_NAME_MAPPING);
+    }
+    
     /**
      * Translate the SPICE integer code of a body into a common name for that body.<br>
      * This routine is a translation of the BODC2N routine from the Spice library
@@ -372,8 +395,8 @@ public final class SpiceBody {
 
     /**
      * Translate a string containing a body name or ID code to an integer code, but bypass calling
-     * {@link SpiceBody#bodyString2Code(String)} and return saved values provided by the caller if the name is the same
-     * as the saved name and the SpiceBody state did not change.
+     * {@link SpiceBody#bodyString2Code(String, boolean[])} and return saved values provided by the caller if the name
+     * is the same as the saved name and the SpiceBody state did not change.
      * <p>
      * Based on the routine ZZBODS2C routine of the SPICE library.
      * </p>
@@ -2609,7 +2632,15 @@ public final class SpiceBody {
         defcod[694] = -658031;
         defnam[694] = "DIMORPHOS";
 
-        for (int i = 0; i < NPERM; i++) {
+        // Complementary user mapping
+        int addedBodies = 0;
+        for (final Entry<Integer, String> entry : BODY_CODE_NAME_MAPPING.entrySet()) {
+        	defcod[NPERM + addedBodies] = entry.getKey();
+        	defnam[NPERM + addedBodies] = entry.getValue();
+        	addedBodies++;
+		}
+
+        for (int i = 0; i < NPERM + BODY_CODE_NAME_MAPPING.size(); i++) {
             defnor[i] = normalize(defnam[i]);
         }
 
@@ -2625,6 +2656,26 @@ public final class SpiceBody {
      */
     private static String normalize(final String str) {
         return str.replaceAll(REGEX_SPACE, "$1").toUpperCase(Locale.US);
+    }
+
+    /**
+     * Add complementary (body code, body name) mapping which is not included in SPICE default mapping.
+     * <P>Warning: this method should be called before any computation using 
+     * {@link BSPEphemerisLoader}.</p>
+     * <p>SPICE body mapping is defined statically and is therefore common to all {@link BSPEphemerisLoader}.</p>
+     * @param aBodyCodeNameMapping (body code, body name) mapping
+     */
+    public static void addSpiceBodyMapping(final Map<Integer, String> aBodyCodeNameMapping) {
+    	BODY_CODE_NAME_MAPPING.putAll(aBodyCodeNameMapping);
+        first = true;
+    }
+
+    /**
+     * Clear the SPICE body mapping.
+     */
+    public static void clearSpiceBodyMapping() {
+        BODY_CODE_NAME_MAPPING.clear();
+        first = true;
     }
 
     // CHECKSTYLE: resume MagicNumber check

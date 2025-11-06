@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -53,8 +54,10 @@ import fr.cnes.sirius.patrius.math.analysis.solver.UnivariateSolverUtils;
 import fr.cnes.sirius.patrius.math.exception.NoBracketingException;
 import fr.cnes.sirius.patrius.math.exception.TooManyEvaluationsException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepInterpolator;
+import fr.cnes.sirius.patrius.propagation.sampling.multi.MultiPatriusStepInterpolator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -85,6 +88,9 @@ public class EventState implements Serializable {
 
      /** Serializable UID. */
     private static final long serialVersionUID = 4489391420715269318L;
+    
+    /** Spacecraft related to the detector and event. */
+    private final String spacecraftId;
 
     /** Event detector. */
     private final EventDetector detector;
@@ -97,12 +103,18 @@ public class EventState implements Serializable {
 
     /** Time at the beginning of the step. */
     private AbsoluteDate t00;
+    
+    /** Time at the beginning of the step. */
+    private AbsoluteDate ta;
 
     /** Value of the event detector at the beginning of the step. */
     private double g0;
 
     /** Value of the event detector at the beginning of the step. */
     private double g0Old;
+    
+    /** Value of the event detector at the beginning of the step. */
+    private double ga;
 
     /** Indicator of event expected during the step. */
     private boolean pendingEvent;
@@ -133,18 +145,20 @@ public class EventState implements Serializable {
     private final UnivariateSolver solver;
 
     /**
-     * Constructor allowing the user to provide
-     * the solver used in switch detection.
+     * Constructor allowing the user to provide the solver used in switch detection and an identifier for the spacecraft
+     * whose state is used by the detector.
      * 
      * @param detectorIn
      *        monitored event detector
      * @param solverIn
      *        the UnivariateSolver used in switch detection
+     * @param spacecraftId
+     *        identifier of the spacecraft (can be null)
      */
-    public EventState(final EventDetector detectorIn,
-        final UnivariateSolver solverIn) {
+    public EventState(final EventDetector detectorIn, final UnivariateSolver solverIn, final String spacecraftId) {
         super();
         this.detector = detectorIn;
+        this.spacecraftId = spacecraftId;
 
         // some dummy values ...
         this.t0 = null;
@@ -160,14 +174,36 @@ public class EventState implements Serializable {
     }
 
     /**
-     * Simple constructor. The default solver
-     * used in switch detection is the Brent solver.
+     * Simple constructor. The default solver used in switch detection is the Brent solver and no identifier is provided
+     * for the spacecraft.
      * 
      * @param detectorIn
      *        monitored event detector
      */
     public EventState(final EventDetector detectorIn) {
-        this(detectorIn, new BracketingNthOrderBrentSolver(detectorIn.getThreshold(), 5));
+        this(detectorIn, null);
+    }
+    
+    /**
+     * Constructor allowing the user to provide an identifier for the spacecraft whose state is used by the detector.
+     * The default solver used in switch detection is the Brent solver.
+     * 
+     * @param detectorIn
+     *        monitored event detector
+     * @param spacecraftId
+     *        identifier of the spacecraft (can be null)
+     */
+    public EventState(final EventDetector detectorIn, final String spacecraftId) {
+        this(detectorIn, new BracketingNthOrderBrentSolver(detectorIn.getThreshold(), 5), spacecraftId);
+    }
+    
+    /**
+     * Get the identifier of the spacecraft.
+     * 
+     * @return the identifier of the spacecraft
+     */
+    public String getSpacecraftId() {
+        return this.spacecraftId;
     }
 
     /**
@@ -249,8 +285,8 @@ public class EventState implements Serializable {
     public boolean evaluateStep(final SpacecraftState state) throws PatriusException {
 
         // Update bounds
-        final double ga = this.g0;
-        final double gb = this.detector.g(state);
+        final double gInitial = this.g0;
+        final double gState = this.detector.g(state);
 
         // Discard sign change if correspond to an already treated event at exactly the same date
         final boolean pastEvent = (this.previousEventTime != null)
@@ -265,21 +301,23 @@ public class EventState implements Serializable {
 
             if (wasPendingEvent) {
                 // An event was pending:
-                // To avoid to detect cancelled event, we must check sign of detector at the
-                // beginning of the main step
+                // To avoid to detect cancelled event, we must check sign of detector at the beginning of the main step
                 // rather than at t-
-                signChange = (this.g0Old > 0) ^ (gb >= 0);
+                signChange = (this.g0Old > 0) ^ (gState >= 0);
             } else {
                 // No event pending:
                 // Classic way of checking events
-                signChange = (ga >= 0) ^ (gb >= 0);
+                signChange = (gInitial >= 0) ^ (gState >= 0);
             }
 
             if (signChange) {
                 // Sign change
-
-                this.increasing = wasPendingEvent ? gb >= this.g0Old : gb >= ga;
-
+                if (wasPendingEvent) {
+                    this.increasing = gState >= this.g0Old;
+                } else {
+                    this.increasing = gState >= gInitial;
+                }
+                
                 // Take into account slope selection and propagation direction
                 final int slope = this.detector.getSlopeSelection();
                 if (slope == 2 || ((this.forward ^ !this.increasing) ^ slope == 1)) {
@@ -321,8 +359,7 @@ public class EventState implements Serializable {
     // CHECKSTYLE: stop ReturnCount check
     // Reason: Orekit code kept as such
     @SuppressWarnings("PMD.ExceptionAsFlowControl")
-    public boolean evaluateStep(final PatriusStepInterpolator interpolator)
-                                                                           throws PatriusException {
+    public boolean evaluateStep(final PatriusStepInterpolator interpolator) throws PatriusException {
         // CHECKSTYLE: resume MethodLength check
         // CHECKSTYLE: resume CyclomaticComplexity check
         // CHECKSTYLE: resume ReturnCount check
@@ -383,6 +420,8 @@ public class EventState implements Serializable {
                         interpolator.setInterpolatedDate(interpolatedDate);
                         return EventState.this.detector.g(interpolator.getInterpolatedState());
                     } catch (final PatriusException oe) {
+                        // NOTEST: unreachable exception since g, setInterpolatedDate and getInterpolatedStates are all
+                        // called in the method before f.value()
                         throw new LocalWrapperException(oe);
                     }
                 }
@@ -397,8 +436,8 @@ public class EventState implements Serializable {
             // whereas it should stay idle for the remaining part of the algorithm
             this.t00 = this.t0;
 
-            AbsoluteDate ta = this.t0;
-            double ga = this.g0;
+            this.ta = this.t0;
+            this.ga = this.g0;
             for (int i = 0; i < n; ++i) {
 
                 // evaluate detector value at the end of the substep
@@ -416,97 +455,17 @@ public class EventState implements Serializable {
                 interpolator.setInterpolatedDate(tb);
                 final double gb = this.detector.g(interpolator.getInterpolatedState());
 
-                // Specific case: event at first date
-                final boolean eventAtFirstStep = (this.g0 == 0) && (this.t00 == this.initialDate) && (ta == this.t00);
-
-                // check events occurrence
-                if ((ga >= 0) ^ (gb >= 0) || eventAtFirstStep) {
-                    // there is a sign change: an event is expected during this step
-
-                    // variation direction, with respect to the integration direction
-                    this.increasing = gb >= ga;
-                    final int slope = this.detector.getSlopeSelection();
-                    if (slope == 2 || ((this.forward ^ !this.increasing) ^ slope == 1)) {
-
-                        // find the event time making sure we select a solution
-                        // just at or past the exact root
-                        final double dtA = ta.durationFrom(this.t00);
-                        final double dtB = tb.durationFrom(this.t00);
-
-                        double dtRoot = dtA;
-                        final double ga2 = f.value(dtA);
-
-                        if ((ga2 >= 0) ^ (gb >= 0)) {
-
-                            if (this.solver instanceof BracketedUnivariateSolver<?>) {
-
-                                @SuppressWarnings("unchecked")
-                                final BracketedUnivariateSolver<UnivariateFunction> bracketSolver =
-                                    (BracketedUnivariateSolver<UnivariateFunction>) this.solver;
-                                dtRoot = this.forward ? bracketSolver.solve(maxIterationcount, f, dtA,
-                                    dtB, AllowedSolution.RIGHT_SIDE) : bracketSolver.solve(
-                                    maxIterationcount, f, dtB, dtA, AllowedSolution.LEFT_SIDE);
-
-                            } else {
-                                final double dtBaseRoot = this.forward ? nonBracketing.solve(
-                                    maxIterationcount, f, dtA, dtB) : nonBracketing.solve(
-                                    maxIterationcount, f, dtB, dtA);
-                                final int remainingEval = maxIterationcount
-                                    - nonBracketing.getEvaluations();
-                                dtRoot = this.forward ? UnivariateSolverUtils.forceSide(remainingEval,
-                                    f, bracketing, dtBaseRoot, dtA, dtB,
-                                    AllowedSolution.RIGHT_SIDE) : UnivariateSolverUtils
-                                    .forceSide(remainingEval, f, bracketing, dtBaseRoot, dtB,
-                                        dtA, AllowedSolution.LEFT_SIDE);
-
-                            }
-                        }
-                        final AbsoluteDate root = this.t00.shiftedBy(dtRoot, t1, forward);
-
-                        if ((this.previousEventTime != null)
-                            && (MathLib.abs(root.durationFrom(ta)) <= convergence)
-                            && (MathLib.abs(root.durationFrom(this.previousEventTime)) <= convergence)) {
-                            // we have either found nothing or found (again ?) a past event,
-                            // retry the substep excluding this value
-                            ta = this.forward ? ta.shiftedBy(convergence, t1, forward)
-                                    : ta.shiftedBy(-convergence, t1, forward);
-                            ga = f.value(ta.durationFrom(this.t00));
-                            // CHECKSTYLE: stop ModifiedControlVariable check
-                            // Reason: Orekit code kept as such
-                            --i;
-                            // CHECKSTYLE: resume ModifiedControlVariable check
-                        } else if ((this.previousEventTime == null)
-                            || (MathLib.abs(this.previousEventTime.durationFrom(root)) > convergence)) {
-
-                            // If the monotony hasn't change since last accepted step, this event
-                            // must be overlapped
-                            // to prevent a non consistent list of events occurred
-                            this.pendingEventTime = root;
-                            this.pendingEvent = true;
-                            return true;
-                        } else {
-                            // no sign change: there is no event for now
-                            ta = tb;
-                            ga = gb;
-                        }
-                    } else {
-                        // There is a sign change but must not be taken into account because of
-                        // slope selection
-                        ta = tb;
-                        ga = gb;
-                        // Update g0 however since sign of g has changed (= stepAccepted())
-                        this.t0 = ta;
-                        this.previousEventTime = this.t0;
-                        this.increasing = !this.increasing;
-                        this.g0Old = this.g0;
-                        this.g0 = this.increasing ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-
-                    }
-                } else {
-                    // no sign change: there is no event for now
-                    ta = tb;
-                    ga = gb;
+                final int result =
+                    this.evaluateStepInternal(gb, tb, t1, f, nonBracketing, bracketing, maxIterationcount, convergence);
+                if (result == -1) {
+                    // CHECKSTYLE: stop ModifiedControlVariable check
+                    // Reason: Orekit code kept as such
+                    --i;
+                    // CHECKSTYLE: resume ModifiedControlVariable check
+                } else if (result == 1) {
+                    return true;
                 }
+                
             }
 
             // no event during the whole step
@@ -515,8 +474,324 @@ public class EventState implements Serializable {
             return false;
 
         } catch (final LocalWrapperException lwe) {
+            // NOTEST: unreachable exception since LocalWrapperException is a private EventState RuntimeException
+            // Can only be thrown through f function, whose exception is unreachable too
             throw lwe.getWrappedException();
         }
+
+    }
+    
+    /**
+     * Evaluate the impact of the proposed step on the event detector.<br>
+     * 
+     * See <a href="https://www.orekit.org/forge/issues/110">Orekit issue 110</a> for more
+     * information. Default
+     * constructor changed in order to instanciate a bracketing solver, to solve the bracketing
+     * exception.
+     * 
+     * @param interpolator
+     *        step interpolator for the proposed step
+     * @param satId
+     *        satellite ID whose step is assessed
+     * @return true if the event detector triggers an event before the end of the proposed step
+     *         (this implies the step should be rejected)
+     * @exception PatriusException
+     *            if the switching function cannot be evaluated
+     * @exception TooManyEvaluationsException
+     *            if an event cannot be located
+     * @exception NoBracketingException
+     *            if bracketing cannot be performed
+     */
+    // CHECKSTYLE: stop MethodLength check
+    // CHECKSTYLE: stop CyclomaticComplexity check
+    // CHECKSTYLE: stop ReturnCount check
+    // Reason: Orekit code kept as such
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
+    public boolean evaluateStep(final MultiPatriusStepInterpolator interpolator, final String satId) throws PatriusException {
+        // CHECKSTYLE: resume MethodLength check
+        // CHECKSTYLE: resume CyclomaticComplexity check
+        // CHECKSTYLE: resume ReturnCount check
+        try {
+            final double convergence = this.detector.getThreshold();
+            if (this.forward ^ interpolator.isForward()) {
+                this.forward = !this.forward;
+                this.pendingEvent = false;
+                this.pendingEventTime = null;
+                this.previousEventTime = null;
+            }
+            final AbsoluteDate t1 = interpolator.getCurrentDate();
+            final double dt = t1.durationFrom(this.t0);
+            if (MathLib.abs(dt) < convergence) {
+                // we cannot do anything on such a small step, don't trigger any events
+                // Check if there is an event, if yes, start of step is returned
+                // Per PATRIUS convention, event cannot be detected at end of step
+                interpolator.setInterpolatedDate(t1);
+                final double gb = this.detector.g(interpolator.getInterpolatedStates().get(satId));
+                final boolean signChange = ((this.g0 >= 0) && (gb < 0)) || ((this.g0 <= 0) && (gb > 0));
+                if (dt > 0 && signChange) {
+                    // Event
+                    this.pendingEventTime = this.t0;
+                    this.pendingEvent = true;
+                    return true;
+                } else {
+                    // No event or interval is 0s (then event will be detected on start of next step)
+                    this.pendingEventTime = null;
+                    this.pendingEvent = false;
+                    return false;
+                }
+            }
+
+            final UnivariateFunction f = new UnivariateFunction(){
+                /** Serializable UID. */
+                private static final long serialVersionUID = 197517831095184758L;
+
+                /** {@inheritDoc} */
+                @Override
+                public double value(final double t) {
+                    try {
+                        double direction = Double.POSITIVE_INFINITY;
+                        if (!EventState.this.forward) {
+                            direction = Double.NEGATIVE_INFINITY;
+                        }
+                        final double nextUlp =
+                            new AbsoluteDate(EventState.this.t00, MathLib.nextAfter(t, direction)).durationFrom(t1);
+                        final AbsoluteDate interpolatedDate;
+                        if ((EventState.this.forward && nextUlp > 0) || (!EventState.this.forward && nextUlp < 0)) {
+                            // In case the date is the last possible date before the upper interval bound: set it to
+                            // last date since that comes from a numerical quality issue from AbsoluteDate.durationFrom
+                            interpolatedDate = t1;
+                        } else {
+                            // Standard case
+                            interpolatedDate = EventState.this.t00.shiftedBy(t, t1, EventState.this.forward);
+                        }
+                        interpolator.setInterpolatedDate(interpolatedDate);
+                        return EventState.this.detector.g(interpolator.getInterpolatedStates().get(satId));
+                    } catch (final PatriusException oe) {
+                        // NOTEST: unreachable exception since g, setInterpolatedDate and getInterpolatedStates are all
+                        // called in the method before f.value()
+                        throw new LocalWrapperException(oe);
+                    }
+                }
+            };
+
+            final BrentSolver nonBracketing = new BrentSolver(convergence);
+            final PegasusSolver bracketing = new PegasusSolver(convergence);
+            final int maxIterationcount = this.detector.getMaxIterationCount();
+
+            // t00 variable used in case of untreated event because of slope selection: t0 is then changed for later
+            // whereas it should stay idle for the remaining part of the algorithm
+            this.t00 = this.t0;
+
+            final int n = MathLib.max(1, (int) MathLib.ceil(MathLib.abs(dt) / this.detector.getMaxCheckInterval()));
+            final double h = dt / n;
+            this.ta = this.t0;
+            this.ga = this.g0;
+            for (int i = 0; i < n; ++i) {
+
+                // evaluate detector value at the end of the substep
+                final AbsoluteDate tb;
+                if (i < (n - 1)) {
+                    tb = this.t00.shiftedBy((i + 1) * h, t1, this.forward);
+                } else {
+                    // CNES BUG A-1036
+                    // Last step should be exactly t1.
+                    // We force it because, even if shiftedBy is very accurate, it does not
+                    // always fall exactly on t1 at the last step - and this is sometimes
+                    // critical (for bounded propagators for instance).
+                    tb = t1;
+                }
+                interpolator.setInterpolatedDate(tb);
+                final double gb = this.detector.g(interpolator.getInterpolatedStates().get(satId));
+
+                final int result =
+                    this.evaluateStepInternal(gb, tb, t1, f, nonBracketing, bracketing, maxIterationcount, convergence);
+                if (result == -1) {
+                    // CHECKSTYLE: stop ModifiedControlVariable check
+                    // Reason: Orekit code kept as such
+                    --i;
+                    // CHECKSTYLE: resume ModifiedControlVariable check
+                } else if (result == 1) {
+                    return true;
+                }
+                
+            }
+
+            // No event during the whole step
+            this.pendingEvent = false;
+            this.pendingEventTime = null;
+            return false;
+        } catch (final LocalWrapperException lwe) {
+            // NOTEST: unreachable exception since LocalWrapperException is a private EventState RuntimeException
+            // Can only be thrown through f function, whose exception is unreachable too
+            throw lwe.getWrappedException();
+        }
+    }
+    
+    /**
+     * Common part between mono and multi evaluateStep methods.
+     * 
+     * @param gaIn
+     * 
+     * @param gb
+     *        value of g at tb
+     * @param tb
+     *        date at the end of the substep
+     * @param t1
+     *        step date limit that tb cannot exceed
+     * @param f
+     *        function evaluating g
+     * @param nonBracketing
+     *        non-bracketed solver to find a zero of f
+     * @param bracketing
+     *        bracketed solver to find a zero of f
+     * @param maxIterationcount
+     *        iterations limit
+     * @param convergence
+     *        convergence threshold
+     * 
+     * @return -1 if a false positive detection occurs, 1 if the event detector triggers an event before the end of the
+     *         proposed step (this implies the step should be rejected), 0 otherwise
+     */
+    private int evaluateStepInternal(final double gb, final AbsoluteDate tb, final AbsoluteDate t1,
+                                     final UnivariateFunction f, final BrentSolver nonBracketing,
+                                     final PegasusSolver bracketing, final int maxIterationcount,
+                                     final double convergence) {
+
+        // Specific case: event at first date
+        final boolean eventAtFirstStep = (MathLib.abs(this.g0) < Precision.DOUBLE_COMPARISON_EPSILON)
+                && (this.t00.equals(this.initialDate)) && (this.ta.equals(this.t00));
+
+        // Check events occurrence
+        int resultFlag = 0;
+        if ((this.ga >= 0) ^ (gb >= 0) || eventAtFirstStep) {
+            // There is a sign change: an event is expected during this step
+
+            // Variation direction, with respect to the integration direction
+            this.increasing = gb >= this.ga;
+            final int slope = this.detector.getSlopeSelection();
+            if (slope == 2 || ((this.forward ^ !this.increasing) ^ slope == 1)) {
+
+                // Find the event time making sure we select a solution just at or past the exact root
+                final double dtA = this.ta.durationFrom(this.t00);
+                final double dtB = tb.durationFrom(this.t00);
+
+                // Compute the root date
+                final AbsoluteDate root =
+                    computeRoot(gb, dtA, dtB, t1, f, nonBracketing, bracketing, maxIterationcount);
+
+                if ((this.previousEventTime != null)
+                        && (MathLib.abs(root.durationFrom(this.ta)) <= convergence)
+                        && (MathLib.abs(root.durationFrom(this.previousEventTime)) <= convergence)) {
+                    // We have either found nothing or found (again ?) a past event, retry the substep excluding this
+                    // value
+                    if (this.forward) {
+                        this.ta = this.ta.shiftedBy(convergence, t1, this.forward);
+                    } else {
+                        this.ta = this.ta.shiftedBy(-convergence, t1, this.forward);
+                    }
+                    this.ga = f.value(this.ta.durationFrom(this.t00));
+                    resultFlag = -1;
+                } else if ((this.previousEventTime == null)
+                        || (MathLib.abs(this.previousEventTime.durationFrom(root)) > convergence)) {
+                    // If the monotony hasn't change since last accepted step, this event must be overlapped to prevent
+                    // a non consistent list of events occurred
+                    this.pendingEventTime = root;
+                    this.pendingEvent = true;
+                    resultFlag = 1;
+                } else {
+                    // No sign change: there is no event for now
+                    this.ta = tb;
+                    this.ga = gb;
+                }
+                
+            } else {
+                // There is a sign change but must not be taken into account because of slope selection
+                this.ta = tb;
+                this.ga = gb;
+                // Update g0 however since sign of g has changed (= stepAccepted())
+                this.t0 = this.ta;
+                this.previousEventTime = this.t0;
+                this.increasing = !this.increasing;
+                this.g0Old = this.g0;
+                if (this.increasing) {
+                    this.g0 = Double.NEGATIVE_INFINITY;
+                } else {
+                    this.g0 = Double.POSITIVE_INFINITY;
+                }
+            }
+            
+        } else {
+            // No sign change: there is no event for now
+            this.ta = tb;
+            this.ga = gb;
+        }
+
+        // No specific treatment in parent method
+        return resultFlag;
+    }
+    
+    /**
+     * Compute the root date of the event.
+     * 
+     * @param gb
+     *        value of g at tb
+     * @param dtA
+     *        event time before (or equal to) the root time
+     * @param dtB
+     *        event time after the root time
+     * @param t1
+     *        step date limit that tb cannot exceed
+     * @param f
+     *        function evaluating g
+     * @param nonBracketing
+     *        non-bracketed solver to find a zero of f
+     * @param bracketing
+     *        bracketed solver to find a zero of f
+     * @param maxIterationcount
+     *        iterations limit
+     * 
+     * @return the date corresponding to the event
+     */
+    private AbsoluteDate computeRoot(final double gb, final double dtA, final double dtB, final AbsoluteDate t1,
+                                     final UnivariateFunction f, final BrentSolver nonBracketing,
+                                     final PegasusSolver bracketing, final int maxIterationcount) {
+
+        // Initialize value of the root
+        double dtRoot = dtA;
+
+        if ((f.value(dtA) >= 0) ^ (gb >= 0)) {
+
+            // Parameterize based on the forward flag
+            final double minDt;
+            final double maxDt;
+            final AllowedSolution allowedSolution;
+            if (this.forward) {
+                minDt = dtA;
+                maxDt = dtB;
+                allowedSolution = AllowedSolution.RIGHT_SIDE;
+            } else {
+                minDt = dtB;
+                maxDt = dtA;
+                allowedSolution = AllowedSolution.LEFT_SIDE;
+            }
+
+            // Solve: find zero of the univariate function
+            if (this.solver instanceof BracketedUnivariateSolver<?>) {
+                @SuppressWarnings("unchecked")
+                final BracketedUnivariateSolver<UnivariateFunction> bracketSolver =
+                    (BracketedUnivariateSolver<UnivariateFunction>) this.solver;
+                dtRoot = bracketSolver.solve(maxIterationcount, f, minDt, maxDt, allowedSolution);
+            } else {
+                final double dtBaseRoot = nonBracketing.solve(maxIterationcount, f, minDt, maxDt);
+                final int remainingEval = maxIterationcount - nonBracketing.getEvaluations();
+                dtRoot = UnivariateSolverUtils.forceSide(remainingEval, f, bracketing, dtBaseRoot, minDt, maxDt,
+                    allowedSolution);
+            }
+
+        }
+
+        // Compute the associated root date
+        return this.t00.shiftedBy(dtRoot, t1, this.forward);
 
     }
     

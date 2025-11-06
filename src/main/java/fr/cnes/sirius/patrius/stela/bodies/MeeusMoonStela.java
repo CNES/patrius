@@ -18,6 +18,11 @@
  * @history created 20/02/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
@@ -46,12 +51,12 @@
  */
 package fr.cnes.sirius.patrius.stela.bodies;
 
-import fr.cnes.sirius.patrius.bodies.AbstractCelestialBody;
+import fr.cnes.sirius.patrius.bodies.AbstractIAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -97,7 +102,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * 
  */
 @SuppressWarnings("PMD.NullAssignment")
-public class MeeusMoonStela extends AbstractCelestialBody {
+public class MeeusMoonStela extends AbstractIAUCelestialBody {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 6952697176025508036L;
@@ -123,10 +128,10 @@ public class MeeusMoonStela extends AbstractCelestialBody {
      */
     public MeeusMoonStela(final double inEarthRadius) throws PatriusException {
         // EME2000 frame (in Stela software, EOD and MOD are considered equal for sun ephemerides)
-        super("Meeus Moon Stela", MOON_MU, IAUPoleFactory.getIAUPole(EphemerisType.MOON), FramesFactory.getMOD(false));
+        super("Meeus Moon Stela", MOON_MU, IAUPoleFactory.getIAUPole(PredefinedEphemerisType.MOON), FramesFactory.getMOD(false));
         this.earthRadius = inEarthRadius;
         this.setEphemeris(new MeeusMoonStelaEphemeris(getICRF()));
-        this.setShape(new OneAxisEllipsoid(MOON_RADIUS, 0., this.getRotatingFrame(IAUPoleModelType.TRUE), "Moon"));
+        this.setShape(new OneAxisEllipsoid(MOON_RADIUS, 0., this.getRotatingFrame(), "Moon"));
     }
 
     /** {@inheritDoc} */

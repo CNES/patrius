@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -31,6 +33,7 @@ import fr.cnes.sirius.patrius.math.exception.MathUnsupportedOperationException;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Covariance implementation that does not require input data to be
@@ -177,7 +180,8 @@ public class StorelessCovariance extends Covariance {
 
         final int length = data.length;
         if (length != this.dimension) {
-            throw new DimensionMismatchException(length, this.dimension);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_DATA_DIMENSION_NOT_MATCH_COVARIANCE_SIZE,
+                length, this.dimension);
         }
 
         // only update the upper triangular part of the covariance matrix

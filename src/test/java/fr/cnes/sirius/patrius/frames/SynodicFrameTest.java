@@ -14,6 +14,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.11:FA:FA-3320:22/05/2023:[PATRIUS] Mauvaise implementation de la methode hashCode de Vector3D
  * VERSION:4.10.1:FA:FA-3267:02/12/2022:[PATRIUS] Anomalie dans la gestion des acceleration null du PVCoordinates (suite)
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -25,6 +29,7 @@
 package fr.cnes.sirius.patrius.frames;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -90,7 +95,7 @@ public class SynodicFrameTest {
 
     private void testSynodicFrame(final LOFType lofType) throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
-
+        
         // Initialization
         final Frame rootFrame = FramesFactory.getGCRF();
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
@@ -102,7 +107,7 @@ public class SynodicFrameTest {
         // Frame centered on main body and aligned with LOF
         final SynodicFrame frame1 = new SynodicFrame(lof, "", 0.);
         Assert.assertEquals(pvProv.getPVCoordinates(date, rootFrame).getPosition().getNorm(),
-                pvProv.getPVCoordinates(date, frame1).getPosition().getNorm(), 1e-7);
+                pvProv.getPVCoordinates(date, frame1).getPosition().getNorm(), 2e-7);
         final Transform t1 = frame1.getTransformTo(lof, date);
         Assert.assertTrue(t1.getRotation().isIdentity());
         Assert.assertTrue(t1.getRotationRate().isZero());
@@ -139,5 +144,10 @@ public class SynodicFrameTest {
         Assert.assertEquals(0.,
                 t32.getTranslation().subtract(pvBody.getPosition().scalarMultiply(0.5)).getNorm(),
                 1E-6);
+    }
+    
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

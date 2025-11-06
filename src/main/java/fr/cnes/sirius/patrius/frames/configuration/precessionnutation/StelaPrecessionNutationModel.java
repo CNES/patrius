@@ -17,6 +17,7 @@
  * @history creation 15/04/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -47,7 +48,7 @@ import fr.cnes.sirius.patrius.utils.Constants;
  */
 public final class StelaPrecessionNutationModel implements PrecessionNutationModel {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = 5842920285869618886L;
 
     /** Conversion from microarcsec to radians. */
@@ -122,34 +123,24 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
     private static final int S_COEFF_1 = -72574;
 
     /** Cached date. */
-    private static AbsoluteDate cachedDate = AbsoluteDate.PAST_INFINITY;
+    private AbsoluteDate cachedDate = AbsoluteDate.PAST_INFINITY;
 
-    /** Cached CIP coordinates. */
-    private static CIPCoordinates cachedCIP = null;
-
-    /** {@inheritDoc} */
-    @Override
-    public CIPCoordinates getCIPCoordinates(final AbsoluteDate date) {
-        if (date.durationFrom(cachedDate) != 0) {
-            computeCIPMotion(date);
-        }
-
-        return cachedCIP;
-    }
+    /** Cached CIP parameters. */
+    private CIPCoordinates cachedCIP = null;
 
     /**
      * Compute CIP motion [x, y, s] and its time derivatives.
-     *
+     * 
      * @param date
      *        a date
      */
-    //CHECKSTYLE: stop MethodLength check
-    private static void computeCIPMotion(final AbsoluteDate date) {
-        //CHECKSTYLE: resume MethodLength check
+    // CHECKSTYLE: stop MethodLength check
+    private void computeCIPMotion(final AbsoluteDate date) {
+        // CHECKSTYLE: resume MethodLength check
 
         // t parameter (TT converted date in J2000)
-        final double t = date.offsetFrom(AbsoluteDate.J2000_EPOCH, TimeScalesFactory.getTT()) /
-            Constants.JULIAN_CENTURY;
+        final double t = date.offsetFrom(AbsoluteDate.J2000_EPOCH, TimeScalesFactory.getTT())
+                / Constants.JULIAN_CENTURY;
 
         // Delaunay variables (Table C.1)
         final double f = DELAUNAY_VAR_F_0 + DELAUNAY_VAR_F_1 * t;
@@ -183,64 +174,45 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
         final double cos2f2dom = sincos2f2dom[1];
 
         // X
-        final double x = (
-            X_COEFF_0 * t +
-                X_COEFF_1 * t * t +
-                X_COEFF_2 * t * t * t +
-                X_COEFF_3 * sinom +
-                X_COEFF_4 * sin2f2d2om +
-                X_COEFF_5 * t * cosom +
-                X_COEFF_6 * sinlp +
-                X_COEFF_7 * sinlp2f2d2om +
-                X_COEFF_8 * t * cos2f2d2om +
-                X_COEFF_9 * sinlp2f2d2om2 +
-                X_COEFF_10 * sin2f2dom +
-            X_COEFF_11 * t * sinom ) * UNIT;
+        final double x = (X_COEFF_0 * t + X_COEFF_1 * t * t + X_COEFF_2 * t * t * t + X_COEFF_3
+                * sinom + X_COEFF_4 * sin2f2d2om + X_COEFF_5 * t * cosom + X_COEFF_6 * sinlp
+                + X_COEFF_7 * sinlp2f2d2om + X_COEFF_8 * t * cos2f2d2om + X_COEFF_9 * sinlp2f2d2om2
+                + X_COEFF_10 * sin2f2dom + X_COEFF_11 * t * sinom)
+                * UNIT;
 
-        final double xdot = (
-            X_COEFF_0 * 1 +
-                X_COEFF_1 * (2 * t) +
-                X_COEFF_2 * (3 * t * t) +
-                X_COEFF_3 * (omdot * cosom) +
-                X_COEFF_4 * ((2 * fdot - 2 * ddot + 2 * omdot) * cos2f2d2om) +
-                X_COEFF_5 * (cosom - t * omdot * sinom) +
-                X_COEFF_6 * (lpdot * coslp) +
-                X_COEFF_7 * ((lpdot + 2 * fdot - 2 * ddot + 2 * omdot) * coslp2f2d2om) +
-                X_COEFF_8 * (cos2f2d2om - t * (2 * fdot - 2 * ddot + 2 * omdot) * sin2f2d2om) +
-                X_COEFF_9 * ((lpdot - 2 * fdot + 2 * ddot - 2 * omdot) * coslp2f2dom2) +
-                X_COEFF_10 * ((2 * fdot - 2 * ddot + omdot) * cos2f2dom) +
-            X_COEFF_11 * (sinom + t * omdot * cosom) ) * UNIT * ttdot;
+        final double xdot = (X_COEFF_0 * 1 + X_COEFF_1 * (2 * t) + X_COEFF_2 * (3 * t * t)
+                + X_COEFF_3 * (omdot * cosom) + X_COEFF_4
+                * ((2 * fdot - 2 * ddot + 2 * omdot) * cos2f2d2om) + X_COEFF_5
+                * (cosom - t * omdot * sinom) + X_COEFF_6 * (lpdot * coslp) + X_COEFF_7
+                * ((lpdot + 2 * fdot - 2 * ddot + 2 * omdot) * coslp2f2d2om) + X_COEFF_8
+                * (cos2f2d2om - t * (2 * fdot - 2 * ddot + 2 * omdot) * sin2f2d2om) + X_COEFF_9
+                * ((lpdot - 2 * fdot + 2 * ddot - 2 * omdot) * coslp2f2dom2) + X_COEFF_10
+                * ((2 * fdot - 2 * ddot + omdot) * cos2f2dom) + X_COEFF_11
+                * (sinom + t * omdot * cosom))
+                * UNIT * ttdot;
 
         // Y
-        final double y = (
-            Y_COEFF_0 * t * t +
-                Y_COEFF_1 * cosom +
-                Y_COEFF_2 * cos2f2d2om +
-                Y_COEFF_3 * t * sinom +
-                Y_COEFF_4 * MathLib.cos(2 * om) +
-                Y_COEFF_5 * coslp2f2d2om +
-                Y_COEFF_6 * t * sin2f2d2om +
-                Y_COEFF_7 * coslp2f2dom2 +
-                Y_COEFF_8 * coslp +
-            Y_COEFF_9 * cos2f2dom ) * UNIT;
+        final double y = (Y_COEFF_0 * t * t + Y_COEFF_1 * cosom + Y_COEFF_2 * cos2f2d2om
+                + Y_COEFF_3 * t * sinom + Y_COEFF_4 * MathLib.cos(2 * om) + Y_COEFF_5
+                * coslp2f2d2om + Y_COEFF_6 * t * sin2f2d2om + Y_COEFF_7 * coslp2f2dom2 + Y_COEFF_8
+                * coslp + Y_COEFF_9 * cos2f2dom)
+                * UNIT;
 
-        final double ydot = (
-            Y_COEFF_0 * (2 * t) +
-                Y_COEFF_1 * (-omdot * sinom) +
-                Y_COEFF_2 * (-(2 * fdot - 2 * ddot + 2 * omdot) * sin2f2d2om) +
-                Y_COEFF_3 * (sinom + t * omdot * cosom) +
-                Y_COEFF_4 * (-2 * omdot * MathLib.sin(2 * om)) +
-                Y_COEFF_5 * (-(lpdot + 2 * fdot - 2 * ddot + 2 * omdot) * sinlp2f2d2om) +
-                Y_COEFF_6 * (sin2f2d2om + t * (2 * fdot - 2 * ddot + 2 * omdot) * cos2f2d2om) +
-                Y_COEFF_7 * (-(lpdot - 2 * fdot + 2 * ddot - 2 * omdot) * sinlp2f2d2om2) +
-                Y_COEFF_8 * (-lpdot * sinlp) +
-            Y_COEFF_9 * (-(2 * fdot - 2 * ddot + omdot) * sin2f2dom) ) * UNIT * ttdot;
+        final double ydot = (Y_COEFF_0 * (2 * t) + Y_COEFF_1 * (-omdot * sinom) + Y_COEFF_2
+                * (-(2 * fdot - 2 * ddot + 2 * omdot) * sin2f2d2om) + Y_COEFF_3
+                * (sinom + t * omdot * cosom) + Y_COEFF_4 * (-2 * omdot * MathLib.sin(2 * om))
+                + Y_COEFF_5 * (-(lpdot + 2 * fdot - 2 * ddot + 2 * omdot) * sinlp2f2d2om)
+                + Y_COEFF_6 * (sin2f2d2om + t * (2 * fdot - 2 * ddot + 2 * omdot) * cos2f2d2om)
+                + Y_COEFF_7 * (-(lpdot - 2 * fdot + 2 * ddot - 2 * omdot) * sinlp2f2d2om2)
+                + Y_COEFF_8 * (-lpdot * sinlp) + Y_COEFF_9
+                * (-(2 * fdot - 2 * ddot + omdot) * sin2f2dom))
+                * UNIT * ttdot;
 
         // S
         final double s = -(x * y) / 2 + (S_COEFF_0 * t + S_COEFF_1 * t * t * t) * UNIT;
 
-        final double sdot = -(xdot * y + x * ydot) / 2 + (
-            S_COEFF_0 * 1 + S_COEFF_1 * (3 * t * t)) * UNIT * ttdot;
+        final double sdot = -(xdot * y + x * ydot) / 2 + (S_COEFF_0 * 1 + S_COEFF_1 * (3 * t * t))
+                * UNIT * ttdot;
 
         // Store data
         cachedDate = date;
@@ -257,5 +229,14 @@ public final class StelaPrecessionNutationModel implements PrecessionNutationMod
     @Override
     public FrameConvention getOrigin() {
         return FrameConvention.STELA;
+    }
+
+    @Override
+    public CIPCoordinates getCIPCoordinates(final AbsoluteDate date) {
+        if (date.durationFrom(cachedDate) != 0) {
+            computeCIPMotion(date);
+        }
+
+        return cachedCIP;
     }
 }

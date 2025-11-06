@@ -18,6 +18,10 @@
  * @history 30/09/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
  * VERSION:4.13.1:FA:FA-199:17/01/2024:[PATRIUS] Utilisation du dernier point utilisable dans EphemerisPvHermite
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -39,6 +43,7 @@ import java.io.FileNotFoundException;
 import java.util.Arrays;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -822,7 +827,7 @@ public class EphemerisPvHermiteTest {
                 new EphemerisPvHermite(longTabSpacecraftStates, null, null);
 
         // Test if the interpolation from each one to the same date give the same result.
-        // The date is shifted by 8.5 steps plus a small epsilon,, so that the epsilon is lost if
+        // The date is shifted by 8.5 steps plus a small epsilon, so that the epsilon is lost if
         // the interpolation in done incorrectly in the long ephemeris.
         final double shift = 8.5 * STEP;
         final double shiftEps = 1e-8;
@@ -880,5 +885,10 @@ public class EphemerisPvHermiteTest {
                 .getSearchIndex().getTab()));
         Assert.assertEquals(ephem.getMinDate(), deserializedEphem.getMinDate());
         Assert.assertEquals(ephem.getMaxDate(), deserializedEphem.getMaxDate());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

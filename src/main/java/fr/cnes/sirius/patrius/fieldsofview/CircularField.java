@@ -17,6 +17,10 @@
  * @history creation 16/04/2012
  *
  * HISTORY
+ * VERSION:4.14.1:OPENFD-396:10/09/2024:[PATRIUS] Erreurs et oublis dans les classes issues de IGeometricFieldOfView
+ * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -52,16 +56,16 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @since 1.2
  * 
  */
-public final class CircularField implements IFieldOfView {
+public final class CircularField implements IGeometricFieldOfView {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -3306669984166993698L;
 
     /** Name of the field. */
     private final String inName;
 
     /** Half-angular aperture. */
-    private final double inHalfAngularAperture;
+    private final double inHalfOpening;
 
     /** Direction defining the center of the field. */
     private final Vector3D inMainDirection;
@@ -70,11 +74,11 @@ public final class CircularField implements IFieldOfView {
      * Constructor for a circular field of view.
      * 
      * @param name the name of the field
-     * @param halfAngularAperture the half angular aperture : must be strictly between 0 and PI
+     * @param halfOpening the half angular opening : must be strictly between 0 and PI
      * @param mainDirection the direction defining the center of the field
      */
-    public CircularField(final String name, final double halfAngularAperture,
-        final Vector3D mainDirection) {
+    public CircularField(final String name, final double halfOpening,
+                         final Vector3D mainDirection) {
 
         // direction norm test
         if (mainDirection.getNorm() < UtilsPatrius.GEOMETRY_EPSILON) {
@@ -82,44 +86,54 @@ public final class CircularField implements IFieldOfView {
         }
 
         // angle aperture test
-        if (halfAngularAperture < Precision.DOUBLE_COMPARISON_EPSILON
-            || Comparators.greaterStrict(halfAngularAperture, FastMath.PI)) {
+        if (halfOpening < Precision.DOUBLE_COMPARISON_EPSILON
+                || Comparators.greaterStrict(halfOpening, FastMath.PI)) {
             throw PatriusException
                 .createIllegalArgumentException(PatriusMessages.PDB_ANGLE_OUTSIDE_INTERVAL);
         }
 
         // initializations
         this.inName = name;
-        this.inHalfAngularAperture = halfAngularAperture;
+        this.inHalfOpening = halfOpening;
         this.inMainDirection = new Vector3D(1.0, mainDirection);
     }
 
     /** {@inheritDoc} */
     @Override
-    public double getAngularDistance(final Vector3D direction) {
+    public double getAngularOpening(final Vector3D directionIn) {
+        return this.inHalfOpening;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getAngularDistance(final Vector3D direction, final AngularDistanceType method) {
+        final double ans;
         if (direction.getNorm() < UtilsPatrius.GEOMETRY_EPSILON) {
-            return 0.0;
+            ans = 0.0;
         } else {
-            return this.inHalfAngularAperture - Vector3D.angle(direction, this.inMainDirection);
+            ans = getAngularOpening(direction) - Vector3D.angle(direction, this.inMainDirection);
         }
+        return ans;
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean isInTheField(final Vector3D direction) {
+        final boolean ans;
         if (direction.getNorm() < UtilsPatrius.GEOMETRY_EPSILON) {
             // Norm too small: angle to main direction cannot be computed
-            return false;
+            ans = false;
         } else {
-            if (this.inHalfAngularAperture == MathLib.PI) {
+            if (Precision.equals(inHalfOpening, MathLib.PI)) {
                 // Specific case of omni-directional field
-                return true;
+                ans = true;
             } else {
                 // Generic case
-                return (Comparators.lowerStrict(Vector3D.angle(direction, this.inMainDirection),
-                        this.inHalfAngularAperture));
+                ans = Comparators.lowerStrict(Vector3D.angle(direction, this.inMainDirection),
+                    this.inHalfOpening);
             }
         }
+        return ans;
     }
 
     /** {@inheritDoc} */
@@ -134,6 +148,13 @@ public final class CircularField implements IFieldOfView {
      * @return the half-aperture
      */
     public double getHalfAngularAperture() {
-        return this.inHalfAngularAperture;
+        return this.inHalfOpening;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Vector3D getMainDirection() {
+
+        return this.inMainDirection;
     }
 }

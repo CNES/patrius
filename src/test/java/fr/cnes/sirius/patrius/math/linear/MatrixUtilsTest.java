@@ -20,6 +20,7 @@
  */
 /* 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -33,36 +34,67 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.io.BufferedReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.File;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.FileInputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.FileNotFoundException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStreamReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.math.BigDecimal;
+import fr.cnes.sirius.patrius.Utils;
 import java.nio.charset.Charset;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.fraction.BigFraction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.fraction.Fraction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.fraction.FractionConversionException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.fraction.FractionField;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test cases for the {@link MatrixUtils} class.
@@ -840,5 +872,10 @@ public final class MatrixUtilsTest {
         if (!file.delete()) {
             System.err.println("MatrixUtilsTest#testSerialization: Failed to delete the temporary file");
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

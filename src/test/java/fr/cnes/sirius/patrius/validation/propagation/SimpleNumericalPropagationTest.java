@@ -18,6 +18,13 @@
  * @history created 9/10/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -47,10 +54,9 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
 import fr.cnes.sirius.patrius.forces.atmospheres.SimpleExponentialAtmosphere;
@@ -229,24 +235,22 @@ public class SimpleNumericalPropagationTest {
         // b) Attraction des troisièmes corps
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
-        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
+        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
 
         final GravityModel sunGravityModel = sun.getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         final GravityModel moonGravityModel = moon.getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
 
         // c) Pression de radiation solaire
@@ -351,6 +355,7 @@ public class SimpleNumericalPropagationTest {
      */
     @BeforeClass
     public static void setUp() throws IOException, PatriusException {
+        Utils.clear();
         validate = new Validate(SimpleNumericalPropagationTest.class);
         Utils.setDataRoot("regular-dataCNES-2003:potentialCNES");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
@@ -368,5 +373,4 @@ public class SimpleNumericalPropagationTest {
     public static void tearDown() throws IOException, URISyntaxException {
         validate.produceLog();
     }
-
 }

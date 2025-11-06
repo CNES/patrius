@@ -18,6 +18,7 @@
  * @history creation 12/03/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -46,7 +47,6 @@ package fr.cnes.sirius.patrius.forces.radiation;
 
 import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.models.RediffusedRadiativeModel;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.GradientModel;
@@ -56,6 +56,7 @@ import fr.cnes.sirius.patrius.math.parameter.JacobiansParameterizable;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
 import fr.cnes.sirius.patrius.math.parameter.ParameterUtils;
 import fr.cnes.sirius.patrius.math.parameter.StandardFieldDescriptors;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -89,7 +90,7 @@ public final class RediffusedRadiationPressure extends JacobiansParameterizable 
     /** Serializable UID. */
     private static final long serialVersionUID = -6974428498597145839L;
     /** Sun model. */
-    private final CelestialPoint sun;
+    private final PVCoordinatesProvider sun;
     /** body frame */
     private final CelestialBodyFrame bodyFrame;
     /** number of corona. */
@@ -118,7 +119,7 @@ public final class RediffusedRadiationPressure extends JacobiansParameterizable 
      * @param inEmissivityModel emissivity model
      * @param inModel redistributed radiative model
      */
-    public RediffusedRadiationPressure(final CelestialPoint inSun, final CelestialBodyFrame inBodyFrame,
+    public RediffusedRadiationPressure(final PVCoordinatesProvider inSun, final CelestialBodyFrame inBodyFrame,
             final int inCorona, final int inMeridian, final IEmissivityModel inEmissivityModel,
             final RediffusedRadiationSensitive inModel) {
         this(inSun, inBodyFrame, inCorona, inMeridian, inEmissivityModel, inModel, true);
@@ -135,7 +136,7 @@ public final class RediffusedRadiationPressure extends JacobiansParameterizable 
      * @param inModel redistributed radiative model
      * @param computePD true if partial derivatives wrt position have to be computed
      */
-    public RediffusedRadiationPressure(final CelestialPoint inSun, final CelestialBodyFrame inBodyFrame,
+    public RediffusedRadiationPressure(final PVCoordinatesProvider inSun, final CelestialBodyFrame inBodyFrame,
             final int inCorona, final int inMeridian, final IEmissivityModel inEmissivityModel,
             final RediffusedRadiationSensitive inModel, final boolean computePD) {
         super();
@@ -254,7 +255,7 @@ public final class RediffusedRadiationPressure extends JacobiansParameterizable 
      *
      * @return the coordinate of sun.
      */
-    public CelestialPoint getInSun() {
+    public PVCoordinatesProvider getInSun() {
         return this.sun;
     }
 

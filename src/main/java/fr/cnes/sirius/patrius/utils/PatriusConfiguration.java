@@ -14,6 +14,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14.1:OPENFD-319:10/09/2024:Assurer la compatibilité ascendante de la v4.13
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -38,7 +42,7 @@ public final class PatriusConfiguration {
 
     /** Enumeration for different patrius configuration for backward compatibility. */
     public static enum PatriusVersionCompatibility {
-        /** Uses exclusively algorithms from version 4.12 of Patrius. */
+        /** Uses exclusively algorithms from version 4.12 of Patrius. This is the default setting. */
         OLD_MODELS,
 
         /**
@@ -47,7 +51,7 @@ public final class PatriusConfiguration {
          */
         MIXED_MODELS,
 
-        /** Uses exclusively algorithms from the last version of Patrius. This is the default setting. */
+        /** Uses exclusively algorithms from the last version of Patrius. */
         NEW_MODELS
     }
 
@@ -90,7 +94,7 @@ public final class PatriusConfiguration {
     }
 
     /**
-     * @return the patrius412Compatible
+     * @return the type of compatibility mode
      */
     public static PatriusVersionCompatibility getPatriusCompatibilityMode() {
         return patriusCompatibilityMode;

@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -31,6 +33,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
@@ -73,6 +76,7 @@ public class SquaringTest {
      */
     @BeforeClass
     public static void setUp() {
+        Utils.clear();
     }
 
     /**
@@ -140,7 +144,8 @@ public class SquaringTest {
 
         // Test
         double[][] result = new double[squaringPoints][6];
-        result = Squaring.computeSquaringPoints(squaringPoints, pv8, -0.7383322391285152,
+        final Squaring squaring = new Squaring();
+        result = squaring.computeSquaringPoints(squaringPoints, pv8, -0.7383322391285152,
             0.7383322391285152);
 
         // Comparison with expected results
@@ -282,7 +287,8 @@ public class SquaringTest {
         try {
             final StelaEquinoctialOrbit kep1 = new StelaEquinoctialOrbit(7000000, 0, 0, 0, 0, MathLib.toRadians(60),
                     FramesFactory.getEME2000(), new AbsoluteDate(), Constants.CNES_STELA_MU);
-            Squaring.computeSquaringPoints(12, kep1, 1, 6);
+            final Squaring squaring = new Squaring();
+            squaring.computeSquaringPoints(12, kep1, 1, 6);
             Assert.assertFalse(true);
         } catch (final Exception e) {
             Assert.assertTrue(true);
@@ -306,5 +312,4 @@ public class SquaringTest {
             Assert.assertTrue(true);
         }
     }
-
 }

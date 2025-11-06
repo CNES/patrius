@@ -18,6 +18,7 @@
  * @history creation 18/11/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3154:10/05/2022:[PATRIUS] Amelioration des methodes permettant l'extraction d'une sous-sequence 
@@ -457,7 +458,7 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
             final Attitude attitudeTemp;
             final Vector3D acc = this.spinDerivativesComputation ? this.attitudes[0]
                     .getRotationAcceleration() : null;
-            if (this.filter.equals(AngularDerivativesFilter.USE_R)) {
+            if (this.filter == AngularDerivativesFilter.USE_R) {
                 // Interpolate the first attitude rotation rate to be consistent with the rotation
                 final List<TimeStampedAngularCoordinates> attitudesList =
                     new ArrayList<>();
@@ -483,7 +484,7 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
             final Attitude attitudeTemp;
             final Vector3D acc = this.spinDerivativesComputation ? this.attitudes[pos + 1]
                     .getRotationAcceleration() : null;
-            if (this.filter.equals(AngularDerivativesFilter.USE_R)) {
+            if (this.filter == AngularDerivativesFilter.USE_R) {
                 // Interpolate the attitude rotation rate to be consistent with the rotation
                 final List<TimeStampedAngularCoordinates> attitudesList = new ArrayList<>();
                 attitudesList.add(new TimeStampedAngularCoordinates(this.refDate
@@ -596,7 +597,7 @@ public class RelativeTabulatedAttitudeLeg implements AttitudeLeg {
                             .getRotationRate(), this.attitudes[i].getRotationAcceleration())));
         }
         try {
-            final boolean useR = this.filter == AngularDerivativesFilter.USE_RR ? true : false;
+            final boolean useR = this.filter == AngularDerivativesFilter.USE_RR;
             final RelativeTabulatedAttitudeLeg res = new RelativeTabulatedAttitudeLeg(this.refDate,
                     newList, new Frame(this.refFrame, Transform.IDENTITY, this.refFrame.getName()),
                     useR, this.interpOrder, this.nature);

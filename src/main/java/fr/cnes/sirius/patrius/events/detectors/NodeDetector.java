@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
+* VERSION:4.14:OPENFD-142:22/08/2024: [PATRIUS] Nouvel evenement PlaneCrossingDetector
+* VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -34,9 +37,9 @@
  */
 package fr.cnes.sirius.patrius.events.detectors;
 
-import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -68,25 +71,22 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * @author Luc Maisonobe
  */
 @SuppressWarnings("PMD.NullAssignment")
-public class NodeDetector extends AbstractDetector {
-
-    /** Flag for ascending node detection (slopeSelection = 0). */
-    public static final int ASCENDING = 0;
-
-    /** Flag for descending node detection (slopeSelection = 1). */
-    public static final int DESCENDING = 1;
-
-    /** Flag for both ascending and descending node detection (slopeSelection = 2). */
-    public static final int ASCENDING_DESCENDING = 2;
+public class NodeDetector extends PlaneCrossingDetector {
 
     /** Default convergence threshold (in % of Keplerian period). */
     private static final double DEFAULT_THRESHOLD = 1.0e-13;
 
+    /** Flag for ascending node crossing (slopeSelection = 0). */
+    public static final int ASCENDING = INCREASING;
+
+    /** Flag for descending node crossing (slopeSelection = 1). */
+    public static final int DESCENDING = DECREASING;
+
+    /** Flag for both ascending and descending node detection (slopeSelection = 2). */
+    public static final int ASCENDING_DESCENDING = INCREASING_DECREASING;
+
     /** Serializable UID. */
     private static final long serialVersionUID = 601812664015866572L;
-
-    /** Frame in which the equator is defined. */
-    private final Frame frame;
 
     /**
      * Build a new instance.
@@ -110,7 +110,7 @@ public class NodeDetector extends AbstractDetector {
      */
     public NodeDetector(final Orbit orbit, final Frame frameIn, final int slopeSelection) {
         this(frameIn, slopeSelection, orbit.getKeplerianPeriod() / 3, DEFAULT_THRESHOLD
-            * orbit.getKeplerianPeriod(), Action.STOP);
+                * orbit.getKeplerianPeriod(), Action.STOP);
     }
 
     /**
@@ -134,7 +134,7 @@ public class NodeDetector extends AbstractDetector {
      * @param threshold convergence threshold (s)
      */
     public NodeDetector(final Orbit orbit, final Frame frameIn, final int slopeSelection,
-        final double threshold) {
+                        final double threshold) {
         this(frameIn, slopeSelection, orbit.getKeplerianPeriod() / 3, threshold, Action.STOP);
     }
 
@@ -156,7 +156,7 @@ public class NodeDetector extends AbstractDetector {
      * @param threshold convergence threshold (s)
      */
     public NodeDetector(final Frame frameIn, final int slopeSelection, final double maxCheck,
-        final double threshold) {
+                        final double threshold) {
         this(frameIn, slopeSelection, maxCheck, threshold, Action.STOP);
     }
 
@@ -172,7 +172,7 @@ public class NodeDetector extends AbstractDetector {
      * @param descendingNode action performed at descending node crossing
      */
     public NodeDetector(final Frame frameIn, final double maxCheck, final double threshold,
-        final Action ascendingNode, final Action descendingNode) {
+                        final Action ascendingNode, final Action descendingNode) {
         this(frameIn, maxCheck, threshold, ascendingNode, descendingNode, false, false);
     }
 
@@ -191,11 +191,10 @@ public class NodeDetector extends AbstractDetector {
      * @since 3.1
      */
     public NodeDetector(final Frame frameIn, final double maxCheckIn, final double threshold,
-        final Action ascendingNode, final Action descendingNode,
-        final boolean removeAscendingNode, final boolean removeDescendingNode) {
-        super(ASCENDING_DESCENDING, maxCheckIn, threshold, ascendingNode, descendingNode,
-                removeAscendingNode, removeDescendingNode);
-        this.frame = frameIn;
+                        final Action ascendingNode, final Action descendingNode,
+                        final boolean removeAscendingNode, final boolean removeDescendingNode) {
+        super(Vector3D.PLUS_K, frameIn, ascendingNode, descendingNode, removeAscendingNode, removeDescendingNode,
+                maxCheckIn, threshold);
     }
 
     /**
@@ -214,7 +213,7 @@ public class NodeDetector extends AbstractDetector {
      * @param action action to be performed at node crossing
      */
     public NodeDetector(final Frame frameIn, final int slopeSelection, final double maxCheck,
-        final double threshold, final Action action) {
+                        final double threshold, final Action action) {
         this(frameIn, slopeSelection, maxCheck, threshold, action, false);
     }
 
@@ -237,38 +236,8 @@ public class NodeDetector extends AbstractDetector {
      * @since 3.1
      */
     public NodeDetector(final Frame frameIn, final int slopeSelection, final double maxCheck,
-        final double threshold, final Action action, final boolean removeCrossingNode) {
-        super(slopeSelection, maxCheck, threshold);
-        this.frame = frameIn;
-        this.shouldBeRemovedFlag = removeCrossingNode;
-        // If slopeSelection is different from 0, 1 or 2, an error has already been raised is
-        // superclass.
-        if (slopeSelection == ASCENDING) {
-            this.actionAtEntry = action;
-            this.actionAtExit = null;
-            this.removeAtEntry = removeCrossingNode;
-            this.removeAtExit = false;
-        } else if (slopeSelection == DESCENDING) {
-            this.actionAtEntry = null;
-            this.actionAtExit = action;
-            this.removeAtEntry = false;
-            this.removeAtExit = removeCrossingNode;
-        } else {
-            // detection at ascending and descending node
-            this.actionAtEntry = action;
-            this.actionAtExit = action;
-            this.removeAtEntry = removeCrossingNode;
-            this.removeAtExit = removeCrossingNode;
-        }
-    }
-
-    /**
-     * Get the frame in which the equator is defined.
-     * 
-     * @return the frame in which the equator is defined
-     */
-    public Frame getFrame() {
-        return this.frame;
+                        final double threshold, final Action action, final boolean removeCrossingNode) {
+        super(Vector3D.PLUS_K, frameIn, slopeSelection, action, removeCrossingNode, maxCheck, threshold);
     }
 
     /**
@@ -286,7 +255,8 @@ public class NodeDetector extends AbstractDetector {
      */
     @Override
     public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                final boolean forward) throws PatriusException {
+                                final boolean forward)
+        throws PatriusException {
         final Action result;
         if (this.getSlopeSelection() == ASCENDING) {
             result = this.getActionAtEntry();
@@ -310,20 +280,6 @@ public class NodeDetector extends AbstractDetector {
     }
 
     /**
-     * Compute the value of the switching function. This function computes the Z position in the
-     * defined frame.
-     * 
-     * @param state state
-     * @return value of the switching function
-     * @exception PatriusException if some specific error occurs
-     */
-    @Override
-    @SuppressWarnings("PMD.ShortMethodName")
-    public double g(final SpacecraftState state) throws PatriusException {
-        return state.getPVCoordinates(this.frame).getPosition().getZ();
-    }
-
-    /**
      * {@inheritDoc}
      * <p>
      * The following attributes are not deeply copied:
@@ -336,16 +292,17 @@ public class NodeDetector extends AbstractDetector {
     public EventDetector copy() {
         final EventDetector detector;
         if (this.getSlopeSelection() == ASCENDING) {
-            detector = new NodeDetector(this.frame, this.getSlopeSelection(), this.getMaxCheckInterval(),
+            detector = new NodeDetector(this.referenceFrame, this.getSlopeSelection(), this.getMaxCheckInterval(),
                 this.getThreshold(), this.getActionAtEntry(), this.isRemoveAtEntry());
         } else if (this.getSlopeSelection() == DESCENDING) {
-            detector = new NodeDetector(this.frame, this.getSlopeSelection(), this.getMaxCheckInterval(),
+            detector = new NodeDetector(this.referenceFrame, this.getSlopeSelection(), this.getMaxCheckInterval(),
                 this.getThreshold(), this.getActionAtExit(), this.isRemoveAtExit());
         } else {
-            detector = new NodeDetector(this.frame, this.getMaxCheckInterval(), this.getThreshold(),
+            detector = new NodeDetector(this.referenceFrame, this.getMaxCheckInterval(), this.getThreshold(),
                 this.getActionAtEntry(), this.getActionAtExit(), this.isRemoveAtEntry(),
                 this.isRemoveAtExit());
         }
         return detector;
+
     }
 }

@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -27,11 +28,19 @@
  */
 package fr.cnes.sirius.patrius.validation.propagation;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
@@ -125,5 +134,10 @@ public class DummyPropagator implements PVCoordinatesProvider {
     @Override
     public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
         return this.frame;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

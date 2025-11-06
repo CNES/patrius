@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -143,7 +145,8 @@ public abstract class AbstractMultipleLinearRegression implements
             throw new NullArgumentException();
         }
         if (data.length != nobs * (nvars + 1)) {
-            throw new DimensionMismatchException(data.length, nobs * (nvars + 1));
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_REGRESSION_OBSERVATION, data.length, nobs
+                    * (nvars + 1));
         }
         if (nobs <= nvars) {
             throw new NumberIsTooSmallException(nobs, nvars, false);
@@ -238,7 +241,7 @@ public abstract class AbstractMultipleLinearRegression implements
             final double[][] xAug = new double[x.length][nVars + 1];
             for (int i = 0; i < x.length; i++) {
                 if (x[i].length != nVars) {
-                    throw new DimensionMismatchException(x[i].length, nVars);
+                    throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, x[i].length, nVars);
                 }
                 xAug[i][0] = 1.0d;
                 System.arraycopy(x[i], 0, xAug[i], 1, nVars);
@@ -275,7 +278,8 @@ public abstract class AbstractMultipleLinearRegression implements
             throw new NullArgumentException();
         }
         if (x.length != y.length) {
-            throw new DimensionMismatchException(y.length, x.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, y.length,
+                x.length);
         }
         if (x.length == 0) {
             // Must be no y data either
@@ -304,7 +308,8 @@ public abstract class AbstractMultipleLinearRegression implements
      */
     protected void validateCovarianceData(final double[][] x, final double[][] covariance) {
         if (x.length != covariance.length) {
-            throw new DimensionMismatchException(x.length, covariance.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_MATRIX_ROW_DIMENSION, x.length,
+                covariance.length);
         }
         if (covariance.length > 0 && covariance.length != covariance[0].length) {
             throw new NonSquareMatrixException(covariance.length, covariance[0].length);

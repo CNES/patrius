@@ -18,6 +18,11 @@
  * @history created 06/03/12
  *
  * HISTORY
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -42,7 +47,9 @@ import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -63,7 +70,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * <li>the Sun</li>
  * </ul>
  * <p>
- * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the beta angle is
+ * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the beta angle is
  * reached. This can be changed by using provided constructors.
  * </p>
  * <p>
@@ -95,7 +102,7 @@ public class BetaAngleDetector extends AbstractSignalPropagationDetector {
     private final Action actionBetaAngle;
 
     /** Sun. */
-    private final CelestialPoint sun;
+    private final PVCoordinatesProvider sun;
 
     /**
      * Constructor for a BetaAngleDetector instance.
@@ -110,7 +117,7 @@ public class BetaAngleDetector extends AbstractSignalPropagationDetector {
     /**
      * Constructor for a BetaAngleDetector instance with complimentary parameters.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the angle is
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the angle is
      * reached.
      * </p>
      * 
@@ -169,8 +176,8 @@ public class BetaAngleDetector extends AbstractSignalPropagationDetector {
      * @throws IllegalArgumentException if angle is out of range [-Pi / 2 , Pi / 2]
      */
     public BetaAngleDetector(final double ang, final double maxCheck, final double threshold,
-        final Action action, final boolean remove, final CelestialPoint sun) {
-        super(maxCheck, threshold);
+        final Action action, final boolean remove, final PVCoordinatesProvider sun) {
+        super(maxCheck, threshold, new LinkTypeHandler(SignalPropagationRole.RECEIVER, sun));
         // Validate input
         if (ang < -MathUtils.HALF_PI || ang > MathUtils.HALF_PI) {
             throw PatriusException.createIllegalArgumentException(PatriusMessages.OUT_OF_RANGE);
@@ -207,10 +214,20 @@ public class BetaAngleDetector extends AbstractSignalPropagationDetector {
     @SuppressWarnings("PMD.ShortMethodName")
     public double g(final SpacecraftState state) throws PatriusException {
         // Vector : from central body to the spacecraft
-        final PVCoordinates sPV = state.getPVCoordinates();
+        PVCoordinates sPV = state.getPVCoordinates();
         // Vector : from central body to the sun
         final AbsoluteDate sunDate = getSignalEmissionDate(state);
-        final PVCoordinates sunPV = this.sun.getPVCoordinates(sunDate, state.getFrame());
+        // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
+        final Frame stateFrame = state.getFrame();
+        final Frame workFrame;
+        if (stateFrame.isPseudoInertial()) {
+            workFrame = stateFrame;
+        } else {
+            workFrame = stateFrame.getFirstPseudoInertialAncestor();
+            final Transform t = stateFrame.getTransformTo(workFrame, sunDate);
+            sPV = t.transformPVCoordinates(sPV);
+        }
+        final PVCoordinates sunPV = this.sun.getPVCoordinates(sunDate, workFrame);
         final Vector3D sunVect = sunPV.getPosition();
         // Vector : spacecraft momentum
         final Vector3D momentum = sPV.getMomentum();
@@ -240,24 +257,6 @@ public class BetaAngleDetector extends AbstractSignalPropagationDetector {
     @Override
     public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
         super.setPropagationDelayType(propagationDelayType, frame);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.sun;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
     }
 
     /** {@inheritDoc}

@@ -18,6 +18,9 @@
  * @history creation 02/12/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -30,8 +33,6 @@
 
 package fr.cnes.sirius.patrius.attitudes.directions;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,9 +41,8 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.TabulatedAttitudeTest;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -53,6 +53,7 @@ import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * @description <p>
@@ -122,7 +123,7 @@ public class CelestialBodyPolesAxisDirectionTest {
         try {
             // frames creation
             // creation of the earth as CelestialBody
-            final CelestialBody earth = CelestialBodyFactory.getEarth();
+            final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
             final Frame earthFrame = earth.getRotatingFrame(IAUPoleModelType.TRUE);
 
             // another frame...
@@ -184,7 +185,7 @@ public class CelestialBodyPolesAxisDirectionTest {
         try {
             // frames creation
             // creation of the earth as CelestialBody
-            final CelestialBody earth = CelestialBodyFactory.getEarth();
+            final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
             final Frame earthFrame = earth.getRotatingFrame(IAUPoleModelType.TRUE);
 
             // another frame...
@@ -227,7 +228,9 @@ public class CelestialBodyPolesAxisDirectionTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }
+
 }

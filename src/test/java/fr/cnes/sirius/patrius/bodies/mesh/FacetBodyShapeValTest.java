@@ -15,6 +15,11 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-145:08/12/2023:[PATRIUS] Utilisation en dur du
@@ -52,11 +57,9 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -70,9 +73,9 @@ import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
-import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
-import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector;
+import fr.cnes.sirius.patrius.bodies.UserIAUCelestialBody;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
+import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector;
 import fr.cnes.sirius.patrius.events.detectors.SurfaceDistanceDetector.BodyDistanceType;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
@@ -121,11 +124,11 @@ public class FacetBodyShapeValTest {
     /** Expected outer ellipsoid equatorial radius. */
     private static final double EXPECTED_OUTER_RADIUS = 14174.074751351569;
 
-    /** User celestial body used for tests: Phobos mesh in Moon position. */
-    private static UserCelestialBody celestialBody1;
+    /** User IAU celestial body used for tests: Phobos mesh in Moon position. */
+    private static UserIAUCelestialBody celestialBody1;
 
-    /** User celestial body used for tests: Phobos mesh in Moon position. */
-    private static UserCelestialBody celestialBody2;
+    /** User IAU celestial body used for tests: Phobos mesh in Moon position. */
+    private static UserIAUCelestialBody celestialBody2;
 
     /** Star convex Facet body shape used for tests: Phobos mesh in Moon position. */
     private static StarConvexFacetBodyShape body1;
@@ -148,7 +151,8 @@ public class FacetBodyShapeValTest {
         final String modelFile1 = "mnt" + File.separator + "Phobos_Ernst_HD.obj";
         final String fullName1 = StarConvexFacetBodyShape.class.getClassLoader().getResource(modelFile1).toURI()
             .getPath();
-        celestialBody1 = new UserCelestialBody("", CelestialBodyFactory.getMoon(), 0, IAUPoleFactory.getIAUPole(null),
+        celestialBody1 = new UserIAUCelestialBody("", CelestialBodyFactory.getMoon(), 0,
+            IAUPoleFactory.getIAUPole(null),
             FramesFactory.getGCRF(), null);
         body1 = new StarConvexFacetBodyShape("Phobos HD", celestialBody1.getRotatingFrame(IAUPoleModelType.TRUE),
             new ObjMeshLoader(fullName1));
@@ -162,7 +166,8 @@ public class FacetBodyShapeValTest {
                 + "mnt" + File.separator + "m1phobos.obj";
         loader2.toObjFile(m1phobosObjPath);
         final ObjMeshLoader loader3 = new ObjMeshLoader(m1phobosObjPath);
-        celestialBody2 = new UserCelestialBody("", CelestialBodyFactory.getMoon(), 0, IAUPoleFactory.getIAUPole(null),
+        celestialBody2 = new UserIAUCelestialBody("", CelestialBodyFactory.getMoon(), 0,
+            IAUPoleFactory.getIAUPole(null),
             FramesFactory.getGCRF(), null);
         body2 = new FacetBodyShape("Phobos m1", celestialBody2.getRotatingFrame(IAUPoleModelType.TRUE),
             loader3);
@@ -723,7 +728,7 @@ public class FacetBodyShapeValTest {
         final double apparentRadiusLS = body2.getApparentRadius(new ConstantPVCoordinatesProvider(
             farthestPoint, frame), date, sunPVCoordProvider, PropagationDelayType.LIGHT_SPEED);
         // Non-regression only
-        Assert.assertEquals(13982.19484791212, apparentRadiusLS, 0.);
+        Assert.assertEquals(13982.194847886012, apparentRadiusLS, 0.);
     }
 
     /**
@@ -741,155 +746,6 @@ public class FacetBodyShapeValTest {
     public void minmaxNormTest() {
         Assert.assertEquals(0., (body1.getMinNorm() - EXPECTED_MIN) / EXPECTED_MIN, EPS);
         Assert.assertEquals(0., (body1.getMaxNorm() - EXPECTED_MAX) / EXPECTED_MAX, EPS);
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that the inner ellipsoid is properly computed
-     *
-     * @testPassCriteria the inner ellipsoid is as expected (reference: math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void innerEllipsoidTest() {
-        // Check the non-regression of the equatorial radius of the inner ellipsoid.
-        Assert.assertEquals(0.,
-            (body1.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius() - EXPECTED_INNER_RADIUS)
-                    / EXPECTED_INNER_RADIUS, EPS);
-        // Check that the flattening of the inner ellipsoid has the same flattening as the fitted ellipsoid
-        Assert.assertEquals(0.,
-            (body1.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening() - body1.getEllipsoid(
-                EllipsoidType.FITTED_ELLIPSOID)
-                .getFlattening()) / body1.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening(), EPS);
-        // Check that the inner ellipsoid is inscribed within all the vertices
-        // Retrieve the map of vertices
-        final Map<Integer, Vertex> verticesMap = body1.getMeshProvider().getVertices();
-        // Loop on all the vertices
-        int counter = 0;
-        for (final Vertex vertex : verticesMap.values()) {
-            // Check that the inner ellipsoid polar radius is smaller than the current vertex
-            // distance to center
-            Assert.assertTrue(body1.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getEquatorialRadius()
-                    * (1 - body1.getEllipsoid(EllipsoidType.INNER_ELLIPSOID).getFlattening()) <= vertex.getPosition()
-                .getNorm());
-            // Increment the counter if the vertex distance to the origin is smaller than the
-            // equatorial radius
-            if (body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() >= vertex.getPosition()
-                .getNorm()) {
-                counter += 1;
-            }
-        }
-        // Check that at least one vertex has a distance to the origin smaller than the equatorial
-        // radius
-        Assert.assertTrue(counter > 0);
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that the outer ellipsoid is properly computed
-     *
-     * @testPassCriteria the outer ellipsoid is as expected (reference: math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void outerEllipsoidTest() {
-        // Check the non-regression of the equatorial radius of the outer ellipsoid.
-        Assert.assertEquals(0.,
-            (body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() - EXPECTED_OUTER_RADIUS)
-                    / EXPECTED_OUTER_RADIUS, EPS);
-        // Check that the flattening of the outer ellipsoid has the same flattening as the fitted ellipsoid
-        Assert.assertEquals(0.,
-            (body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening() - body1.getEllipsoid(
-                EllipsoidType.FITTED_ELLIPSOID).getFlattening())
-                    / body1.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening(), EPS);
-        // Check that the outer ellipsoid is englobing all the vertices
-        // Retrieve the map of vertices
-        final Map<Integer, Vertex> verticesMap = body1.getMeshProvider().getVertices();
-        // Loop on all the vertices
-        int counter = 0;
-        for (final Vertex vertex : verticesMap.values()) {
-            // Check that the outer ellipsoid equatorial radius is larger than the current vertex
-            // distance to center
-            Assert.assertTrue(body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius() >= vertex
-                .getPosition().getNorm());
-            if (body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getEquatorialRadius()
-                    * (1 - body1.getEllipsoid(EllipsoidType.OUTER_ELLIPSOID).getFlattening()) <= vertex
-                .getPosition().getNorm()) {
-                // Increment the counter if the vertex distance to the origin is larger than the
-                // polar radius
-                counter += 1;
-            }
-        }
-        // Check that at least one vertex has a larger norm than the polar radius
-        Assert.assertTrue(counter > 0);
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that the inner sphere is properly computed
-     *
-     * @testPassCriteria the inner sphere is as expected (reference: math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void innerSphereTest() {
-        // Check that the radius of the inner sphere coincides with the expected minimum value of the distance between
-        // the vertices and the center of the body, i.e. with the norm of the position of the closest vertex
-        Assert.assertEquals(0., (body1.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius() - EXPECTED_MIN)
-                / EXPECTED_MIN, EPS);
-        // Check that the flattening of the inner sphere is zero
-        Assert.assertEquals(0., body1.getEllipsoid(EllipsoidType.INNER_SPHERE).getFlattening(), EPS);
-        // Check that the inner sphere is inscribed within all the vertices
-        // Retrieve the map of vertices
-        final Map<Integer, Vertex> verticesMap = body1.getMeshProvider().getVertices();
-        // Loop on all the vertices
-        for (final Vertex vertex : verticesMap.values()) {
-            // Check that the inner sphere is inscribed within the current vertex
-            Assert.assertTrue(body1.getEllipsoid(EllipsoidType.INNER_SPHERE).getEquatorialRadius() <= vertex
-                .getPosition().getNorm());
-        }
-    }
-
-    /**
-     * @testType UT
-     *
-     * @description check that the outer sphere is properly computed
-     *
-     * @testPassCriteria the outer sphere is as expected (reference: math)
-     *
-     * @referenceVersion 4.9
-     *
-     * @nonRegressionVersion 4.9
-     */
-    @Test
-    public void outerSphereTest() {
-        // Check that the radius of the outer sphere coincides with the expected maximum value of the distance between
-        // the vertices and the center of the body, i.e. with the norm of the position of the farthest vertex
-        Assert.assertEquals(0., (body1.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius() - EXPECTED_MAX)
-                / EXPECTED_MAX, EPS);
-        // Check that the flattening of the outer sphere is zero
-        Assert.assertEquals(0., body1.getEllipsoid(EllipsoidType.OUTER_SPHERE).getFlattening(), EPS);
-        // Check that the outer sphere is englobing all the vertices
-        // Retrieve the map of vertices
-        final Map<Integer, Vertex> verticesMap = body1.getMeshProvider().getVertices();
-        // Loop on all the vertices
-        for (final Vertex vertex : verticesMap.values()) {
-            // Check that the outer sphere is englobing the current vertex
-            Assert.assertTrue(body1.getEllipsoid(EllipsoidType.OUTER_SPHERE).getEquatorialRadius() >= vertex
-                .getPosition().getNorm());
-        }
     }
 
     /**

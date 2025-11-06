@@ -18,6 +18,8 @@
  * @history creation 02/12/2011
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3135:10/05/2022:[PATRIUS] Calcul d'intersection sur BodyShape  
@@ -33,7 +35,6 @@
 package fr.cnes.sirius.patrius.attitudes.directions;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
-import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
@@ -97,7 +98,7 @@ public final class CelestialBodyPolesAxisDirection implements IDirection {
                               final AbsoluteDate date, final Frame frame) throws PatriusException {
 
         // creation of the oriented frame locked to the body
-        final Frame bodyFrame = this.body.getRotatingFrame(IAUPoleModelType.TRUE);
+        final Frame bodyFrame = this.body.getRotatingFrame();
 
         // transformation of its Z vector to the output frame
         final Transform toOutputFrame = bodyFrame.getTransformTo(frame, date);
@@ -124,7 +125,7 @@ public final class CelestialBodyPolesAxisDirection implements IDirection {
                         final AbsoluteDate date, final Frame frame) throws PatriusException {
 
         // creation of the oriented frame locked to the body
-        final Frame bodyFrame = this.body.getRotatingFrame(IAUPoleModelType.TRUE);
+        final Frame bodyFrame = this.body.getRotatingFrame();
 
         // computation of the origin's PV coordinates
         // in the output frame at the date

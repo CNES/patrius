@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
@@ -59,7 +60,7 @@ public abstract class AbstractBodyShape implements BodyShape {
      * Altitude epsilon below which the altitude coordinate is neglected: below this value,the method
      * {@link #getIntersectionPoint(Line, Vector3D, Frame, AbsoluteDate)} will be automatically used instead of
      * {@link #getIntersectionPoint(Line, Vector3D, Frame, AbsoluteDate, double)}. This epsilon altitude is also used to
-     * assess if a body point is on the shape surface or not (method {@link BodyPoint#isOnShapeSurface(double)}.
+     * assess if a body point is on the shape surface or not (method {@link BodyPoint#isOnShapeSurface()}.
      */
     protected double distanceEpsilon = DEFAULT_DISTANCE_EPSILON;
 

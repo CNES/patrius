@@ -18,6 +18,7 @@
  * @history created 11/02/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
@@ -88,124 +89,124 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
     private final Frame frame;
 
     /** Static allocation to speed up computing: &alpha;2 */
-    private static final double[] alpha2 = new double[6];
+    private final double[] alpha2 = new double[6];
     /** Static allocation to speed up computing: vect2 */
-    private static final double[] vect2 = new double[3];
+    private final double[] vect2 = new double[3];
     /** Static allocation to speed up computing: vectX2 */
-    private static final double[] vectX2 = new double[3];
+    private final double[] vectX2 = new double[3];
     /** Static allocation to speed up computing: vectY2 */
-    private static final double[] vectY2 = new double[3];
+    private final double[] vectY2 = new double[3];
     /** Static allocation to speed up computing: &beta;2 */
-    private static final double[][] beta2 = new double[6][3];
+    private final double[][] beta2 = new double[6][3];
     /** Static allocation to speed up computing: &beta;X2 */
-    private static final double[][] betaX2 = new double[6][3];
+    private final double[][] betaX2 = new double[6][3];
     /** Static allocation to speed up computing: &beta;Y2 */
-    private static final double[][] betaY2 = new double[6][3];
+    private final double[][] betaY2 = new double[6][3];
     /** Static allocation to speed up computing: &alpha;3 */
-    private static final double[] alpha3 = new double[10];
+    private final double[] alpha3 = new double[10];
     /** Static allocation to speed up computing: vect3 */
-    private static final double[] vect3 = new double[4];
+    private final double[] vect3 = new double[4];
     /** Static allocation to speed up computing: vectX3 */
-    private static final double[] vectX3 = new double[4];
+    private final double[] vectX3 = new double[4];
     /** Static allocation to speed up computing: vectY3 */
-    private static final double[] vectY3 = new double[4];
+    private final double[] vectY3 = new double[4];
     /** Static allocation to speed up computing: &beta;3 */
-    private static final double[][] beta3 = new double[10][4];
+    private final double[][] beta3 = new double[10][4];
     /** Static allocation to speed up computing: &beta;X3 */
-    private static final double[][] betaX3 = new double[10][4];
+    private final double[][] betaX3 = new double[10][4];
     /** Static allocation to speed up computing: &beta;Y3 */
-    private static final double[][] betaY3 = new double[10][4];
+    private final double[][] betaY3 = new double[10][4];
     /** Static allocation to speed up computing: &beta;XX3 */
-    private static final double[][] betaXX3 = new double[10][4];
+    private final double[][] betaXX3 = new double[10][4];
     /** Static allocation to speed up computing: &beta;YY3 */
-    private static final double[][] betaYY3 = new double[10][4];
+    private final double[][] betaYY3 = new double[10][4];
     /** Static allocation to speed up computing: &beta;XY3 */
-    private static final double[][] betaXY3 = new double[10][4];
+    private final double[][] betaXY3 = new double[10][4];
     /** Static allocation to speed up computing: &alpha;4 */
-    private static final double[] alpha4 = new double[15];
+    private final double[] alpha4 = new double[15];
     /** Static allocation to speed up computing: vect4 */
-    private static final double[] vect4 = new double[5];
+    private final double[] vect4 = new double[5];
     /** Static allocation to speed up computing: vectX4 */
-    private static final double[] vectX4 = new double[5];
+    private final double[] vectX4 = new double[5];
     /** Static allocation to speed up computing: vectY4 */
-    private static final double[] vectY4 = new double[5];
+    private final double[] vectY4 = new double[5];
     /** Static allocation to speed up computing: &beta;4 */
-    private static final double[][] beta4 = new double[15][5];
+    private final double[][] beta4 = new double[15][5];
     /** Static allocation to speed up computing: &beta;X4 */
-    private static final double[][] betaX4 = new double[15][5];
+    private final double[][] betaX4 = new double[15][5];
     /** Static allocation to speed up computing: &beta;Y4 */
-    private static final double[][] betaY4 = new double[15][5];
+    private final double[][] betaY4 = new double[15][5];
     /** Static allocation to speed up computing: vectXX4 */
-    private static final double[] vectXX4 = new double[5];
+    private final double[] vectXX4 = new double[5];
     /** Static allocation to speed up computing: vectYY4 */
-    private static final double[] vectYY4 = new double[5];
+    private final double[] vectYY4 = new double[5];
     /** Static allocation to speed up computing: vectXY4 */
-    private static final double[] vectXY4 = new double[5];
+    private final double[] vectXY4 = new double[5];
     /** Static allocation to speed up computing: &beta;XX4 */
-    private static final double[][] betaXX4 = new double[15][5];
+    private final double[][] betaXX4 = new double[15][5];
     /** Static allocation to speed up computing: &beta;YY4 */
-    private static final double[][] betaYY4 = new double[15][5];
+    private final double[][] betaYY4 = new double[15][5];
     /** Static allocation to speed up computing: &beta;XY4 */
-    private static final double[][] betaXY4 = new double[15][5];
+    private final double[][] betaXY4 = new double[15][5];
     /** Static allocation to speed up computing: &alpha;5 */
-    private static final double[] alpha5 = new double[21];
+    private final double[] alpha5 = new double[21];
     /** Static allocation to speed up computing: vect5 */
-    private static final double[] vect5 = new double[6];
+    private final double[] vect5 = new double[6];
     /** Static allocation to speed up computing: vectX5 */
-    private static final double[] vectX5 = new double[6];
+    private final double[] vectX5 = new double[6];
     /** Static allocation to speed up computing: vectY5 */
-    private static final double[] vectY5 = new double[6];
+    private final double[] vectY5 = new double[6];
     /** Static allocation to speed up computing: &beta;5 */
-    private static final double[][] beta5 = new double[21][6];
+    private final double[][] beta5 = new double[21][6];
     /** Static allocation to speed up computing: &beta;X5 */
-    private static final double[][] betaX5 = new double[21][6];
+    private final double[][] betaX5 = new double[21][6];
     /** Static allocation to speed up computing: &beta;Y5 */
-    private static final double[][] betaY5 = new double[21][6];
+    private final double[][] betaY5 = new double[21][6];
     
     /** Static allocation to speed up computing: order 6. */
-    private static final double[] alpha6 = new double[28];
+    private final double[] alpha6 = new double[28];
     /** Static allocation to speed up computing: order 6. */
-    private static final double[] vect6 = new double[7];
+    private final double[] vect6 = new double[7];
     /** Static allocation to speed up computing: order 6. */
-    private static final double[] vectX6 = new double[7];
+    private final double[] vectX6 = new double[7];
     /** Static allocation to speed up computing: order 6. */
-    private static final double[] vectY6 = new double[7];
+    private final double[] vectY6 = new double[7];
     /** Static allocation to speed up computing: order 6. */
-    private static final double[][] beta6 = new double[28][7];
+    private final double[][] beta6 = new double[28][7];
     /** Static allocation to speed up computing: order 6. */
-    private static final double[][] betaX6 = new double[28][7];
+    private final double[][] betaX6 = new double[28][7];
     /** Static allocation to speed up computing: order 6. */
-    private static final double[][] betaY6 = new double[28][7];
+    private final double[][] betaY6 = new double[28][7];
     
     /** Static allocation to speed up computing: order 7. */
-    private static final double[] alpha7 = new double[36];
+    private final double[] alpha7 = new double[36];
     /** Static allocation to speed up computing: order 7. */
-    private static final double[] vect7 = new double[8];
+    private final double[] vect7 = new double[8];
     /** Static allocation to speed up computing: order 7. */
-    private static final double[] vectX7 = new double[8];
+    private final double[] vectX7 = new double[8];
     /** Static allocation to speed up computing: order 7. */
-    private static final double[] vectY7 = new double[8];
+    private final double[] vectY7 = new double[8];
     /** Static allocation to speed up computing: order 7. */
-    private static final double[][] beta7 = new double[36][8];
+    private final double[][] beta7 = new double[36][8];
     /** Static allocation to speed up computing: order 7. */
-    private static final double[][] betaX7 = new double[36][8];
+    private final double[][] betaX7 = new double[36][8];
     /** Static allocation to speed up computing: order 7. */
-    private static final double[][] betaY7 = new double[36][8];
+    private final double[][] betaY7 = new double[36][8];
     
     /** Static allocation to speed up computing: order 8. */
-    private static final double[] alpha8 = new double[45];
+    private final double[] alpha8 = new double[45];
     /** Static allocation to speed up computing: order 8. */
-    private static final double[] vect8 = new double[9];
+    private final double[] vect8 = new double[9];
     /** Static allocation to speed up computing: order 8. */
-    private static final double[] vectX8 = new double[9];
+    private final double[] vectX8 = new double[9];
     /** Static allocation to speed up computing: order 8. */
-    private static final double[] vectY8 = new double[9];
+    private final double[] vectY8 = new double[9];
     /** Static allocation to speed up computing: order 8. */
-    private static final double[][] beta8 = new double[45][9];
+    private final double[][] beta8 = new double[45][9];
     /** Static allocation to speed up computing: order 8. */
-    private static final double[][] betaX8 = new double[45][9];
+    private final double[][] betaX8 = new double[45][9];
     /** Static allocation to speed up computing: order 8. */
-    private static final double[][] betaY8 = new double[45][9];
+    private final double[][] betaY8 = new double[45][9];
 
     /** The celestial object representing the third body. */
     private final CelestialPoint object;
@@ -220,32 +221,32 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
     private final int thirdBodyDegreeMaxShortPeriods;
 
     /** Cache for e<sub>x</sub>. */
-    private static double exSvg = Double.POSITIVE_INFINITY;
+    private double exSvg = Double.POSITIVE_INFINITY;
     /** Cache for e<sub>y</sub>. */
-    private static double eySvg = Double.POSITIVE_INFINITY;
+    private double eySvg = Double.POSITIVE_INFINITY;
     /** Cache for f. */
-    private static double fSvg = Double.POSITIVE_INFINITY;
+    private double fSvg = Double.POSITIVE_INFINITY;
     /** Cache for u. */
-    private static double uSvg = Double.POSITIVE_INFINITY;
+    private double uSvg = Double.POSITIVE_INFINITY;
     /** Cache for i<sub>x</sub>. */
-    private static double ixSvg = Double.POSITIVE_INFINITY;
+    private double ixSvg = Double.POSITIVE_INFINITY;
     /** Cache for i<sub>y</sub>. */
-    private static double iySvg = Double.POSITIVE_INFINITY;
+    private double iySvg = Double.POSITIVE_INFINITY;
 
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[] vect = new double[3];
+    private final double[] vect = new double[3];
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[] vectX = new double[3];
+    private final double[] vectX = new double[3];
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[] vectY = new double[3];
+    private final double[] vectY = new double[3];
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[] vectKsi = new double[3];
+    private final double[] vectKsi = new double[3];
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[][] beta = new double[6][3];
+    private final double[][] beta = new double[6][3];
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[][] betaX = new double[6][3];
+    private final double[][] betaX = new double[6][3];
     /** Temporary variable instantiated only once to save computation time. */
-    private static double[][] betaY = new double[6][3];
+    private final double[][] betaY = new double[6][3];
 
     /**
      * Creates a Stela third body attraction force model.
@@ -3920,7 +3921,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param zp
      *            third direction cosine of the third body
      */
-    private static void computeAlphaVect7(final double ex, final double ey, final double xp, final double yp, final double zp) {       
+    private void computeAlphaVect7(final double ex, final double ey, final double xp, final double yp, final double zp) {
         final double t1 = xp * xp;
         final double t2 = t1 * t1;
         final double t4 = 0.429e3 * t2 * t1;
@@ -4032,7 +4033,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @throws CommonException
      *             thrown if input data is incoherent
      */
-    private static void computeBeta7(final double ix, final double iy) {
+    private void computeBeta7(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -6845,7 +6846,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param zp
      *            third direction cosine of the third body
      */
-    private static void computeAlphaVect8(final double ex, final double ey, final double xp, final double yp, final double zp) {       
+    private void computeAlphaVect8(final double ex, final double ey, final double xp, final double yp, final double zp) {
         final double t1 = xp * xp;
         final double t2 = t1 * t1;
         final double t3 = t2 * t2;
@@ -8419,7 +8420,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *            = sin(i/2) * sin(RAAN)
      */
-    private static void computeBeta8_1(final double ix, final double iy) {
+    private void computeBeta8_1(final double ix, final double iy) {
         t1 = iy * iy;
         t2 = 0.2e1 * t1;
         t3 = -0.1e1 + t2;
@@ -9847,7 +9848,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *            = sin(i/2) * sin(RAAN)
      */
-    private static void computeBeta8(final double ix, final double iy) {
+    private void computeBeta8(final double ix, final double iy) {
         computeBeta8_1(ix, iy);
         final double t5009 = 0.14336e5 * t1563 * t34;
         final double t5016 = 0.28672e5 * t1566 * t29;
@@ -12905,7 +12906,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      *        &mu; of the third body
      * @return derivative
      */
-    private static double[][] thirdBodyDeg2SecDerivMat(final double a, final double ex, final double ey,
+    private double[][] thirdBodyDeg2SecDerivMat(final double a, final double ex, final double ey,
                                                        final double ix,
                                                 final double iy, final double xp, final double yp, final double zp,
                                                 final double rp, final double mup) {
@@ -13199,7 +13200,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      *        &mu; of the third body
      * @return derivative
      */
-    private static double[][] thirdBodyDeg3SecDerivMat(final double a, final double ex, final double ey,
+    private double[][] thirdBodyDeg3SecDerivMat(final double a, final double ex, final double ey,
                                                        final double ix,
                                                 final double iy, final double xp, final double yp, final double zp,
                                                 final double rp, final double mup) {
@@ -13765,7 +13766,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      *        &mu; of the third body
      * @return derivative
      */
-    private static double[][] thirdBodyDeg4SecDerivMat(final double a, final double ex, final double ey,
+    private double[][] thirdBodyDeg4SecDerivMat(final double a, final double ex, final double ey,
                                                        final double ix,
                                                 final double iy, final double xp, final double yp, final double zp,
                                                 final double rp, final double mup) {
@@ -13911,7 +13912,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        the ey equinoctial orbital parameter
      */
-    private static void computeVect2(final double ex, final double ey) {
+    private void computeVect2(final double ex, final double ey) {
         final double t1 = ex * ex;
         final double t2 = ey * ey;
         final double t4 = MathLib.sqrt(1.0 - t1 - t2);
@@ -13941,7 +13942,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        the ey equinoctial orbital parameter
      */
-    private static void computeVect3(final double ex, final double ey) {
+    private void computeVect3(final double ex, final double ey) {
 
         final double p5DivP2 = 0.5e1 / 0.2e1;
         final double p5DivP4 = 0.5e1 / 0.4e1;
@@ -13989,7 +13990,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        the ey equinoctial orbital parameter
      */
-    private static void computeVectX2(final double ex, final double ey) {
+    private void computeVectX2(final double ex, final double ey) {
 
         final double t2 = ey * ey;
         final double t10 = t2 * t2;
@@ -14033,7 +14034,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        the ey equinoctial orbital parameter
      */
-    private static void computeVectX3(final double ex, final double ey) {
+    private void computeVectX3(final double ex, final double ey) {
         final double p5DivP2 = 0.5e1 / 0.2e1;
         final double p5DivP4 = 0.5e1 / 0.4e1;
 
@@ -14111,7 +14112,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        the ey equinoctial orbital parameter
      */
-    private static void computeVectY2(final double ex, final double ey) {
+    private void computeVectY2(final double ex, final double ey) {
         final double t1 = ex * ex;
         final double t2 = ey * ey;
         final double t4 = MathLib.sqrt(1.0 - t1 - t2);
@@ -14154,7 +14155,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        the ey equinoctial orbital parameter
      */
-    private static void computeVectY3(final double ex, final double ey) {
+    private void computeVectY3(final double ex, final double ey) {
         final double p5DivP2 = 0.5e1 / 0.2e1;
         final double p5DivP4 = 0.5e1 / 0.4e1;
         final double p15DivP2 = 0.15e2 / 0.2e1;
@@ -14237,7 +14238,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param zp
      *        third direction cosine of the third body
      */
-    private static void computeAlphaVect4(final double ex, final double ey, final double xp, final double yp,
+    private void computeAlphaVect4(final double ex, final double ey, final double xp, final double yp,
             final double zp) {
 
         // MiH factorisation
@@ -14568,7 +14569,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        the iy equinoctial orbital parameter
      */
-    private static void computeBeta2(final double ix, final double iy) {
+    private void computeBeta2(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -14628,7 +14629,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        the iy equinoctial orbital parameter
      */
-    private static void computeBeta3(final double ix, final double iy) {
+    private void computeBeta3(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -14733,7 +14734,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        = sin(i/2) * sin(RAAN)
      */
-    private static void computeBeta4(final double ix, final double iy) {
+    private void computeBeta4(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -15209,7 +15210,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        the iy equinoctial orbital parameter
      */
-    private static void computeBetaX2(final double ix, final double iy) {
+    private void computeBetaX2(final double ix, final double iy) {
 
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
@@ -15278,7 +15279,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        the iy equinoctial orbital parameter
      */
-    private static void computeBetaX3(final double ix, final double iy) {
+    private void computeBetaX3(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -15417,7 +15418,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        the iy equinoctial orbital parameter
      */
-    private static void computeBetaY2(final double ix, final double iy) {
+    private void computeBetaY2(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -15485,7 +15486,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        the iy equinoctial orbital parameter
      */
-    private static void computeBetaY3(final double ix, final double iy) {
+    private void computeBetaY3(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -15626,7 +15627,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param ey
      *        = e*sin(RAAN+w)
      */
-    private static void computeVectSecDeriv4(final double ex, final double ey) {
+    private void computeVectSecDeriv4(final double ex, final double ey) {
         final double t1 = ex * ex;
         final double t2 = ey * ey;
         final double t3 = 0.1e1 - t1 - t2;
@@ -16157,7 +16158,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        = sin(i/2) * sin(RAAN)
      */
-    private static void computeBetaSecDeriv4(final double ix, final double iy) {
+    private void computeBetaSecDeriv4(final double ix, final double iy) {
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;
         final double t3 = -0.1e1 + t2;
@@ -16860,7 +16861,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVect(final double ex, final double ey, final double f) {
+    private void computeVect(final double ex, final double ey, final double f) {
 
         final double t1 = MathLib.sin(f);
         final double t2 = t1 * ex;
@@ -16976,9 +16977,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static
-        void
-            computeVectKsi(final double ex, final double ey, final double u, final double f, final double e) {
+    private void computeVectKsi(final double ex, final double ey, final double u, final double f, final double e) {
         final double[] sincosf = MathLib.sinAndCos(f);
         final double t1 = MathLib.cos(u);
         final double t3 = 0.1e1 - e * t1;
@@ -17112,7 +17111,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVectX0(final double ex, final double ey, final double f) {
+    private void computeVectX0(final double ex, final double ey, final double f) {
         final double[] sincosf = MathLib.sinAndCos(f);
         final double t1 = sincosf[1];
         final double t2 = t1 * t1;
@@ -17293,7 +17292,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVectX1(final double ex, final double ey, final double f) {
+    private void computeVectX1(final double ex, final double ey, final double f) {
         final double t1 = ex * ex;
         final double t2 = t1 * t1;
         final double t3 = ex * t2;
@@ -17492,7 +17491,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVectX2(final double ex, final double ey, final double f) {
+    private void computeVectX2(final double ex, final double ey, final double f) {
         final double[] sincosf = MathLib.sinAndCos(f);
         final double t1 = sincosf[0];
         final double t2 = t1 * t1;
@@ -17682,7 +17681,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVectY0(final double ex, final double ey, final double f) {
+    private void computeVectY0(final double ex, final double ey, final double f) {
         final double t1 = ex * ex;
         final double t2 = ey * ey;
         final double t3 = 0.1e1 - t1 - t2;
@@ -17848,7 +17847,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVectY1(final double ex, final double ey, final double f) {
+    private void computeVectY1(final double ex, final double ey, final double f) {
         final double t1 = ex * ex;
         final double[] sincosf = MathLib.sinAndCos(f);
         final double t2 = sincosf[0];
@@ -18030,7 +18029,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param f
      *        AOP + RAAN + u
      */
-    private static void computeVectY2(final double ex, final double ey, final double f) {
+    private void computeVectY2(final double ex, final double ey, final double f) {
         final double[] sincosf = MathLib.sinAndCos(f);
         final double t1 = sincosf[1];
         final double t2 = t1 * t1;
@@ -18202,7 +18201,7 @@ public class StelaThirdBodyAttraction extends AbstractStelaLagrangeContribution 
      * @param iy
      *        second inclination component
      */
-    private static void computeBetaMatrix(final double ix, final double iy) {
+    private void computeBetaMatrix(final double ix, final double iy) {
 
         final double t1 = iy * iy;
         final double t2 = 0.2e1 * t1;

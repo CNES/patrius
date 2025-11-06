@@ -18,6 +18,7 @@
  * @history creation 18/11/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3154:10/05/2022:[PATRIUS] Amelioration des methodes permettant l'extraction d'une sous-sequence 
@@ -37,8 +38,6 @@ package fr.cnes.sirius.patrius.attitudes;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -68,6 +67,7 @@ import fr.cnes.sirius.patrius.utils.AngularDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * @description <p>
@@ -769,6 +769,7 @@ public class RelativeTabulatedAttitudeLegTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
 
         // date and frame

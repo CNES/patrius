@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -56,6 +59,7 @@ public class FrozenFrameTest {
      */
     @Test
     public void testGetTransform() throws PatriusException {
+        
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Frame coordinateFrame = FramesFactory.getICRF();
         final Frame referenceFrame = FramesFactory.getEME2000();
@@ -66,7 +70,8 @@ public class FrozenFrameTest {
         // Reference values for non-regression test
         final Quaternion quaternionRef = new Rotation(true, 0.9999999999999984, -1.653020584550675E-8,
                 4.028108631990782E-8, 3.539139805514139E-8).getQuaternion();
-        final Vector3D translationRef = new Vector3D(27566638023.97404, -132361428631.15027, -57418643983.93181);
+        
+        final Vector3D translationRef = new Vector3D(27566638031.257874,-132361428629.92024,-57418643983.39854);
         // Check the rotation via non-regression
         Assert.assertEquals(quaternionRef, frozenFrame.getTransformProvider().getTransform(date)
                 .getRotation().getQuaternion());
@@ -90,6 +95,7 @@ public class FrozenFrameTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
     }
 }

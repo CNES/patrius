@@ -18,6 +18,7 @@
  * @history creation 14/11/11
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -89,6 +90,7 @@ public class ApparentElevationDetectorTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
         this.mu = 3.9860047e14;

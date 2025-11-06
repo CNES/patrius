@@ -18,6 +18,9 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.15.1:OPENFD-487:28/01/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -35,8 +38,6 @@ package fr.cnes.sirius.patrius.propagation.events.multi;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
@@ -61,6 +62,7 @@ import fr.cnes.sirius.patrius.events.utils.AdaptedMonoEventDetector;
 import fr.cnes.sirius.patrius.events.utils.AdaptedMultiEventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.math.exception.ConvergenceException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
@@ -73,6 +75,7 @@ import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import junit.framework.Assert;
 
 /**
  * <p>
@@ -378,6 +381,8 @@ public class AdaptedMonoMultiEventDetectorTest {
     @Before
     public void setUp() throws PatriusException {
 
+        Utils.clear();
+
         // Orekit initialization
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
@@ -427,18 +432,18 @@ public class AdaptedMonoMultiEventDetectorTest {
      * 
      * @output an AdaptedMonoEventDetector
      * 
-     * @testPassCriteria the call to g raises an OrekitExceptionWrapper caused by an OrekitException
+     * @testPassCriteria the call to g raises a ConvergenceException
      * 
      * @referenceVersion 3.0
      * 
      * @nonRegressionVersion 3.0
      * 
-     * @throws PatriusExceptionWrapper
+     * @throws ConvergenceException
      *         is expected
      */
-    @Test(expected = PatriusExceptionWrapper.class)
+    @Test(expected = ConvergenceException.class)
     public void testAdaptedMonoEventDetectorGError() {
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final CrashingEventDetector crashEd = new CrashingEventDetector();
         final MultiAttitudeProviderWrapper attitudeLawWrapper = new MultiAttitudeProviderWrapper(attitudeLaw, STATE1);
         final AdaptedMonoEventDetector detector = new AdaptedMonoEventDetector(crashEd,
@@ -448,9 +453,8 @@ public class AdaptedMonoMultiEventDetectorTest {
         final double[] bogusY = { 0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.6 };
         try {
             detector.g(0.1, bogusY);
-        } catch (final PatriusExceptionWrapper e) {
-            final Throwable cause = e.getCause();
-            Assert.assertEquals(cause.getClass(), PatriusException.class);
+        } catch (final ConvergenceException e) {
+            Assert.assertEquals(e.getClass(), ConvergenceException.class);
             throw e;
         }
     }
@@ -479,7 +483,7 @@ public class AdaptedMonoMultiEventDetectorTest {
      */
     @Test(expected = PatriusExceptionWrapper.class)
     public void testAdaptedMultiEventDetectorGError() {
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final CrashingMultiEventDetector crashEdMulti = new CrashingMultiEventDetector();
         final AdaptedMultiEventDetector multiDetector = new AdaptedMultiEventDetector(crashEdMulti,
             tISSOrbit.getType(), PositionAngle.MEAN, attitudeLawMap,
@@ -508,20 +512,20 @@ public class AdaptedMonoMultiEventDetectorTest {
      * 
      * @output an AdaptedMonoEventDetector
      * 
-     * @testPassCriteria the call raises an OrekitExceptionWrapper caused by an OrekitException
+     * @testPassCriteria the call raises a ConvergenceException
      * 
      * @referenceVersion 3.0
      * 
      * @nonRegressionVersion 3.0
      * 
-     * @throws PatriusExceptionWrapper
+     * @throws ConvergenceException
      *         is expected
      */
-    @Test(expected = PatriusExceptionWrapper.class)
+    @Test(expected = ConvergenceException.class)
     public void testAdaptedMonoEventDetectorEventOccuredError() {
 
         final CrashingEventDetector crashEd = new CrashingEventDetector();
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final MultiAttitudeProviderWrapper attitudeLawWrapper = new MultiAttitudeProviderWrapper(attitudeLaw, STATE1);
         final AdaptedMonoEventDetector detector = new AdaptedMonoEventDetector(crashEd,
             tISSOrbit.getType(), PositionAngle.MEAN, attitudeLawWrapper,
@@ -530,9 +534,8 @@ public class AdaptedMonoMultiEventDetectorTest {
         final double[] bogusY = { 0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.6 };
         try {
             detector.eventOccurred(0.1, bogusY, true, true);
-        } catch (final PatriusExceptionWrapper e) {
-            final Throwable cause = e.getException();
-            Assert.assertEquals(cause.getClass(), PatriusException.class);
+        } catch (final ConvergenceException e) {
+            Assert.assertEquals(e.getClass(), ConvergenceException.class);
             throw e;
         }
     }
@@ -561,7 +564,7 @@ public class AdaptedMonoMultiEventDetectorTest {
      */
     @Test(expected = PatriusExceptionWrapper.class)
     public void testAdaptedMultiEventDetectorEventOccuredError() {
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final CrashingMultiEventDetector crashEdMulti = new CrashingMultiEventDetector();
         final AdaptedMultiEventDetector multiDetector = new AdaptedMultiEventDetector(crashEdMulti,
             tISSOrbit.getType(), PositionAngle.MEAN, attitudeLawMap,
@@ -589,20 +592,20 @@ public class AdaptedMonoMultiEventDetectorTest {
      * 
      * @output an AdaptedMonoEventDetector
      * 
-     * @testPassCriteria the call raises an OrekitExceptionWrapper caused by an OrekitException
+     * @testPassCriteria the call raises a ConvergenceException
      * 
      * @referenceVersion 3.0
      * 
      * @nonRegressionVersion 3.0
      * 
-     * @throws PatriusExceptionWrapper
+     * @throws ConvergenceException
      *         is expected
      */
-    @Test(expected = PatriusExceptionWrapper.class)
+    @Test(expected = ConvergenceException.class)
     public void testAdaptedMonoEventDetectorResetStateError() {
 
         final CrashingEventDetector crashEd = new CrashingEventDetector();
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final MultiAttitudeProviderWrapper attitudeLawWrapper = new MultiAttitudeProviderWrapper(attitudeLaw, STATE1);
         final AdaptedMonoEventDetector detector = new AdaptedMonoEventDetector(crashEd,
             tISSOrbit.getType(), PositionAngle.MEAN, attitudeLawWrapper,
@@ -611,9 +614,8 @@ public class AdaptedMonoMultiEventDetectorTest {
         final double[] bogusY = { 0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.6 };
         try {
             detector.resetState(0.1, bogusY);
-        } catch (final PatriusExceptionWrapper e) {
-            final Throwable cause = e.getException();
-            Assert.assertEquals(cause.getClass(), PatriusException.class);
+        } catch (final ConvergenceException e) {
+            Assert.assertEquals(e.getClass(), ConvergenceException.class);
             throw e;
         }
     }
@@ -642,7 +644,7 @@ public class AdaptedMonoMultiEventDetectorTest {
      */
     @Test(expected = PatriusExceptionWrapper.class)
     public void testAdaptedMultiEventDetectorResetStateError() {
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final double[] bogusY = { 0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.6 };
         final CrashingMultiEventDetector crashEdMulti = new CrashingMultiEventDetector();
         final AdaptedMultiEventDetector multiDetector = new AdaptedMultiEventDetector(crashEdMulti,
@@ -669,20 +671,20 @@ public class AdaptedMonoMultiEventDetectorTest {
      * 
      * @output an AdaptedMonoEventDetector
      * 
-     * @testPassCriteria the call raises an OrekitExceptionWrapper caused by an OrekitException
+     * @testPassCriteria the call raises a ConvergenceException
      * 
      * @referenceVersion 3.0
      * 
      * @nonRegressionVersion 3.0
      * 
-     * @throws PatriusExceptionWrapper
+     * @throws ConvergenceException
      *         is expected
      */
-    @Test(expected = PatriusExceptionWrapper.class)
+    @Test(expected = ConvergenceException.class)
     public void testAdaptedMonoEventDetectorInitError() {
 
         final CrashingEventDetector crashEd = new CrashingEventDetector();
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final MultiAttitudeProviderWrapper attitudeLawWrapper = new MultiAttitudeProviderWrapper(attitudeLaw, STATE1);
         final AdaptedMonoEventDetector detector = new AdaptedMonoEventDetector(crashEd,
             tISSOrbit.getType(), PositionAngle.MEAN, attitudeLawWrapper,
@@ -690,9 +692,8 @@ public class AdaptedMonoMultiEventDetectorTest {
         final double[] bogusY = { 0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.6 };
         try {
             detector.init(0., bogusY, 0.);
-        } catch (final PatriusExceptionWrapper e) {
-            final Throwable cause = e.getException();
-            Assert.assertEquals(cause.getClass(), PatriusException.class);
+        } catch (final ConvergenceException e) {
+            Assert.assertEquals(e.getClass(), ConvergenceException.class);
             throw e;
         }
     }
@@ -721,7 +722,7 @@ public class AdaptedMonoMultiEventDetectorTest {
     @Test(expected = PatriusExceptionWrapper.class)
     public void testAdaptedMultiEventDetectorInitError() {
 
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final double[] bogusY = { 0.1, 0.2, 0.3, 0.7, 0.4, 0.1, 0.6 };
         final CrashingMultiEventDetector crashEdMulti = new CrashingMultiEventDetector();
         final AdaptedMultiEventDetector multiDetector = new AdaptedMultiEventDetector(crashEdMulti,
@@ -730,7 +731,7 @@ public class AdaptedMonoMultiEventDetectorTest {
         try {
             multiDetector.init(0., bogusY, 0.);
         } catch (final PatriusExceptionWrapper e) {
-            final Throwable cause = e.getException();
+        	final Throwable cause = e.getCause();
             Assert.assertEquals(cause.getClass(), PatriusException.class);
             throw e;
         }
@@ -759,7 +760,7 @@ public class AdaptedMonoMultiEventDetectorTest {
     @Test
     public void testAdaptedMonoEventDetectorResetState() {
         states.put("state2", new SpacecraftState(tISSOrbit));
-        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, muMap, frameMap);
+        final MultiStateVectorInfo stateVectorInfo = new MultiStateVectorInfo(states, frameMap, new HashMap<>());
         final MyEventDetector detector0 = new MyEventDetector();
         final MultiAttitudeProviderWrapper attitudeLawWrapper = new MultiAttitudeProviderWrapper(attitudeLaw, STATE1);
         final AdaptedMonoEventDetector detector = new AdaptedMonoEventDetector(detector0,

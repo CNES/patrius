@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -28,23 +29,42 @@
 package fr.cnes.sirius.patrius.attitudes.kinematics;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.differentiation.FiniteDifferencesDifferentiator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.function.Cos;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.function.Power;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.function.Sin;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.function.Tan;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.complex.Quaternion;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3DFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
@@ -187,5 +207,10 @@ public class OrientationFunctionTest {
     public void testGetSize() {
         final OrientationTestFunction interpolator = new OrientationTestFunction(AbsoluteDate.J2000_EPOCH);
         Assert.assertEquals(4, interpolator.getSize());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

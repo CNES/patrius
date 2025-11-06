@@ -18,6 +18,7 @@
  * @history Created 20/03/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.4:DM:DM-2231:04/10/2019:[PATRIUS] Creation d'un cache dans les profils de vitesse angulaire
@@ -30,21 +31,39 @@
  */
 package fr.cnes.sirius.patrius.attitudes.profiles;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.attitudes.AttitudeLawLeg;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.kinematics.KinematicsToolkit.IntegrationType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.profiles.AbstractAngularVelocitiesAttitudeProfile.AngularVelocityIntegrationType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.integration.IterativeLegendreGaussIntegrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.FourierDecompositionEngine;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.FourierSeries;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * 
@@ -193,4 +212,9 @@ final class GuidanceProfileBuilder {
             integType, integStep);
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

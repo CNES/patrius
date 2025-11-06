@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
@@ -22,6 +23,7 @@
  */
 package fr.cnes.sirius.patrius.frames.transformations;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.testng.Assert;
 
@@ -86,5 +88,10 @@ public class GCRFProviderTest {
         } else {
             Assert.assertNull(t2.getAngular().getRotationAcceleration());
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

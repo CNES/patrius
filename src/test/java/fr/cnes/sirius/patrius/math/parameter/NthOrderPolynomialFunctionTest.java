@@ -20,6 +20,7 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -31,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
@@ -276,6 +278,7 @@ public class NthOrderPolynomialFunctionTest {
     /** Initial state initialization. */
     @Before
     public void setUp() {
+        Utils.clear();
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH;
         final Orbit orbit = new KeplerianOrbit(7000000, 0.01, 0, 0, 0, 0, PositionAngle.TRUE,
             FramesFactory.getGCRF(), date, Constants.GRIM5C1_EARTH_MU);

@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -32,11 +33,10 @@
  */
 package fr.cnes.sirius.patrius.propagation;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.AssemblyBuilder;
 import fr.cnes.sirius.patrius.assembly.models.MassModel;
@@ -55,6 +55,7 @@ import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Test class for Orekit analytical propagator with event.
@@ -212,6 +213,8 @@ public class PropagatorsWithEventsTest {
      */
     @Before
     public void setUp() throws PatriusException {
+
+        Utils.clear();
 
         // mu
         final double mu = 3.9860047e14;

@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -40,6 +42,7 @@
 package fr.cnes.sirius.patrius.events.detectors;
 
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -55,8 +58,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * This class finds dihedral field of view events (i.e. body entry and exit in fov).
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at entry and to
- * {@link EventDetector.Action#STOP stop} propagation at exit. This can be changed by using provided constructors.
+ * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at entry and to
+ * {@link EventDetector.Action#STOP} stop propagation at exit. This can be changed by using provided constructors.
  * </p>
  * <p>
  * This detector can takes into account signal propagation duration through
@@ -100,8 +103,8 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
      * minimal pass to handle, otherwise some short passes could be missed.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at entry and
-     * to {@link EventDetector.Action#STOP stop} propagation at exit.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at entry and
+     * to {@link EventDetector.Action#STOP} stop propagation at exit.
      * </p>
      * 
      * @param pvTarget Position/velocity provider of the considered target
@@ -129,8 +132,8 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
      * minimal pass to handle, otherwise some short passes could be missed.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at entry and
-     * to {@link EventDetector.Action#STOP stop} propagation at exit.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at entry and
+     * to {@link EventDetector.Action#STOP} stop propagation at exit.
      * </p>
      * 
      * @param pvTarget Position/velocity provider of the considered target
@@ -209,7 +212,8 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
         final Action entry, final Action exit, final boolean removeEntry,
         final boolean removeExit) throws PatriusException {
 
-        super(maxCheck, DEFAULT_THRESHOLD, entry, exit, removeEntry, removeExit);
+        super(maxCheck, DEFAULT_THRESHOLD, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, pvTarget));
         this.targetPVProvider = pvTarget;
         this.center = centerIn;
 
@@ -286,7 +290,8 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
         final Action entry, final Action exit, final boolean removeEntry,
         final boolean removeExit, final double epsilon) throws PatriusException {
 
-        super(maxCheck, DEFAULT_THRESHOLD, entry, exit, removeEntry, removeExit);
+        super(maxCheck, DEFAULT_THRESHOLD, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, pvTarget));
         this.targetPVProvider = pvTarget;
         this.center = centerIn;
 
@@ -327,7 +332,8 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
                                         final double halfAperture2In, final Action entry, final Action exit,
                                         final boolean removeEntry, final boolean removeExit) {
 
-        super(maxCheck, DEFAULT_THRESHOLD, entry, exit, removeEntry, removeExit);
+        super(maxCheck, DEFAULT_THRESHOLD, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, pvTarget));
 
         this.targetPVProvider = pvTarget;
         this.center = centerIn;
@@ -394,8 +400,8 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
     /**
      * Handle an fov event and choose what to do next.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at entry and
-     * to {@link EventDetector.Action#STOP stop} propagation at exit. This can be changed by overriding the
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at entry and
+     * to {@link EventDetector.Action#STOP} stop propagation at exit. This can be changed by overriding the
      * {@link #eventOccurred(SpacecraftState, boolean, boolean)
      * eventOccurred} method in a derived class.
      * </p>
@@ -443,30 +449,6 @@ public class DihedralFieldOfViewDetector extends AbstractSignalPropagationDetect
         // It is positive inside the fov, and negative outside.
         return MathLib.min(this.halfAperture1 - MathLib.abs(angle1),
             this.halfAperture2 - MathLib.abs(angle2));
-    }
-    
-    /** @inheritDoc */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
-        super.setPropagationDelayType(propagationDelayType, frame);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.targetPVProvider;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
     }
 
     /**

@@ -19,6 +19,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-352:22/08/2024:[PATRIUS][BIBOR] Classe fr.cnes.sirius.patrius.covariance.Covariance non serializable
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
@@ -26,6 +28,7 @@
  */
 package fr.cnes.sirius.patrius.covariance;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -64,7 +67,10 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @author Hugo Veuillez (CNES)
  * @author Pierre Seimandi (GMV)
  */
-public class Covariance {
+public class Covariance implements Serializable {
+
+    /** Serializable UID. */
+    private static final long serialVersionUID = -8480178542521101775L;
 
     /** Default field separator for the {@code toString()} methods. */
     protected static final String DEFAULT_FIELD_SEPARATOR = "_";
@@ -121,7 +127,7 @@ public class Covariance {
      * "p" + i, where i is the index of the corresponding row/column in the covariance matrix.
      * </p>
      * <p>
-     * <em> Note that this constructor performs a shallow copy of the provided parameter descriptors. 
+     * <em> Note that this constructor performs a shallow copy of the provided parameter descriptors.
      * The covariance matrix itself is passed by reference.</em>
      * </p>
      *
@@ -136,7 +142,7 @@ public class Covariance {
      * @see ParameterUtils#buildDefaultParameterDescriptors(int)
      */
     public Covariance(final SymmetricPositiveMatrix covarianceMatrixIn,
-            final Collection<ParameterDescriptor> parameterDescriptorsIn) {
+                      final Collection<ParameterDescriptor> parameterDescriptorsIn) {
         requireNonNull(covarianceMatrixIn, COVARIANCE_MATRIX);
         this.covarianceMatrix = covarianceMatrixIn;
         final int dimension = covarianceMatrixIn.getRowDimension();
@@ -166,7 +172,7 @@ public class Covariance {
     private static <T> T requireNonNull(final T object, final String description) {
         if (object == null) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.NULL_NOT_ALLOWED_DESCRIPTION, description);
+                PatriusMessages.NULL_NOT_ALLOWED_DESCRIPTION, description);
         }
         return object;
     }
@@ -185,21 +191,22 @@ public class Covariance {
      *         the expected size, or if it contains any duplicate
      */
     private static void checkParameterDescriptors(
-            final Collection<ParameterDescriptor> parameterDescriptors, final int expectedSize) {
+                                                  final Collection<ParameterDescriptor> parameterDescriptors,
+                                                  final int expectedSize) {
         // Ensure the collection is not null
         requireNonNull(parameterDescriptors, PARAMETER_DESCRIPTORS_LIST);
 
         // Ensure the collection has the expected size
         if (parameterDescriptors.size() != expectedSize) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.INVALID_PARAM_DESCRIPTORS_NUMBER_COVARIANCE_SIZE,
-                    parameterDescriptors.size(), expectedSize);
+                PatriusMessages.INVALID_PARAM_DESCRIPTORS_NUMBER_COVARIANCE_SIZE,
+                parameterDescriptors.size(), expectedSize);
         }
 
         // Ensure the collection does not contain duplicates
         if (new HashSet<>(parameterDescriptors).size() != parameterDescriptors.size()) {
             throw PatriusException
-                    .createIllegalArgumentException(PatriusMessages.PARAM_DESCRIPTORS_COLLECTION_DUPLICATES);
+                .createIllegalArgumentException(PatriusMessages.PARAM_DESCRIPTORS_COLLECTION_DUPLICATES);
         }
 
         // Ensure the collection does not contain any empty parameter descriptors
@@ -207,10 +214,10 @@ public class Covariance {
         for (final ParameterDescriptor parameterDescriptor : parameterDescriptors) {
             if (parameterDescriptor == null) {
                 throw PatriusException.createIllegalArgumentException(
-                        PatriusMessages.NULL_PARAM_DESCRIPTOR, index);
+                    PatriusMessages.NULL_PARAM_DESCRIPTOR, index);
             } else if (parameterDescriptor.isEmpty()) {
                 throw PatriusException.createIllegalArgumentException(
-                        PatriusMessages.EMPTY_PARAM_DESCRIPTOR, index);
+                    PatriusMessages.EMPTY_PARAM_DESCRIPTOR, index);
             }
             index++;
         }
@@ -230,7 +237,7 @@ public class Covariance {
      * @see ParameterDescriptor#copy()
      */
     private static List<ParameterDescriptor> copy(
-            final Collection<ParameterDescriptor> parameterDescriptors) {
+                                                  final Collection<ParameterDescriptor> parameterDescriptors) {
         List<ParameterDescriptor> copy = null;
 
         if (parameterDescriptors != null) {
@@ -258,8 +265,8 @@ public class Covariance {
         final int index = this.parameterDescriptors.indexOf(parameterDescriptor);
         if (index < 0) {
             throw PatriusException.createIllegalArgumentException(
-                    PatriusMessages.PARAM_DESCRIPTOR_NOT_ASSOCIATED_WITH_COVARIANCE,
-                    parameterDescriptor.getName());
+                PatriusMessages.PARAM_DESCRIPTOR_NOT_ASSOCIATED_WITH_COVARIANCE,
+                parameterDescriptor.getName());
         }
 
         return index;
@@ -282,7 +289,7 @@ public class Covariance {
      * {@linkplain SymmetricPositiveMatrix} used to store the matrix.
      * </p>
      * <p>
-     * <em>Note that this method provides a direct access to the covariance matrix stored internally, 
+     * <em>Note that this method provides a direct access to the covariance matrix stored internally,
      * which is possibly mutable.</em>
      * </p>
      *
@@ -295,8 +302,8 @@ public class Covariance {
     /**
      * Gets the parameter descriptors associated with the rows/columns of the covariance matrix.
      * <p>
-     * <em> Note that this methods returns a shallow copy of the list of parameter descriptors stored internally. 
-     * However, this list provides a direct access to the parameter descriptors stored by this instance, which 
+     * <em> Note that this methods returns a shallow copy of the list of parameter descriptors stored internally.
+     * However, this list provides a direct access to the parameter descriptors stored by this instance, which
      * are mutable.</em>
      * </p>
      *
@@ -310,7 +317,7 @@ public class Covariance {
      * Gets the parameter descriptors associated with the specified row/column of the covariance
      * matrix.
      * <p>
-     * <em>Note that this method provides a direct access to the parameter descriptors stored internally, 
+     * <em>Note that this method provides a direct access to the parameter descriptors stored internally,
      * which are mutable.</em>
      * </p>
      *
@@ -387,13 +394,14 @@ public class Covariance {
      *         matrix, or if the provided collection contains any duplicate
      */
     public Covariance getSubCovariance(
-            final Collection<ParameterDescriptor> selectedParameterDescriptors) {
+                                       final Collection<ParameterDescriptor> selectedParameterDescriptors) {
         // Build the index array from the parameter descriptors
         int index = 0;
         final int size = selectedParameterDescriptors.size();
         final int[] indices = new int[size];
         for (final ParameterDescriptor parameterDescriptor : selectedParameterDescriptors) {
-            indices[index++] = indexOf(parameterDescriptor);
+            indices[index] = this.indexOf(parameterDescriptor);
+            index++;
         }
 
         // Extract the submatrix and return the new covariance
@@ -449,7 +457,7 @@ public class Covariance {
      */
     public double getVariance(final ParameterDescriptor parameterDescriptor) {
         requireNonNull(parameterDescriptor, PARAMETER_DESCRIPTOR);
-        return getVariance(indexOf(parameterDescriptor));
+        return this.getVariance(this.indexOf(parameterDescriptor));
     }
 
     /**
@@ -591,9 +599,9 @@ public class Covariance {
      *         if one of the parameter descriptors is not associated with this covariance matrix
      */
     public double getCorrelationCoefficient(final ParameterDescriptor parameterDescriptor1,
-            final ParameterDescriptor parameterDescriptor2) {
-        return getCorrelationCoefficient(indexOf(parameterDescriptor1),
-                indexOf(parameterDescriptor2));
+                                            final ParameterDescriptor parameterDescriptor2) {
+        return this.getCorrelationCoefficient(this.indexOf(parameterDescriptor1),
+            this.indexOf(parameterDescriptor2));
     }
 
     /**
@@ -651,7 +659,7 @@ public class Covariance {
      *         matrix, or if the collection of parameter descriptors contains any duplicate
      */
     public Covariance quadraticMultiplication(final RealMatrix m,
-            final Collection<ParameterDescriptor> newParameterDescriptors) {
+                                              final Collection<ParameterDescriptor> newParameterDescriptors) {
         return this.quadraticMultiplication(m, newParameterDescriptors, false);
     }
 
@@ -676,10 +684,11 @@ public class Covariance {
      *         not match the size of the covariance matrix, or if the collection of parameter
      *         descriptors contains any duplicate
      */
-    public Covariance
+    public
+        Covariance
             quadraticMultiplication(final RealMatrix m,
-                    final Collection<ParameterDescriptor> newParameterDescriptors,
-                    final boolean isTranspose) {
+                                    final Collection<ParameterDescriptor> newParameterDescriptors,
+                                    final boolean isTranspose) {
         requireNonNull(m, MATRIX);
         MatrixUtils.checkMultiplicationCompatible(this.covarianceMatrix, m, !isTranspose);
 
@@ -687,7 +696,7 @@ public class Covariance {
         // The consistency between the number of parameter descriptors and the dimension
         // of the new covariance matrix is automatically checked at by the constructor.
         return new Covariance(this.covarianceMatrix.quadraticMultiplication(m, isTranspose),
-                newParameterDescriptors);
+            newParameterDescriptors);
     }
 
     /**
@@ -725,7 +734,7 @@ public class Covariance {
         }
 
         return new Covariance(this.covarianceMatrix.positiveScalarMultiply(d),
-                this.parameterDescriptors);
+            this.parameterDescriptors);
     }
 
     /**
@@ -751,7 +760,7 @@ public class Covariance {
      */
     public double getMahalanobisDistance(final RealVector point) {
         final RealVector mean = new ArrayRealVector(point.getDimension());
-        return getMahalanobisDistance(point, mean);
+        return this.getMahalanobisDistance(point, mean);
     }
 
     /**
@@ -796,7 +805,7 @@ public class Covariance {
      */
     @Override
     public String toString() {
-        return toString(null);
+        return this.toString(null);
     }
 
     /**
@@ -809,7 +818,7 @@ public class Covariance {
      * @return string representation of this instance
      */
     public String toString(final RealMatrixFormat realMatrixFormat) {
-        return toString(realMatrixFormat, DEFAULT_NAME_SEPARATOR, DEFAULT_FIELD_SEPARATOR, true,
+        return this.toString(realMatrixFormat, DEFAULT_NAME_SEPARATOR, DEFAULT_FIELD_SEPARATOR, true,
             true);
     }
 
@@ -832,7 +841,7 @@ public class Covariance {
      * @return string representation of this instance
      */
     public String toString(final RealMatrixFormat realMatrixFormat, final String nameSeparator,
-            final String fieldSeparator, final boolean printClassName, final boolean reverseOrder) {
+                           final String fieldSeparator, final boolean printClassName, final boolean reverseOrder) {
         // Separators
         final String semicolon = ";";
         final String lineSeparator = System.lineSeparator();
@@ -850,7 +859,7 @@ public class Covariance {
         // Parameter descriptors
         builder.append("Parameters: ");
         builder.append(ParameterUtils.concatenateParameterDescriptorNames(
-                this.parameterDescriptors, nameSeparator, fieldSeparator, reverseOrder));
+            this.parameterDescriptors, nameSeparator, fieldSeparator, reverseOrder));
 
         // Covariance matrix
         if (realMatrixFormat != null) {

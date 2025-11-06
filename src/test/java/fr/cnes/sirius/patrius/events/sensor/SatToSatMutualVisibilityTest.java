@@ -18,8 +18,10 @@
  * @history creation 30/05/2012
  *
  * HISTORY
- * VERSION:4.13.4:FA:FA-346:10/06/2024:[PATRIUS] Problème dans l’utilisation du
- * SatToSatMutualVisibilityDetector en mode de propagation MULTI
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-:22/08/2024:
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
@@ -70,10 +72,10 @@ import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.MultiEventDetector;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.SatToSatMutualVisibilityDetector;
-import fr.cnes.sirius.patrius.events.detectors.SatToSatMutualVisibilityDetector.LinkType;
+import fr.cnes.sirius.patrius.events.detectors.SatToSatMutualVisibilityDetector.SatToSatLinkType;
 import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
@@ -267,7 +269,7 @@ public class SatToSatMutualVisibilityTest {
         // event detector with first sensors
         final SatToSatMutualVisibilityDetector detector6 = new SatToSatMutualVisibilityDetector(
             this.mainSpacecraftSensorModel1, this.secondarySpacecraftSensorModel2, secondaryPropagator,
-            false, maxCheck, threshold, Action.CONTINUE, Action.STOP, false, false, LinkType.SECONDARY_TO_MAIN);
+            false, maxCheck, threshold, Action.CONTINUE, Action.STOP, false, false, SatToSatLinkType.SECONDARY_TO_MAIN);
         mainPropagator.addEventDetector(detector6);
         detector6.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, this.eme2000Frame);
 
@@ -357,8 +359,6 @@ public class SatToSatMutualVisibilityTest {
     }
 
     /**
-     * 
-     * 
      * @throws PatriusException
      */
     @Test
@@ -378,7 +378,7 @@ public class SatToSatMutualVisibilityTest {
         // Create the main multinumerical propagator
         final FirstOrderIntegrator integratorMultiSat = new DormandPrince853Integrator(.1, 60,
             1e-9, 1e-9);
-        MultiNumericalPropagator mainPropagator = new MultiNumericalPropagator(integratorMultiSat);
+        final MultiNumericalPropagator mainPropagator = new MultiNumericalPropagator(integratorMultiSat);
         mainPropagator.addInitialState(mainState, STATE1);
         mainPropagator.addInitialState(secondaryState, STATE2);
         mainPropagator.addForceModel(new DirectBodyAttraction(new NewtonianGravityModel(mainState.getMu())), STATE1);
@@ -406,13 +406,13 @@ public class SatToSatMutualVisibilityTest {
         Assert.assertEquals(STATE2, detector.getInSecondarySpacecraftId());
 
         // test
-        Map<String, SpacecraftState> otherEndStates = mainPropagator.propagate(this.date.shiftedBy(10000.0));
+        final Map<String, SpacecraftState> otherEndStates = mainPropagator.propagate(this.date.shiftedBy(10000.0));
 
         final double durationLightSpeed = otherEndStates.get(STATE1).getDate().durationFrom(this.date);
         Assert.assertEquals(timeDetected, durationLightSpeed,
             this.datesComparisonEpsilon);
     }
-    
+
     /**
      * @testType UT
      * 
@@ -1182,14 +1182,14 @@ public class SatToSatMutualVisibilityTest {
         // MAIN_TO_SECONDARY & SECONDARY_TO_MAIN
         final SatToSatMutualVisibilityDetector eventDetector1M2S = new SatToSatMutualVisibilityDetector(
             this.mainSpacecraftSensorModel1, secondarySpacecraftSensorModel2Bis, secondaryPropagator, false, 1.,
-            1e-9, Action.CONTINUE, Action.CONTINUE, false, false, LinkType.MAIN_TO_SECONDARY);
+            1e-9, Action.CONTINUE, Action.CONTINUE, false, false, SatToSatLinkType.MAIN_TO_SECONDARY);
         final SatToSatMutualVisibilityDetector eventDetector2M2S = (SatToSatMutualVisibilityDetector) eventDetector1M2S
             .copy();
         eventDetector2M2S.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
 
         final SatToSatMutualVisibilityDetector eventDetector1S2M = new SatToSatMutualVisibilityDetector(
             this.mainSpacecraftSensorModel1, secondarySpacecraftSensorModel2Bis, secondaryPropagator, false, 1.,
-            1e-9, Action.CONTINUE, Action.CONTINUE, false, false, LinkType.SECONDARY_TO_MAIN);
+            1e-9, Action.CONTINUE, Action.CONTINUE, false, false, SatToSatLinkType.SECONDARY_TO_MAIN);
         final SatToSatMutualVisibilityDetector eventDetector2S2M = (SatToSatMutualVisibilityDetector) eventDetector1S2M
             .copy();
         eventDetector2S2M.setPropagationDelayType(PropagationDelayType.LIGHT_SPEED, FramesFactory.getGCRF());
@@ -1234,7 +1234,7 @@ public class SatToSatMutualVisibilityTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(finalState.getOrbit(), eventDetector1M2S.getEmitter(finalState));
         Assert.assertEquals(secondaryPropagator, eventDetector1M2S.getReceiver(null));
-        Assert.assertEquals(DatationChoice.EMITTER, eventDetector1M2S.getDatationChoice());
+        Assert.assertEquals(EventDatationType.EMITTER, eventDetector1M2S.getEventDatationType());
 
         // SECONDARY_TO_MAIN
 
@@ -1263,6 +1263,6 @@ public class SatToSatMutualVisibilityTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(secondaryPropagator, eventDetector1S2M.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1S2M.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1S2M.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1S2M.getEventDatationType());
     }
 }

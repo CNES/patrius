@@ -18,6 +18,7 @@
  * @history file creation, 03/08/11, Philippe Pavero
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3144:10/05/2022:[PATRIUS] Classe TempDirectory en double 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -30,13 +31,22 @@
 package fr.cnes.sirius.patrius.tools.validationTool;
 
 import java.io.BufferedWriter;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.File;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.FileWriter;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.URISyntaxException;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
@@ -597,5 +607,10 @@ public class Validate extends Assert {
             final String tab = "\t";
             return this.deviation + tab + this.epsilon + tab + this.description;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

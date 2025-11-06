@@ -18,6 +18,9 @@
  * @history creation 10/11/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -32,15 +35,13 @@
 
 package fr.cnes.sirius.patrius.attitudes;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -57,6 +58,7 @@ import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * @description <p>
@@ -247,16 +249,17 @@ public class AttitudeLegLawTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
 
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);

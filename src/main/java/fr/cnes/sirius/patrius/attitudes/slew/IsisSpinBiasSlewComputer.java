@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-350:21/11/2024:[PATRIUS] IsisSpinBiasSlew - Renvoi d'un
+ * message lorsque le nombre max d'itérations est atteint
  * VERSION:4.13:DM:DM-109:08/12/2023:[PATRIUS] IsisSpinBiasSlew - Renvoi du
  * profil de ralliement lorsque le nombre max d'iterations est atteint
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
@@ -27,6 +29,8 @@ package fr.cnes.sirius.patrius.attitudes.slew;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
@@ -58,6 +62,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @since 4.5
  */
 public class IsisSpinBiasSlewComputer {
+
+    /** Logger for this class */
+    private static final Logger LOGGER = Logger.getLogger(IsisSpinBiasSlewComputer.class.getName());
 
     /** Default maximum number of iterations allowed for slew duration computation's convergence. */
     private static final int DEFAUT_MAX_ITERATIONS = 25;
@@ -129,7 +136,7 @@ public class IsisSpinBiasSlewComputer {
 
     /** Duration of the deceleration phase. */
     private double decelDuration;
-    
+
     /** Decision to raise an Exception if the maximum of iterations arrive */
     private boolean throwExceptionOnMaxIterations;
 
@@ -303,11 +310,12 @@ public class IsisSpinBiasSlewComputer {
         this.accelDuration = Double.NaN;
         this.decelDuration = Double.NaN;
     }
-    
+
     /**
      * Set the boolean to decide if an exception is thrown when the max number of iterations arrive
+     * 
      * @param throwExceptionOnMaxIterations boolean indicating if an exception is thrown or the duration
-     *        is returned when the computation loop arrives to the maxIterations 
+     *        is returned when the computation loop arrives to the maxIterations
      */
     public void setThrowExceptionOnMaxIterations(final boolean throwExceptionOnMaxIterations) {
         this.throwExceptionOnMaxIterations = throwExceptionOnMaxIterations;
@@ -315,6 +323,7 @@ public class IsisSpinBiasSlewComputer {
 
     /**
      * Compute the slew (analytical version).
+     * 
      * @param pvProv satellite PV coordinates through time
      * @param initialLaw initial attitude law (before the slew)
      * @param initialDateIn slew start date (null if slew defined with its end date)
@@ -324,9 +333,10 @@ public class IsisSpinBiasSlewComputer {
      * @throws PatriusException thrown if computation failed or if dates are both null or not null
      */
     public TabulatedSlew computeAnalytical(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
-            final AbsoluteDate initialDateIn,
-            final AttitudeProvider finalLaw,
-            final AbsoluteDate finalDate) throws PatriusException {
+                                           final AbsoluteDate initialDateIn,
+                                           final AttitudeProvider finalLaw,
+                                           final AbsoluteDate finalDate)
+        throws PatriusException {
 
         // Check type of slew
         checkInputs(initialDateIn, finalDate);
@@ -356,7 +366,7 @@ public class IsisSpinBiasSlewComputer {
 
             // Computation of the attitude
             final Attitude nextAtt = this.nextAtt(pvProv, duration, t, initialAttitude, slewAxisNormed, initialDate,
-                    finalLaw);
+                finalLaw);
 
             if (nextAtt == null) {
                 // Exit the while loop
@@ -392,12 +402,13 @@ public class IsisSpinBiasSlewComputer {
      *         thrown if computation failed
      */
     private Attitude nextAtt(final PVCoordinatesProvider pvProv,
-            final double duration,
-            final double t,
-            final Attitude initialAttitude,
-            final Vector3D slewAxisNormed,
-            final AbsoluteDate initialDate,
-            final AttitudeProvider finalLaw) throws PatriusException {
+                             final double duration,
+                             final double t,
+                             final Attitude initialAttitude,
+                             final Vector3D slewAxisNormed,
+                             final AbsoluteDate initialDate,
+                             final AttitudeProvider finalLaw)
+        throws PatriusException {
 
         // Computation of the attitude
         final Attitude nextAtt;
@@ -449,7 +460,7 @@ public class IsisSpinBiasSlewComputer {
                 // There was a constant velocity phase
                 final double omega0 = this.accelMax * this.accelDuration;
                 final double theta0 = half * this.accelMax * this.accelDuration * this.accelDuration
-                    + (this.durationWoTranq - this.decelDuration - this.accelDuration) * omega0;
+                        + (this.durationWoTranq - this.decelDuration - this.accelDuration) * omega0;
                 final double tShifted = t - (this.durationWoTranq - this.decelDuration);
                 final double theta = theta0 + omega0 * tShifted - half * this.decelMax * tShifted * tShifted;
                 final double omega = omega0 - this.decelMax * tShifted;
@@ -476,6 +487,7 @@ public class IsisSpinBiasSlewComputer {
 
     /**
      * Check input dates
+     * 
      * @param initialDate slew initial date
      * @param finalDate slew final date
      * @throws PatriusException thrown if dates are incoherent
@@ -491,6 +503,7 @@ public class IsisSpinBiasSlewComputer {
 
     /**
      * Compute the slew (numerical version).
+     * 
      * @param pvProv satellite PV coordinates through time
      * @param initialLaw initial attitude law (before the slew)
      * @param initialDateIn slew start date (null if slew defined with its end date)
@@ -500,9 +513,10 @@ public class IsisSpinBiasSlewComputer {
      * @throws PatriusException thrown if computation failed or if dates are both null or not null
      */
     public TabulatedSlew computeNumerical(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
-            final AbsoluteDate initialDateIn,
-            final AttitudeProvider finalLaw,
-            final AbsoluteDate finalDate) throws PatriusException {
+                                          final AbsoluteDate initialDateIn,
+                                          final AttitudeProvider finalLaw,
+                                          final AbsoluteDate finalDate)
+        throws PatriusException {
 
         // Check type of slew
         checkInputs(initialDateIn, finalDate);
@@ -595,9 +609,10 @@ public class IsisSpinBiasSlewComputer {
      * @throws PatriusException thrown if computation failed or if dates are both null or not null
      */
     public double computeDuration(final PVCoordinatesProvider pvProv, final AttitudeProvider initialLaw,
-            final AbsoluteDate initialDateIn,
-            final AttitudeProvider finalLaw,
-            final AbsoluteDate finalDate) throws PatriusException {
+                                  final AbsoluteDate initialDateIn,
+                                  final AttitudeProvider finalLaw,
+                                  final AbsoluteDate finalDate)
+        throws PatriusException {
 
         // Initialization
         double durationPrevious = Double.POSITIVE_INFINITY;
@@ -610,20 +625,26 @@ public class IsisSpinBiasSlewComputer {
             initialAttitude = initialLaw.getAttitude(pvProv, initialDateIn, this.refFrame);
         } else {
             finalAttitude = finalLaw
-                    .getAttitude(pvProv, finalDate.shiftedBy(-this.tranquillisationTime), this.refFrame);
+                .getAttitude(pvProv, finalDate.shiftedBy(-this.tranquillisationTime), this.refFrame);
         }
         int iLoop = 0;
 
         // Loop until convergence is reached
         while (MathLib.abs(durationPrevious - duration) > this.dtConvergenceThreshold) {
             iLoop++;
-            if (iLoop > this.maxIterationsNumber) {                
+            if (iLoop > this.maxIterationsNumber) {
                 if (this.throwExceptionOnMaxIterations) {
                     throw new PatriusException(PatriusMessages.CONVERGENCE_FAILED_AFTER_N_ITERATIONS,
                         this.maxIterationsNumber);
                 } else {
+                    if (LOGGER.isLoggable(Level.WARNING)) {
+                        LOGGER.warning(new PatriusException(
+                            PatriusMessages.CONVERGENCE_FAILED_AFTER_N_ITERATIONS,
+                            this.maxIterationsNumber).getMessage());
+                    }
+
                     return duration;
-                } 
+                }
             }
             durationPrevious = duration;
 

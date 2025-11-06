@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -30,13 +32,21 @@
 package fr.cnes.sirius.patrius.math.util;
 
 import java.math.BigDecimal;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test cases for the {@link Precision} class.
@@ -81,7 +91,7 @@ public class PrecisionTest {
         Assert.assertTrue(Precision.equalsWithAbsoluteAndRelativeTolerances(0d, 1 / Double.NEGATIVE_INFINITY, 0d, 0d));
 
         double eps = 1e-14;
-        double abs = 1e-13;
+        final double abs = 1e-13;
         Assert.assertFalse(Precision.equalsWithAbsoluteAndRelativeTolerances(1.987654687654968, 1.987654687654988, eps,
             abs));
         Assert.assertTrue(Precision.equalsWithAbsoluteAndRelativeTolerances(1.987654687654968, 1.987654687654987, eps,
@@ -580,5 +590,47 @@ public class PrecisionTest {
 
         // b) 1 + "the number after EPSILON" is not equal to 1.
         Assert.assertFalse(1 + afterEpsilon == 1);
+    }
+
+    @Test
+    public void testTwoSumError() {
+        final double a = 1e16;
+        final double b = 123.123456;
+        final double aPlusB = a + b;
+        final double computedError = Precision.twoSumError(a, b, aPlusB);
+
+        // Big decimal computation
+        final BigDecimal aBdecimal = new BigDecimal(a);
+        final BigDecimal bBdecimal = new BigDecimal(b);
+
+        // a+b-(a+b) = twoSumError(a, b, aPlusB)
+        final double error =
+                aBdecimal.add(bBdecimal).subtract(new BigDecimal(aPlusB)).doubleValue();
+
+        Assert.assertEquals(computedError, error, Precision.DOUBLE_COMPARISON_EPSILON);
+    }
+
+    @Test
+    public void testTwoProductError() {
+        // Double precision computation
+        final double a = 1234567891234.;
+        final double b = 9876543219876.;
+        final double aDotB = a * b;
+        final double computedError = Precision.twoProductError(a, b, aDotB);
+
+        // Big decimal computation
+        final BigDecimal aBdecimal = new BigDecimal(a);
+        final BigDecimal bBdecimal = new BigDecimal(b);
+
+        // aDotB + e = a*b
+        final double error =
+                aBdecimal.multiply(bBdecimal).subtract(new BigDecimal(aDotB)).doubleValue();
+
+        Assert.assertEquals(computedError, error, Precision.DOUBLE_COMPARISON_EPSILON);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

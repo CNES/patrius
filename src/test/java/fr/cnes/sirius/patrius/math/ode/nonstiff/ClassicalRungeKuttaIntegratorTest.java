@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -35,25 +36,44 @@
 package fr.cnes.sirius.patrius.math.ode.nonstiff;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MaxCountExceededException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NoBracketingException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderDifferentialEquations;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderIntegrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.TestProblem1;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.TestProblem3;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.TestProblem5;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.TestProblemAbstract;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.TestProblemFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.TestProblemHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepInterpolator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class ClassicalRungeKuttaIntegratorTest {
 
@@ -430,4 +450,9 @@ public class ClassicalRungeKuttaIntegratorTest {
         Assert.assertEquals(10, y[0], 1E-14);
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

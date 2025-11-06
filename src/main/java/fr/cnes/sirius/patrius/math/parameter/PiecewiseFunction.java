@@ -22,7 +22,9 @@
  */
 /* 
  * HISTORY
-* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -140,7 +142,8 @@ public class PiecewiseFunction extends IntervalsFunction {
 
         // Check for size consistency
         if (datesCollection.size() != functionsCollection.size() - 1) {
-            throw new DimensionMismatchException(datesCollection.size(), functionsCollection.size() - 1);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_DATES_PIECEWISE_FUNCTION_DIMENSION,
+                datesCollection.size(), functionsCollection.size() - 1);
         }
 
         // Check the collection of dates is chronologically ordered or if it doesn't contain the same date twice

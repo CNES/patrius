@@ -17,6 +17,7 @@
 /* Copyright 2002-2015 CS Systèmes d'Information
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2326:27/05/2020:Orbits - Correction equals & HashCode 
@@ -37,7 +38,6 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeStamped;
-import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**

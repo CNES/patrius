@@ -18,6 +18,8 @@
  * @history creation 25/04/2012
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -901,8 +903,9 @@ public class MassDetectorsTest {
         final AttitudesSequence seqAtt = new AttitudesSequence();
         final EventDetector startThrustAtt = new DateDetector(startThrustDate, maxCheck, threshold, Action.RESET_STATE);
         final EventDetector endThrustDateAtt = new DateDetector(endThrustDate, maxCheck, threshold, Action.RESET_STATE);
-        final AttitudeLaw law1 = new LofOffset(LOFType.LVLH, RotationOrder.ZYX, 0., 0., 0.);
-        final AttitudeLaw law2 = new LofOffset(LOFType.TNW, RotationOrder.ZYX, MathLib.toRadians(180.), 0., 0.);
+        final AttitudeLaw law1 = new LofOffset(LOFType.LVLH, new Rotation(RotationOrder.ZYX, 0., 0., 0.));
+        final AttitudeLaw law2 =
+            new LofOffset(LOFType.TNW, new Rotation(RotationOrder.ZYX, MathLib.toRadians(180.), 0., 0.));
         seqAtt.addSwitchingCondition(law1, startThrustAtt, true, false, law2);
         seqAtt.addSwitchingCondition(law2, endThrustDateAtt, true, false, law1);
         propagator.setAttitudeProvider(seqAtt);
@@ -954,6 +957,7 @@ public class MassDetectorsTest {
 
     @Before
     public void setUp() throws PatriusException, IOException, ParseException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(FramesConfigurationFactory.getIERS2010Configuration());
         final Frame itrf = FramesFactory.getITRF();

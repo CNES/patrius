@@ -14,18 +14,25 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-43:08/08/2023:[PATRIUS] Introduction du repère ECLIPTIC_J2000.
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.frames.transformations;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.testng.Assert;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
-import fr.cnes.sirius.patrius.frames.Predefined;
+import fr.cnes.sirius.patrius.frames.PredefinedFrameType;
+import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -47,11 +54,12 @@ public class EclipticJ2000ProviderTest {
 
         // Check all transformation methods are consistent
         // Transformation value is checked separately in frame test class
-        final Transform tref = provider.getTransform(date, FramesFactory.getConfiguration(), true);
+        final FramesConfiguration configuration = FramesFactory.getConfiguration();
+        final Transform tref = provider.getTransform(date, configuration, true);
         final Transform t1 = provider.getTransform(date);
         final Transform t2 = provider.getTransform(date, false);
-        final Transform t4 = provider.getTransform(date, FramesFactory.getConfiguration());
-        final Transform t6 = provider.getTransform(date, FramesFactory.getConfiguration(), false);
+        final Transform t4 = provider.getTransform(date, configuration);
+        final Transform t6 = provider.getTransform(date, configuration, false);
         checkTransforms(tref, t1, false);
         checkTransforms(tref, t2, false);
         checkTransforms(tref, t4, false);
@@ -63,7 +71,7 @@ public class EclipticJ2000ProviderTest {
         Utils.setDataRoot("regular-dataPBASE");
         final AbsoluteDate date = AbsoluteDate.J2000_EPOCH.shiftedBy(86400. * 365 * 10);
         final Transform tact = FramesFactory.getICRF().getTransformTo(
-            FramesFactory.getFrame(Predefined.ECLIPTIC_J2000), date);
+            FramesFactory.getFrame(PredefinedFrameType.ECLIPTIC_J2000), date);
         final Transform tref = FramesFactory.getGCRF().getTransformTo(
             FramesFactory.getEclipticMOD(true), AbsoluteDate.J2000_EPOCH);
         checkTransforms(tref, tact, false);
@@ -77,7 +85,7 @@ public class EclipticJ2000ProviderTest {
      * @param t2
      *        Transform to check
      */
-    private static void checkTransforms(final Transform t1, final Transform t2, final boolean computeSpinDerivatives) {
+    private void checkTransforms(final Transform t1, final Transform t2, final boolean computeSpinDerivatives) {
         Assert.assertEquals(0., t1.getCartesian().getPosition().distance(t2.getCartesian().getPosition()), 0.);
         Assert.assertEquals(0., t1.getCartesian().getVelocity().distance(t2.getCartesian().getVelocity()), 0.);
         Assert.assertEquals(0., Rotation.distance(t1.getAngular().getRotation(), t2.getAngular().getRotation()), 0.);
@@ -88,5 +96,10 @@ public class EclipticJ2000ProviderTest {
         } else {
             Assert.assertNull(t2.getAngular().getRotationAcceleration());
         }
+    }
+    
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

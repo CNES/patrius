@@ -17,6 +17,7 @@
  * @history creation 23/05/2018
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-121:08/12/2023:[PATRIUS] Anomalie dans les classes AeroCoeffBy...
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,6 +34,7 @@ import java.util.Arrays;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -398,5 +400,10 @@ public class AeroCoeffsTest {
         Assert.assertEquals(xVariables[2], aeroCoeff.getFunction().getxtab()[3], 0.);
         Assert.assertEquals(yVariables[2], aeroCoeff.getFunction().getValues()[3], 0.);
         Assert.assertNotNull(aeroCoeff.toString());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

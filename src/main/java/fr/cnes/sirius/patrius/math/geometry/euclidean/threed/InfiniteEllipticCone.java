@@ -18,6 +18,8 @@
  * @history Created on 12/10/2011
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2369:27/05/2020:ajout d'elements dans l'interface de MathLib 
@@ -84,7 +86,7 @@ public final class InfiniteEllipticCone implements InfiniteCone, Serializable {
     private static final double EPS = UtilsPatrius.DOUBLE_COMPARISON_EPSILON;
 
     /** Newton loop limit */
-    private static final int NEWTONLIMIT = 100;
+    private static final int NEWTONLIMIT = 1000;
 
     /** Incrementation rate limitation is pi/rate for θ */
     private static final double TRATE = 25;

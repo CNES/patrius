@@ -18,6 +18,7 @@
  * @history creation 06/08/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,6 +34,7 @@
 package fr.cnes.sirius.patrius.events;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -248,5 +250,10 @@ public class AngularMomentumExcessDetectorTest {
         // Test the copy of the Actions via eventOccured method
         Assert.assertEquals(detector.eventOccurred(null, true, false), detectorCopy.eventOccurred(null, true, false));
         Assert.assertEquals(detector.eventOccurred(null, false, false), detectorCopy.eventOccurred(null, false, false));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.7:DM:DM-2818:18/05/2021:[PATRIUS|COLOSUS] Classe GatesModel
  * END-HISTORY
@@ -21,15 +22,25 @@
 package fr.cnes.sirius.patrius.forces.maneuvers;
 
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.CheckUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@link GatesModel}.
@@ -223,5 +234,10 @@ public class GatesModelTest {
 
         computed = GatesModel.getMeanDeltaV(deltaV, sigmaDirection);
         CheckUtils.checkEquality(expected, computed, ABSTOL, RELTOL);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

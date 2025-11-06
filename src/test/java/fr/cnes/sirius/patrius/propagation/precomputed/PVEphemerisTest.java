@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-200:22/08/2024: Fourniture des dates dans PVEphemeris
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -25,8 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,11 +41,11 @@ import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -53,8 +54,10 @@ import fr.cnes.sirius.patrius.time.interpolation.TimeStampedInterpolableEphemeri
 import fr.cnes.sirius.patrius.tools.cache.FIFOThreadSafeCache;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
+import junit.framework.Assert;
 
 /**
  * Unit test class for the {@link PVEphemeris} class.
@@ -356,6 +359,69 @@ public class PVEphemerisTest {
     }
 
     /**
+     * Tests the getters for Sample dates, Usable dates and Optimal dates.
+     */
+    @Test
+    public void testGetters() {
+        final Frame frame = FramesFactory.getGCRF();
+        final AbsoluteDate initialDate = new AbsoluteDate("2019-01-01T00:00:00", TimeScalesFactory.getTAI());
+        final double mu = Constants.EGM96_EARTH_MU;
+        final CartesianDerivativesFilter filter = CartesianDerivativesFilter.USE_PVA;
+
+        // Creation of the samples for PVEphemeris Creation
+        // It is necessary to have more than two samples to have an interpolation order greater than 2 to have a case
+        // with optimal dates and sample dates that are different
+        final List<TimeStampedPVCoordinates> pvts = new ArrayList<>();
+        pvts.add(new TimeStampedPVCoordinates(initialDate, PVCoordinates.ZERO));
+        pvts.add(new TimeStampedPVCoordinates(initialDate.shiftedBy(1.0), PVCoordinates.ZERO));
+        pvts.add(new TimeStampedPVCoordinates(initialDate.shiftedBy(2.0), PVCoordinates.ZERO));
+        pvts.add(new TimeStampedPVCoordinates(initialDate.shiftedBy(3.0), PVCoordinates.ZERO));
+        final int interpOrder = 4;
+        final int halfInterpOrder = (int) (interpOrder*0.5);
+        final PVEphemeris pvEphem = new PVEphemeris(pvts, interpOrder, frame, mu, filter);
+        
+        // Sample Date
+        final AbsoluteDate minSampleDateComputed = pvEphem.getMinSampleDate();
+        final AbsoluteDate minSampleDateExpected = pvts.get(0).getDate();
+        Assert.assertEquals(minSampleDateExpected.getEpoch(), minSampleDateComputed.getEpoch(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(minSampleDateExpected.getOffset(), minSampleDateComputed.getOffset(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        final AbsoluteDate maxSampleDateComputed = pvEphem.getMaxSampleDate();
+        final AbsoluteDate maxSampleDateExpected = pvts.get(pvts.size() - 1).getDate();
+        Assert.assertEquals(maxSampleDateExpected.getEpoch(), maxSampleDateComputed.getEpoch(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(maxSampleDateExpected.getOffset(), maxSampleDateComputed.getOffset(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+
+        // Optimal Date
+        final AbsoluteDate minOptimalDateComputed = pvEphem.getMinOptimalDate();
+        final AbsoluteDate minOptimalDateExpected = pvts.get(halfInterpOrder -1).getDate();
+        Assert.assertEquals(minOptimalDateExpected.getEpoch(), minOptimalDateComputed.getEpoch(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(minOptimalDateExpected.getOffset(), minOptimalDateComputed.getOffset(), Precision.DOUBLE_COMPARISON_EPSILON);
+        final AbsoluteDate maxOptimalDateComputed = pvEphem.getMaxOptimalDate();
+        final AbsoluteDate maxOptimalDateExpected = pvts.get(pvts.size() - halfInterpOrder).getDate();
+        Assert.assertEquals(maxOptimalDateExpected.getEpoch(), maxOptimalDateComputed.getEpoch(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(maxOptimalDateExpected.getOffset(), maxOptimalDateComputed.getOffset(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        
+        // Usable Date
+        final AbsoluteDate minUsableDateComputed = pvEphem.getMinDate();
+        Assert.assertEquals(minUsableDateComputed.getEpoch(), minOptimalDateComputed.getEpoch(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(minUsableDateComputed.getOffset(), minOptimalDateComputed.getOffset(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+
+        final AbsoluteDate maxUsableDateComputed = pvEphem.getMaxDate();
+        Assert.assertEquals(maxUsableDateComputed.getEpoch(), maxOptimalDateComputed.getEpoch(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(maxUsableDateComputed.getOffset(), maxOptimalDateComputed.getOffset(),
+            Precision.DOUBLE_COMPARISON_EPSILON);
+
+    }
+
+    /**
      * The following code is executed once before all the tests : Patrius dataset initialization and frames configuration.
      * 
      * @throws PatriusException
@@ -365,5 +431,10 @@ public class PVEphemerisTest {
     public static void setupClass() throws PatriusException {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

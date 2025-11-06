@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-308:21/11/2024:[STELA-PATRIUS] Duplication entre MSIS00Adapter et MSIS2000
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -55,6 +58,7 @@ import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
+import fr.cnes.sirius.patrius.forces.atmospheres.MSISE2000;
 import fr.cnes.sirius.patrius.forces.atmospheres.US76;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.specialized.ClassicalMSISE2000SolarData;
@@ -69,7 +73,6 @@ import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.stela.PotentialCoefficientsProviderTest;
 import fr.cnes.sirius.patrius.stela.bodies.MeeusMoonStela;
 import fr.cnes.sirius.patrius.stela.forces.StelaForceModel;
-import fr.cnes.sirius.patrius.stela.forces.atmospheres.MSIS00Adapter;
 import fr.cnes.sirius.patrius.stela.forces.gravity.StelaThirdBodyAttraction;
 import fr.cnes.sirius.patrius.stela.forces.gravity.StelaZonalAttraction;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
@@ -191,8 +194,9 @@ public class StelaAtmosphericDragTest {
         final double[] result = atmosphericDrag.computePerturbation(pv8, converter);
 
         // Comparison with expected results
-        final double[] expected = { -3.125811145397272561E-02, 2.544451035366259333E-14, -1.743570866285511706E-10,
-            -3.008827061883685649E-10, -2.255865921759909135E-13, -3.825044236407246195E-13 };
+        final double[] expected =
+                { -3.125812467105709E-02, 2.5443568165037784E-14, -1.743571534461367E-10,
+                        -3.008828373499188E-10, -2.2558666740860925E-13, -3.8250458470492875E-13 };
 
         for (int i = 0; i < result.length; i++) {
             Assert.assertEquals(0.0, (expected[i] - result[i]) / expected[i], 1E-11);
@@ -207,18 +211,18 @@ public class StelaAtmosphericDragTest {
 
         // The expected partial derivatives (Stela reference):
         final double[][] expectedPD = {
-            { 1.8983037515192916E-7, 0.0, -8.567760527805676, -14.81432999044688, 0.003984223031005645,
-                -0.0037411342503020847 },
-            { -1.1016169234905066E-19, 0.0, 5.307190067859292E-12, 8.851891871869989E-12, -6.89953921938275E-13,
-                -1.2215828479610354E-13 },
-            { 1.0658041954407233E-15, 0.0, -4.781630578338703E-8, -8.185313329697108E-8, 2.0590703474640228E-11,
-                -1.993257625080873E-11 },
-            { 1.8400334915351054E-15, 0.0, -8.172893355083644E-8, -1.4179161175829065E-7, 3.929953148094947E-11,
-                -3.6556891902512703E-11 },
-            { 1.361064669306401E-18, 0.0, -6.109682157211508E-11, -1.0425921339041284E-10, -1.2077978944053934E-12,
-                -2.054766881034488E-12 },
-            { 2.3182228354703883E-18, 0.0, -1.0305266560326096E-10, -1.7818636561748564E-10,
-                -2.022866397420742E-12, -3.67099202491137E-12 }
+                { 1.898304478377186E-7, 0.0, -8.567763740416536, -14.814335703699596,
+                        0.003983984878083468, -0.0037410126670144733 },
+                { -1.1015763807264013E-19, 0.0, 5.307009430535626E-12, 8.851573135217548E-12,
+                        -6.899680764295288E-13, -1.2215468783108267E-13 },
+                { 1.0658045743188163E-15, 0.0, -4.7816322435788287E-8, -8.185316256786141E-8,
+                        2.0589475552490333E-11, -1.9931925398383365E-11 },
+                { 1.8400342134122227E-15, 0.0, -8.172896490069029E-8, -1.4179166769833106E-7,
+                        3.92971812908762E-11, -3.655570529909677E-11 },
+                { 1.3610651052341483E-18, 0.0, -6.109684075733024E-11, -1.0425924698983445E-10,
+                        -1.2077996794472648E-12, -2.0547668419648175E-12 },
+                { 2.318223720229441E-18, 0.0, -1.0305270408992559E-10, -1.7818643398789652E-10,
+                        -2.022870079905929E-12, -3.670992236375409E-12 }
         };
 
         for (int i = 0; i < expectedPD.length; i++) {
@@ -294,8 +298,9 @@ public class StelaAtmosphericDragTest {
         final double[] result = atmosphericDrag.computePerturbation(pv8, converter);
 
         // Comparison with expected results
-        final double[] expected = { -7.444463180130804E-6, -2.7691697726168427E-17, -2.3032460199612546E-13,
-            -1.6633380353100253E-13, -1.817050846650441E-15, -1.2015467198439325E-15 };
+        final double[] expected =
+                { -7.444467650124532E-6, -2.7691880111301335E-17, -2.303241787971509E-13,
+                        -1.6633506736101144E-13, -1.8170508676258455E-15, -1.2015477361145687E-15 };
 
         for (int i = 0; i < result.length; i++) {
             Assert.assertEquals(0.0, (expected[i] - result[i]) / expected[i], 3E-12);
@@ -444,6 +449,8 @@ public class StelaAtmosphericDragTest {
     @Before
     public void setUp() throws PatriusException {
 
+        Utils.clear();
+
         // Next line clears data set by other tests,
         // are overriden later
         Utils.setDataRoot("regular-dataPBASE");
@@ -495,7 +502,8 @@ public class StelaAtmosphericDragTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
 
         // Atmosphere:
-        atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f, sun);
+        atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
     }
 
     /**

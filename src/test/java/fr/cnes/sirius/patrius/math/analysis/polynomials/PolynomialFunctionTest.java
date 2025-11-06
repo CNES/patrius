@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-86:30/06/2023:[PATRIUS] Retours JE Alice
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3310:22/05/2023:[PATRIUS] Ajout de methode pour integrer les fonctions polynomiales
@@ -30,10 +31,16 @@
 package fr.cnes.sirius.patrius.math.analysis.polynomials;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Tests the PolynomialFunction implementation of a UnivariateFunction.
@@ -315,5 +322,10 @@ public final class PolynomialFunctionTest {
         for (final double coefficient : p.getCoefficients()) {
             Assert.assertEquals(0, coefficient, 1e-15);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:FA:FA-3316:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un potentiel variable
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -25,16 +26,27 @@
 package fr.cnes.sirius.patrius.forces.gravity.variations.coefficients;
 
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.text.ParseException;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Map.Entry;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.CNESUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for VariableGravityFieldFactory.
@@ -159,5 +171,10 @@ public class VariableGravityFieldFactoryTest {
         } catch (final Exception e) {
             // expected!
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

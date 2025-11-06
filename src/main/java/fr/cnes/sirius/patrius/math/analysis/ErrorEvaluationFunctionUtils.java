@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2997:15/11/2021:[PATRIUS] Disposer de fonctionnalites d'evaluation de l'erreur
@@ -29,6 +31,7 @@ package fr.cnes.sirius.patrius.math.analysis;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * A collection of static methods that evaluate {@link UnivariateFunction} functions errors.
@@ -93,7 +96,8 @@ public final class ErrorEvaluationFunctionUtils {
         // Check the input arrays dimension consistency
         final int size = abscissas.length;
         if (size != functionValues.length) {
-            throw new DimensionMismatchException(size, functionValues.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION, size,
+                functionValues.length);
         }
 
         // Fill the values tab and compute the mean value
@@ -174,7 +178,8 @@ public final class ErrorEvaluationFunctionUtils {
         // Check the input arrays dimension consistency
         final int size = abscissas.length;
         if (size != functionValues.length) {
-            throw new DimensionMismatchException(size, functionValues.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION, size,
+                functionValues.length);
         }
 
         // Fill the values tab and check for Double#NaN values

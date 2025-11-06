@@ -2,6 +2,7 @@
  * Copyright 2019-2020 CNES
  * Copyright 2011-2014 JOptimizer
 * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
 * END-HISTORY
@@ -22,12 +23,22 @@
 package fr.cnes.sirius.patrius.math.optim.joptimizer;
 
 import java.io.BufferedReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.URISyntaxException;
+import fr.cnes.sirius.patrius.Utils;
 import java.nio.file.Files;
+import fr.cnes.sirius.patrius.Utils;
 import java.nio.file.Path;
+import fr.cnes.sirius.patrius.Utils;
 import java.nio.file.Paths;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 
 /**
@@ -120,5 +131,10 @@ public final class TestUtils {
         }
         final String[][] result = new String[v.size()][];
         return v.toArray(result);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

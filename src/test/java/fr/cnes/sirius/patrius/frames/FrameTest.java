@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-437:21/11/2024:[PATRIUS] Renaming d'un test
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion 
+ *          des reperes predefinis et des corps predefinis 
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
@@ -425,17 +429,17 @@ public class FrameTest {
     }
 
     @Test
-    public void testFactoryManagedFrame() {
-        final Predefined factoryKey = Predefined.EME2000;
-        final FactoryManagedFrame frame = new FactoryManagedFrame(FramesFactory.getGCRF(),
+    public void testPredefinedFrame() {
+        final PredefinedFrameType factoryKey = PredefinedFrameType.EME2000;
+        final PredefinedFrame frame = new PredefinedFrame(FramesFactory.getGCRF(),
             new EME2000Provider(), true, factoryKey);
         Assert.assertEquals("EME2000", frame.getFactoryKey().getName());
     }
 
     @Test
     public void testCoverage() {
-        final Predefined factoryKey = Predefined.EME2000;
-        final FactoryManagedFrame frame = new FactoryManagedFrame(FramesFactory.getGCRF(),
+        final PredefinedFrameType factoryKey = PredefinedFrameType.EME2000;
+        final PredefinedFrame frame = new PredefinedFrame(FramesFactory.getGCRF(),
             new EME2000Provider(), true, factoryKey);
         Assert.assertEquals(true, frame.isPseudoInertial());
         Assert.assertEquals(factoryKey.getName(), frame.toString());
@@ -589,6 +593,7 @@ public class FrameTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("compressed-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

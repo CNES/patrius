@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -31,6 +33,7 @@ import fr.cnes.sirius.patrius.math.exception.NoDataException;
 import fr.cnes.sirius.patrius.math.exception.NonMonotonicSequenceException;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Function that implements the
@@ -130,16 +133,20 @@ public class BicubicSplineInterpolatingFunction
             throw new NoDataException();
         }
         if (xLen != f.length) {
-            throw new DimensionMismatchException(xLen, f.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS, xLen,
+                f.length);
         }
         if (xLen != dFdX.length) {
-            throw new DimensionMismatchException(xLen, dFdX.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS, xLen,
+                dFdX.length);
         }
         if (xLen != dFdY.length) {
-            throw new DimensionMismatchException(xLen, dFdY.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS, xLen,
+                dFdY.length);
         }
         if (xLen != d2FdXdY.length) {
-            throw new DimensionMismatchException(xLen, d2FdXdY.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS, xLen,
+                d2FdXdY.length);
         }
 
         MathArrays.checkOrder(x);
@@ -154,16 +161,20 @@ public class BicubicSplineInterpolatingFunction
 
         for (int i = 0; i < lastI; i++) {
             if (f[i].length != yLen) {
-                throw new DimensionMismatchException(f[i].length, yLen);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                    yLen, f[i].length);
             }
             if (dFdX[i].length != yLen) {
-                throw new DimensionMismatchException(dFdX[i].length, yLen);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                    yLen, dFdX[i].length);
             }
             if (dFdY[i].length != yLen) {
-                throw new DimensionMismatchException(dFdY[i].length, yLen);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                    yLen, dFdY[i].length);
             }
             if (d2FdXdY[i].length != yLen) {
-                throw new DimensionMismatchException(d2FdXdY[i].length, yLen);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS,
+                    yLen, d2FdXdY[i].length);
             }
             final int ip1 = i + 1;
             for (int j = 0; j < lastJ; j++) {

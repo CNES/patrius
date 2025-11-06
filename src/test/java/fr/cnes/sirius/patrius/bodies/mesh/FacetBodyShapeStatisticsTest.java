@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-81:30/06/2023:[PATRIUS] Reliquat DM 3299
  * VERSION:4.11:DM:DM-3299:22/05/2023:[PATRIUS] Gestion des ellipsoïdes de FacetBodyShape
@@ -41,12 +43,13 @@ import java.io.File;
 import java.net.URISyntaxException;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
+import fr.cnes.sirius.patrius.bodies.mesh.BodyShapeFitter.EllipsoidType;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.stat.descriptive.SummaryStatistics;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -67,11 +70,14 @@ public class FacetBodyShapeStatisticsTest {
     /** Facet body shape used for tests: Phobos mesh in Moon position. */
     private static FacetBodyShape bodyPhobos;
 
-    /** Facet body shape used for tests: Phobos mesh in Moon position. */
-    private static FacetBodyShape bodySphere;
+    /** Body shape fitter associated to Phobos. */
+    private static BodyShapeFitter fitterPhobos;
 
     /**
      * Load mesh.
+     * 
+     * @throws PatriusException
+     * @throws URISyntaxException
      */
     @BeforeClass
     public static void setUpBeforeClass() throws PatriusException, URISyntaxException {
@@ -85,14 +91,7 @@ public class FacetBodyShapeStatisticsTest {
 
         bodyPhobos = new FacetBodyShape("", FramesFactory.getGCRF(), new ObjMeshLoader(
             fullNamePhobos));
-
-        // Sphere .obj mesh
-        final String modelFileSphere = "mnt" + File.separator + "SphericalBody.obj";
-        final String fullNameSphere = FacetBodyShape.class.getClassLoader().getResource(modelFileSphere).toURI()
-            .getPath();
-
-        bodySphere = new FacetBodyShape("", FramesFactory.getGCRF(), new ObjMeshLoader(
-            fullNameSphere));
+        fitterPhobos = new BodyShapeFitter(bodyPhobos);
     }
 
     /**
@@ -109,7 +108,8 @@ public class FacetBodyShapeStatisticsTest {
      */
     @Test
     public void computeStatisticsForRadialDistanceTest() throws PatriusException {
-        final OneAxisEllipsoid fittedEllipsoid = bodyPhobos.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
+        final OneAxisEllipsoid fittedEllipsoid =
+            (OneAxisEllipsoid) fitterPhobos.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED);
         final FacetBodyShapeStatistics facetStats = new FacetBodyShapeStatistics(bodyPhobos);
         final SummaryStatistics stats = facetStats.computeStatisticsForRadialDistance(fittedEllipsoid);
 
@@ -142,7 +142,8 @@ public class FacetBodyShapeStatisticsTest {
      */
     @Test
     public void computeStatisticsForAltitudeTest() throws PatriusException {
-        final OneAxisEllipsoid fittedEllipsoid = bodyPhobos.getEllipsoid(EllipsoidType.FITTED_ELLIPSOID);
+        final OneAxisEllipsoid fittedEllipsoid =
+            (OneAxisEllipsoid) fitterPhobos.getEllipsoid(EllipsoidType.ONE_AXIS_ELLIPSOID_FITTED);
         final FacetBodyShapeStatistics facetStats = new FacetBodyShapeStatistics(bodyPhobos);
         final SummaryStatistics stats = facetStats.computeStatisticsForAltitude(fittedEllipsoid);
 
@@ -238,4 +239,9 @@ public class FacetBodyShapeStatisticsTest {
 
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

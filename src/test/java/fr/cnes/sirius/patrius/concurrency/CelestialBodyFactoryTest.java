@@ -17,6 +17,11 @@
  * @history creation 03/04/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -29,29 +34,53 @@
 package fr.cnes.sirius.patrius.concurrency;
 
 import java.net.URL;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.Instant;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.LocalDateTime;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.ZoneOffset;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.BeforeMethod;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.annotations.Test;
+import fr.cnes.sirius.patrius.Utils;
 
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * TestNG for use of the CelestialBodyFactory in a multi-threaded environment.
@@ -121,8 +150,8 @@ public class CelestialBodyFactoryTest {
     public void celestialBodyConcurrentTest() throws PatriusException {
 
         // Pick two random bodies
-        final CelestialBody b1 = orderedCelestialBodyPicker();
-        final CelestialBody b2 = orderedCelestialBodyPicker();
+        final IAUCelestialBody b1 = orderedCelestialBodyPicker();
+        final IAUCelestialBody b2 = orderedCelestialBodyPicker();
 
         // Get the first one's body frame
         final Frame b1Frame = b1.getRotatingFrame(IAUPoleModelType.TRUE);
@@ -148,7 +177,7 @@ public class CelestialBodyFactoryTest {
         list.parallelStream().forEach(entry -> {
             for (int i = 0; i < 1000; i++) {
                 try {
-                    CelestialBodyFactory.addCelestialBodyLoader("SUN", new JPLCelestialBodyLoader(entry.toString(), EphemerisType.SUN));
+                    CelestialBodyFactory.addCelestialBodyLoader("SUN", new JPLCelestialBodyLoader(entry.toString(), PredefinedEphemerisType.SUN));
                 } catch (final Exception e) {
                     // Multi-thread conflict
                     Assert.fail();
@@ -162,11 +191,11 @@ public class CelestialBodyFactoryTest {
     private static volatile int orderCB = 0;
 
     /**
-     * Ordered celestial body picker. This method is purposedly not thread-protected.
+     * Ordered IAU celestial body picker. This method is purposedly not thread-protected.
      * 
-     * @return a celestial body.
+     * @return an IAU celestial body.
      */
-    private static CelestialBody orderedCelestialBodyPicker() throws PatriusException {
+    private static IAUCelestialBody orderedCelestialBodyPicker() throws PatriusException {
         // Get the next integer
         final int nextInt = orderCB++;
         // orderCB reinit
@@ -209,6 +238,11 @@ public class CelestialBodyFactoryTest {
             default:
                 cBody = CelestialBodyFactory.getMoon();
         }
-        return (CelestialBody) cBody;
+        return (IAUCelestialBody) cBody;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

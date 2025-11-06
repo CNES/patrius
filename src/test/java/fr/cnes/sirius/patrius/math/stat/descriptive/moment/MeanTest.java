@@ -3,6 +3,7 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * END-HISTORY
@@ -25,10 +26,16 @@
 package fr.cnes.sirius.patrius.math.stat.descriptive.moment;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.stat.descriptive.StorelessUnivariateStatisticAbstractTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.stat.descriptive.UnivariateStatistic;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test cases for the {@link UnivariateStatistic} class.
@@ -79,4 +86,9 @@ public class MeanTest extends StorelessUnivariateStatisticAbstractTest {
             this.getTolerance());
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

@@ -13,17 +13,25 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.math.analysis.function;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.BivariateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit test class to evaluate the basic univariate/bivariate functions serialization /
@@ -245,5 +253,10 @@ public class BasicFunctioncSerializationTest {
         // Subtract
         fct = new Subtract();
         Assert.assertEquals(fct.value(a, b), TestUtils.serializeAndRecover(fct).value(a, b), 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

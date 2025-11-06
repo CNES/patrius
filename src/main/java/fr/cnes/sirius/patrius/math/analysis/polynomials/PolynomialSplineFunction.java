@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.11.1:FA:FA-86:30/06/2023:[PATRIUS] Retours JE Alice
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -126,7 +128,8 @@ public class PolynomialSplineFunction implements UnivariateDifferentiableFunctio
                 2, knotsIn.length, false);
         }
         if (knotsIn.length - 1 != polynomialsIn.length) {
-            throw new DimensionMismatchException(polynomialsIn.length, knotsIn.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_POLYNOMIAL_KNOTS_DIMENSION,
+                polynomialsIn.length, knotsIn.length);
         }
         MathArrays.checkOrder(knotsIn);
 

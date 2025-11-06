@@ -18,6 +18,7 @@
  * @history 15/03/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -44,8 +45,6 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.events;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -83,6 +82,7 @@ import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Test class for {@link NthOccurrenceDetector}
@@ -432,5 +432,10 @@ public class NthOccurrenceDetectorTest {
             }
             return result;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

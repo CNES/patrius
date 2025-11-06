@@ -18,6 +18,7 @@
  * @history creation 10/06/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -840,5 +841,10 @@ public class EllipsoidEclipseDetectorTest {
         public TreeMap<AbsoluteDate, Double[]> getData() {
             return this.mapNewOld;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

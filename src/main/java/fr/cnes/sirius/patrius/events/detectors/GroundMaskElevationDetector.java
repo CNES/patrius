@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -40,12 +42,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -85,8 +87,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * associated to identical azimuths modulo 2PI.
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at raising and
- * to {@link EventDetector.Action#STOP stop} propagation at setting. This can be changed by using provided constructors.
+ * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at raising and
+ * to {@link EventDetector.Action#STOP} stop propagation at setting. This can be changed by using provided constructors.
  * </p>
  * <p>
  * This detector can takes into account signal propagation duration through
@@ -149,8 +151,8 @@ public class GroundMaskElevationDetector extends AbstractSignalPropagationDetect
      * handle, otherwise some short passes could be missed.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at raising
-     * and to {@link EventDetector.Action#STOP stop} propagation at setting.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at raising
+     * and to {@link EventDetector.Action#STOP} stop propagation at setting.
      * </p>
      * 
      * @param azimelev azimuth-elevation mask (rad)
@@ -205,7 +207,8 @@ public class GroundMaskElevationDetector extends AbstractSignalPropagationDetect
     public GroundMaskElevationDetector(final double[][] azimelev, final TopocentricFrame topoIn,
         final double maxCheck, final double threshold, final Action raising,
         final Action setting, final boolean removeRaising, final boolean removeSetting) {
-        super(maxCheck, threshold, raising, setting, removeRaising, removeSetting);
+        super(maxCheck, threshold, raising, setting, removeRaising, removeSetting,
+                new LinkTypeHandler(SignalPropagationRole.EMITTER, topoIn));
         this.azelmask = checkMask(azimelev);
         this.topo = topoIn;
     }
@@ -278,12 +281,6 @@ public class GroundMaskElevationDetector extends AbstractSignalPropagationDetect
         return elevation;
     }
     
-    /** @inheritDoc */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
-        super.setPropagationDelayType(propagationDelayType, frame);
-    }
-    
     /**
      * Checking and ordering the azimuth-elevation tabulation.
      * 
@@ -329,24 +326,6 @@ public class GroundMaskElevationDetector extends AbstractSignalPropagationDetect
 
         // return mask
         return mask;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return this.topo;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.EMITTER;
     }
 
     /**

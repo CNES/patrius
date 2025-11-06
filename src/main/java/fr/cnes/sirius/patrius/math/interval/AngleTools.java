@@ -22,6 +22,7 @@
  * @history Created on ???
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -691,7 +692,7 @@ public final class AngleTools {
      * <p>
      * A user-input shift is added when necessary when a jump is detected. Warning: This function is
      * not valid if the "distance" between 2 points is larger than a/2, in which case function
-     * {@link #unMod(double[], double[], double, double)} shall be used.
+     * {@link #unMod(List, List, double, double)} shall be used.
      *
      * @param y
      *        Array of data to be unmod
@@ -728,7 +729,7 @@ public final class AngleTools {
      * <p>
      * A two-pi shift is added when necessary when a jump is detected. Warning: This function is not
      * valid if the "distance" between 2 points is larger than pi, in which case function
-     * {@link #unMod(double[], double[], double, double)} shall be used.
+     * {@link #unMod(List, List, double, double)} shall be used.
      *
      * @param y
      *        Array of data to be unmod

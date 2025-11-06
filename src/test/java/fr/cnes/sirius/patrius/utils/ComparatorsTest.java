@@ -18,6 +18,7 @@
  * @history Creation 22/07/11
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * END-HISTORY
@@ -25,9 +26,14 @@
 package fr.cnes.sirius.patrius.utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.Comparators;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @description test class for the doubles comparisons
@@ -441,5 +447,10 @@ public class ComparatorsTest {
         Assert.assertEquals(Comparators.greaterStrict(Double.POSITIVE_INFINITY, 1.987654687654972, eps), true);
         // tests with a "NaN" value
         Assert.assertEquals(Comparators.greaterStrict(Double.NaN, 1.987654687654972, eps), false);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,8 @@
  * @history created 18/02/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -59,10 +61,6 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 public final class Squaring {
 
     /**
-     * CNES Julian dates of points for squaring.
-     */
-    private static AbsoluteDate[] squaringJDCNES;
-    /**
      * value of 2*PI.
      */
     private static final double TWO_PI = 2.0 * FastMath.PI;
@@ -72,10 +70,9 @@ public final class Squaring {
     private static final double PI = FastMath.PI;
 
     /**
-     * Constructor.
+     * CNES Julian dates of points for squaring.
      */
-    private Squaring() {
-    }
+    private AbsoluteDate[] squaringJDCNES;
 
     /**
      * Simpson's rule.
@@ -150,7 +147,7 @@ public final class Squaring {
      * @throws PatriusException
      *         thrown if number of points is not odd
      */
-    public static double[][] computeSquaringPoints(final int numPoints,
+    public double[][] computeSquaringPoints(final int numPoints,
             final StelaEquinoctialOrbit orbit,
             final double startPoint,
             final double endPoint) throws PatriusException {
@@ -175,7 +172,7 @@ public final class Squaring {
             double u;
             // True anomaly:
             double nu;
-            squaringJDCNES = new AbsoluteDate[numPoints];
+            this.squaringJDCNES = new AbsoluteDate[numPoints];
             final AbsoluteDate cnesJD = orbit.getDate();
             // Average on a part of the orbit:
             final double dNuGTO = MathLib.divide(endPoint - startPoint, iNum);
@@ -197,7 +194,7 @@ public final class Squaring {
                 }
                 squaringPoints[k] = orbit.mapOrbitToArray();
                 squaringPoints[k][1] = JavaMathAdapter.mod(pomPlusRaan + m[k], TWO_PI);
-                squaringJDCNES[k] = cnesJD.shiftedBy(perigeeTime + MathLib.divide(m[k], n));
+                this.squaringJDCNES[k] = cnesJD.shiftedBy(perigeeTime + MathLib.divide(m[k], n));
             }
         } else {
             // The squaring computation failed:
@@ -229,8 +226,8 @@ public final class Squaring {
      * @return the squaringJDCNES
      */
     @SuppressWarnings("PMD.MethodReturnsInternalArray")
-    public static AbsoluteDate[] getSquaringJDCNES() {
-        return squaringJDCNES;
+    public AbsoluteDate[] getSquaringJDCNES() {
+        return this.squaringJDCNES;
     }
 
     /**

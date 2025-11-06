@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -35,30 +38,57 @@
  */
 package fr.cnes.sirius.patrius.events.smallstepdetection;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.ForceModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.GradientModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.radiation.RadiationSensitive;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.JacobiansParameterizable;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.ParameterUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.StandardFieldDescriptors;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Solar radiation pressure force model.
@@ -418,5 +448,10 @@ public class CustomSolarRadiationPressure extends JacobiansParameterizable imple
     @Override
     public void checkData(final AbsoluteDate start, final AbsoluteDate end) {
         // Nothing to do
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

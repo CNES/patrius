@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] Rendre la classe QuaternionPolynomialSegment plus generique et ajouter de la coherence dans le package polynomials
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -31,22 +32,39 @@
 package fr.cnes.sirius.patrius.propagation.analytical.twod;
 
 import java.io.BufferedReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.File;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.FileInputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStreamReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.URISyntaxException;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.regex.Matcher;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.regex.Pattern;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.polynomials.DatePolynomialFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.UnivariateDateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 
 class ParameterModelReader {
 
@@ -211,4 +229,9 @@ class ParameterModelReader {
         return this.date;
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

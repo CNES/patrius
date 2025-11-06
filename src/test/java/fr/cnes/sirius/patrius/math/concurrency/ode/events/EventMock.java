@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -26,8 +27,11 @@
  */
 package fr.cnes.sirius.patrius.math.concurrency.ode.events;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler;
-import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * 
@@ -100,5 +104,10 @@ public class EventMock implements EventHandler {
             final boolean increasing,
             final boolean forward) {
         return false;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,7 @@
  * @history Created 07/05/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -28,18 +29,33 @@
  */
 package fr.cnes.sirius.patrius.events.singlegpsvisis;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class GPSvisEclDetectors {
 
@@ -182,5 +198,10 @@ public class GPSvisEclDetectors {
         }
         System.out.format(s.getDate() + " (AoL = %8.3f deg) "
             + (increasing ? " ENTER " + evtName : " EXIT  " + evtName) + "%n", aol);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

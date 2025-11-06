@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -38,6 +40,7 @@ import fr.cnes.sirius.patrius.math.random.Well19937c;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Implementation of the multivariate normal (Gaussian) distribution.
@@ -124,12 +127,14 @@ public class MultivariateNormalDistribution
         final int dim = meansIn.length;
 
         if (covariances.length != dim) {
-            throw new DimensionMismatchException(covariances.length, dim);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, dim,
+                covariances.length);
         }
 
         for (int i = 0; i < dim; i++) {
             if (dim != covariances[i].length) {
-                throw new DimensionMismatchException(covariances[i].length, dim);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS, dim,
+                    covariances[i].length);
             }
         }
 
@@ -197,7 +202,7 @@ public class MultivariateNormalDistribution
     public double density(final double[] vals) {
         final int dim = this.getDimension();
         if (vals.length != dim) {
-            throw new DimensionMismatchException(vals.length, dim);
+            throw new DimensionMismatchException(PatriusMessages.INCONPATIBLE_DISTRIBUTION_DIMENSION, vals.length, dim);
         }
 
         return MathLib.pow(2 * FastMath.PI, -dim / 2) *

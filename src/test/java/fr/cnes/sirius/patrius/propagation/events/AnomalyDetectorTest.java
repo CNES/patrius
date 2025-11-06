@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,8 +34,7 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -61,6 +61,7 @@ import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for {@link AnomalyDetector}.
@@ -630,5 +631,10 @@ public class AnomalyDetectorTest {
         final KeplerianOrbit finalOrbit = new KeplerianOrbit(curState.getOrbit());
         Assert.assertEquals(MathLib.toRadians(-95.625) + 2. * FastMath.PI, finalOrbit.getTrueAnomaly(),
             Utils.epsilonTest);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

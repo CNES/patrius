@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -599,4 +600,5 @@ public class ThreeBodiesAngleDetectorTest {
         Assert.assertEquals(ID2, detector2.getInSpacecraftId2());
         Assert.assertEquals(ID3, detector2.getInSpacecraftId3());
     }
+
 }

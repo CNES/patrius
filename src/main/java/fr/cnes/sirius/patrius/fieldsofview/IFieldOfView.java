@@ -17,6 +17,8 @@
  * @history Creation 16/04/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2767:18/05/2021:Evolutions et corrections diverses 
@@ -49,7 +51,7 @@ public interface IFieldOfView extends Serializable {
      * particular javadoc of each class.
      * 
      * @param direction
-     *        the direction vector (expressed in the topocentric coordinate system of the object) 
+     *        the direction vector (expressed in the topocentric coordinate system of the object)
      * @return the angular distance
      */
     double getAngularDistance(final Vector3D direction);

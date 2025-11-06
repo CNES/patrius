@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -414,4 +415,20 @@ public interface MultiPropagator {
      *            if state cannot be propagated
      */
     Map<String, SpacecraftState> propagate(AbsoluteDate start, AbsoluteDate target) throws PropagationException;
+    
+    /**
+     * Get the {@link SpacecraftState} at provided date.
+     * 
+     * @param date
+     *        target date
+     * @param identifier
+     *        satellite identitifer
+     * @return the spacecraft state of the specified satellite
+     * @exception PropagationException
+     *            if state cannot be computed
+     */
+    default SpacecraftState getSpacecraftState(final AbsoluteDate date, final String identifier) throws PropagationException {
+        return this.propagate(date).get(identifier);
+    }
+    
 }

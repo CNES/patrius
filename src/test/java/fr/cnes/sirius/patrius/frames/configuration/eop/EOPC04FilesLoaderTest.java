@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-360:21/11/2024:[PATRIUS] Erreur de lecture des EOP 1980 C04
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:FA:FA-2856:18/05/2021:Classe de test EOP08C04FilesLoaderTest potentiellement obsolète 
@@ -24,16 +26,27 @@
 package fr.cnes.sirius.patrius.frames.configuration.eop;
 
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStream;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.data.AbstractFilesLoaderTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class EOPC04FilesLoaderTest extends AbstractFilesLoaderTest {
 
@@ -203,6 +216,20 @@ public class EOPC04FilesLoaderTest extends AbstractFilesLoaderTest {
             .getPoleCorrection(date).getYp(), 1.0e-10);
     }
 
+    @Test
+    public void testFillHistory1980() throws PatriusException, IOException {
+        this.setRoot("regular-data");
+        // input stream for the data file
+        final InputStream is =
+            this.getClass().getResourceAsStream(
+                "/regular-data/Earth-orientation-parameters/yearly/EOP_14_C04_IAU1980_yearly_files.txt");
+        final EOP1980History history = new EOP1980History(EOPInterpolators.LAGRANGE4);
+        EOPC04FilesLoader.fillHistory(history, is);
+        final AbsoluteDate date = new AbsoluteDate(2024, 6, 14, 0, 0, 0, TimeScalesFactory.getUTC());
+        Assert.assertEquals(-0.110823 * Constants.ARC_SECONDS_TO_RADIANS, history.getNutationCorrection(date).getDdpsi(), 1.0e-10);
+        Assert.assertEquals(-0.010030 * Constants.ARC_SECONDS_TO_RADIANS, history.getNutationCorrection(date).getDdeps(), 1.0e-10);
+    }
+    
     @Test(expected = PatriusException.class)
     public void testErrorOne() throws PatriusException, IOException {
         this.setRoot("regular-data");
@@ -235,5 +262,10 @@ public class EOPC04FilesLoaderTest extends AbstractFilesLoaderTest {
 
     private static double asToRad(final double mas) {
         return mas * Constants.ARC_SECONDS_TO_RADIANS;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

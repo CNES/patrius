@@ -18,6 +18,7 @@
  * @history creation 25/05/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -45,7 +46,6 @@ package fr.cnes.sirius.patrius.forces.radiation;
 
 import java.util.Arrays;
 
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
@@ -127,7 +127,7 @@ public class RediffusedFlux {
      * @since 1.2
      */
     public RediffusedFlux(final int nCorona, final int nMeridian, final CelestialBodyFrame bodyFrame,
-                          final CelestialPoint sunProvider, final PVCoordinatesProvider satProvider,
+                          final PVCoordinatesProvider sunProvider, final PVCoordinatesProvider satProvider,
                           final AbsoluteDate d, final IEmissivityModel model) throws PatriusException {
         this(nCorona, nMeridian, bodyFrame, sunProvider, satProvider, d, model, true, true);
     }
@@ -162,7 +162,7 @@ public class RediffusedFlux {
      * @since 1.2
      */
     public RediffusedFlux(final int nCorona, final int nMeridian, final CelestialBodyFrame bodyFrame,
-                          final CelestialPoint sun, final PVCoordinatesProvider satProvider,
+                          final PVCoordinatesProvider sun, final PVCoordinatesProvider satProvider,
                           final AbsoluteDate dDate, final IEmissivityModel model, final boolean inIr,
                           final boolean inAlbedo) throws PatriusException {
 

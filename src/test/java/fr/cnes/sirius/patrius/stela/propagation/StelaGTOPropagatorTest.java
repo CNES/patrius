@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-308:21/11/2024:[STELA-PATRIUS] Duplication entre MSIS00Adapter et MSIS2000
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
@@ -83,12 +86,14 @@ import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.DateDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger.LoggedEvent;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
+import fr.cnes.sirius.patrius.forces.atmospheres.MSISE2000;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ACSOLFormatReader;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataFactory;
@@ -136,7 +141,6 @@ import fr.cnes.sirius.patrius.stela.bodies.MeeusMoonStela;
 import fr.cnes.sirius.patrius.stela.forces.AbstractStelaGaussContribution;
 import fr.cnes.sirius.patrius.stela.forces.AbstractStelaLagrangeContribution;
 import fr.cnes.sirius.patrius.stela.forces.StelaForceModel;
-import fr.cnes.sirius.patrius.stela.forces.atmospheres.MSIS00Adapter;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaAeroModel;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaAtmosphericDrag;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaCd;
@@ -2186,6 +2190,10 @@ public class StelaGTOPropagatorTest {
                                                final double dragArea, final double dragCd)
         throws PatriusException,
         IOException, ParseException {
+
+        // Earth parameters
+        final double ae = 6378136.46;
+        final double f = 0.29825765000000E+03;
         // Propagator
         final StelaGTOPropagator propagator = new StelaGTOPropagator(new ClassicalRungeKuttaIntegrator(86400));
 
@@ -2198,8 +2206,8 @@ public class StelaGTOPropagatorTest {
         propagator.addForceModel(new StelaTesseralAttraction(provider, 7, 2, 86400, 5));
         final MeeusSun sun = new MeeusSun(MODEL.STELA);
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
-        final MSIS00Adapter atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), 6378136.46,
-            1 / 0.29825765000000E+03, sun);
+        final MSISE2000 atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
         final StelaAeroModel sp = new StelaAeroModel(mass, new StelaCd(dragCd), dragArea, atmosphere, 50.);
         propagator.addForceModel(new StelaAtmosphericDrag(sp, atmosphere, 33, 6378000, 2500000, 1));
         propagator.addForceModel(new StelaThirdBodyAttraction(sun, 4, 2, 0));
@@ -2496,9 +2504,11 @@ public class StelaGTOPropagatorTest {
         // Solar activity
         SolarActivityDataFactory.addSolarActivityDataReader(new ACSOLFormatReader("stela_solar_activity_provided"));
         final SolarActivityDataProvider solarActivity = SolarActivityDataFactory.getSolarActivityDataProvider();
-        final MSIS00Adapter atmosModel = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity),
-            Constants.CNES_STELA_AE,
-            Constants.UAI1994_EARTH_FLATTENING, new MeeusSun(MODEL.STELA));
+        final MSISE2000 atmosModel =
+                new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                        new OneAxisEllipsoid(Constants.CNES_STELA_AE,
+                                Constants.UAI1994_EARTH_FLATTENING, FramesFactory.getTIRF()),
+                        new MeeusSun(MODEL.STELA));
 
         // Initializing the Drag model
         final StelaCd dragCoeff = initDragCoefficient();
@@ -2569,9 +2579,11 @@ public class StelaGTOPropagatorTest {
         final PotentialCoefficientsProvider potProvider = GravityFieldFactory.getPotentialProvider();
 
         // Initializing the Drag model
-        final MSIS00Adapter atmosModel = new MSIS00Adapter(new ClassicalMSISE2000SolarData(new ConstantSolarActivity(
-            140., 15.)), Constants.CNES_STELA_AE,
-            Constants.UAI1994_EARTH_FLATTENING, new MeeusSun(MODEL.STELA));
+        final MSISE2000 atmosModel =
+                new MSISE2000(new ClassicalMSISE2000SolarData(new ConstantSolarActivity(140., 15.)),
+                        new OneAxisEllipsoid(Constants.CNES_STELA_AE,
+                                Constants.UAI1994_EARTH_FLATTENING, FramesFactory.getTIRF()),
+                        new MeeusSun(MODEL.STELA));
         final StelaAeroModel aeroModel = new StelaAeroModel(1., new StelaCd(2.2), 1., atmosModel, 50);
 
         // Forces
@@ -3028,7 +3040,8 @@ public class StelaGTOPropagatorTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
 
         // Atmosphere:
-        this.atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f, this.sun);
+        this.atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), this.sun);
 
         // trying exponential implementation, as used in test class
         // final Frame mod = FramesFactory.getMOD(false);

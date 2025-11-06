@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
@@ -32,7 +33,7 @@ import java.util.TreeMap;
 
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -102,12 +103,12 @@ public class SignalPropagationWrapperDetector implements EventDetector {
         throws PatriusException {
         // Extract the information about the emitter & receiver configuration from the wrapped event detector
         final AbsoluteDate date = s.getDate();
-        final DatationChoice datationChoice = this.eventDetector.getDatationChoice();
+        final EventDatationType eventDatationType = this.eventDetector.getEventDatationType();
 
         // Compute the emitter & receiver dates
         final AbsoluteDate emitterDate;
         final AbsoluteDate receiverDate;
-        if (datationChoice == DatationChoice.EMITTER) {
+        if (eventDatationType == EventDatationType.EMITTER) {
             emitterDate = date;
             receiverDate = this.eventDetector.getSignalReceptionDate(s);
         } else {
@@ -239,12 +240,12 @@ public class SignalPropagationWrapperDetector implements EventDetector {
     }
 
     /**
-     * Specify if the datation choice corresponds to the emitter date or the receiver date.
+     * Specify if the event datation type corresponds to the emitter date or the receiver date.
      * 
-     * @return the corresponding datation choice
+     * @return the corresponding event datation type
      */
-    public DatationChoice getDatationChoice() {
-        return this.eventDetector.getDatationChoice();
+    public EventDatationType getEventDatationType() {
+        return this.eventDetector.getEventDatationType();
     }
 
     /** {@inheritDoc} */

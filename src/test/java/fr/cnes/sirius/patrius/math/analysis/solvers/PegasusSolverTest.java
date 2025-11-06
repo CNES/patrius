@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -26,9 +27,15 @@
  */
 package fr.cnes.sirius.patrius.math.analysis.solvers;
 
-import junit.framework.Assert;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.math.analysis.solver.PegasusSolver;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.solver.UnivariateSolver;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test case for {@link PegasusSolver Pegasus} solver.
@@ -49,5 +56,10 @@ public final class PegasusSolverTest extends BaseSecantSolverAbstractTest {
     @Override
     protected int[] getQuinticEvalCounts() {
         return new int[] { 3, 7, 9, 8, 9, 8, 10, 10, 12, 16, 18 };
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

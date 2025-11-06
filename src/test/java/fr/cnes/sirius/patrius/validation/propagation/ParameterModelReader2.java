@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -26,23 +27,41 @@
 package fr.cnes.sirius.patrius.validation.propagation;
 
 import java.io.BufferedReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.File;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.FileInputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStreamReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.URISyntaxException;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.regex.Matcher;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.regex.Pattern;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.polynomials.UnivariateDateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.analytical.twod.Analytical2DParameterModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.analytical.twod.DateIntervalLinearFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.analytical.twod.DateIntervalParabolicFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 
 class ParameterModelReader2 {
 
@@ -172,5 +191,10 @@ class ParameterModelReader2 {
         bf.close();
 
         return new Analytical2DParameterModel(centeredFunction, harmonic);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

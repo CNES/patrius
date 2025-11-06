@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -76,52 +77,54 @@ public class LofOffset extends AbstractAttitudeLaw {
      * Create a LOF-aligned attitude.
      * <p>
      * Calling this constructor is equivalent to call
-     * {@code LofOffset(FramesFactory.getGCRF(), LOFType, RotationOrder.XYZ, 0, 0, 0)}.
+     * {@code LofOffset(LOFType, new Rotation(RotationOrder.XYZ, 0., 0., 0.)}.
      * </p>
      * <p>
      * The GCRF frame is used as pivot in the transformation from an actual frame to the local orbital frame.
      * </p>
      * 
-     * @param typeIn type of Local Orbital Frame
+     * @param typeIn
+     *        type of Local Orbital Frame
      */
     public LofOffset(final LOFType typeIn) {
-        super();
-        this.type = typeIn;
-        this.offset = new Rotation(RotationOrder.XYZ, 0, 0, 0);
-        this.inertialFrame = FramesFactory.getGCRF();
+        this(typeIn, new Rotation(RotationOrder.XYZ, 0., 0., 0.));
     }
 
     /**
      * Create a LOF-aligned attitude.
      * <p>
      * Calling this constructor is equivalent to call
-     * {@code LofOffset(inertialFrame, LOFType, RotationOrder.XYZ, 0, 0, 0)}
+     * {@code LofOffset(Frame, LOFType, new Rotation(RotationOrder.XYZ, 0., 0., 0.)}
      * </p>
      * 
-     * @param inertialFrameIn inertial frame with respect to which orbit should be computed. This
-     *        frame is the pivot in the transformation from an actual frame to the local orbital
-     *        frame.
-     * @param typeIn type of Local Orbital Frame
-     * @exception PatriusException if inertialFrame is not a pseudo-inertial frame
+     * @param inertialFrameIn
+     *        inertial frame with respect to which orbit should be computed. This frame is the pivot in the
+     *        transformation from an actual frame to the local orbital frame.
+     * @param typeIn
+     *        type of Local Orbital Frame
+     * @throws PatriusException
+     *         if inertialFrame is not a pseudo-inertial frame
      */
     public LofOffset(final Frame inertialFrameIn, final LOFType typeIn) throws PatriusException {
-        this(inertialFrameIn, typeIn, RotationOrder.XYZ, 0, 0, 0);
+        this(inertialFrameIn, typeIn, new Rotation(RotationOrder.XYZ, 0., 0., 0.));
     }
 
     /**
-     * Creates new instance.
+     * Create a LOF-aligned attitude.
+     * <p>
+     * The GCRF frame is used as pivot in the transformation from an actual frame to the local orbital frame.
+     * </p>
      * <p>
      * An important thing to note is that the rotation order and angles signs used here are compliant with an
      * <em>attitude</em> definition, i.e. they correspond to a frame that rotate in a field of fixed vectors. The
-     * underlying definitions used in commons-math
-     * {@link fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation} use <em>reversed</em> definition, i.e.
+     * underlying definitions used in commons-math {@link Rotation} use <em>reversed</em> definition, i.e.
      * they correspond to a vectors field rotating with respect to a fixed frame. So to retrieve the angles provided
      * here from the commons-math underlying rotation, one has to <em>revert</em> the rotation, as in the following code
      * snippet:
      * </p>
      * 
      * <pre>
-     * LofOffset law = new LofOffset(inertial, lofType, order, alpha1, alpha2, alpha3);
+     * LofOffset law = new LofOffset(inertial, lofType, offset);
      * Rotation offsetAtt = law.getAttitude(orbit).getRotation();
      * Rotation alignedAtt = new LofOffset(inertial, lofType).getAttitude(orbit).getRotation();
      * Rotation offsetProper = offsetAtt.applyTo(alignedAtt.revert());
@@ -134,25 +137,59 @@ public class LofOffset extends AbstractAttitudeLaw {
      * System.out.println(alpha3 + &quot; == &quot; + angles[2]);
      * </pre>
      * 
-     * @param pInertialFrame inertial frame with respect to which orbit should be computed. This
-     *        frame is the pivot in the transformation from the actual frame to the local orbital
-     *        frame.
-     * @param typeIn type of Local Orbital Frame
-     * @param order order of rotations to use for (alpha1, alpha2, alpha3) composition
-     * @param alpha1 angle of the first elementary rotation
-     * @param alpha2 angle of the second elementary rotation
-     * @param alpha3 angle of the third elementary rotation
-     * @exception PatriusException if inertialFrame is not a pseudo-inertial frame
+     * @param typeIn
+     *        type of Local Orbital Frame
+     * @param offset
+     *        Rotation from local orbital frame
      */
-    public LofOffset(final Frame pInertialFrame, final LOFType typeIn, final RotationOrder order,
-        final double alpha1, final double alpha2, final double alpha3) throws PatriusException {
+    public LofOffset(final LOFType typeIn, final Rotation offset) {
         super();
         this.type = typeIn;
-        // Initialized as EulerRotation for GENOPUS purpose
-        this.offset = new EulerRotation(order, alpha1, alpha2, alpha3);
+        this.offset = offset;
+        this.inertialFrame = FramesFactory.getGCRF();
+    }
+
+    /**
+     * Create a LOF-aligned attitude.
+     * <p>
+     * An important thing to note is that the rotation order and angles signs used here are compliant with an
+     * <em>attitude</em> definition, i.e. they correspond to a frame that rotate in a field of fixed vectors. The
+     * underlying definitions used in commons-math {@link Rotation} use <em>reversed</em> definition, i.e.
+     * they correspond to a vectors field rotating with respect to a fixed frame. So to retrieve the angles provided
+     * here from the commons-math underlying rotation, one has to <em>revert</em> the rotation, as in the following code
+     * snippet:
+     * </p>
+     * 
+     * <pre>
+     * LofOffset law = new LofOffset(inertial, lofType, offset);
+     * Rotation offsetAtt = law.getAttitude(orbit).getRotation();
+     * Rotation alignedAtt = new LofOffset(inertial, lofType).getAttitude(orbit).getRotation();
+     * Rotation offsetProper = offsetAtt.applyTo(alignedAtt.revert());
+     * 
+     * // note the call to revert in the following statement
+     * double[] angles = offsetProper.revert().getAngles(order);
+     * 
+     * System.out.println(alpha1 + &quot; == &quot; + angles[0]);
+     * System.out.println(alpha2 + &quot; == &quot; + angles[1]);
+     * System.out.println(alpha3 + &quot; == &quot; + angles[2]);
+     * </pre>
+     * 
+     * @param pInertialFrame
+     *        inertial frame with respect to which orbit should be computed. This frame is the pivot in the
+     *        transformation from the actual frame to the local orbital frame.
+     * @param typeIn
+     *        type of Local Orbital Frame
+     * @param offset
+     *        Rotation from local orbital frame
+     * @throws PatriusException
+     *         if inertialFrame is not a pseudo-inertial frame
+     */
+    public LofOffset(final Frame pInertialFrame, final LOFType typeIn, final Rotation offset) throws PatriusException {
+        super();
+        this.type = typeIn;
+        this.offset = offset;
         if (!pInertialFrame.isPseudoInertial()) {
-            throw new PatriusException(
-                PatriusMessages.NON_PSEUDO_INERTIAL_FRAME_NOT_SUITABLE_FOR_DEFINING_ORBITS,
+            throw new PatriusException(PatriusMessages.NON_PSEUDO_INERTIAL_FRAME_NOT_SUITABLE_FOR_DEFINING_ORBITS,
                 pInertialFrame.getName());
         }
         this.inertialFrame = pInertialFrame;
@@ -187,51 +224,116 @@ public class LofOffset extends AbstractAttitudeLaw {
      * System.out.println(alpha3 + &quot; == &quot; + angles[2]);
      * </pre>
      * 
-     * @param typeIn type of Local Orbital Frame
-     * @param order order of rotations to use for (alpha1, alpha2, alpha3) composition
-     * @param alpha1 angle of the first elementary rotation
-     * @param alpha2 angle of the second elementary rotation
-     * @param alpha3 angle of the third elementary rotation
+     * @param typeIn
+     *        type of Local Orbital Frame
+     * @param order
+     *        order of rotations to use for (alpha1, alpha2, alpha3) composition
+     * @param alpha1
+     *        angle of the first elementary rotation
+     * @param alpha2
+     *        angle of the second elementary rotation
+     * @param alpha3
+     *        angle of the third elementary rotation
+     * @deprecated since 4.15.6 as this constructor can cause some numerical issues and isn't recommended, use {@link #LofOffset(LOFType, Rotation)} instead
      */
-    public LofOffset(final LOFType typeIn, final RotationOrder order, final double alpha1,
-        final double alpha2, final double alpha3) {
+    @Deprecated
+    public LofOffset(final LOFType typeIn, final RotationOrder order, final double alpha1, final double alpha2,
+                     final double alpha3) {
         super();
         this.type = typeIn;
         this.offset = new Rotation(order, alpha1, alpha2, alpha3);
         this.inertialFrame = FramesFactory.getGCRF();
     }
 
+    /**
+     * Creates new instance.
+     * <p>
+     * An important thing to note is that the rotation order and angles signs used here are compliant with an
+     * <em>attitude</em> definition, i.e. they correspond to a frame that rotate in a field of fixed vectors. The
+     * underlying definitions used in commons-math
+     * {@link fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation} use <em>reversed</em> definition, i.e.
+     * they correspond to a vectors field rotating with respect to a fixed frame. So to retrieve the angles provided
+     * here from the commons-math underlying rotation, one has to <em>revert</em> the rotation, as in the following code
+     * snippet:
+     * </p>
+     * 
+     * <pre>
+     * LofOffset law = new LofOffset(inertial, lofType, order, alpha1, alpha2, alpha3);
+     * Rotation offsetAtt = law.getAttitude(orbit).getRotation();
+     * Rotation alignedAtt = new LofOffset(inertial, lofType).getAttitude(orbit).getRotation();
+     * Rotation offsetProper = offsetAtt.applyTo(alignedAtt.revert());
+     * 
+     * // note the call to revert in the following statement
+     * double[] angles = offsetProper.revert().getAngles(order);
+     * 
+     * System.out.println(alpha1 + &quot; == &quot; + angles[0]);
+     * System.out.println(alpha2 + &quot; == &quot; + angles[1]);
+     * System.out.println(alpha3 + &quot; == &quot; + angles[2]);
+     * </pre>
+     * 
+     * @param pInertialFrame
+     *        inertial frame with respect to which orbit should be computed. This
+     *        frame is the pivot in the transformation from the actual frame to the local orbital
+     *        frame.
+     * @param typeIn
+     *        type of Local Orbital Frame
+     * @param order
+     *        order of rotations to use for (alpha1, alpha2, alpha3) composition
+     * @param alpha1
+     *        angle of the first elementary rotation
+     * @param alpha2
+     *        angle of the second elementary rotation
+     * @param alpha3
+     *        angle of the third elementary rotation
+     * @throws PatriusException
+     *         if inertialFrame is not a pseudo-inertial frame
+     * @deprecated since 4.15.6 as this constructor can cause some numerical issues and isn't recommended, use {@link #LofOffset(Frame, LOFType, Rotation)} instead
+     */
+    @Deprecated
+    public LofOffset(final Frame pInertialFrame, final LOFType typeIn, final RotationOrder order, final double alpha1,
+                     final double alpha2, final double alpha3)
+        throws PatriusException {
+        super();
+        this.type = typeIn;
+        // Initialized as EulerRotation for GENOPUS purpose
+        this.offset = new EulerRotation(order, alpha1, alpha2, alpha3);
+        if (!pInertialFrame.isPseudoInertial()) {
+            throw new PatriusException(
+                PatriusMessages.NON_PSEUDO_INERTIAL_FRAME_NOT_SUITABLE_FOR_DEFINING_ORBITS,
+                pInertialFrame.getName());
+        }
+        this.inertialFrame = pInertialFrame;
+    }
+
     /** {@inheritDoc} */
     @Override
-    public Attitude getAttitude(final PVCoordinatesProvider pvProv, final AbsoluteDate date,
-                                final Frame frame) throws PatriusException {
+    public Attitude getAttitude(final PVCoordinatesProvider pvProv, final AbsoluteDate date, final Frame frame)
+        throws PatriusException {
         // construction of the local orbital frame, using PV from inertial frame
         final PVCoordinates pv = pvProv.getPVCoordinates(date, this.inertialFrame);
-        final Transform inertialToLof = this.type.transformFromInertial(date, pv,
-            this.getSpinDerivativesComputation());
+        final Transform inertialToLof = this.type.transformFromInertial(date, pv, this.getSpinDerivativesComputation());
 
         // take into account the specified start frame (which may not be an inertial one)
-        final Transform frameToInertial = frame.getTransformTo(this.inertialFrame, date,
-            this.getSpinDerivativesComputation());
-        final Transform frameToLof = new Transform(date, frameToInertial, inertialToLof,
-            this.getSpinDerivativesComputation());
+        final Transform frameToInertial =
+            frame.getTransformTo(this.inertialFrame, date, this.getSpinDerivativesComputation());
+        final Transform frameToLof =
+            new Transform(date, frameToInertial, inertialToLof, this.getSpinDerivativesComputation());
 
         Vector3D acc = null;
         if (this.getSpinDerivativesComputation()) {
             acc = this.offset.applyInverseTo(frameToLof.getRotationAcceleration());
         }
-        final AngularCoordinates ac = new AngularCoordinates(frameToLof.getRotation().applyTo(
-            this.offset), this.offset.applyInverseTo(frameToLof.getRotationRate()), acc);
+        final AngularCoordinates ac = new AngularCoordinates(frameToLof.getRotation().applyTo(this.offset),
+            this.offset.applyInverseTo(frameToLof.getRotationRate()), acc);
 
         return new Attitude(date, frame, ac);
     }
 
     /**
-     * Getter for the inertial frame with respect to which orbit should be computed. This frame is
-     * the pivot in the transformation from the actual frame to the local orbital frame.
+     * Getter for the inertial frame with respect to which orbit should be computed.<br>
+     * This frame is the pivot in the transformation from the actual frame to the local orbital frame.
      * 
-     * @return the inertial frame with respect to which orbit should be computed. This frame is the
-     *         pivot in the transformation from the actual frame to the local orbital frame
+     * @return the inertial frame with respect to which orbit should be computed
      */
     public Frame getPseudoInertialFrame() {
         return this.inertialFrame;

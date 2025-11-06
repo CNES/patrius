@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -37,14 +40,13 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.ExtremaDistanceDetector;
@@ -61,6 +63,7 @@ import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for {@link ExtremaDistanceDetector}.
@@ -314,9 +317,10 @@ public class ExtremaDistanceDetectorTest {
      */
     @Test
     public void testG() throws PatriusException {
+        
         final ExtremaDistanceDetector detector = new ExtremaDistanceDetector(theSun, ExtremaDistanceDetector.MAX);
         // Note : result changed for PATRIUS 4.2
-        final double expectedDot = -3.45099753511631E14;
+        final double expectedDot = -3.450997534587236E14;
         Assert.assertEquals(expectedDot, detector.g(tISSSpState), Utils.epsilonTest);
     }
 
@@ -345,9 +349,10 @@ public class ExtremaDistanceDetectorTest {
      */
     @Test
     public void testPropagation01() throws PatriusException {
+        
         final double propagShift = 10000.;
         // Note : result changed for PATRIUS 4.2
-        final double expectedShift = 4869.047601269994;
+        final double expectedShift = 4869.047601335376;
 
         // Propagator
         final KeplerianPropagator propagator = new KeplerianPropagator(tISSOrbit);
@@ -389,9 +394,10 @@ public class ExtremaDistanceDetectorTest {
      */
     @Test
     public void testPropagation02() throws PatriusException {
+        
         final double propagShift = 10000.;
         // Note : result changed for PATRIUS 4.2
-        final double expectedShift = 2327.393721024023;
+        final double expectedShift = 2327.39372016881;
 
         // Propagator
         KeplerianPropagator propagator = new KeplerianPropagator(tISSOrbit);
@@ -490,5 +496,10 @@ public class ExtremaDistanceDetectorTest {
         angle = Vector3D.angle(position1, position2);
         // verifies that this angle is = 0:
         Assert.assertEquals(0, angle, Utils.epsilonTest);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,12 +18,16 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.math.ode.sampling;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Step normalizer output tests, for problems where the first and last points
@@ -74,5 +78,10 @@ public class StepNormalizerOutputOverlapTest extends StepNormalizerOutputTestBas
             { 1, 0 }, { 1, 0 }, { 0, 0 }, { 0, 0 },
             { 1, 0 }, { 1, 0 }, { 0, 0 }, { 0, 0 },
             { 1, 0 }, { 1, 0 }, { 0, 0 }, { 0, 0 } };
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

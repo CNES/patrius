@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-291:21/11/2024:[PATRIUS] Arguments non remontés dans une Exception
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
  * VERSION:4.13:DM:DM-105:08/12/2023:[PATRIUS] Renommage de getDateList
  * VERSION:4.13:FA:FA-93:08/12/2023:[PATRIUS] Generation erronee de liste de dates à  partir d'un interval
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
@@ -49,6 +52,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Unit tests for <code>AbsoluteDateInterval</code>.
@@ -242,6 +246,7 @@ public class AbsoluteDateIntervalTest {
         try {
             new AbsoluteDateInterval(this.closed, past, future, this.closed);
         } catch (final MathIllegalArgumentException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.LOWER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE.getSourceString());
             asExpected = true;
         }
         assertTrue(asExpected);
@@ -249,6 +254,7 @@ public class AbsoluteDateIntervalTest {
         try {
             new AbsoluteDateInterval(this.open, past, future, this.closed);
         } catch (final MathIllegalArgumentException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.UPPER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE.getSourceString());
             asExpected = true;
         }
         assertTrue(asExpected);
@@ -256,18 +262,21 @@ public class AbsoluteDateIntervalTest {
         try {
             new AbsoluteDateInterval(this.closed, past, future, this.open);
         } catch (final MathIllegalArgumentException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.LOWER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE.getSourceString());
             asExpected = true;
         }
         asExpected = false;
         try {
             new AbsoluteDateInterval(this.closed, past, past, this.open);
         } catch (final MathIllegalArgumentException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.EMPTY_INTERVALS_ARE_FORBIDDEN.getSourceString());
             asExpected = true;
         }
         asExpected = false;
         try {
             new AbsoluteDateInterval(this.closed, future, future, this.open);
         } catch (final MathIllegalArgumentException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.EMPTY_INTERVALS_ARE_FORBIDDEN.getSourceString());
             asExpected = true;
         }
         assertTrue(asExpected);
@@ -276,6 +285,7 @@ public class AbsoluteDateIntervalTest {
         try {
             new AbsoluteDateInterval(this.open, future, past, this.open);
         } catch (final MathIllegalArgumentException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.INCORRECT_INTERVAL.getSourceString());
             asExpected = true;
         }
         assertTrue(asExpected);
@@ -1210,7 +1220,9 @@ public class AbsoluteDateIntervalTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
     }
+
 }

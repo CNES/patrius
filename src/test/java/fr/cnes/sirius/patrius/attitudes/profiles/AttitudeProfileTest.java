@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-359:21/11/2024:[PATRIUS] BodyCenterPointing est erroné lorsque
+ * le corps central n'est pas la terre
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -31,13 +34,13 @@
  */
 package fr.cnes.sirius.patrius.attitudes.profiles;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
@@ -57,7 +60,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
-import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import junit.framework.Assert;
 
 /**
  * @description <p>
@@ -137,7 +140,7 @@ public class AttitudeProfileTest {
             /** {@inheritDoc} */
             @Override
             public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
-                throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
+                return FramesFactory.getGCRF();
             }
         };
 
@@ -226,7 +229,7 @@ public class AttitudeProfileTest {
             /** {@inheritDoc} */
             @Override
             public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
-                throw new PatriusException(PatriusMessages.INTERNAL_ERROR);
+                return FramesFactory.getGCRF();
             }
         };
 
@@ -508,5 +511,10 @@ public class AttitudeProfileTest {
         } catch (final IllegalArgumentException e) {
             Assert.assertTrue(true);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

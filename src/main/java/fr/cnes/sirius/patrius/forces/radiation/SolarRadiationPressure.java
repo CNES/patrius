@@ -16,6 +16,12 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
@@ -838,7 +844,7 @@ public class SolarRadiationPressure extends JacobiansParameterizable implements 
                 final double zeroValue = 0.0;
                 if (sunOccultingBodyAngle - alphaOccultingBody + alphaSun <= zeroValue) {
                     lightningRatio = 0.;
-                } else if (sunOccultingBodyAngle == 0) {
+                } else if (MathLib.abs(lightningRatio - 0.) < Precision.DOUBLE_COMPARISON_EPSILON) {
                     // Satellite behind occulting body and exactly in line with occulted and occulting
                     // bodies
                     lightningRatio = 0.;

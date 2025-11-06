@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+* VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+* VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
 * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
 * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
 * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
@@ -36,34 +40,65 @@
 package fr.cnes.sirius.patrius;
 
 import java.net.URISyntaxException;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceKernelManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.SolarActivityDataFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.DiurnalRotation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationBuilder;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfigurationFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.PolarMotion;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistoryFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPInterpolators;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.eop.NoEOP2000History;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.libration.LibrationCorrectionModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutation;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.PrecessionNutationModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.sp.SPrimeModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.tides.TidalCorrectionModelFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.models.earth.GeoMagneticFieldFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
+import fr.cnes.sirius.patrius.Utils;
 
 public class Utils {
 
@@ -265,5 +300,10 @@ public class Utils {
         }
 
         return builder.getConfiguration();
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

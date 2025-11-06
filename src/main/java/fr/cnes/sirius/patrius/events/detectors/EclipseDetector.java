@@ -16,6 +16,18 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-341:21/11/2024:[PATRIUS] Dysfonctionnement de EclipseDetector pour
+ * le calcul de visibilités d'une cible au sol
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.13.1:FA:FA-128:17/01/2024:[PATRIUS] Constructeur de EclipseDetector inutilisable
@@ -68,6 +80,7 @@ import fr.cnes.sirius.patrius.bodies.ConstantRadiusProvider;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.VariableRadiusProvider;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.forces.radiation.LightingRatio;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -76,6 +89,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.ConstantPVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
@@ -92,14 +106,22 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
  * This class finds eclipse events, i.e. satellite within umbra (total eclipse) or penumbra (partial eclipse).
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when entering
- * the eclipse and to {@link EventDetector.Action#STOP stop} propagation when exiting the eclipse. This can be changed
+ * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when entering
+ * the eclipse and to {@link EventDetector.Action#STOP} stop propagation when exiting the eclipse. This can be changed
  * by using some constructors.
  * <p>
  * This detector can takes into account signal propagation duration through
  * {@link #setPropagationDelayType(PropagationDelayType, Frame)} (default is signal being instantaneous).<br>
  * It can be taken only if the occulted body is defined through a {@link PVCoordinatesProvider} and not an
  * {@link IDirection}.
+ * </p>
+ * 
+ * <p>
+ * <b>WARNING</b> : Do not use this detector to detect ground target visibilities or occulted bodies with null radius.
+ * Actually, the lighting ratio used to compute g function is based on geometric angle comparison and considers that
+ * if the vehicle is closer to the occulted body than to the occulting body then the occulted body is not occulted.
+ * This is not true if the occulted body is a target on the ground of the occulting body and In this case,
+ * it will detect a period out of eclipse longer than it should be.
  * </p>
  * 
  * @see fr.cnes.sirius.patrius.propagation.Propagator#addEventDetector(EventDetector)
@@ -130,7 +152,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
     private static final double FAR_DISTANCE = 1E13;
 
     /** Exception message if the compatibility mode is unsupported. */
-    private final String UNSUPPORTED_MODE_EXCEPTION = "Unsupported compatibility mode : ";
+    private static final String UNSUPPORTED_MODE_EXCEPTION = "Unsupported compatibility mode : ";
 
     /** Occulting body. */
     private final PVCoordinatesProvider occultingBody;
@@ -151,7 +173,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
     private final double occultedRadius;
 
     /** The lighting ratio value (0 < ratio < 1, 0 for total eclipses, 1 for penumbra events). */
-    private double ratio;
+    private final double ratio;
 
     /** True if the occulted {@link PVCoordinatesProvider} is defined, false if it is not. */
     private boolean isOccultedPVProvDefined;
@@ -167,8 +189,8 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
      * to this detector.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when
-     * entering the eclipse and to {@link EventDetector.Action#STOP stop} propagation when exiting the eclipse.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when
+     * entering the eclipse and to {@link EventDetector.Action#STOP} stop propagation when exiting the eclipse.
      * </p>
      * 
      * @param occulted the direction to be occulted
@@ -179,8 +201,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
      */
     public EclipseDetector(final IDirection occulted, final PVCoordinatesProvider occulting,
                            final double occultingRadius, final double maxCheck, final double threshold) {
-        this(occulted, occulting, occultingRadius, maxCheck, threshold, Action.CONTINUE,
-                Action.STOP);
+        this(occulted, occulting, occultingRadius, maxCheck, threshold, Action.CONTINUE, Action.STOP);
     }
 
     /**
@@ -225,8 +246,8 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                            final double occultingRadius, final double maxCheck, final double threshold,
                            final Action entry, final Action exit, final boolean removeEntry,
                            final boolean removeExit) {
-        super(maxCheck, threshold, entry, exit, removeEntry, removeExit);
-
+        super(maxCheck, threshold, entry, exit, removeEntry, removeExit, null);
+        this.ratio = 0.;
         switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
             case OLD_MODELS:
             case MIXED_MODELS:
@@ -249,7 +270,6 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                 this.occultingRadiusProvider = new ConstantRadiusProvider(MathLib.abs(occultingRadius));
                 break;
             case NEW_MODELS:
-                this.ratio = 0.;
                 // Occulted body initialisation
                 this.occultedDirection = occulted;
                 // Check if the occulted direction is an instance of ITargetDirection
@@ -291,7 +311,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
     public EclipseDetector(final IDirection occulted, final BodyShape occulting, final double lightingRatio,
                            final double maxCheck, final double threshold, final Action entry, final Action exit,
                            final boolean removeEntry, final boolean removeExit) {
-        super(maxCheck, threshold, entry, exit, removeEntry, removeExit);
+        super(maxCheck, threshold, entry, exit, removeEntry, removeExit, null);
 
         switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
             case OLD_MODELS:
@@ -367,8 +387,8 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
      * As a general rule, the lighting ratio is equal to 1 - the ratio between the hidden apparent area of the occulted
      * body and its total apparent area.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when
-     * entering the eclipse and to {@link EventDetector.Action#STOP stop} propagation when exiting the eclipse.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when
+     * entering the eclipse and to {@link EventDetector.Action#STOP} stop propagation when exiting the eclipse.
      * </p>
      * 
      * @param occulted the occulted body
@@ -445,7 +465,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                            final double lightingRatio, final double maxCheck, final double threshold,
                            final Action entry, final Action exit, final boolean removeEntry,
                            final boolean removeExit) {
-        super(maxCheck, threshold, entry, exit, removeEntry, removeExit);
+        super(maxCheck, threshold, entry, exit, removeEntry, removeExit, new LinkTypeHandler(SignalPropagationRole.RECEIVER, occulted));
         switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
             case OLD_MODELS:
             case MIXED_MODELS:
@@ -504,8 +524,8 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
      * As a general rule, the lighting ratio is equal to 1 - the ratio between the hidden apparent area of the occulted
      * body and its total apparent area.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation when
-     * entering the eclipse and to {@link EventDetector.Action#STOP stop} propagation when exiting the eclipse.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation when
+     * entering the eclipse and to {@link EventDetector.Action#STOP} stop propagation when exiting the eclipse.
      * </p>
      * 
      * @param occulted the occulted body
@@ -673,7 +693,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                            final Action entry, final Action exit,
                            final boolean removeEntry, final boolean removeExit, final int slopeSelection) {
 
-        super(slopeSelection, maxCheck, threshold, entry, exit, removeEntry, removeExit);
+        super(slopeSelection, maxCheck, threshold, entry, exit, removeEntry, removeExit, new LinkTypeHandler(SignalPropagationRole.RECEIVER, occulted));
 
         switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
             case OLD_MODELS:
@@ -742,7 +762,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                            final PVCoordinatesProvider occulting, final double occultingRadius,
                            final double lightingRatio, final int slopeSelection, final double maxCheck,
                            final double threshold, final Action action, final boolean remove) {
-        super(slopeSelection, maxCheck, threshold, action, remove);
+        super(slopeSelection, maxCheck, threshold, action, remove, new LinkTypeHandler(SignalPropagationRole.RECEIVER, occulted));
 
         switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
 
@@ -852,7 +872,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                 isTotEclipse = this.totalEclipse;
                 break;
             case NEW_MODELS:
-                isTotEclipse = this.ratio == 0.;
+                isTotEclipse = MathLib.abs(this.ratio - 0.) < Precision.DOUBLE_COMPARISON_EPSILON;
                 break;
             default:
                 throw new IllegalArgumentException(
@@ -934,7 +954,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
                 // Geometric computation frame: in case of light speed computation, it must be frozen wrt to ICRF frame
                 Frame referenceFrame = state.getFrame();
                 // Case of light speed propagation (dedicated in order to optimize computation times)
-                if (this.getPropagationDelayType().equals(PropagationDelayType.LIGHT_SPEED)) {
+                if (this.getPropagationDelayType() == PropagationDelayType.LIGHT_SPEED) {
                     referenceFrame = state.getFrame().getFrozenFrame(FramesFactory.getICRF(), state.getDate(),
                         state.getFrame() + "-Frozen");
                 }
@@ -1043,7 +1063,11 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
         final double squaredGamma = gamma * gamma;
 
         // Total/partial eclipse g function:
-        g = this.totalEclipse ? (gamma - ring + rted) : (gamma - ring - rted);
+        if (this.totalEclipse) {
+            g = (gamma - ring + rted);
+        } else {
+            g = (gamma - ring - rted);
+        }
         if (this.lightingRatioDetection) {
             // Eclipse computation when a lighting ratio is provided:
             double eps = 1;
@@ -1222,8 +1246,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
             public double getApparentRadius(final PVCoordinatesProvider pvObserver,
                                             final AbsoluteDate date,
                                             final PVCoordinatesProvider occultedBodyIn,
-                                            final PropagationDelayType propagationDelayType)
-                throws PatriusException {
+                                            final PropagationDelayType propagationDelayType) {
                 return EclipseDetector.this.occultingRadiusProvider
                     .getApparentRadius(pvObserver, date, occultedBodyIn, propagationDelayType);
             }
@@ -1449,7 +1472,7 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
     /** {@inheritDoc} */
     @Override
     public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
-        if (this.occultedBody == null && PropagationDelayType.LIGHT_SPEED.equals(propagationDelayType)) {
+        if (this.occultedBody == null && PropagationDelayType.LIGHT_SPEED == propagationDelayType) {
             // In case if IDirection, PropagationDelayType.LIGHT_SPEED is not allowed
             throw PatriusException.createIllegalArgumentException(PatriusMessages.LIGHT_SPEED_FORBIDDEN);
         }
@@ -1470,8 +1493,8 @@ public class EclipseDetector extends AbstractSignalPropagationDetector {
 
     /** {@inheritDoc} */
     @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
+    public EventDatationType getEventDatationType() {
+        return EventDatationType.RECEIVER;
     }
 
     /**

@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -32,25 +34,24 @@
 package fr.cnes.sirius.patrius.bodies;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.assembly.models.RFLinkBudgetTest;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -70,6 +71,7 @@ import fr.cnes.sirius.patrius.time.UTCTAILoader;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import junit.framework.Assert;
 
 /**
  * <p>
@@ -230,9 +232,10 @@ public class BasicBoardSunTest {
      * 
      * @throws PatriusException
      * @throws IOException
+     * @throws URISyntaxException
      */
     @Test
-    public void testValidation() throws PatriusException, IOException {
+    public void testValidation() throws PatriusException, IOException, URISyntaxException {
 
         // Initialization
         Report.printMethodHeader("testValidation", "Basic board Sun direction computation", "GOTLIB", 1E-14,
@@ -248,8 +251,7 @@ public class BasicBoardSunTest {
 
             @Override
             public void loadData(final InputStream input, final String name)
-                                                                            throws IOException, ParseException,
-                                                                            PatriusException {
+                throws IOException, ParseException, PatriusException {
                 // nothing to do
             }
 
@@ -269,8 +271,10 @@ public class BasicBoardSunTest {
         });
 
         // Load reference data
-        final URL url = RFLinkBudgetTest.class.getClassLoader().getResource("basicboardsun/Ephemerides.txt");
-        final BufferedReader reader = new BufferedReader(new FileReader(url.getPath()));
+        final String url =
+            new File(ClassLoader.getSystemResource("basicboardsun" + File.separator + "Ephemerides.txt").toURI())
+                .getAbsolutePath();
+        final BufferedReader reader = new BufferedReader(new FileReader(url));
         final List<AbsoluteDate> dates = new ArrayList<>();
         final List<PVCoordinates> pvs = new ArrayList<>();
         final List<Rotation> rots = new ArrayList<>();
@@ -347,5 +351,10 @@ public class BasicBoardSunTest {
     @BeforeClass
     public static void setUpBeforeClass() {
         Report.printClassHeader(BasicBoardSunTest.class.getSimpleName(), "Basic board Sun");
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

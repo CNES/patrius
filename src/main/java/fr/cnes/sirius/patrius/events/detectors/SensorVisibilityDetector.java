@@ -18,6 +18,8 @@
  * @history creation 23/04/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.10.2:FA:FA-3289:31/01/2023:[PATRIUS] Problemes sur le masquage d une visi avec LIGHT_TIME
@@ -43,10 +45,10 @@ package fr.cnes.sirius.patrius.events.detectors;
 import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.models.SensorModel;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -180,7 +182,8 @@ public class SensorVisibilityDetector extends AbstractSignalPropagationDetector 
     public SensorVisibilityDetector(final SensorModel sensorModel, final double maxCheck,
         final double threshold, final Action entry, final Action exit,
         final boolean removeEntry, final boolean removeExit) {
-        super(maxCheck, threshold, entry, exit, removeEntry, removeExit);
+        super(maxCheck, threshold, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, sensorModel.getMainTarget()));
         this.sensor = sensorModel;
         this.inAssembly = sensorModel.getAssembly();
         this.inhibitionNumber = 0;
@@ -311,24 +314,6 @@ public class SensorVisibilityDetector extends AbstractSignalPropagationDetector 
     @Override
     public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
         super.setPropagationDelayType(propagationDelayType, frame);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.sensor.getMainTarget();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
     }
 
     /**

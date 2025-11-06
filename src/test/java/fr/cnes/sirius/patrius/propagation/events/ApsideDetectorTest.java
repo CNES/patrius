@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -35,7 +36,10 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import junit.framework.Assert;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,14 +56,18 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
+import fr.cnes.sirius.patrius.orbits.EquinoctialOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for {@link ApsideDetector}.<br>
@@ -90,6 +98,11 @@ public class ApsideDetectorTest {
      * A Cartesian orbit used for the tests.
      */
     private static CartesianOrbit tISSOrbit;
+
+    /**
+     * A Cartesian orbit used for the tests.
+     */
+    private static CartesianOrbit tISSOrbit2;
 
     /**
      * A SpacecraftState used for the tests.
@@ -126,7 +139,7 @@ public class ApsideDetectorTest {
         final Vector3D issVit = new Vector3D(ivx, ivy, ivz);
         final PVCoordinates pvCoordinates = new PVCoordinates(issPos, issVit);
         tISSOrbit = new CartesianOrbit(pvCoordinates, FramesFactory.getEME2000(), date, mu);
-
+        tISSOrbit2 = new CartesianOrbit(pvCoordinates, FramesFactory.getTIRF(), date, mu);
         tISSSpState = new SpacecraftState(tISSOrbit);
     }
 
@@ -551,6 +564,43 @@ public class ApsideDetectorTest {
             Assert.assertEquals(true, perigeeapogee.isReset());
             Assert.assertEquals(1, perigeeapogee.getCount());
         }
+    }
+
+    /**
+     * @description This test is implemented for the FA307 to ensure the provided state to the detection function of
+     *              ApsideDetector is based on an orbit in an inertial frame.
+     * 
+     * @testedMethod {@link ApsideDetector#g(SpacecraftState)}
+     * @throws PatriusException
+     */
+    @Test
+    public void testFA307() throws PatriusException {
+        // Creation of the orbit
+        final double mu = 3.9860047e14;
+        final Vector3D position = new Vector3D(-6142438.668, 3492467.560, -25767.25680);
+        final Vector3D velocity = new Vector3D(505.8479685, 942.7809215, 7435.922231);
+        final AbsoluteDate date = new AbsoluteDate(2000, 7, 28, 4, 0, 0.0, TimeScalesFactory.getTT());
+        final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
+
+        // Orbit with a non-inertial frame
+        final Orbit orbit = new EquinoctialOrbit(new PVCoordinates(position, velocity),
+            FramesFactory.getITRF(), date, mu);
+        assertFalse(orbit.getFrame().isPseudoInertial());
+
+        // Verification of the correct value for potential future evolutions
+        final SpacecraftState state = new SpacecraftState(orbit);
+        assertFalse(state.getFrame().isPseudoInertial());
+        final ApsideDetector detector = new ApsideDetector(orbit, 0);
+        System.out.println(detector.g(state));
+        assertEquals(-6111654.988995129, detector.g(state), Precision.DOUBLE_COMPARISON_EPSILON);
+
+        // Orbit with an inertial frame
+        final Orbit orbitInertial = new EquinoctialOrbit(new PVCoordinates(position, velocity),
+            FramesFactory.getEME2000(), date, mu);
+        assertTrue(orbitInertial.getFrame().isPseudoInertial());
+        final SpacecraftState stateInertial = new SpacecraftState(orbitInertial);
+        assertTrue(stateInertial.getFrame().isPseudoInertial());
+        assertNotEquals(detector.g(state), detector.g(stateInertial));
     }
 
     /**

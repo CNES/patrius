@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-86:30/06/2023:[PATRIUS] Retours JE Alice
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3310:22/05/2023:[PATRIUS] Ajout de methode pour integrer les fonctions polynomiales
@@ -34,6 +35,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
@@ -758,6 +760,7 @@ public final class PolynomialChebyshevFunctionTest {
      */
     @Before
     public void setUp() {
+        Utils.clear();
         this.tolerance = 1e-10;
         this.basicStart = -1;
         this.basicEnd = 1.5;

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-171:22/08/2024: [PATRIUS] Lecture d'un corps celeste quelconque dans un fichier bsp
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
@@ -315,7 +316,7 @@ public final class PoolSpice {
         final boolean contains = watchedVariables.contains(new Watcher(var));
 
         // Initialization
-        ArrayList<String> agentsList = new ArrayList<>();
+        List<String> agentsList = new ArrayList<>();
         Watcher vars;
 
         if (contains) {
@@ -327,7 +328,7 @@ public final class PoolSpice {
                 vars = it.next();
                 if (vars.getVarName().equals(var)) {
                     found = true;
-                    agentsList = (ArrayList<String>) vars.getAgents();
+                    agentsList = vars.getAgents();
                 }
             }
         }

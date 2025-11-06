@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -24,14 +25,13 @@ package fr.cnes.sirius.patrius.propagation.analytical.tle;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 public abstract class AbstractTLEFitterTest {
 
@@ -86,6 +86,7 @@ public abstract class AbstractTLEFitterTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         this.geoTLE =
             new TLE("1 27508U 02040A   12021.25695307 -.00000113  00000-0  10000-3 0  7326",
@@ -94,5 +95,4 @@ public abstract class AbstractTLEFitterTest {
             new TLE("1 31135U 07013A   11003.00000000  .00000816  00000+0  47577-4 0    11",
                 "2 31135   2.4656 183.9084 0021119 236.4164  60.4567 15.10546832    15");
     }
-
 }

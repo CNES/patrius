@@ -20,10 +20,13 @@
  */
 /* 
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
-* VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
+ * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
  * VERSION:4.7:FA:FA-2762:18/05/2021:Probleme lors des controles qualite via la PIC 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -315,7 +318,8 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
         // Ensure the dimension of the provided vector
         // matches the column dimension of the matrix
         if (v.length != nbCols) {
-            throw new DimensionMismatchException(v.length, nbCols);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                v.length, nbCols);
         }
         final int nbRows = this.getRowDimension();
 
@@ -347,7 +351,8 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
             // Ensure the dimension of the provided vector matches the column dimension of the
             // matrix
             if (v.getDimension() != nbCols) {
-                throw new DimensionMismatchException(v.getDimension(), nbCols);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                    v.getDimension(), nbCols);
             }
             final int nbRows = this.getRowDimension();
 
@@ -374,7 +379,8 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
 
         // Ensure the dimension of the provided vector matches the row dimension of the matrix
         if (v.length != nbRows) {
-            throw new DimensionMismatchException(v.length, nbRows);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, v.length,
+                nbRows);
         }
         final int nbCols = this.getColumnDimension();
 
@@ -405,7 +411,8 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
 
             // Ensure the dimension of the provided vector matches the row dimension of the matrix
             if (v.getDimension() != nbRows) {
-                throw new DimensionMismatchException(v.getDimension(), nbRows);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS,
+                    v.getDimension(), nbRows);
             }
             final int nbCols = this.getColumnDimension();
 
@@ -1085,7 +1092,7 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
 
         // Throw an exception if the two matrices don't have the same number of rows.
         if (nbRows1 != nbRows2) {
-            throw new DimensionMismatchException(nbRows2, nbRows1);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_MATRIX_ROW_DIMENSION, nbRows1, nbRows2);
         }
         final int nbCols1 = this.getColumnDimension();
         final int nbCols2 = m.getColumnDimension();
@@ -1121,7 +1128,8 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
 
         // Throw an exception if the two matrices don't have the same number of columns.
         if (nbCols1 != nbCols2) {
-            throw new DimensionMismatchException(nbCols2, nbCols1);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_MATRIX_COLUMN_DIMENSION,
+                nbCols1, nbCols2);
         }
         final int nbRows1 = this.getRowDimension();
         final int nbRows2 = m.getRowDimension();
@@ -1212,7 +1220,7 @@ public abstract class AbstractRealMatrix extends RealLinearOperator implements R
      * <p>
      * Unless overridden by calling {@link #setDefaultDecomposition(Function)}, the default
      * decomposition is a {@linkplain LUDecomposition#decompositionBuilder(double) LU decomposition}
-     * with a singularity threshold of {@value #DEFAULT_SINGULARITY_THRESHOLD}.
+     * with a singularity threshold of {@link #DEFAULT_SINGULARITY_THRESHOLD}.
      * </p>
      */
     @Override

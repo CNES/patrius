@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:FA:FA-2945:15/11/2021:[PATRIUS] Utilisation des degres dans des fonctions mathematiques 
  * END-HISTORY
@@ -28,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.differentiation.DerivativeStructure;
 import fr.cnes.sirius.patrius.math.analysis.differentiation.UnivariateDifferentiableFunction;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -82,6 +84,7 @@ public class CosineFunctionTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         // f(x) = 1 / x
         this.f = new UnivariateDifferentiableFunction() {
             /** Serializable UID. */

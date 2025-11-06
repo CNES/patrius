@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * END-HISTORY
  */
@@ -585,4 +586,9 @@ public class SpiceTest {
         
         Assert.assertTrue(DafHandle.getHandleList().isEmpty());
     }    
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

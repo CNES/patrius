@@ -23,6 +23,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -236,7 +238,7 @@ class FFTpowerOfTwoOrder extends AbstractFastFourierTransformer {
         // a complex number is a set of 2 real numbers : this exception should never occur, but we have to be sure
         // dataRI is a 2xn map.
         if (dataRI.length != 2) {
-            throw new DimensionMismatchException(dataRI.length, 2);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ROW_DIMENSION, 2, dataRI.length);
         }
 
         // getting the real and imaginary part
@@ -244,7 +246,8 @@ class FFTpowerOfTwoOrder extends AbstractFastFourierTransformer {
         final double[] dataI = dataRI[1];
 
         if (dataR.length != dataI.length) {
-            throw new DimensionMismatchException(dataI.length, dataR.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, dataI.length,
+                dataR.length);
         }
 
         // the even algorithm only works for even order : otherwise, throwing a RuntimeException

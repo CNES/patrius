@@ -18,6 +18,7 @@
  * @history creation 15/06/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
@@ -322,7 +323,7 @@ public class OneAxisEllipsoid extends AbstractEllipsoidBodyShape {
         final double fAlt;
 
         // Check the margin type
-        if (marginType.equals(MarginType.DISTANCE)) {
+        if (marginType == MarginType.DISTANCE) {
             // The margin type is distance
             // Check if the margin value is larger than the opposite of the polar (smallest) radius, to be sure that
             // the resulting polar (smallest) radius will be positive

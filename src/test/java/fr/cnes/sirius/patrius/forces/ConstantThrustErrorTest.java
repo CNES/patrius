@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -1786,6 +1788,8 @@ public class ConstantThrustErrorTest {
      * 
      * @testedMethod {@link ConstantThrustError#computeAcceleration(SpacecraftState)}
      * 
+     * @testedMethod {@link ConstantThrustError#addDAccDParam(SpacecraftState, Parameter, double[])}
+     * 
      * @description Test that an exception is thrown if the spacecraft State frame is not pseudo-inertial and the
      *              LofType is not null
      * 
@@ -1826,7 +1830,16 @@ public class ConstantThrustErrorTest {
         } catch (final PatriusException pe) {
             Assert.assertEquals(pe.getMessage(), PatriusMessages.NOT_INERTIAL_FRAME.getSourceString());
         }
+        errorModel.setFiring(true);
+        final double[] dAccdParam = new double[3];
+        try {
+            errorModel.addDAccDParam(s, slopex, dAccdParam);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            Assert.assertEquals(e.getMessage(), PatriusMessages.NOT_INERTIAL_FRAME.getSourceString());
+        }
     }
+
 
     /**
      * Quadratic function.
@@ -1975,6 +1988,7 @@ public class ConstantThrustErrorTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003ConfigurationWOEOP(true));
         this.date0 = new AbsoluteDate(new DateComponents(2014, 06, 05), new TimeComponents(12, 0, 0.0),

@@ -18,6 +18,7 @@
  * @history created 15/02/2016
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-289:21/11/2024:Calcul de l'orbite moyenne sur la discontinuité du modèle Lyddane
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] Attitude spacecraft state lazy
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -74,6 +75,9 @@ public abstract class AbstractLyddanePropagator extends AbstractPropagator imple
 
     /** Default convergence threshold for osculating to mean/secular algorithm. */
     private static final double DEFAULT_THRESHOLD = 1E-14;
+    
+    /** Eccentricity threshold for osculating to mean/secular algorithm. */
+    private static final double ECC_THRESHOLD = 0.05;
 
     /** 7. */
     private static final double SEVEN = 7.;
@@ -114,6 +118,19 @@ public abstract class AbstractLyddanePropagator extends AbstractPropagator imple
     /** Inertial or quasi-inertial frame in which the model is supposed valid, the Z axis of the frame being the
      * polar axis of the body. */
     private final Frame frame;
+   
+    
+    /** Enumerate that indicates how we deal with eccentricity
+     * DEFAULT : Used only for the first call of propagateOrbit in computeSecular to compute ecc model
+     * LOW_ECC : Used to keep low ecc model if computed during first call
+     * HIGH_ECC : Used to keep high ecc model if computed during first call
+     */
+    public enum SubModel {
+        DEFAULT,
+        LOW_ECC,
+        HIGH_ECC
+    }
+
 
     /**
      * Lyddane parameters types.
@@ -208,13 +225,13 @@ public abstract class AbstractLyddanePropagator extends AbstractPropagator imple
     /** {@inheritDoc} */
     @Override
     public Orbit propagateOrbit(final AbsoluteDate date) throws PropagationException {
-        return this.propagateOrbit(date, this.secularOrbitIn, this.getFrame(), LyddaneParametersType.OSCULATING);
+        return this.propagateOrbit(date, this.secularOrbitIn, this.getFrame(), LyddaneParametersType.OSCULATING, SubModel.DEFAULT);
     }
 
     /** {@inheritDoc} */
     @Override
     public Orbit propagateMeanOrbit(final AbsoluteDate date) throws PatriusException {
-        return this.propagateOrbit(date, this.secularOrbitIn, this.getFrame(), LyddaneParametersType.MEAN);
+        return this.propagateOrbit(date, this.secularOrbitIn, this.getFrame(), LyddaneParametersType.MEAN, SubModel.DEFAULT);
     }
 
     /**
@@ -234,7 +251,7 @@ public abstract class AbstractLyddanePropagator extends AbstractPropagator imple
      */
     // CHECKSTYLE: stop MethodLength check
     protected Orbit propagateOrbit(final AbsoluteDate date, final Orbit secularOrbit,
-            final Frame outputFrame, final LyddaneParametersType returnType) throws PropagationException {
+            final Frame outputFrame, final LyddaneParametersType returnType, final SubModel fixConvLoop) throws PropagationException {
         // CHECKSTYLE: resume MethodLength check
 
         try {
@@ -482,11 +499,9 @@ public abstract class AbstractLyddanePropagator extends AbstractPropagator imple
             double po2 = po1;
             final double mkt12 = eSecu;
 
-            // Eccentricity threshold
-            final double eccel = 0.05;
-
             // special conditions for eccentricity
-            if (eSecu > eccel) {
+            if (((eSecu > ECC_THRESHOLD) && fixConvLoop == SubModel.DEFAULT)
+                    || fixConvLoop == SubModel.HIGH_ECC){
                 final double ede2 = mkt12 + dex2;
                 double x = ede2 * cosam1 - edm2 * sinam1;
                 double y = ede2 * sinam1 + edm2 * cosam1;
@@ -637,13 +652,27 @@ public abstract class AbstractLyddanePropagator extends AbstractPropagator imple
 
         // Mean parameter initialization to osculating parameters
         EquinoctialOrbit mean = new EquinoctialOrbit(osculating);
+        
+        // Eccentricity after first propagateOrbit call (will change after first iteration)
+        double ecc;
+        SubModel eccModel = SubModel.DEFAULT;
 
         // Loop until convergence
         while (iter < maxIter) {
 
             // Compute f
             final Orbit newMean = new EquinoctialOrbit(this.propagateOrbit(osculating.getDate(), mean,
-                osculating.getFrame(), fromType));
+                osculating.getFrame(), fromType, eccModel));
+            
+            // Compute which eccentricity model we should use (first iteration only)
+            if (iter == 0) {
+                ecc = newMean.getE();
+                if (ecc > ECC_THRESHOLD) {
+                    eccModel = SubModel.HIGH_ECC;
+                } else {
+                    eccModel = SubModel.LOW_ECC;
+                }
+            }
 
             // Parameters residuals
             final double[] delta = {

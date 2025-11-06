@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -22,19 +23,35 @@
 package fr.cnes.sirius.patrius.data;
 
 import java.awt.Component;
+import fr.cnes.sirius.patrius.Utils;
 import java.awt.event.ActionEvent;
+import fr.cnes.sirius.patrius.Utils;
 import java.awt.event.ActionListener;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.Authenticator;
+import fr.cnes.sirius.patrius.Utils;
 import java.net.PasswordAuthentication;
+import fr.cnes.sirius.patrius.Utils;
 
 import javax.swing.JButton;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.JDialog;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.JLabel;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.JPasswordField;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.JTextField;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.Spring;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.SpringLayout;
+import fr.cnes.sirius.patrius.Utils;
 import javax.swing.WindowConstants;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Simple swing-based dialog window to ask username/password.
@@ -174,4 +191,9 @@ public class AuthenticatorDialog extends Authenticator {
 
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

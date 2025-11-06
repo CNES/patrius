@@ -18,6 +18,7 @@
  * @history created 21/03/12
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -62,7 +63,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * event only if the corresponding orbit is not an equatorial orbit, otherwise it may trigger events
  * randomly.
  * <p>
- * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the angle &theta;
+ * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the angle &theta;
  * is reached. This can be changed by using provided constructors.
  * 
  * 
@@ -110,7 +111,7 @@ public class AOLDetector extends AbstractDetector {
     /**
      * Constructor for an AOLDetector instance with complementary parameters.
      * <p>
-     * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the AOL angle
+     * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the AOL angle
      * is reached.
      * </p>
      * 

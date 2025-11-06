@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * END-HISTORY
@@ -96,7 +98,8 @@ public class ZernikePolynomial implements IParameterizable {
         this.radialDegree = radialDegree;
 
         if (coefficients.length != radialDegree + 1) {
-            throw new DimensionMismatchException(coefficients.length, radialDegree + 1);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_COEFFICIENT_RADIAL_DEGREE,
+                coefficients.length, radialDegree + 1);
         }
 
         this.coefficientsMap = new LinkedHashMap<>(); // To keep the parameters order
@@ -105,7 +108,8 @@ public class ZernikePolynomial implements IParameterizable {
         for (int n = 0; n < this.coefficients.length; n++) {
             final Parameter[] coefficientsN = this.coefficients[n];
             if (coefficientsN.length != n + 1) {
-                throw new DimensionMismatchException(coefficientsN.length, n + 1);
+                throw new DimensionMismatchException(
+                    PatriusMessages.INVALID_ZERNIKE_COEFFICIENTS_ORDER, coefficientsN.length, n);
             }
             for (int j = 0; j < coefficientsN.length; j++) {
                 final Parameter coefficient = coefficientsN[j];
@@ -271,7 +275,8 @@ public class ZernikePolynomial implements IParameterizable {
             throw new NotPositiveException(arrayIndex);
         }
         if (arrayIndex > radialDegree + 1) {
-            throw new DimensionMismatchException(arrayIndex, radialDegree + 1);
+            throw new DimensionMismatchException(PatriusMessages.INDEX_OUT_OF_RANGE_SIMPLE, arrayIndex,
+                radialDegree + 1);
         }
 
         return 2 * arrayIndex - radialDegree;

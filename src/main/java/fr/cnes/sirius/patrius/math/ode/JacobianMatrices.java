@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -375,7 +377,8 @@ public class JacobianMatrices {
     private static void checkDimension(final int expected, final Object array) {
         final int arrayDimension = (array == null) ? 0 : Array.getLength(array);
         if (arrayDimension != expected) {
-            throw new DimensionMismatchException(arrayDimension, expected);
+            throw new DimensionMismatchException(PatriusMessages.STATE_VECTOR_JACOBIAN_SIZE_MISMATCH, expected,
+                arrayDimension);
         }
     }
 
@@ -497,7 +500,8 @@ public class JacobianMatrices {
             this.ode = odeIn;
             this.hY = hYIn.clone();
             if (hYIn.length != odeIn.getDimension()) {
-                throw new DimensionMismatchException(odeIn.getDimension(), hYIn.length);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_STEPS_EQUATIONS_DIMENSION,
+                    hYIn.length, odeIn.getDimension());
             }
         }
 

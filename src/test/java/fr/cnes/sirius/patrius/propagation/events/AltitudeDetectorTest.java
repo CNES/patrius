@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-17:22/05/2023:[PATRIUS] Detecteur de distance a la surface d'un corps celeste
@@ -36,8 +37,6 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.propagation.events;
-
-import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +61,7 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for {@link AltitudeDetector}.<br>
@@ -111,6 +111,8 @@ public class AltitudeDetectorTest {
      */
     @Before
     public void setUp() throws PatriusException {
+
+        Utils.clear();
 
         // Orekit initialization
         Utils.setDataRoot("regular-dataCNES-2003");

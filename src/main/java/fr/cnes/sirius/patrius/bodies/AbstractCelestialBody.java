@@ -15,6 +15,11 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-245:22/08/2024: Ajout d'un constructeur dans AbstractCelestialBody
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -73,9 +78,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * Abstract implementation of the {@link CelestialBody} interface.
  * <p>
  * This abstract implementation provides basic services that can be shared by most implementations of the
- * {@link CelestialBody} interface. It holds the gravitational attraction coefficient and build the body-centered frames
- * automatically using the definitions of pole and prime meridian specified by the IAU/IAG Working Group on Cartographic
- * Coordinates and Rotational Elements of the Planets and Satellites (WGCCRE).
+ * {@link CelestialBody} interface. It holds the gravitational attraction coefficient and build the body-centered
+ * frames.
  * </p>
  *
  * @see CelestialBodyOrientation
@@ -87,38 +91,11 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
     /** Inertial, body-centered frame name. */
     public static final String INERTIAL_FRAME = "Inertial frame";
 
-    /** Space. */
-    public static final char SPACE = ' ';
-
-    /** Constant model string. */
-    public static final String CONSTANT = "(constant model)";
-
-    /** Mean model string. */
-    public static final String MEAN = "(mean model)";
-
-    /** True model string. */
-    public static final String TRUE = "(true model)";
-
-    /** Constant (equator) inertial, body-centered frame name. */
-    public static final String INERTIAL_FRAME_CONSTANT_MODEL = INERTIAL_FRAME + SPACE + CONSTANT;
-
-    /** Mean (equator) inertial, body-centered frame name. */
-    public static final String INERTIAL_FRAME_MEAN_MODEL = INERTIAL_FRAME + SPACE + MEAN;
-
-    /** True (equator) inertial, body-centered frame name. */
-    public static final String INERTIAL_FRAME_TRUE_MODEL = INERTIAL_FRAME + SPACE + TRUE;
-
     /** Body-centered frame name. */
     public static final String ROTATING_FRAME = "Rotating frame";
 
-    /** Constant rotating, body-centered frame name. */
-    public static final String ROTATING_FRAME_CONSTANT_MODEL = ROTATING_FRAME + SPACE + CONSTANT;
-
-    /** Mean rotating, body-centered frame name. */
-    public static final String ROTATING_FRAME_MEAN_MODEL = ROTATING_FRAME + SPACE + MEAN;
-
-    /** True rotating, body-centered frame name. */
-    public static final String ROTATING_FRAME_TRUE_MODEL = ROTATING_FRAME + SPACE + TRUE;
+    /** Space. */
+    public static final char SPACE = ' ';
 
     /** Serializable UID. */
     private static final long serialVersionUID = -8225707171826328799L;
@@ -126,23 +103,11 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
     /** Celestial body orientation. */
     private CelestialBodyOrientation celestialBodyOrientation;
 
-    /** Constant (equator) inertial, body-centered frame. */
-    private CelestialBodyFrame constantInertialFrame;
+    /** Inertial body-centered frame. **/
+    private CelestialBodyFrame inertialFrame;
 
-    /** Mean (equator) inertial, body-centered frame. */
-    private CelestialBodyFrame meanInertialFrame;
-
-    /** True (equator) inertial, body-centered frame. */
-    private CelestialBodyFrame trueInertialFrame;
-
-    /** Constant rotating, body-centered frame. */
-    private CelestialBodyFrame constantRotatingFrame;
-
-    /** Mean rotating, body-centered frame. */
-    private CelestialBodyFrame meanRotatingFrame;
-
-    /** True rotating, body-centered frame. */
-    private CelestialBodyFrame trueRotatingFrame;
+    /** Rotating body-centered frame. **/
+    private CelestialBodyFrame rotatingFrame;
 
     /** Shape of the body. */
     private BodyShape shape;
@@ -178,7 +143,7 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         this.gravityModel = gravityModel;
 
         // Instantiate the other frames
-        setFrameTree();
+        this.setFrameTree();
     }
 
     /**
@@ -223,15 +188,33 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
                                     final Frame parentFrame, final CelestialBodyEphemeris ephemeris) {
         super(name, gm, parentFrame, ephemeris);
         this.celestialBodyOrientation = celestialBodyOrientation;
-        this.gravityModel = new NewtonianGravityModel(getICRF(), gm);
+        this.gravityModel = new NewtonianGravityModel(this.getICRF(), gm);
 
         // Instantiate the other frames
-        setFrameTree();
+        this.setFrameTree();
+    }
+
+    /**
+     * Constructor with user-defined ICRF frame.
+     *
+     * @param name
+     *        name of the body
+     * @param gm
+     *        gravitational attraction coefficient (in m<sup>3</sup>/s<sup>2</sup>)
+     * @param ephemeris
+     *        ephemeris
+     * @param icrf
+     *        icrf frame centered on this body
+     */
+    protected AbstractCelestialBody(final String name, final double gm,
+                                    final CelestialBodyEphemeris ephemeris, final CelestialBodyFrame icrf) {
+        super(name, gm, ephemeris, icrf);
+        this.gravityModel = new NewtonianGravityModel(icrf, gm);
     }
 
     /**
      * Instantiate all the frames linked to the body.
-     * 
+     *
      * @throws IllegalStateException
      *         if the {@link getOrientation() celestial body orientation} is nor a {@link CelestialBodyIAUOrientation}
      *         or a {@link CelestialBodyTabulatedOrientation} implementation
@@ -240,136 +223,25 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
 
         if (this.celestialBodyOrientation instanceof CelestialBodyIAUOrientation
                 || this.celestialBodyOrientation == null) {
-            // IAU orientation case:
-            // Cast the celestial body IAU orientation
-            final CelestialBodyIAUOrientation celestialBodyIAUOrientation = this.celestialBodyOrientation == null
-                ? null : (CelestialBodyIAUOrientation) this.celestialBodyOrientation;
-
-            this.constantInertialFrame = new CelestialBodyFrame(getICRF(), new InertiallyOriented(
-                celestialBodyIAUOrientation, OrientationType.ICRF_TO_INERTIAL, IAUPoleModelType.CONSTANT), getName()
-                    + SPACE + INERTIAL_FRAME_CONSTANT_MODEL, true, this);
-            this.meanInertialFrame = new CelestialBodyFrame(getICRF(), new InertiallyOriented(
-                celestialBodyIAUOrientation, OrientationType.ICRF_TO_INERTIAL, IAUPoleModelType.MEAN), getName()
-                    + SPACE + INERTIAL_FRAME_MEAN_MODEL, true, this);
-            this.trueInertialFrame = new CelestialBodyFrame(getICRF(), new InertiallyOriented(
-                celestialBodyIAUOrientation, OrientationType.ICRF_TO_INERTIAL, IAUPoleModelType.TRUE), getName()
-                    + SPACE + INERTIAL_FRAME_TRUE_MODEL, true, this);
-
-            // BodyOriented frames with IAU orientations are centered with inertial frames
-            this.constantRotatingFrame = new CelestialBodyFrame(this.constantInertialFrame, new BodyOriented(
-                celestialBodyIAUOrientation, OrientationType.INERTIAL_TO_ROTATING, IAUPoleModelType.CONSTANT),
-                getName() + SPACE + ROTATING_FRAME_CONSTANT_MODEL, false, this);
-            this.meanRotatingFrame = new CelestialBodyFrame(this.meanInertialFrame, new BodyOriented(
-                celestialBodyIAUOrientation, OrientationType.INERTIAL_TO_ROTATING, IAUPoleModelType.MEAN), getName()
-                    + SPACE + ROTATING_FRAME_MEAN_MODEL, false, this);
-            this.trueRotatingFrame = new CelestialBodyFrame(this.trueInertialFrame, new BodyOriented(
-                celestialBodyIAUOrientation, OrientationType.INERTIAL_TO_ROTATING, IAUPoleModelType.TRUE), getName()
-                    + SPACE + ROTATING_FRAME_TRUE_MODEL, false, this);
+            // IAU orientation case: methods using these elements should be overloaded in AbstractIAUCelestialBody
+            this.inertialFrame = null;
+            this.rotatingFrame = null;
 
         } else if (this.celestialBodyOrientation instanceof CelestialBodyTabulatedOrientation) {
             // Tabulated orientation case:
-            // Cast the celestial body tabulated orientation
-            final CelestialBodyTabulatedOrientation celestialBodyTabulatedOrientation =
-                (CelestialBodyTabulatedOrientation) this.celestialBodyOrientation;
-
-            final CelestialBodyFrame inertialFrame = new CelestialBodyFrame(getICRF(), new InertiallyOriented(
-                celestialBodyTabulatedOrientation, OrientationType.ICRF_TO_INERTIAL), getName() + SPACE
-                    + INERTIAL_FRAME, true, this);
-            this.constantInertialFrame = inertialFrame;
-            this.meanInertialFrame = inertialFrame;
-            this.trueInertialFrame = inertialFrame;
+            this.inertialFrame = new CelestialBodyFrame(this.getICRF(), new InertiallyOriented(
+                this.celestialBodyOrientation, OrientationType.ICRF_TO_INERTIAL),
+                this.getName() + SPACE + INERTIAL_FRAME, true, this);
 
             // BodyOriented frames with tabulated orientation are centered with ICRF
-            final CelestialBodyFrame rotatingFrame = new CelestialBodyFrame(getICRF(), new BodyOriented(
-                celestialBodyTabulatedOrientation, OrientationType.ICRF_TO_ROTATING), getName() + SPACE
-                    + ROTATING_FRAME, false, this);
-            this.constantRotatingFrame = rotatingFrame;
-            this.meanRotatingFrame = rotatingFrame;
-            this.trueRotatingFrame = rotatingFrame;
+            this.rotatingFrame = new CelestialBodyFrame(this.getICRF(), new BodyOriented(
+                this.celestialBodyOrientation, OrientationType.ICRF_TO_ROTATING),
+                this.getName() + SPACE + ROTATING_FRAME, false, this);
 
         } else {
             // Non supported celestial body orientation type
             throw PatriusException.createIllegalStateException(PatriusMessages.NON_SUPPORTED_BODY_ORIENTATION_TYPE);
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPoleIn) throws PatriusException {
-        final CelestialBodyFrame frame;
-        switch (iauPoleIn) {
-            case CONSTANT:
-                // Get an inertially oriented, body centered frame taking into account only
-                // constant part of IAU pole data with respect to ICRF frame. The frame is
-                // always bound to the body center, and its axes have a fixed orientation with
-                // respect to other inertial frames.
-                frame = this.constantInertialFrame;
-                break;
-            case MEAN:
-                // Get an inertially oriented, body centered frame taking into account only
-                // constant and secular part of IAU pole data with respect to ICRF frame.
-                frame = this.meanInertialFrame;
-                break;
-            case TRUE:
-                // Get an inertially oriented, body centered frame taking into account constant,
-                // secular and harmonics part of IAU pole data with respect to ICRF frame.
-                frame = this.trueInertialFrame;
-                break;
-            default:
-                // The iauPole given as input is not implemented in this method.
-                throw new PatriusException(PatriusMessages.INVALID_IAUPOLEMODELTYPE);
-        }
-        return frame;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CelestialBodyFrame getRotatingFrame(final IAUPoleModelType iauPoleIn) throws PatriusException {
-        final CelestialBodyFrame frame;
-        switch (iauPoleIn) {
-            case CONSTANT:
-                // Get a body oriented, body centered frame taking into account only constant part
-                // of IAU pole data with respect to inertially-oriented frame. The frame is always
-                // bound to the body center, and its axes have a fixed orientation with respect to
-                // the celestial body.
-                frame = this.constantRotatingFrame;
-                break;
-            case MEAN:
-                // Get a body oriented, body centered frame taking into account constant and secular
-                // part of IAU pole data with respect to mean equator frame. The frame is always
-                // bound to the body center, and its axes have a fixed orientation with respect to
-                // the celestial body.
-                frame = this.meanRotatingFrame;
-                break;
-            case TRUE:
-                // Get a body oriented, body centered frame taking into account constant, secular
-                // and harmonics part of IAU pole data with respect to true equator frame. The frame
-                // is always bound to the body center, and its axes have a fixed orientation with
-                // respect to the celestial body.
-                frame = this.trueRotatingFrame;
-                break;
-            default:
-                // The iauPole given as input is not implemented in this method.
-                throw new PatriusException(PatriusMessages.INVALID_IAUPOLEMODELTYPE);
-        }
-        return frame;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public double getGM() {
-        return getGravityModel().getMu();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setGM(final double gmIn) {
-        super.setGM(gmIn);
-        getGravityModel().setMu(gmIn);
     }
 
     /** {@inheritDoc} */
@@ -386,14 +258,14 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
 
     /** {@inheritDoc} */
     @Override
-    public GravityModel getGravityModel() {
-        return this.gravityModel;
+    public CelestialBodyFrame getInertialFrame() throws PatriusException {
+        return this.inertialFrame;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setGravityModel(final GravityModel modelIn) {
-        this.gravityModel = modelIn;
+    public CelestialBodyFrame getRotatingFrame() throws PatriusException {
+        return this.rotatingFrame;
     }
 
     /** {@inheritDoc} */
@@ -404,8 +276,33 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
 
     /** {@inheritDoc} */
     @Override
-    public void setShape(final BodyShape shapeIn) {
+    public final void setShape(final BodyShape shapeIn) {
         this.shape = shapeIn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public GravityModel getGravityModel() {
+        return this.gravityModel;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public final void setGravityModel(final GravityModel modelIn) {
+        this.gravityModel = modelIn;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getGM() {
+        return this.getGravityModel().getMu();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setGM(final double gmIn) {
+        super.setGM(gmIn);
+        this.getGravityModel().setMu(gmIn);
     }
 
     /** {@inheritDoc} */
@@ -413,38 +310,31 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
     public String toString() {
         // End commentary
         final String end = "\n";
+
         // String builder
         final StringBuilder builder = new StringBuilder(super.toString());
-        // Add all frames
-        try {
-            builder.append("- Inertial frame: " + getInertialFrame(IAUPoleModelType.CONSTANT).toString() + end);
-            builder.append("- Mean equator frame: " + getInertialFrame(IAUPoleModelType.MEAN).toString() + end);
-            builder.append("- True equator frame: " + getInertialFrame(IAUPoleModelType.TRUE).toString() + end);
-        } catch (final PatriusException e) {
-            builder.append("No inertial frame computed" + end);
-        }
-        try {
-            builder.append("- Constant rotating frame: " + getRotatingFrame(IAUPoleModelType.CONSTANT).toString());
-            builder.append(end);
-            builder.append("- Mean rotating frame: " + getRotatingFrame(IAUPoleModelType.MEAN).toString() + end);
-            builder.append("- True rotating frame: " + getRotatingFrame(IAUPoleModelType.TRUE).toString() + end);
-        } catch (final PatriusException e) {
-            builder.append("No rotating frame computed" + end);
-        }
+        // Add orientation
         if (this.celestialBodyOrientation == null) {
             builder.append("- orientation: undefined" + end);
         } else {
             builder.append("- orientation: " + this.celestialBodyOrientation + " ("
                     + this.celestialBodyOrientation.getClass() + ')' + end);
         }
+
+        // Add all frames
+        if (this.inertialFrame != null) {
+            builder.append("- Inertial frame: " + this.inertialFrame + end);
+        }
+        if (this.rotatingFrame != null) {
+            builder.append("- Rotating frame: " + this.rotatingFrame + end);
+        }
+
         // Return builder.toString
         return builder.toString();
     }
 
     /**
      * Provider for inertially oriented body centered frame transform.<br>
-     * This include inertially oriented, mean of date and true of date frames which are different only with IAU pole
-     * data taken into account.
      *
      * <p>
      * Spin derivative is never computed and is either 0 or null.<br>
@@ -453,7 +343,7 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
      * <p>
      * Frames configuration is unused.
      * </p>
-     * 
+     *
      * @serial serializable
      */
     private static class InertiallyOriented implements TransformProvider {
@@ -467,12 +357,9 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         /** Indicates the expected orientation type. */
         private final OrientationType orientationType;
 
-        /** IAU pole type (only used for {@link CelestialBodyIAUOrientation}, can be {@code null} otherwise. */
-        private final IAUPoleModelType iauPoleType;
-
         /**
          * Constructor.
-         * 
+         *
          * @param celestialBodyOrientation
          *        Celestial body orientation
          * @param orientationType
@@ -480,30 +367,14 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
          */
         public InertiallyOriented(final CelestialBodyOrientation celestialBodyOrientation,
                                   final OrientationType orientationType) {
-            this(celestialBodyOrientation, orientationType, null);
-        }
-
-        /**
-         * Constructor.
-         * 
-         * @param celestialBodyOrientation
-         *        Celestial body orientation
-         * @param orientationType
-         *        Indicates the expected orientation type
-         * @param iauPoleType
-         *        IAU pole type (only used for {@link CelestialBodyIAUOrientation}, can be {@code null} otherwise)
-         */
-        public InertiallyOriented(final CelestialBodyOrientation celestialBodyOrientation,
-                                  final OrientationType orientationType, final IAUPoleModelType iauPoleType) {
             this.celestialBodyOrientation = celestialBodyOrientation;
             this.orientationType = orientationType;
-            this.iauPoleType = iauPoleType;
         }
 
         /** {@inheritDoc} */
         @Override
         public Transform getTransform(final AbsoluteDate date) throws PatriusException {
-            return getTransform(date, false);
+            return this.getTransform(date, false);
         }
 
         /**
@@ -515,7 +386,7 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         @Override
         public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config)
             throws PatriusException {
-            return getTransform(date, config, false);
+            return this.getTransform(date, config, false);
         }
 
         /**
@@ -528,7 +399,7 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         @Override
         public Transform getTransform(final AbsoluteDate date, final boolean computeSpinDerivatives)
             throws PatriusException {
-            return getTransform(date, FramesFactory.getConfiguration(), computeSpinDerivatives);
+            return this.getTransform(date, FramesFactory.getConfiguration(), computeSpinDerivatives);
         }
 
         /**
@@ -543,17 +414,12 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
          */
         @Override
         public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
-                                      final boolean computeSpinDerivatives) throws PatriusException {
+                                      final boolean computeSpinDerivatives)
+            throws PatriusException {
 
             // Compute the angular coordinates
-            final AngularCoordinates angularCoord;
-            if (this.celestialBodyOrientation instanceof CelestialBodyIAUOrientation && this.iauPoleType != null) {
-                // Use the IAU pole type if the orientation is an instance of CelestialBodyIAUOrientation
-                angularCoord = ((CelestialBodyIAUOrientation) this.celestialBodyOrientation)
-                    .getAngularCoordinates(date, this.orientationType, this.iauPoleType);
-            } else {
-                angularCoord = this.celestialBodyOrientation.getAngularCoordinates(date, this.orientationType);
-            }
+            final AngularCoordinates angularCoord =
+                this.celestialBodyOrientation.getAngularCoordinates(date, this.orientationType);
 
             // Extrat the rotation and rotation rate
             final Rotation r = angularCoord.getRotation();
@@ -596,12 +462,9 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         /** Indicates the expected orientation type. */
         private final OrientationType orientationType;
 
-        /** IAU pole type (only used for {@link CelestialBodyIAUOrientation}, can be {@code null} otherwise. */
-        private final IAUPoleModelType iauPoleType;
-
         /**
          * Constructor.
-         * 
+         *
          * @param celestialBodyOrientation
          *        Celestial body orientation
          * @param orientationType
@@ -609,30 +472,14 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
          */
         public BodyOriented(final CelestialBodyOrientation celestialBodyOrientation,
                             final OrientationType orientationType) {
-            this(celestialBodyOrientation, orientationType, null);
-        }
-
-        /**
-         * Constructor.
-         * 
-         * @param celestialBodyOrientation
-         *        Celestial body orientation
-         * @param orientationType
-         *        Indicates the expected orientation type
-         * @param iauPoleType
-         *        IAU pole type (only used for {@link CelestialBodyIAUOrientation}, can be {@code null} otherwise)
-         */
-        public BodyOriented(final CelestialBodyOrientation celestialBodyOrientation,
-                            final OrientationType orientationType, final IAUPoleModelType iauPoleType) {
             this.celestialBodyOrientation = celestialBodyOrientation;
             this.orientationType = orientationType;
-            this.iauPoleType = iauPoleType;
         }
 
         /** {@inheritDoc} */
         @Override
         public Transform getTransform(final AbsoluteDate date) throws PatriusException {
-            return getTransform(date, false);
+            return this.getTransform(date, false);
         }
 
         /**
@@ -644,7 +491,7 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         @Override
         public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config)
             throws PatriusException {
-            return getTransform(date, config, false);
+            return this.getTransform(date, config, false);
         }
 
         /**
@@ -657,7 +504,7 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
         @Override
         public Transform getTransform(final AbsoluteDate date, final boolean computeSpinDerivatives)
             throws PatriusException {
-            return getTransform(date, FramesFactory.getConfiguration(), computeSpinDerivatives);
+            return this.getTransform(date, FramesFactory.getConfiguration(), computeSpinDerivatives);
         }
 
         /**
@@ -672,17 +519,12 @@ public abstract class AbstractCelestialBody extends AbstractCelestialPoint imple
          */
         @Override
         public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
-                                      final boolean computeSpinDerivatives) throws PatriusException {
+                                      final boolean computeSpinDerivatives)
+            throws PatriusException {
 
             // Compute the angular coordinates
-            final AngularCoordinates angularCoord;
-            if (this.celestialBodyOrientation instanceof CelestialBodyIAUOrientation && this.iauPoleType != null) {
-                // Use the IAU pole type if the orientation is an instance of CelestialBodyIAUOrientation
-                angularCoord = ((CelestialBodyIAUOrientation) this.celestialBodyOrientation)
-                    .getAngularCoordinates(date, this.orientationType, this.iauPoleType);
-            } else {
-                angularCoord = this.celestialBodyOrientation.getAngularCoordinates(date, this.orientationType);
-            }
+            final AngularCoordinates angularCoord =
+                this.celestialBodyOrientation.getAngularCoordinates(date, this.orientationType);
 
             // Extrat the rotation and rotation rate
             final Rotation r = angularCoord.getRotation();

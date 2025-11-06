@@ -17,6 +17,9 @@
  * @history creation 02/01/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -102,8 +105,20 @@ public final class PrecessionNutationModelFactory {
     public static final PrecessionNutationModel PN_IERS2003_DIRECT =
         new IERS20032010PrecessionNutation(PrecessionNutationConvention.IERS2003);
 
-    /** Stela model. */
-    public static final PrecessionNutationModel PN_STELA = new StelaPrecessionNutationModel();
+    /**
+     * Stela model.<br>
+     * The cache is specific for each thread.
+     */
+    public static final PrecessionNutationModel PN_STELA = new PrecessionNutationPerThread() {
+        /** Serializable UID. */
+        private static final long serialVersionUID = -220156158703680110L;
+
+        /** {@inheritDoc} */
+        @Override
+        protected PrecessionNutationModel buildModel() {
+            return new StelaPrecessionNutationModel();
+        }
+    };
 
     // The following models are compatible with the PATRIUS version 4.12
 

@@ -19,6 +19,7 @@
  * @history 22/03/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -522,7 +523,7 @@ public abstract class StelaAbstractPropagator implements Propagator {
             final double dt = target.durationFrom(start);
             final double epsilon = MathLib.ulp(dt);
             SpacecraftState state = this.basicPropagate(start);
-            // interpolator.storeSC(state, state);
+            interpolator.storeSC(state, state);
             if (!this.interInitialised) {
                 this.interpolator.storeSC(state, state);
                 this.interInitialised = true;

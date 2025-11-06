@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+* VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
 * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -40,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.cnes.sirius.patrius.events.EventDetector;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -184,7 +186,7 @@ public class EventsLogger implements Serializable {
 
         /**
          * Returns the event date matching the datation choice and the provided event date.<br>
-         * The provided event date may be of any {@link DatationChoice}.
+         * The provided event date may be of any {@link EventDatationType}.
          * <p>
          * Note: this method only supports instance of {@link SignalPropagationWrapperDetector} detectors, otherwise the
          * event date will be returned as it.
@@ -196,7 +198,7 @@ public class EventsLogger implements Serializable {
          * @throws PatriusException
          *         shouldn't happened (internal error)
          */
-        public AbsoluteDate getEventDate(final DatationChoice datationChoice) throws PatriusException {
+        public AbsoluteDate getEventDate(final EventDatationType datationChoice) throws PatriusException {
 
             final AbsoluteDate eventDateTemp = this.state.getDate();
 
@@ -205,18 +207,18 @@ public class EventsLogger implements Serializable {
                 // Cast the detector
                 final SignalPropagationWrapperDetector detectorCast = (SignalPropagationWrapperDetector) this.detector;
 
-                if (datationChoice == null || detectorCast.getDatationChoice().equals(datationChoice)) {
+                if (datationChoice == null || detectorCast.getEventDatationType() == datationChoice) {
                     // If no datation choice (instantaneous) or if the specified datation choice matches the detector
                     // datation choice, we simply return the event date
                     eventDate = eventDateTemp;
 
-                } else if (detectorCast.getDatationChoice().equals(DatationChoice.EMITTER)
-                        && datationChoice.equals(DatationChoice.RECEIVER)) {
+                } else if (detectorCast.getEventDatationType() == EventDatationType.EMITTER
+                        && datationChoice == EventDatationType.RECEIVER) {
                     // Switch Emitter date (eventDateTemp) to Receiver date
                     eventDate = detectorCast.getEmitterDatesMap().get(eventDateTemp);
 
-                } else if (detectorCast.getDatationChoice().equals(DatationChoice.RECEIVER)
-                        && datationChoice.equals(DatationChoice.EMITTER)) {
+                } else if (detectorCast.getEventDatationType() == EventDatationType.RECEIVER
+                        && datationChoice == EventDatationType.EMITTER) {
                     // Switch Receiver date (eventDateTemp) to Emitter date
                     eventDate = detectorCast.getReceiverDatesMap().get(eventDateTemp);
                 }

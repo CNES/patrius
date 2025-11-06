@@ -20,6 +20,7 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
@@ -28,14 +29,23 @@
 package fr.cnes.sirius.patrius.math.parameter;
 
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.CartesianCoordinate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.OrbitalCoordinate;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit test for {@linkplain Parameter}.
@@ -304,5 +314,10 @@ public class ParameterTest {
     private static void checkEquality(final Parameter expected, final Parameter actual) {
         Assert.assertEquals(expected.getDescriptor(), actual.getDescriptor());
         Assert.assertEquals(expected.getValue(), actual.getValue(), 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2979:15/11/2021:[PATRIUS] Ajout d'une methode public getIntersection(Segment) dans la classe Segment 2D 
@@ -31,10 +32,16 @@
 package fr.cnes.sirius.patrius.math.geometry.euclidean.twod;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 
 public class SegmentTest {
 
@@ -162,5 +169,10 @@ public class SegmentTest {
         final Vector2D intersect = horizontalSegment.getIntersection(verticalSegment);
         Assert.assertEquals(0., intersect.getX(), 0.);
         Assert.assertEquals(0., intersect.getY(), 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

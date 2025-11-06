@@ -15,6 +15,12 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
@@ -99,7 +105,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * </p>
  *
  * @author Emmanuel Bignon
- * 
+ *
  * @since 4.11.1
  */
 public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
@@ -117,7 +123,7 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
     private final GravityModel gravityModel;
 
     /** Ephemeris type to generate. */
-    private final EphemerisType ephemerisType;
+    private final PredefinedEphemerisType ephemerisType;
 
     /**
      * Create a loader for JPL ephemerides binary files (DE-INPOP type).
@@ -128,7 +134,7 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
      *        ephemeris type to generate
      */
     public JPLCelestialBodyLoader(final String supportedNamesIn,
-            final EphemerisType generateTypeIn) {
+            final PredefinedEphemerisType generateTypeIn) {
         this(supportedNamesIn, generateTypeIn, null);
     }
 
@@ -143,7 +149,7 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
      *        gravitational attraction model
      */
     public JPLCelestialBodyLoader(final String supportedNamesIn,
-            final EphemerisType generateTypeIn,
+            final PredefinedEphemerisType generateTypeIn,
             final GravityModel gravityModelIn) {
         super(supportedNamesIn, new JPLHistoricEphemerisLoader(supportedNamesIn, generateTypeIn));
         this.gravityModel = gravityModelIn;
@@ -170,7 +176,7 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
                 break;
             default:
                 // General case: CelestialBody
-                res = loadCelestialBody(name);
+                res = new JPLCelestialPoint(name, FramesFactory.getICRF());
                 break;
         }
 
@@ -185,15 +191,15 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
         // Initialization
         final CelestialBody res;
 
-        switch (ephemerisType) {
+        switch (this.ephemerisType) {
             case SOLAR_SYSTEM_BARYCENTER:
                 // CelestialBody cannot be built
-                throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, ephemerisType);
+                throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, this.ephemerisType);
             case EARTH_MOON:
                 // CelestialBody cannot be built
-                throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, ephemerisType);
+                throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, this.ephemerisType);
             case EARTH:
-                res = new Earth(name, getLoadedGravitationalCoefficient(EphemerisType.EARTH));
+                res = new Earth(name, getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH));
                 break;
             case MOON:
                 res = new JPLCelestialBody(name, FramesFactory.getGCRF());
@@ -216,7 +222,7 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
     }
 
     /** Local celestial body class. */
-    private class JPLCelestialBody extends AbstractCelestialBody {
+    private class JPLCelestialBody extends AbstractIAUCelestialBody {
 
         /** Serializable UID. */
         private static final long serialVersionUID = -2941415197776129165L;
@@ -238,7 +244,7 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
                     SpiceJ2000ConventionEnum.ICRF, getEphemerisLoader().loadCelestialBodyEphemeris(name));
             // ellipsoid default shape
             if (JPLCelestialBodyLoader.this.ephemerisType != null) {
-                setShape(buildDefaultBodyShape(name, getRotatingFrame(IAUPoleModelType.TRUE),
+                setShape(buildDefaultBodyShape(name, getRotatingFrame(),
                     JPLCelestialBodyLoader.this.ephemerisType));
                 setGravityModel(new NewtonianGravityModel(getICRF(),
                     getLoadedGravitationalCoefficient(JPLCelestialBodyLoader.this.ephemerisType)));
@@ -253,5 +259,39 @@ public class JPLCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
             builder.append("- Ephemeris: JPL files (matching " + getSupportedNames() + ")");
             return builder.toString();
         }
+    }
+
+    /**
+     * This local class represents a celestial point.
+     */
+    private class JPLCelestialPoint extends AbstractCelestialPoint {
+
+        /** Serializable UID. */
+        private static final long serialVersionUID = -2941415197776129165L;
+
+        /**
+         * Simple constructor.
+         *
+         * @param name
+         *        name of the body
+         * @param parentFrame
+         *        parent frame (usually it should be the ICRF centered on the parent body)
+         * @exception PatriusException
+         *            if gravitational coefficient cannot be retrieved
+         */
+        public JPLCelestialPoint(final String name, final Frame parentFrame) throws PatriusException {
+            super(name, getLoadedGravitationalCoefficient(JPLCelestialBodyLoader.this.ephemerisType),
+                    getEphemerisLoader().loadCelestialBodyEphemeris(name), parentFrame, SpiceJ2000ConventionEnum.ICRF);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString() {
+            final String result = super.toString();
+            final StringBuilder builder = new StringBuilder(result);
+            builder.append("- Ephemeris: JPL files (matching " + getSupportedNames() + ")");
+            return builder.toString();
+        }
+
     }
 }

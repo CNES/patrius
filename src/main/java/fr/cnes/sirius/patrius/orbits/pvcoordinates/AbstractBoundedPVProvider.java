@@ -18,6 +18,8 @@
  * @history created 12/11/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
  * VERSION:4.13:FA:FA-114:08/12/2023:[PATRIUS] Message d'erreur incomplet
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -342,7 +344,7 @@ public abstract class AbstractBoundedPVProvider implements PVCoordinatesProvider
 
     /** {@inheritDoc} */
     @Override
-    public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+    public Frame getNativeFrame(final AbsoluteDate date) {
         return this.pvFrame;
     }
 }

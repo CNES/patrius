@@ -18,6 +18,12 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody 
+ *          car l'orientation n'est pas forcement IAU 
+* VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
+* VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer 
+ *          les polynemes de Chebyshev des fichiers JPL historiques 
 * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -60,11 +66,11 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
@@ -311,37 +317,99 @@ public class ThirdBodyAttractionTest {
             }
         }
 
-        /** Test no-regression of the compatibility modes. */
+    }
 
-        // Test default mode (backward compatible)
+    /**
+     * This tests ensure that the behaviour of the compatibility mode configuration in PATRIUS give expected results
+     * when calling the method AbstractBodyAttraction.convertMatrixFromAToB(...). The verification is done via indirect
+     * call to the method
+     * {@link AbstractBodyAttraction#addDAccDParam(Vector3D, Frame, AbsoluteDate, Parameter, double[])}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testConvertMatrixCompatibilityModes() throws PatriusException {
+        final ThirdBodyAttraction thirdBody = new ThirdBodyAttraction(CelestialBodyFactory.getMoon().getGravityModel());
+        final AbsoluteDate date = new AbsoluteDate(1970, 3, 5, 0, 24, 0, TimeScalesFactory.getTAI());
+        final Frame referenceFrame = FramesFactory.getGCRF();
+        final Vector3D pos = new Vector3D(6.4688587830467382E+06, -1.8805091845627432E+06, -1.3293159229471583E+04);
+
+        // Test OLD_MODELS : convertMatrix behaves in OLD_MODELS and there is no TDB consideration when applying shift
+        // in dates during transform operations
         PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.OLD_MODELS);
-        double[][] dAccDPPosOldModels = new double[3][3];
+        // System.out.println("OLD MODELS");
+        final double[][] dAccDPPosOldModels = new double[3][3];
+        // for (int i = 0; i < 3; i++) {
+        // for (int j = 0; j < 3; j++) {
+        // System.out.print(dAccDPPosOldModels[i][j] + ",");
+        // }
+        // System.out.println();
+        // }
         thirdBody.addDAccDState(pos, referenceFrame, date.shiftedBy(86400.), dAccDPPosOldModels);
+        // for (int i = 0; i < 3; i++) {
+        // for (int j = 0; j < 3; j++) {
+        // System.out.print(dAccDPPosOldModels[i][j] + ",");
+        // }
+        // System.out.println();
+        // }
+        // System.out.println();
 
-        // Test mixed models mode
+        // Test MIXED_MODELS : convertMatrix behaves according to new models but there is no TDB consideration when
+        // applying shift in dates during transform operations
+        // System.out.println("MIXED MODELS");
         PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.MIXED_MODELS);
-        double[][] dAccDPPosMixedModels = new double[3][3];
+        final double[][] dAccDPPosMixedModels = new double[3][3];
+        // for (int i = 0; i < 3; i++) {
+        // for (int j = 0; j < 3; j++) {
+        // System.out.print(dAccDPPosMixedModels[i][j] + ",");
+        // }
+        // System.out.println();
+        // }
         thirdBody.addDAccDState(pos, referenceFrame, date, dAccDPPosMixedModels);
+        // for (int i = 0; i < 3; i++) {
+        // for (int j = 0; j < 3; j++) {
+        // System.out.print(dAccDPPosMixedModels[i][j] + ",");
+        // }
+        // System.out.println();
+        // }
 
-        // Test new models mode
+        // Test NEW_MODELS : convertMatrix behaves according to new models but there is TDB consideration when
+        // applying shift in dates during transform operations
+        // System.out.println("NEW MODELS");
         PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.NEW_MODELS);
-        double[][] dAccDPPosNewModels = new double[3][3];
+        final double[][] dAccDPPosNewModels = new double[3][3];
+        // for (int i = 0; i < 3; i++) {
+        // for (int j = 0; j < 3; j++) {
+        // System.out.print(dAccDPPosNewModels[i][j] + ",");
+        // }
+        // System.out.println();
+        // }
         thirdBody.addDAccDState(pos, referenceFrame, date, dAccDPPosNewModels);
+        // for (int i = 0; i < 3; i++) {
+        // for (int j = 0; j < 3; j++) {
+        // System.out.print(dAccDPPosNewModels[i][j] + ",");
+        // }
+        // System.out.println();
+        // }
 
+        // Verify expected results
         final double[][] expectedOldModelsAcc =
             new double[][] { { 8.94211305859775E-14, -1.4505769393859904E-13, -7.289352428869E-14 },
                 { -1.4505769393859904E-13, -5.39280629171066E-15, 5.2864916370842237E-14 },
                 { -7.289352428869E-14, 5.2864916370842237E-14, -8.402832429426683E-14 } };
-        final double[][] expectedNewMixedModelsAcc =
+        final double[][] expectedMixedModelsAcc =
             new double[][] { { 2.5720692871039785E-15, -1.3677916354268827E-13, -7.109731199909889E-14 },
                 { -1.3677916354268827E-13, 6.024530085679825E-14, 8.764935614560584E-14 },
                 { -7.109731199909889E-14, 8.764935614560584E-14, -6.281737014390222E-14 } };
+        final double[][] expectedNewModelsAcc =
+            new double[][] { { 2.5720693145933956E-15, -1.3677916355241082E-13, -7.109731200351963E-14 },
+                { -1.3677916355241082E-13, 6.024530083638851E-14, 8.764935613475351E-14 },
+                { -7.109731200351963E-14, 8.764935613475351E-14, -6.28173701509819E-14 } };
 
-
-        // compare with expected acceleration
         Assert.assertTrue(Arrays.deepEquals(expectedOldModelsAcc, dAccDPPosOldModels));
-        Assert.assertTrue(Arrays.deepEquals(expectedNewMixedModelsAcc, dAccDPPosMixedModels));
-        Assert.assertTrue(Arrays.deepEquals(expectedNewMixedModelsAcc, dAccDPPosNewModels));
+        Assert.assertTrue(Arrays.deepEquals(expectedMixedModelsAcc, dAccDPPosMixedModels));
+        Assert.assertTrue(Arrays.deepEquals(expectedNewModelsAcc, dAccDPPosNewModels));
+
     }
 
     private SpacecraftState createSpacecraftState(final Vector3D position, final Frame frame, final AbsoluteDate date) {
@@ -611,8 +679,9 @@ public class ThirdBodyAttractionTest {
                 2.1140414208515707E-18, 5.1788633879908555E-20, 6.794170380579684E-20, -3.485287100559392E-21,
                 1.3474869526292895E-22, 1.171495214942793E-24, 8.976849904033136E-26, -4.4484353525145056E-26,
                 -7.085201625470002E-27, -1.9149293363818004E-29, 1.9348625978022877E-29, -3.5967365059631985E-30 } };
+
         // Body is JPL Moon with NUMEXTRAP Mu
-        final CelestialBody moon = new CelestialBody(){
+        final IAUCelestialBody moon = new IAUCelestialBody(){
 
             /** Serializable UID. */
             private static final long serialVersionUID = 6526492036122150529L;
@@ -644,24 +713,25 @@ public class ThirdBodyAttractionTest {
             @Override
             public CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPole) throws PatriusException {
                 final CelestialBodyFrame frame;
+                final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
                 switch (iauPole) {
                     case CONSTANT:
                         // Get an inertially oriented, body centered frame taking into account
                         // only constant part of IAU pole data with respect to ICRF frame. The frame
                         // is always bound to the body center, and its axes have a fixed
                         // orientation with respect to other inertial frames.
-                        frame = CelestialBodyFactory.getMoon().getInertialFrame(IAUPoleModelType.CONSTANT);
+                        frame = moon.getInertialFrame(IAUPoleModelType.CONSTANT);
                         break;
                     case MEAN:
                         // Get an inertially oriented, body centered frame taking into account only
                         // constant and secular part of IAU pole data with respect to ICRF frame.
-                        frame = CelestialBodyFactory.getMoon().getInertialFrame(IAUPoleModelType.MEAN);
+                        frame = moon.getInertialFrame(IAUPoleModelType.MEAN);
                         break;
                     case TRUE:
                         // Get an inertially oriented, body centered frame taking into account
                         // constant, secular and harmonics part of IAU pole data with respect to
                         // ICRF frame.
-                        frame = CelestialBodyFactory.getMoon().getInertialFrame(IAUPoleModelType.TRUE);
+                        frame = moon.getInertialFrame(IAUPoleModelType.TRUE);
                         break;
                     default:
                         // The iauPole given as input is not implemented in this method.
@@ -681,27 +751,28 @@ public class ThirdBodyAttractionTest {
             @Override
             public CelestialBodyFrame getRotatingFrame(final IAUPoleModelType iauPole) throws PatriusException {
                 final CelestialBodyFrame frame;
+                final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
                 switch (iauPole) {
                     case CONSTANT:
                         // Get a body oriented, body centered frame taking into account only constant part
                         // of IAU pole data with respect to inertially-oriented frame. The frame is always
                         // bound to the body center, and its axes have a fixed orientation with respect to
                         // the celestial body.
-                        frame = CelestialBodyFactory.getMoon().getRotatingFrame(IAUPoleModelType.CONSTANT);
+                        frame = moon.getRotatingFrame(IAUPoleModelType.CONSTANT);
                         break;
                     case MEAN:
                         // Get a body oriented, body centered frame taking into account constant and secular
                         // part of IAU pole data with respect to mean equator frame. The frame is always
                         // bound to the body center, and its axes have a fixed orientation with respect to
                         // the celestial body.
-                        frame = CelestialBodyFactory.getMoon().getRotatingFrame(IAUPoleModelType.MEAN);
+                        frame = moon.getRotatingFrame(IAUPoleModelType.MEAN);
                         break;
                     case TRUE:
                         // Get a body oriented, body centered frame taking into account constant, secular
                         // and harmonics part of IAU pole data with respect to true equator frame. The frame
                         // is always bound to the body center, and its axes have a fixed orientation with
                         // respect to the celestial body.
-                        frame = CelestialBodyFactory.getMoon().getRotatingFrame(IAUPoleModelType.TRUE);
+                        frame = moon.getRotatingFrame(IAUPoleModelType.TRUE);
                         break;
                     default:
                         // The iauPole given as input is not implemented in this method.
@@ -950,6 +1021,7 @@ public class ThirdBodyAttractionTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         this.mu = 3.986e14;
         Utils.setDataRoot("regular-data");
     }

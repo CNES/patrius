@@ -14,6 +14,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -26,9 +34,9 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader;
 import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader.SpiceJ2000ConventionEnum;
@@ -64,7 +72,7 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
     private static final long serialVersionUID = -8215287568823783794L;
 
     /** Objects to be built as @link {@link CelestialPoint} instead of {@link CelestialBody}. */
-    private final List<String> celestialPointsNames;
+    private final Set<String> celestialPointsNames;
 
     /**
      * Create a loader for JPL ephemerides binary files (BSP type).
@@ -74,7 +82,7 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
      */
     public BSPCelestialBodyLoader(final String supportedNamesIn) {
         super(supportedNamesIn, new BSPEphemerisLoader(supportedNamesIn));
-        this.celestialPointsNames = new ArrayList<>();
+        this.celestialPointsNames = new LinkedHashSet<>();
     }
 
     /**
@@ -92,13 +100,10 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
     @Override
     public CelestialPoint loadCelestialPoint(final String name) throws PatriusException {
         // Get ephemeris type
-        final EphemerisType ephemerisType = EphemerisType.getEphemerisType(name);
-
-        final boolean isBarycenter = EphemerisType.SOLAR_SYSTEM_BARYCENTER.equals(ephemerisType)
-                || EphemerisType.EARTH_MOON.equals(ephemerisType);
+        final PredefinedEphemerisType ephemerisType = PredefinedEphemerisType.getEphemerisType(name);
 
         // Build body
-        if (isBarycenter || this.celestialPointsNames.contains(name) || ephemerisType == null) {
+        if (this.celestialPointsNames.contains(name) || ephemerisType == null || ephemerisType.isBarycenter()) {
             // Barycenter or unknown body
             // Ephemeris
             final CelestialBodyEphemeris ephemeris;
@@ -113,10 +118,10 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
             final SpiceJ2000ConventionEnum convention = ((BSPEphemerisLoader) getEphemerisLoader()).getConvention();
             if (convention.equals(SpiceJ2000ConventionEnum.ICRF)) {
                 // Specific handling of known barycenter: link to predefined keys
-                if (EphemerisType.SOLAR_SYSTEM_BARYCENTER.equals(ephemerisType)) {
+                if (PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER == ephemerisType) {
                     return new BasicCelestialPoint(name, gm, ephemeris, FramesFactory.getICRF());
                 }
-                if (EphemerisType.EARTH_MOON.equals(ephemerisType)) {
+                if (PredefinedEphemerisType.EARTH_MOON == ephemerisType) {
                     return new BasicCelestialPoint(name, gm, ephemeris, FramesFactory.getEMB());
                 }
             }
@@ -131,15 +136,13 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
     @Override
     public CelestialBody loadCelestialBody(final String name) throws PatriusException {
         // Get ephemeris type
-        final EphemerisType ephemerisType = EphemerisType.getEphemerisType(name);
-
-        final boolean isBarycenter = EphemerisType.SOLAR_SYSTEM_BARYCENTER.equals(ephemerisType)
-                || EphemerisType.EARTH_MOON.equals(ephemerisType);
+        final PredefinedEphemerisType ephemerisType = PredefinedEphemerisType.getEphemerisType(name);
 
         // Build body
-        if (isBarycenter || this.celestialPointsNames.contains(name) || ephemerisType == null) {
+        if (this.celestialPointsNames.contains(name) || ephemerisType == null
+                || ephemerisType.isBarycenter()) {
             // CelestialBody cannot be built
-            throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, ephemerisType);
+            throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, name);
         }
 
         // General case
@@ -158,7 +161,7 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
      *         if build failed
      */
     private CelestialBody buildBSPCelestialBody(final String name,
-                                                final EphemerisType ephemerisType) throws PatriusException {
+                                                final PredefinedEphemerisType ephemerisType) throws PatriusException {
         final CelestialBodyEphemeris ephemeris = getEphemerisLoader().loadCelestialBodyEphemeris(name);
         final Frame parentFrame = ephemeris.getNativeFrame(null);
         return new BSPCelestialBody(name, ephemeris, (BSPEphemerisLoader) getEphemerisLoader(), parentFrame,
@@ -214,7 +217,7 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
     }
 
     /** Local celestial body class. */
-    private class BSPCelestialBody extends AbstractCelestialBody {
+    private class BSPCelestialBody extends AbstractIAUCelestialBody {
 
         /** Serializable UID. */
         private static final long serialVersionUID = -2941415197776129165L;
@@ -239,11 +242,11 @@ public class BSPCelestialBodyLoader extends AbstractJPLCelestialBodyLoader {
                                 final CelestialBodyEphemeris ephemeris,
                                 final BSPEphemerisLoader ephemerisLoader,
                                 final Frame parentFrame,
-                                final EphemerisType ephemerisType) throws PatriusException {
+                                final PredefinedEphemerisType ephemerisType) throws PatriusException {
             super(name, null, IAUPoleFactory.getIAUPole(ephemerisType), parentFrame, ephemerisLoader.getConvention(),
                     ephemeris);
             if (ephemerisType != null) {
-                setShape(buildDefaultBodyShape(name, getRotatingFrame(IAUPoleModelType.TRUE), ephemerisType));
+                setShape(buildDefaultBodyShape(name, getRotatingFrame(), ephemerisType));
                 setGravityModel(new NewtonianGravityModel(getICRF(), getLoadedGravitationalCoefficient(ephemerisType)));
             }
         }

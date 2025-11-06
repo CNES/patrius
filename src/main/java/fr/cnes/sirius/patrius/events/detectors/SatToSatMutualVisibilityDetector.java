@@ -18,8 +18,9 @@
  * @history creation 29/05/2012
  *
  * HISTORY
- * VERSION:4.13.4:FA:FA-346:10/06/2024:[PATRIUS] Problème dans l’utilisation du
- * SatToSatMutualVisibilityDetector en mode de propagation MULTI
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -55,7 +56,6 @@ import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.MultiEventDetector;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -79,12 +79,14 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * {@link #setPropagationDelayType(PropagationDelayType, Frame)} (default is signal being instantaneous).
  * </p>
  * <p>
- * Detection is between two spacecrafts in a symmetrical way (no station), therefore {@link LinkType} needs to be
- * clarified. What is called {@link LinkType#DOWNLINK Downlink} is signal propagation from each spacecraft to the target
+ * Detection is between two spacecrafts in a symmetrical way (no station), therefore {@link SatToSatLinkType} needs to
+ * be clarified.
+ * What is called {@link SatToSatLinkType#DOWNLINK Downlink} is signal propagation from each spacecraft to the target
  * one with signal emission at the date defined by the spacecraft state of the g function. Visibilities are therefore
- * checked at the date state.getDate()+propagation_time: this date is called reception date. {@link LinkType#DOWNLINK
- * Uplink} corresponds to the opposite: the date of the spacecraft state is a reception date by each satellite, meaning
- * signal emission happended before this date. Default linktype is {@link LinkType#DOWNLINK} .
+ * checked at the date state.getDate()+propagation_time: this date is called reception date.
+ * {@link SatToSatLinkType#UPLINK Uplink} corresponds to the opposite:
+ * the date of the spacecraft state is a reception date by each satellite, meaning
+ * signal emission happended before this date. Default linktype is {@link SatToSatLinkType#DOWNLINK Downlink} .
  * </p>
  *
  * @concurrency not thread-safe
@@ -106,7 +108,7 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * Type of link. Since this detector involves two satellites (and not a satellite and a station), a specific enum is
      * created for sake of clarity.
      */
-    public enum LinkType {
+    public enum SatToSatLinkType {
         /** Secondary to main type of link. */
         SECONDARY_TO_MAIN(VisibilityFromStationDetector.LinkType.UPLINK),
 
@@ -118,14 +120,16 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
 
         /**
          * Constructor.
+         *
          * @param linkType link type
          */
-        private LinkType(final VisibilityFromStationDetector.LinkType linkType) {
+        private SatToSatLinkType(final VisibilityFromStationDetector.LinkType linkType) {
             this.linkType = linkType;
         }
 
         /**
          * Returns the link type.
+         *
          * @return the link type
          */
         public VisibilityFromStationDetector.LinkType getLinkType() {
@@ -167,7 +171,7 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
     private final PropagationType type;
 
     /** Type of link (it can be uplink or downlink). */
-    private final LinkType linkType;
+    private final SatToSatLinkType linkType;
 
     /**
      * Propagation type.
@@ -204,11 +208,11 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @param threshold convergence threshold (s)
      */
     public SatToSatMutualVisibilityDetector(final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final Propagator secondSpacecraftPropagator,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold) {
+                                            final SensorModel secondarySensorModel,
+                                            final Propagator secondSpacecraftPropagator,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold) {
         this(mainSensorModel, secondarySensorModel, secondSpacecraftPropagator, withMasking, maxCheck, threshold,
                 Action.CONTINUE, Action.STOP);
     }
@@ -231,13 +235,13 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @param exit action performed when exiting the visibility zone
      */
     public SatToSatMutualVisibilityDetector(final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final Propagator secondSpacecraftPropagator,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit) {
+                                            final SensorModel secondarySensorModel,
+                                            final Propagator secondSpacecraftPropagator,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold,
+                                            final Action entry,
+                                            final Action exit) {
         this(mainSensorModel, secondarySensorModel, secondSpacecraftPropagator, withMasking, maxCheck, threshold,
                 entry, exit, false, false);
     }
@@ -263,17 +267,17 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @since 3.1
      */
     public SatToSatMutualVisibilityDetector(final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final Propagator secondSpacecraftPropagator,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit,
-            final boolean removeEntry,
-            final boolean removeExit) {
+                                            final SensorModel secondarySensorModel,
+                                            final Propagator secondSpacecraftPropagator,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold,
+                                            final Action entry,
+                                            final Action exit,
+                                            final boolean removeEntry,
+                                            final boolean removeExit) {
         this(mainSensorModel, secondarySensorModel, secondSpacecraftPropagator, withMasking, maxCheck, threshold,
-                entry, exit, removeEntry, removeExit, LinkType.MAIN_TO_SECONDARY);
+                entry, exit, removeEntry, removeExit, SatToSatLinkType.MAIN_TO_SECONDARY);
     }
 
     /**
@@ -299,17 +303,18 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @since 4.10
      */
     public SatToSatMutualVisibilityDetector(final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final Propagator secondSpacecraftPropagator,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit,
-            final boolean removeEntry,
-            final boolean removeExit,
-            final LinkType linkTypeIn) {
-        super(maxCheck, threshold, entry, exit, removeEntry, removeExit);
+                                            final SensorModel secondarySensorModel,
+                                            final Propagator secondSpacecraftPropagator,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold,
+                                            final Action entry,
+                                            final Action exit,
+                                            final boolean removeEntry,
+                                            final boolean removeExit,
+                                            final SatToSatLinkType linkTypeIn) {
+        super(maxCheck, threshold, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(linkTypeIn, secondSpacecraftPropagator));
         this.inMainSpacecraftId = null;
         this.inSecondarySpacecraftId = null;
         this.inSensorMainSpacecraft = mainSensorModel;
@@ -348,12 +353,12 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @since 3.0
      */
     public SatToSatMutualVisibilityDetector(final String mainSpacecraftId,
-            final String secondarySpacecraftId,
-            final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold) {
+                                            final String secondarySpacecraftId,
+                                            final SensorModel mainSensorModel,
+                                            final SensorModel secondarySensorModel,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold) {
         this(mainSpacecraftId, secondarySpacecraftId, mainSensorModel, secondarySensorModel, withMasking, maxCheck,
                 threshold, Action.CONTINUE, Action.STOP);
     }
@@ -379,14 +384,14 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @since 3.0
      */
     public SatToSatMutualVisibilityDetector(final String mainSpacecraftId,
-            final String secondarySpacecraftId,
-            final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit) {
+                                            final String secondarySpacecraftId,
+                                            final SensorModel mainSensorModel,
+                                            final SensorModel secondarySensorModel,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold,
+                                            final Action entry,
+                                            final Action exit) {
         this(mainSpacecraftId, secondarySpacecraftId, mainSensorModel, secondarySensorModel, withMasking, maxCheck,
                 threshold, entry, exit, false, false);
     }
@@ -414,18 +419,18 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @since 3.1
      */
     public SatToSatMutualVisibilityDetector(final String mainSpacecraftId,
-            final String secondarySpacecraftId,
-            final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit,
-            final boolean removeEntry,
-            final boolean removeExit) {
+                                            final String secondarySpacecraftId,
+                                            final SensorModel mainSensorModel,
+                                            final SensorModel secondarySensorModel,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold,
+                                            final Action entry,
+                                            final Action exit,
+                                            final boolean removeEntry,
+                                            final boolean removeExit) {
         this(mainSpacecraftId, secondarySpacecraftId, mainSensorModel, secondarySensorModel, withMasking, maxCheck,
-                threshold, entry, exit, removeEntry, removeExit, LinkType.MAIN_TO_SECONDARY);
+                threshold, entry, exit, removeEntry, removeExit, SatToSatLinkType.MAIN_TO_SECONDARY);
     }
 
     /**
@@ -452,18 +457,19 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      * @since 4.10
      */
     public SatToSatMutualVisibilityDetector(final String mainSpacecraftId,
-            final String secondarySpacecraftId,
-            final SensorModel mainSensorModel,
-            final SensorModel secondarySensorModel,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit,
-            final boolean removeEntry,
-            final boolean removeExit,
-            final LinkType linkTypeIn) {
-        super(maxCheck, threshold, entry, exit, removeEntry, removeExit);
+                                            final String secondarySpacecraftId,
+                                            final SensorModel mainSensorModel,
+                                            final SensorModel secondarySensorModel,
+                                            final boolean withMasking,
+                                            final double maxCheck,
+                                            final double threshold,
+                                            final Action entry,
+                                            final Action exit,
+                                            final boolean removeEntry,
+                                            final boolean removeExit,
+                                            final SatToSatLinkType linkTypeIn) {
+        super(maxCheck, threshold, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(linkTypeIn, secondarySensorModel));
         this.inMainSpacecraftId = mainSpacecraftId;
         this.inSecondarySpacecraftId = secondarySpacecraftId;
         this.inSensorMainSpacecraft = mainSensorModel;
@@ -475,21 +481,21 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
         this.firstCall = true;
         this.type = PropagationType.MULTI;
         this.linkType = linkTypeIn;
-
     }
 
     /** {@inheritDoc} */
     @Override
     public void init(final SpacecraftState s0,
-            final AbsoluteDate t) {
+                     final AbsoluteDate t) {
         // Nothing to do
     }
 
     /** {@inheritDoc} */
     @Override
     public Action eventOccurred(final SpacecraftState s,
-            final boolean increasing,
-            final boolean forward) throws PatriusException {
+                                final boolean increasing,
+                                final boolean forward)
+        throws PatriusException {
         return this.eventOccurred(increasing);
     }
 
@@ -506,19 +512,7 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
         }
 
         // Compute secondary date
-        // Main date is s.getDate()
-        AbsoluteDate secondaryDate = s.getDate();
-
-        // Specific computation for LIGHT_SPEED case (for computation times optimization)
-        if (getPropagationDelayType().equals(PropagationDelayType.LIGHT_SPEED)) {
-            if (this.linkType.equals(LinkType.MAIN_TO_SECONDARY)) {
-                // Down link
-                secondaryDate = getSignalReceptionDate(s);
-            } else {
-                // Uplink
-                secondaryDate = getSignalEmissionDate(s);
-            }
-        }
+        final AbsoluteDate secondaryDate = this.getOtherDate(s);
 
         final SpacecraftState secondState = this.secondPropagator.propagate(secondaryDate);
         return this.g(s, secondState);
@@ -540,17 +534,8 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
         SpacecraftState secondState = s.get(this.inSecondarySpacecraftId);
 
         // Compute secondary date
-        AbsoluteDate secondaryDate = firstState.getDate();
-        // Specific computation for LIGHT_SPEED case (for computation times optimization)
-        if (getPropagationDelayType().equals(PropagationDelayType.LIGHT_SPEED)) {
-            if (this.linkType.equals(LinkType.MAIN_TO_SECONDARY)) {
-                // Down link
-                secondaryDate = getSignalReceptionDate(firstState);
-            } else {
-                // Uplink
-                secondaryDate = getSignalEmissionDate(firstState);
-            }
-        }
+        final AbsoluteDate secondaryDate = this.getOtherDate(firstState);
+        
         // Update second state at proper secondary date
         secondState = secondState.shiftedBy(secondaryDate.durationFrom(firstState.getDate()));
 
@@ -607,7 +592,7 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      *
      * @return the type of link (it can be uplink or downlink)
      */
-    public LinkType getLinkType() {
+    public SatToSatLinkType getLinkType() {
         return this.linkType;
     }
 
@@ -632,30 +617,24 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
     /** {@inheritDoc} */
     @Override
     public void init(final Map<String, SpacecraftState> s0,
-            final AbsoluteDate t) {
+                     final AbsoluteDate t) {
         // Nothing to do
     }
 
     /** {@inheritDoc} */
     @Override
     public Action eventOccurred(final Map<String, SpacecraftState> s,
-            final boolean increasing,
-            final boolean forward) throws PatriusException {
+                                final boolean increasing,
+                                final boolean forward)
+        throws PatriusException {
         return this.eventOccurred(increasing);
     }
 
     /** {@inheritDoc} */
     @Override
     public Map<String, SpacecraftState> resetStates(final Map<String, SpacecraftState> oldStates)
-            throws PatriusException {
+        throws PatriusException {
         return oldStates;
-    }
-
-    /** @inheritDoc */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType,
-            final Frame frame) {
-        super.setPropagationDelayType(propagationDelayType, frame);
     }
 
     /**
@@ -689,7 +668,8 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
      */
     @SuppressWarnings("PMD.ShortMethodName")
     private double g(final SpacecraftState main,
-            final SpacecraftState second) throws PatriusException {
+                     final SpacecraftState second)
+        throws PatriusException {
         // Update assemblies at right date
         this.inMainSpacecraft.updateMainPartFrame(main);
         this.inSecondarySpacecraft.updateMainPartFrame(second);
@@ -700,15 +680,15 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
         if (this.getPropagationDelayType().equals(PropagationDelayType.LIGHT_SPEED)) {
             // Light speed case
             angularRadiusInMainSpacecraftSensor = this.inSensorMainSpacecraft.getTargetCenterFOVAngle(second.getDate(),
-                    main.getDate());
+                main.getDate());
             angularRadiusInSecondSpacecraftSensor = this.inSensorSecondarySpacecraft.getTargetCenterFOVAngle(
-                    main.getDate(), second.getDate());
+                main.getDate(), second.getDate());
         } else {
             // Instantaneous case
             // Check spacecrafts reception
             angularRadiusInMainSpacecraftSensor = this.inSensorMainSpacecraft.getTargetCenterFOVAngle(main.getDate());
             angularRadiusInSecondSpacecraftSensor = this.inSensorSecondarySpacecraft.getTargetCenterFOVAngle(second
-                    .getDate());
+                .getDate());
         }
 
         final double minVisi = MathLib.min(angularRadiusInMainSpacecraftSensor, angularRadiusInSecondSpacecraftSensor);
@@ -717,101 +697,30 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
         if (this.maskingCheck) {
             // body shapes masking check for the main spacecraft
             final double bodyMaskingDistanceMain = this.inSensorMainSpacecraft.celestialBodiesMaskingDistance(
-                main.getDate(), second.getDate(), getPropagationDelayType(), this.linkType.getLinkType());
+                main.getDate(), second.getDate(), this.getPropagationDelayType(), this.linkType.getLinkType());
             // spacecrafts maskings for the main spacecraft
             final double spacecraftsMaskingDistanceMain = this.inSensorMainSpacecraft.spacecraftsMaskingDistance(
-                main.getDate(), second.getDate(), getPropagationDelayType(), this.linkType.getLinkType());
+                main.getDate(), second.getDate(), this.getPropagationDelayType(), this.linkType.getLinkType());
 
             final double minMaskingDistMain = MathLib.min(spacecraftsMaskingDistanceMain, bodyMaskingDistanceMain);
 
             // body shapes masking check for the secondary spacecraft
             final double bodyMaskingDistanceSecond = this.inSensorSecondarySpacecraft.celestialBodiesMaskingDistance(
-                second.getDate(), main.getDate(), getPropagationDelayType(), this.linkType.getLinkType());
+                second.getDate(), main.getDate(), this.getPropagationDelayType(), this.linkType.getLinkType());
 
             // spacecrafts maskings for the secondary spacecraft
-            final double spacecraftsMaskingDistanceSecond = this.inSensorSecondarySpacecraft
-                    .spacecraftsMaskingDistance(second.getDate(), main.getDate(), getPropagationDelayType(),
-                    this.linkType.getLinkType());
+            final double spacecraftsMaskingDistanceSecond =
+                this.inSensorSecondarySpacecraft.spacecraftsMaskingDistance(second.getDate(), main.getDate(),
+                    this.getPropagationDelayType(), this.linkType.getLinkType());
 
             final double minMaskingDistSecond = MathLib
-                    .min(bodyMaskingDistanceSecond, spacecraftsMaskingDistanceSecond);
+                .min(bodyMaskingDistanceSecond, spacecraftsMaskingDistanceSecond);
             // both
             minMaskingDists = MathLib.min(minMaskingDistSecond, minMaskingDistMain);
         } else {
             minMaskingDists = Double.POSITIVE_INFINITY;
         }
         return MathLib.min(minVisi, minMaskingDists);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws PatriusException
-     */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) throws PatriusException {
-        final PVCoordinatesProvider emitter;
-        if (this.linkType == LinkType.MAIN_TO_SECONDARY) {
-            emitter = s.getOrbit();
-        } else { // SECONDARY_TO_MAIN
-            emitter = getSecondaryProviderFromPropType();
-        }
-        return emitter;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws PatriusException
-     */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) throws PatriusException {
-        final PVCoordinatesProvider receiver;
-        if (this.linkType == LinkType.MAIN_TO_SECONDARY) {
-            receiver = getSecondaryProviderFromPropType();
-        } else { // SECONDARY_TO_MAIN
-            receiver = s.getOrbit();
-        }
-        return receiver;
-    }
-
-    /**
-     * Retrieves the coordinates provider of the secondary spacecraft according to the propagation type defined in the
-     * detector :
-     * <ul>
-     * <li>{@link PropagationType#MONO} : the second propagator defined in the constructor
-     * <li>{@link PropagationType#MULTI} : the main target of the main spacecraft sensor model (by construction the
-     * secondary spacecraft)
-     * </ul>
-     * 
-     * @return the PV coordinates provider
-     * @throws PatriusException if problems when retrieving the propagation type
-     */
-    private PVCoordinatesProvider getSecondaryProviderFromPropType() throws PatriusException {
-        final PVCoordinatesProvider provider;
-        switch (this.type) {
-            case MONO:
-                provider = this.secondPropagator;
-                break;
-            case MULTI:
-                provider = this.inSensorMainSpacecraft.getMainTarget();
-                break;
-            default:
-                throw new PatriusException(PatriusMessages.NO_PROP_TYPE);
-        }
-        return provider;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        final DatationChoice datationChoice;
-        if (this.linkType == LinkType.MAIN_TO_SECONDARY) {
-            datationChoice = DatationChoice.EMITTER;
-        } else { // SECONDARY_TO_MAIN
-            datationChoice = DatationChoice.RECEIVER;
-        }
-        return datationChoice;
     }
 
     /**
@@ -828,18 +737,19 @@ public class SatToSatMutualVisibilityDetector extends AbstractSignalPropagationD
     @Override
     public EventDetector copy() {
         final SatToSatMutualVisibilityDetector res = new SatToSatMutualVisibilityDetector(this.inSensorMainSpacecraft,
-                this.inSensorSecondarySpacecraft, this.secondPropagator, this.maskingCheck, this.getMaxCheckInterval(),
-                this.getThreshold(), this.getActionAtEntry(), this.getActionAtExit(), this.isRemoveAtEntry(),
-                this.isRemoveAtExit(), this.getLinkType());
-        res.setPropagationDelayType(getPropagationDelayType(), getInertialFrame());
+            this.inSensorSecondarySpacecraft, this.secondPropagator, this.maskingCheck, this.getMaxCheckInterval(),
+            this.getThreshold(), this.getActionAtEntry(), this.getActionAtExit(), this.isRemoveAtEntry(),
+            this.isRemoveAtExit(), this.linkType);
+        res.setPropagationDelayType(this.getPropagationDelayType(), this.getInertialFrame());
         return res;
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean filterEvent(final Map<String, SpacecraftState> states,
-            final boolean increasing,
-            final boolean forward) throws PatriusException {
+                               final boolean increasing,
+                               final boolean forward)
+        throws PatriusException {
         return false;
     }
 }

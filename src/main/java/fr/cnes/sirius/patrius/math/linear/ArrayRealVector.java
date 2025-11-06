@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -821,7 +823,7 @@ public class ArrayRealVector extends RealVector implements Serializable {
     @Override
     protected void checkVectorDimensions(final int n) {
         if (this.data.length != n) {
-            throw new DimensionMismatchException(this.data.length, n);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_VECTOR_DIMENSION, n, this.data.length);
         }
     }
 

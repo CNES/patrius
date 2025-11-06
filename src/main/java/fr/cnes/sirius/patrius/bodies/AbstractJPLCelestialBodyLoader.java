@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -101,7 +103,7 @@ public abstract class AbstractJPLCelestialBodyLoader implements CelestialBodyLoa
      * @exception PatriusException
      *            if constants cannot be loaded
      */
-    public double getLoadedGravitationalCoefficient(final EphemerisType body) throws PatriusException {
+    public double getLoadedGravitationalCoefficient(final PredefinedEphemerisType body) throws PatriusException {
         return ephemerisLoader.getLoadedGravitationalCoefficient(body);
     }
 
@@ -138,7 +140,7 @@ public abstract class AbstractJPLCelestialBodyLoader implements CelestialBodyLoa
      */
     protected BodyShape buildDefaultBodyShape(final String name,
             final CelestialBodyFrame bodyFrame,
-            final EphemerisType ephemerisType) {
+            final PredefinedEphemerisType ephemerisType) {
 
         // flatness coefficient of the celestial body
         final double flatness;

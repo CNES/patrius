@@ -1,9 +1,12 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -46,15 +49,17 @@ package fr.cnes.sirius.patrius.math.optim.joptimizer.optimizers;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
 import fr.cnes.sirius.patrius.math.linear.SingularValueDecomposition;
 import fr.cnes.sirius.patrius.math.optim.joptimizer.TestUtils;
-import fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import junit.framework.TestCase;
 
 /**
  * LP presolving test.
@@ -417,7 +422,8 @@ public class LPPresolverTest extends TestCase {
         final LPPresolver lpPresolver = new LPPresolver();
         lpPresolver.setNOfSlackVariables((short) s);
         lpPresolver.setExpectedSolution(expectedSolution);// this is just for test!
-        lpPresolver.setZeroTolerance(Utils.getDoubleMachineEpsilon());
+        lpPresolver.setZeroTolerance(
+                fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils.getDoubleMachineEpsilon());
         // lpPresolver.setExpectedTolerance(expectedTolerance);//this is just for test!
         lpPresolver.presolve(c, a, b, lb, ub);
         final double[][] presolvedA = lpPresolver.getPresolvedA().getData(false);
@@ -1340,5 +1346,10 @@ public class LPPresolverTest extends TestCase {
             .toArray()));
         final double value = MatrixUtils.createRealVector(c).dotProduct(postsolvedX);
         assertEquals(expectedValue, value);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

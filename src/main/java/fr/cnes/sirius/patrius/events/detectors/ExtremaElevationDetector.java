@@ -24,6 +24,8 @@
  * VERSION::DM:1489:21/05/2018:add GENOPUS Custom classes
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
@@ -55,7 +57,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * {@link ExtremaElevationDetector#MIN}, {@link ExtremaElevationDetector#MAX} and
  * {@link ExtremaElevationDetector#MIN_MAX} for both.
  * <p>
- * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the
+ * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the
  * minimum/maximum elevation is reached. This can be changed by using provided constructors.
  * </p>
  * 
@@ -90,7 +92,7 @@ public class ExtremaElevationDetector extends AbstractSignalPropagationDetector 
 
     /** Action performed */
     private final Action actionExtremaElevation;
-    
+
     /** Type of link (it can be uplink or downlink, or null if instantaneous propagation). */
     private final LinkType linkType;
 
@@ -123,7 +125,7 @@ public class ExtremaElevationDetector extends AbstractSignalPropagationDetector 
      * handle, otherwise some short passes could be missed.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extremum is reached.
      * </p>
      * 
@@ -205,13 +207,13 @@ public class ExtremaElevationDetector extends AbstractSignalPropagationDetector 
      */
     public ExtremaElevationDetector(final TopocentricFrame topoFrame, final int extremumType, final double maxCheck,
                         final double threshold, final Action action, final boolean remove, final LinkType linkTypeIn) {
-        super(extremumType, maxCheck, threshold);
+        super(extremumType, maxCheck, threshold, new LinkTypeHandler(linkTypeIn, topoFrame));
         this.topo = topoFrame;
         // action
         this.actionExtremaElevation = action;
         // remove (or not) detector
         this.shouldBeRemovedFlag = remove;
-        // Set link type
+     // Set link type
         this.linkType = linkTypeIn;
     }
 
@@ -263,33 +265,12 @@ public class ExtremaElevationDetector extends AbstractSignalPropagationDetector 
         final PVCoordinates extPVTopo;
         // Case of light speed propagation (dedicated in order to optimize computation times)
         if (getPropagationDelayType().equals(PropagationDelayType.LIGHT_SPEED)) {
-
-            // Check the type of link
-            if (this.linkType.equals(LinkType.DOWNLINK)) {
-                // It is downlink
-                // Emitter is the satellite, station is the receiver (since elevation is wrt to station),
-                // so compute the reception date
-                // Parameter "date" is signal emission date from the satellite
-                final AbsoluteDate stationReceptionDate = getSignalReceptionDate(state);
-
-                // Compute satellite PV coordinates in topocentric frame
-                // The transformation date is reception date by the station
-                final PVCoordinates extPV = extPVProv.getPVCoordinates(date, frame);
-                final Transform t = frame.getTransformTo(this.topo, stationReceptionDate);
-                extPVTopo = t.transformPVCoordinates(extPV);
-
-            } else {
-                // It is uplink
-                // Emitter is the station, satellite is the receiver, so compute the emission date
-                // Parameter "date" is signal reception date at the satellite
-                final AbsoluteDate stationEmissionDate = getSignalEmissionDate(state);
-
-                // Compute satellite PV coordinates in topocentric frame
-                // The transformation date is emission date by the station
-                final PVCoordinates extPV = extPVProv.getPVCoordinates(date, frame);
-                final Transform t = frame.getTransformTo(this.topo, stationEmissionDate);
-                extPVTopo = t.transformPVCoordinates(extPV);
-            }
+            // Compute satellite PV coordinates in topocentric frame
+            // The transformation date is either emission date by the station or by the satellite
+            // depending on link type
+            final PVCoordinates extPV = extPVProv.getPVCoordinates(date, frame);
+            final Transform t = frame.getTransformTo(this.topo, getOtherDate(state));
+            extPVTopo = t.transformPVCoordinates(extPV);
         } else {
             // Instantaneous case
             extPVTopo = extPVProv.getPVCoordinates(date, this.topo);
@@ -297,7 +278,6 @@ public class ExtremaElevationDetector extends AbstractSignalPropagationDetector 
 
         // Compute elevation rate as seen from the station
         return AzimuthElevationCalculator.computeElevationRate(extPVTopo);
-
     }
 
     /**
@@ -314,48 +294,6 @@ public class ExtremaElevationDetector extends AbstractSignalPropagationDetector 
      */
     public LinkType getLinkType() {
         return this.linkType;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
-        super.setPropagationDelayType(propagationDelayType, frame);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        final PVCoordinatesProvider emitter;
-        if (this.linkType == LinkType.UPLINK) {
-            emitter = this.topo;
-        } else { // DOWNLINK
-            emitter = s.getOrbit();
-        }
-        return emitter;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        final PVCoordinatesProvider receiver;
-        if (this.linkType == LinkType.UPLINK) {
-            receiver = s.getOrbit();
-        } else { // DOWNLINK
-            receiver = this.topo;
-        }
-        return receiver;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        final DatationChoice datationChoice;
-        if (this.linkType == LinkType.UPLINK) {
-            datationChoice = DatationChoice.RECEIVER;
-        } else { // DOWNLINK
-            datationChoice = DatationChoice.EMITTER;
-        }
-        return datationChoice;
     }
 
     /**

@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9.1:DM:DM-3168:01/06/2022:[PATRIUS] Ajout de la classe ConstantPVCoordinatesProvider
@@ -32,12 +35,13 @@
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -104,7 +108,7 @@ public class ConstantPVCoordinatesProviderTest {
     public void checkMoonPVCoordinates() throws PatriusException {
 
         // coordinates computed in non-inertial frame
-        final CelestialBody moon = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final Frame moonFrame = moon.getInertialFrame(IAUPoleModelType.CONSTANT);
 
         // moon center position in its attached frame {0, 0, 0}
@@ -171,5 +175,10 @@ public class ConstantPVCoordinatesProviderTest {
         Assert.assertEquals(0, MathLib.abs(delta.getX()) / actual.getX(), relTol);
         Assert.assertEquals(0, MathLib.abs(delta.getY()) / actual.getY(), relTol);
         Assert.assertEquals(0, MathLib.abs(delta.getZ()) / actual.getZ(), relTol);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

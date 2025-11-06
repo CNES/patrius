@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -37,38 +40,69 @@
 package fr.cnes.sirius.patrius.forces.gravity.tides;
 
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.text.ParseException;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.ForceModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.tides.TidesStandards.TidesStandard;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.GraggBulirschStoerIntegrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.StandardFieldDescriptors;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.Orbit;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit testing for terrestrial tides.
@@ -327,7 +361,7 @@ public class TerrestrialTidesTest {
      */
     @Test
     public void testContrib() throws PatriusException {
-
+        
         // date 20153 1320
         final AbsoluteDate date = new AbsoluteDate(2005, 03, 06, 00, 22, 0.0, TimeScalesFactory.getTAI());
         final AbsoluteDate finalDate = date.shiftedBy(10.);
@@ -363,7 +397,7 @@ public class TerrestrialTidesTest {
 
         // PATRIUS 4.2 results
         // 2632244.9161365354 6186282.151426412 -11475.10342016054
-        final double[] expectedPV = { 2632244.916136536, 6186282.151426412, -11475.103420160543 };
+        final double[] expectedPV = { 2632244.9161365354, 6186282.151426412, -11475.103420160542 };
 
         Assert.assertArrayEquals(expectedPV, actualPV, Precision.DOUBLE_COMPARISON_EPSILON);
 
@@ -406,6 +440,7 @@ public class TerrestrialTidesTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         fr.cnes.sirius.patrius.Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
     }

@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * END-HISTORY
@@ -26,33 +27,61 @@
 package fr.cnes.sirius.patrius.covariance;
 
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Collection;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRowSymmetricMatrix.SymmetryType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRowSymmetricPositiveMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.CheckUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.DiagonalMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.MatrixUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrixFormat;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.SymmetricPositiveMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.FieldDescriptor;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.ParameterDescriptor;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.StandardFieldDescriptors;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.CartesianCoordinate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.OrbitalCoordinate;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@linkplain Covariance}.
@@ -1435,5 +1464,10 @@ public class CovarianceTest {
             CheckUtils.checkEquality(expected.getParameterDescriptors(),
                     actual.getParameterDescriptors());
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

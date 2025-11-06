@@ -3,30 +3,22 @@
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-307:21/11/2024:[Patrius] Repère de la vitesse non inertiel (suite)
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3172:10/05/2022:[PATRIUS] Ajout d'un throws PatriusException a la methode init de l'interface
  * EventDetector
- * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights
  * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
- * VERSION:4.6:DM:DM-2571:27/01/2021:[PATRIUS] Integrateur Stormer-Cowell 
+ * VERSION:4.6:DM:DM-2571:27/01/2021:[PATRIUS] Integrateur Stormer-Cowell
  * VERSION:4.5:FA:FA-2417:27/05/2020:ContinuousThrustManeuver
- * VERSION:4.5:FA:FA-2447:27/05/2020:Mathlib.divide() incomplète 
- * VERSION:4.5:DM:DM-2445:27/05/2020:optimisation de SolarActivityReader 
+ * VERSION:4.5:FA:FA-2447:27/05/2020:Mathlib.divide() incomplète
+ * VERSION:4.5:DM:DM-2445:27/05/2020:optimisation de SolarActivityReader
  * VERSION:4.4:DM:DM-2126:04/10/2019:[PATRIUS] Calcul du DeltaV realise
  * VERSION:4.4:DM:DM-2112:04/10/2019:[PATRIUS] Manoeuvres impulsionnelles sur increments orbitaux
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -60,6 +52,7 @@
  * VERSION::FA:1970:03/01/2019:quality corrections
  * END-HISTORY
  */
+
 package fr.cnes.sirius.patrius.forces.maneuvers;
 
 import java.util.List;
@@ -835,6 +828,11 @@ public class ContinuousThrustManeuver extends JacobiansParameterizable implement
                         res = new Vector3D(1 / mass, s.getAttitude().getRotation()
                             .applyTo(this.direction.value(s)));
                     } else {
+                        // Verify that the spacecraftFrame is pseudo-inertial
+                        if (!s.getFrame().isPseudoInertial()) {
+                            // If frame is not pseudo-inertial, an exception is thrown
+                            throw new PatriusException(PatriusMessages.NOT_INERTIAL_FRAME);
+                        }
                         // inDirection in a LOF where type is defined by user
                         final Transform transform = this.lofType.transformFromInertial(s.getDate(),
                             s.getPVCoordinates());

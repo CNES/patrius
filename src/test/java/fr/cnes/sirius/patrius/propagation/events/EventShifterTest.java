@@ -18,6 +18,9 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer 
+ *          les polynemes de Chebyshev des fichiers JPL historiques 
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -86,11 +89,11 @@ public class EventShifterTest {
         this.propagator.propagate(this.iniDate.shiftedBy(6000));
         Assert.assertEquals(6, this.log.size());
         this.log.get(0).checkExpected(2280.238432465, "shifted decreasing");
-        this.log.get(1).checkExpected(2300.238432465, "unshifted decreasing");
-        this.log.get(2).checkExpected(2300.2384370846935, "raw decreasing");
+        this.log.get(1).checkExpected(2300.2384371856074, "unshifted decreasing");
+        this.log.get(2).checkExpected(2300.2384371856074, "raw decreasing");
         this.log.get(3).checkExpected(4361.986163327, "shifted increasing");
         this.log.get(4).checkExpected(4376.986163327, "unshifted increasing");
-        this.log.get(5).checkExpected(4376.986183794259, "raw increasing");
+        this.log.get(5).checkExpected(4376.986183851587, "raw increasing");
     }
 
     @Test
@@ -106,12 +109,12 @@ public class EventShifterTest {
             false, -5, 10));
         this.propagator.propagate(this.iniDate.shiftedBy(6000));
         Assert.assertEquals(6, this.log.size());
-        this.log.get(0).checkExpected(2300.2384370846935, "raw decreasing");
+        this.log.get(0).checkExpected(2300.2384371856074, "raw decreasing");
         this.log.get(1).checkExpected(2300.238432465, "unshifted decreasing");
         this.log.get(2).checkExpected(2320.238432465, "shifted decreasing");
         this.log.get(3).checkExpected(4361.986163327, "shifted increasing");
-        this.log.get(4).checkExpected(4376.986163327, "unshifted increasing");
-        this.log.get(5).checkExpected(4376.986183794259, "raw increasing");
+        this.log.get(4).checkExpected(4376.986183851587, "unshifted increasing");
+        this.log.get(5).checkExpected(4376.986183851587, "raw increasing");
     }
 
     @Test
@@ -128,9 +131,9 @@ public class EventShifterTest {
         this.propagator.propagate(this.iniDate.shiftedBy(6000));
         Assert.assertEquals(6, this.log.size());
         this.log.get(0).checkExpected(2280.238432465, "shifted decreasing");
-        this.log.get(1).checkExpected(2300.238432465, "unshifted decreasing");
-        this.log.get(2).checkExpected(2300.2384370846935, "raw decreasing");
-        this.log.get(3).checkExpected(4376.986183794259, "raw increasing");
+        this.log.get(1).checkExpected(2300.2384371856074, "unshifted decreasing");
+        this.log.get(2).checkExpected(2300.2384371856074, "raw decreasing");
+        this.log.get(3).checkExpected(4376.986183851587, "raw increasing");
         this.log.get(4).checkExpected(4376.986163327, "unshifted increasing");
         this.log.get(5).checkExpected(4391.986163327, "shifted increasing");
     }
@@ -148,10 +151,10 @@ public class EventShifterTest {
             false, 5, 10));
         this.propagator.propagate(this.iniDate.shiftedBy(6000));
         Assert.assertEquals(6, this.log.size());
-        this.log.get(0).checkExpected(2300.2384370846935, "raw decreasing");
+        this.log.get(0).checkExpected(2300.2384371856074, "raw decreasing");
         this.log.get(1).checkExpected(2300.238432465, "unshifted decreasing");
         this.log.get(2).checkExpected(2320.238432465, "shifted decreasing");
-        this.log.get(3).checkExpected(4376.986183794259, "raw increasing");
+        this.log.get(3).checkExpected(4376.986183851587, "raw increasing");
         this.log.get(4).checkExpected(4376.986163327, "unshifted increasing");
         this.log.get(5).checkExpected(4391.986163327, "shifted increasing");
     }
@@ -182,27 +185,27 @@ public class EventShifterTest {
         this.log.get(0).checkExpected(1300.238432465, "-1000s decreasing");
         this.log.get(1).checkExpected(2200.238432465, "-100s decreasing");
         this.log.get(2).checkExpected(2290.238432465, "-10s decreasing");
-        this.log.get(3).checkExpected(2300.2384370846935, "raw decreasing");
+        this.log.get(3).checkExpected(2300.2384371856033, "raw decreasing");
         this.log.get(4).checkExpected(3376.986163327, "-1000s increasing");
         this.log.get(5).checkExpected(4276.986163327, "-100s increasing");
         this.log.get(6).checkExpected(4366.986163327, "-10s increasing");
-        this.log.get(7).checkExpected(4376.986183794306, "raw increasing");
+        this.log.get(7).checkExpected(4376.986183851587, "raw increasing");
         this.log.get(8).checkExpected(7210.858518030, "-1000s decreasing");
         this.log.get(9).checkExpected(8110.858518030, "-100s decreasing");
         this.log.get(10).checkExpected(8200.858518030, "-10s decreasing");
-        this.log.get(11).checkExpected(8210.858523412584, "raw decreasing");
+        this.log.get(11).checkExpected(8210.858523513754, "raw decreasing");
         this.log.get(12).checkExpected(9287.572940950, "-1000s increasing");
         this.log.get(13).checkExpected(10187.572940950, "-100s increasing");
         this.log.get(14).checkExpected(10277.572940950, "-10s increasing");
-        this.log.get(15).checkExpected(10287.572964339717, "raw increasing");
+        this.log.get(15).checkExpected(10287.572964397204, "raw increasing");
         this.log.get(16).checkExpected(13121.478252941, "-1000s decreasing");
         this.log.get(17).checkExpected(14021.478252941, "-100s decreasing");
         this.log.get(18).checkExpected(14111.478252941, "-10s decreasing");
-        this.log.get(19).checkExpected(14121.478259085387, "raw decreasing");
+        this.log.get(19).checkExpected(14121.47825918682, "raw decreasing");
         this.log.get(20).checkExpected(15198.159277277, "-1000s increasing");
         this.log.get(21).checkExpected(16098.159277277, "-100s increasing");
         this.log.get(22).checkExpected(16188.159277277, "-10s increasing");
-        this.log.get(23).checkExpected(16198.159303586766, "raw increasing");
+        this.log.get(23).checkExpected(16198.159303644365, "raw increasing");
         this.log.get(24).checkExpected(19032.097637495, "-1000s decreasing");
         this.log.get(25).checkExpected(19932.097637495, "-100s decreasing");
 
@@ -246,7 +249,9 @@ public class EventShifterTest {
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
+            
             this.mu = 3.9860047e14;
             final double ae = 6.378137e6;
             final double c20 = -1.08263e-3;
@@ -300,5 +305,4 @@ public class EventShifterTest {
         }
 
     }
-
 }

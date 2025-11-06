@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-221:21/11/2024:[STELA-PATRIUS] Interpolateur STELA précis
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -31,10 +33,15 @@
 
 package fr.cnes.sirius.patrius.math.ode.nonstiff;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This class is used in the junit tests for the ODE integrators.
@@ -67,7 +74,7 @@ public class TestProblem4
     /** Simple constructor. */
     public TestProblem4() {
         super();
-        this.a = 1.2;
+        this.a = 1.6;
         final double[] y0 = { MathLib.sin(this.a), MathLib.cos(this.a) };
         this.setInitialConditions(0.0, y0);
         this.setFinalConditions(15);
@@ -111,7 +118,7 @@ public class TestProblem4
             2 * FastMath.PI - this.a,
             3 * FastMath.PI - this.a,
             4 * FastMath.PI - this.a,
-            12.0
+            5 * FastMath.PI - this.a
         };
     }
 
@@ -223,4 +230,9 @@ public class TestProblem4
         }
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

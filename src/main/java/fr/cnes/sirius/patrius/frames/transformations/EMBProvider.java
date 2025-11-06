@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche calcul position relative de 2 corps
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -24,6 +25,7 @@
 package fr.cnes.sirius.patrius.frames.transformations;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.configuration.FramesConfiguration;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -48,6 +50,12 @@ public final class EMBProvider implements TransformProvider {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 1348242067511943173L;
+    
+    /** A boolean stating if the verification associated to the celestial body loader type is the first one */
+    private boolean isFirst = true;
+
+    /** A boolean stating if the frame tree order is inverted */
+    private boolean isFrameTreeInverted = false;
 
     /**
      * Get the transform from Earth-Moon barycenter frame to Solar System barycenter frame (ICRF) at the specified
@@ -120,10 +128,29 @@ public final class EMBProvider implements TransformProvider {
      */
     @Override
     public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
-                                  final boolean computeSpinDerivatives) throws PatriusException {
-        // Compulsory use of JPL ephemeris in order to link EMB and its parent frame SSB
-        final PVCoordinates pv = CelestialBodyFactory.getSolarSystemBarycenter().getEphemeris()
-            .getPVCoordinates(date, CelestialBodyFactory.getEarthMoonBarycenter().getICRF()).negate();
+                                  final boolean computeSpinDerivatives)
+        throws PatriusException {
+
+        final PVCoordinates pv;
+
+        // Make the check concerning the celestial body loader type just if it has not been done before
+        if (isFirst) {
+            isFrameTreeInverted = CelestialBodyFactory.getLoader(
+                CelestialBodyFactory.EARTH_MOON) instanceof JPLCelestialBodyLoader;
+            isFirst = false;
+        }
+
+        if (isFrameTreeInverted) {
+            // // Compulsory use of JPL ephemeris frame tree to link EMB and its parent frame SSB (GCRF reference frame
+            // is the root)
+            pv = CelestialBodyFactory.getSolarSystemBarycenter().getEphemeris()
+                .getPVCoordinates(date, CelestialBodyFactory.getEarthMoonBarycenter().getICRF()).negate();
+        } else {
+            // Use of BSP ephemeris frame tree (ICRF reference frame is the root)
+            pv = CelestialBodyFactory.getEarthMoonBarycenter().getEphemeris().getPVCoordinates(date,
+                FramesFactory.getICRF());
+        }
+
         final AngularCoordinates angular;
         if (computeSpinDerivatives) {
             angular = AngularCoordinates.IDENTITY;

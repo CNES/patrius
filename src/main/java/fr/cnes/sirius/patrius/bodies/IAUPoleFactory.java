@@ -17,6 +17,8 @@
  */
 /*
  * HISTORY
+* VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion 
+ *          des reperes predefinis et des corps predefinis 
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
 * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
@@ -78,7 +80,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
  * 
  * <p>
  * By default, IAU pole data for planetary bodies (including Sun and Moon) are available in PATRIUS
- * through use of method {@link #getIAUPole(EphemerisType)}. Data come from the IAU 2009 working
+ * through use of method {@link #getIAUPole(PredefinedEphemerisType)}. Data come from the IAU 2009 working
  * group Technical Note (see above).
  * </p>
  * <p>
@@ -134,7 +136,7 @@ public final class IAUPoleFactory {
     private static Properties properties;
 
     /** IAU pole data for all celestial bodies. */
-    private static Map<EphemerisType, CelestialBodyIAUOrientation> poleData;
+    private static Map<PredefinedEphemerisType, CelestialBodyIAUOrientation> poleData;
 
     static {
         // Load IAU pole data
@@ -151,17 +153,17 @@ public final class IAUPoleFactory {
 
         // Build IAU pole objects and add to map
         poleData = new HashMap<>();
-        poleData.put(EphemerisType.SUN, buildGeneric(SUN));
-        poleData.put(EphemerisType.MERCURY, buildMercury());
-        poleData.put(EphemerisType.VENUS, buildGeneric(VENUS));
-        poleData.put(EphemerisType.EARTH, buildGeneric(EARTH));
-        poleData.put(EphemerisType.MOON, buildMoon());
-        poleData.put(EphemerisType.MARS, buildGeneric(MARS));
-        poleData.put(EphemerisType.JUPITER, buildJupiter());
-        poleData.put(EphemerisType.SATURN, buildGeneric(SATURN));
-        poleData.put(EphemerisType.URANUS, buildGeneric(URANUS));
-        poleData.put(EphemerisType.NEPTUNE, buildNeptune());
-        poleData.put(EphemerisType.PLUTO, buildGeneric(PLUTO));
+        poleData.put(PredefinedEphemerisType.SUN, buildGeneric(SUN));
+        poleData.put(PredefinedEphemerisType.MERCURY, buildMercury());
+        poleData.put(PredefinedEphemerisType.VENUS, buildGeneric(VENUS));
+        poleData.put(PredefinedEphemerisType.EARTH, buildGeneric(EARTH));
+        poleData.put(PredefinedEphemerisType.MOON, buildMoon());
+        poleData.put(PredefinedEphemerisType.MARS, buildGeneric(MARS));
+        poleData.put(PredefinedEphemerisType.JUPITER, buildJupiter());
+        poleData.put(PredefinedEphemerisType.SATURN, buildGeneric(SATURN));
+        poleData.put(PredefinedEphemerisType.URANUS, buildGeneric(URANUS));
+        poleData.put(PredefinedEphemerisType.NEPTUNE, buildNeptune());
+        poleData.put(PredefinedEphemerisType.PLUTO, buildGeneric(PLUTO));
     }
 
     /**
@@ -499,7 +501,7 @@ public final class IAUPoleFactory {
      * @return IAU pole for the body, or dummy EME2000 aligned pole
      *         for barycenters
      */
-    public static CelestialBodyIAUOrientation getIAUPole(final EphemerisType body) {
+    public static CelestialBodyIAUOrientation getIAUPole(final PredefinedEphemerisType body) {
         final CelestialBodyIAUOrientation iauPole = poleData.get(body);
         if (iauPole == null) {
             return new GCRFAligned();

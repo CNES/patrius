@@ -20,6 +20,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -46,12 +49,12 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.NadirPointing;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
 import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
@@ -543,6 +546,8 @@ public class EphemerisEventDetection {
     @Before
     public void setUp() throws PatriusException {
 
+        Utils.clear();
+
         Utils.setDataRoot("regular-dataCNES-2003");
 
         // integrator
@@ -589,12 +594,12 @@ public class EphemerisEventDetection {
         };
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
@@ -602,7 +607,7 @@ public class EphemerisEventDetection {
         final CelestialPoint sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader(UNXP2000_405,
-            EphemerisType.EARTH);
+            PredefinedEphemerisType.EARTH);
 
         final CelestialPoint earth = loaderEarth.loadCelestialPoint(CelestialBodyFactory.EARTH);
 

@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:FA:FA-3257:22/05/2023:[PATRIUS] Suite 3182
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie evaluation ForceModel SpacecraftState en ITRF
@@ -35,7 +37,10 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.time.TimeScale;
+import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.time.TimeStamped;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
 
 /**
  * Position-Velocity-Acceleration model based on Chebyshev polynomials.
@@ -49,11 +54,17 @@ import fr.cnes.sirius.patrius.time.TimeStamped;
  */
 public class PosVelChebyshev implements TimeStamped, Serializable {
 
+    /** Error message in case the compatibility mode is not supported */
+    private static final String COMP_MODE_UNSUPP = "Unsupported compatibility mode : ";
+
     /** Serializable UID. */
     private static final long serialVersionUID = -2220448511466595393L;
 
     /** Is-in-range threshold. */
     private static final double THRESHOLD = 0.001;
+    
+    /** Timescale TDB for Chebyshev polynomials evaluation. */
+    private static final TimeScale TDB = TimeScalesFactory.getTDB();
 
     /** Start of the validity range of the instance. */
     private final AbsoluteDate start;
@@ -124,7 +135,22 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
      * @return true if the instance is the successor of the predecessor model
      */
     public boolean isSuccessorOf(final PosVelChebyshev predecessor) {
-        final double gap = this.start.durationFrom(predecessor.start) - predecessor.duration;
+        final double gap;
+
+        // Retrieve compatibility mode and adapt the computation accordingly
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS:
+                gap = this.start.durationFrom(predecessor.start) - predecessor.duration;
+                break;
+            case NEW_MODELS:
+                gap = this.start.durationFrom(predecessor.start, TDB) - predecessor.duration;
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    COMP_MODE_UNSUPP + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
+
         return MathLib.abs(gap) < THRESHOLD;
     }
 
@@ -136,7 +162,23 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
      * @return true if date is in validity range
      */
     public boolean inRange(final AbsoluteDate date) {
-        final double dt = date.durationFrom(this.start);
+
+        final double dt;
+
+        // Retrieve compatibility mode and adapt the computation accordingly
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS:
+                dt = date.durationFrom(this.start);
+                break;
+            case NEW_MODELS:
+                dt = date.durationFrom(this.start, TDB);
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    COMP_MODE_UNSUPP + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
+
         return (dt >= -THRESHOLD) && (dt <= this.duration + THRESHOLD);
     }
 
@@ -150,7 +192,22 @@ public class PosVelChebyshev implements TimeStamped, Serializable {
     public PVCoordinates getPositionVelocity(final AbsoluteDate date) {
 
         // normalize date
-        final double t = (2 * date.durationFrom(this.start) - this.duration) / this.duration;
+        final double t;
+
+        // Retrieve compatibility mode and adapt the computation accordingly
+        switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+            case OLD_MODELS:
+            case MIXED_MODELS:
+                t = (2 * date.durationFrom(this.start) - this.duration) / this.duration;
+                break;
+            case NEW_MODELS:
+                t = (2 * date.durationFrom(this.start, TDB) - this.duration) / this.duration;
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    COMP_MODE_UNSUPP + PatriusConfiguration.getPatriusCompatibilityMode());
+        }
+
         final double twoT = 2 * t;
 
         // initialize Chebyshev polynomials recursion

@@ -17,6 +17,7 @@
 /* Copyright 2002-2015 CS Systèmes d'Information
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.11.1:FA:FA-86:30/06/2023:[PATRIUS] Retours JE Alice
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -36,6 +37,7 @@ import java.util.Random;
 import java.util.function.Function;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -49,7 +51,6 @@ import fr.cnes.sirius.patrius.math.random.RandomGenerator;
 import fr.cnes.sirius.patrius.math.random.Well19937a;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.DateComponents;
 import fr.cnes.sirius.patrius.time.TimeComponents;
@@ -656,5 +657,10 @@ public class TimeStampedPVCoordinatesTest {
         Assert.assertEquals(expected.getAcceleration().getX(), real.getAcceleration().getX(), epsilon);
         Assert.assertEquals(expected.getAcceleration().getY(), real.getAcceleration().getY(), epsilon);
         Assert.assertEquals(expected.getAcceleration().getZ(), real.getAcceleration().getZ(), epsilon);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

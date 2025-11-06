@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * END-HISTORY
  */
@@ -434,7 +436,8 @@ public class IntervalMapSearcher<T> implements Iterable<CacheEntry<AbsoluteDateI
 
         // Check for size consistency
         if (intervalsListSize != objectsCollection.size()) {
-            throw new DimensionMismatchException(intervalsListSize, objectsCollection.size());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_INTERVALS_OBJECTS_DIMENSION,
+                intervalsListSize, objectsCollection.size());
         }
 
         // Build the map

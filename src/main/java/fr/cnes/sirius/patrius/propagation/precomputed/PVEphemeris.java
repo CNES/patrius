@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-200:22/08/2024: Fourniture des dates dans PVEphemeris
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -34,7 +35,6 @@ import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.propagation.AbstractPropagator;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.Propagator;
@@ -45,6 +45,7 @@ import fr.cnes.sirius.patrius.time.interpolation.TimeStampedInterpolableEphemeri
 import fr.cnes.sirius.patrius.time.interpolation.TimeStampedInterpolationFunctionBuilder;
 import fr.cnes.sirius.patrius.tools.cache.FIFOThreadSafeCache;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
@@ -383,13 +384,45 @@ public class PVEphemeris extends AbstractPropagator implements BoundedPropagator
     /** {@inheritDoc} */
     @Override
     public AbsoluteDate getMinDate() {
-        return this.ephem.getFirstDate();
+        return this.ephem.getFirstUsableDate();
     }
 
     /** {@inheritDoc} */
     @Override
     public AbsoluteDate getMaxDate() {
+        return this.ephem.getLastUsableDate();
+    }
+
+    /**
+     * 
+     * @return The first sample date.
+     */
+    public AbsoluteDate getMinSampleDate() {
+        return this.ephem.getFirstDate();
+    }
+
+    /**
+     * 
+     * @return The last sample date.
+     */
+    public AbsoluteDate getMaxSampleDate() {
         return this.ephem.getLastDate();
+    }
+
+    /**
+     * 
+     * @return The first optimal date.
+     */
+    public AbsoluteDate getMinOptimalDate() {
+        return this.ephem.getFirstOptimalDate();
+    }
+
+    /**
+     * 
+     * @return The last optimal date.
+     */
+    public AbsoluteDate getMaxOptimalDate() {
+        return this.ephem.getLastOptimalDate();
     }
 
     /**

@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -56,12 +57,12 @@ import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsList;
 import fr.cnes.sirius.patrius.events.postprocessing.CodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.MultiCodedEventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.MultiCodedEventsLogger.MultiLoggedCodedEvent;
 import fr.cnes.sirius.patrius.events.postprocessing.MultiCodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.MultiEventsLogger;
 import fr.cnes.sirius.patrius.events.postprocessing.MultiGenericCodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.PhenomenaList;
 import fr.cnes.sirius.patrius.events.postprocessing.Phenomenon;
-import fr.cnes.sirius.patrius.events.postprocessing.MultiCodedEventsLogger.MultiLoggedCodedEvent;
 import fr.cnes.sirius.patrius.events.utils.OneSatEventDetectorWrapper;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
@@ -198,6 +199,7 @@ public class MultiCodedEventsLoggerTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Orekit initialization
         Utils.setDataRoot("regular-dataPBASE");
 

@@ -13,13 +13,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.bodies;
 
-import fr.cnes.sirius.patrius.bodies.IAUPoleFunction.IAUTimeDependency;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
@@ -37,49 +38,32 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 public interface CelestialBody extends CelestialPoint {
 
     /**
-     * Get an inertially oriented, body centered frame.
-     * <p>
-     * <b>Warning: </b>Inertiality of such frame depends on its definition and on its use: if related
-     * {@link CelestialBodyOrientation} includes strong precession/nutation effect and temporal horizon of use is long,
-     * frame may not be considered inertial. As a rule of thumb, precession/nutation effects of Earth frames such as
-     * CIRF/MOD are considered small enough on a horizon of a day to consider them pseudo-inertial. Also frames based on
-     * {@link IAUPoleModelType#CONSTANT} will be more inertial than {@link IAUPoleModelType#MEAN} and than
-     * {@link IAUPoleModelType#TRUE}. Similarly, models including {@link IAUTimeDependency#DAYS} with high values will
-     * tend to be less inertial than models including {@link IAUTimeDependency#CENTURIES} with high values. Definition
-     * of sufficiently inertial precession/nutation effects remains on the user responsibility depending on the frame
-     * usage.
-     * </p>
+     * Getter for an inertially oriented, body centered frame.
      *
-     * @param iauPole
-     *        the type of IAUPole used for the frame
-     * 
      * @return an inertially oriented, body centered frame
-     * @exception PatriusException
-     *            if frame cannot be retrieved
+     * @throws PatriusException
+     *         if frame cannot be retrieved
      */
-    CelestialBodyFrame getInertialFrame(final IAUPoleModelType iauPole) throws PatriusException;
+    CelestialBodyFrame getInertialFrame() throws PatriusException;
 
     /**
-     * Get a body oriented, body centered frame.
-     * 
-     * @param iauPole
-     *        the type of IAUPole used for the frame
+     * Getter for a body oriented, body centered frame.
      * 
      * @return a body oriented, body centered frame
-     * @exception PatriusException
-     *            if frame cannot be retrieved
+     * @throws PatriusException
+     *         if frame cannot be retrieved
      */
-    CelestialBodyFrame getRotatingFrame(final IAUPoleModelType iauPole) throws PatriusException;
+    CelestialBodyFrame getRotatingFrame() throws PatriusException;
 
     /**
-     * Get the geometric shape of the body.
+     * Getter for the geometric shape of the body.
      * 
      * @return geometric shape of the body
      */
     BodyShape getShape();
 
     /**
-     * Set a geometric shape to the body.
+     * Setter for a geometric shape to the body.
      * 
      * @param shapeIn
      *        the shape of the body
@@ -87,7 +71,7 @@ public interface CelestialBody extends CelestialPoint {
     void setShape(BodyShape shapeIn);
 
     /**
-     * Get the name of the body.
+     * Getter for the name of the body.
      * 
      * @return name of the body
      */
@@ -95,14 +79,14 @@ public interface CelestialBody extends CelestialPoint {
     String getName();
 
     /**
-     * Get the celestial body orientation and primer meridians orientation.
+     * Getter for the celestial body orientation and primer meridians orientation.
      * 
      * @return the celestial body orientation
      */
     CelestialBodyOrientation getOrientation();
 
     /**
-     * Set a celestial body orientation to define the body frames.
+     * Setter for a celestial body orientation to define the body frames.
      * 
      * @param celestialBodyOrientation
      *        the celestial body orientation
@@ -110,14 +94,14 @@ public interface CelestialBody extends CelestialPoint {
     void setOrientation(final CelestialBodyOrientation celestialBodyOrientation);
 
     /**
-     * Get the gravitational attraction model of the body.
+     * Getter for the gravitational attraction model of the body.
      * 
      * @return the gravitational attraction model
      */
     GravityModel getGravityModel();
 
     /**
-     * Set a gravitational attraction model to the body.
+     * Setter for a gravitational attraction model to the body.
      * 
      * @param gravityModelIn
      *        the gravitational attraction model

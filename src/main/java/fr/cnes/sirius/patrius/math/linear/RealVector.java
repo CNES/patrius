@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -202,7 +204,7 @@ public abstract class RealVector {
     protected void checkVectorDimensions(final int n) {
         final int d = this.getDimension();
         if (d != n) {
-            throw new DimensionMismatchException(d, n);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_VECTOR_DIMENSION, n, d);
         }
     }
 

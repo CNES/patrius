@@ -18,6 +18,7 @@
  * @history Creation 25/07/11
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -32,27 +33,48 @@
 package fr.cnes.sirius.patrius.utils;
 
 import static org.junit.Assert.assertEquals;
+import fr.cnes.sirius.patrius.Utils;
 
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Arrays;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.Comparators;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.twod.Vector2D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.AngleInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.AngleTools;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @description test class for classical operations on angles
@@ -1334,5 +1356,10 @@ public class AngleToolsTest {
         final List<Double> yUnModExpected = new ArrayList<>(Arrays.asList(0., 2., 4., 8., 10.));
         Assert.assertEquals(yUnModExpected, y);
 
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

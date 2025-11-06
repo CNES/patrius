@@ -1,5 +1,6 @@
 /*
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
 * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -9,11 +10,18 @@
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class JacobianTransformationMatrixTest {
     /**
@@ -132,5 +140,10 @@ public class JacobianTransformationMatrixTest {
         Assert.assertEquals(0, dataInv[5][4], 1e-15);
         Assert.assertEquals(0.0905906323673605, dataInv[5][5], 1e-15);
 
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

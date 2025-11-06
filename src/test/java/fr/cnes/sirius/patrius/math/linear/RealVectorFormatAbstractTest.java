@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -27,13 +28,21 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.text.NumberFormat;
+import fr.cnes.sirius.patrius.Utils;
 import java.text.ParsePosition;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.MathParseException;
+import fr.cnes.sirius.patrius.Utils;
 
 public abstract class RealVectorFormatAbstractTest {
 
@@ -362,5 +371,10 @@ public abstract class RealVectorFormatAbstractTest {
         final String source = "{1; 1; 1 ";
         Assert.assertNull("Should not parse <" + source + ">", new RealVectorFormat().parse(source, pos));
         Assert.assertEquals(8, pos.getErrorIndex());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

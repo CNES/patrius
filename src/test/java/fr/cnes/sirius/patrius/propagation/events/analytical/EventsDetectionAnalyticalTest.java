@@ -18,6 +18,7 @@
  * @history created 12/09/2014
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -29,13 +30,21 @@
 package fr.cnes.sirius.patrius.propagation.events.analytical;
 
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.events.analytical.Detector1.Dependance;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Main class for the analytical tests.
@@ -655,5 +664,10 @@ public class EventsDetectionAnalyticalTest {
             list.add(new Event(Detector3.class.getSimpleName(), this.t1, EventsDetectionAnalyticalTest.this.convergence));
             return list;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

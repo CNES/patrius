@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -27,18 +28,33 @@
 package fr.cnes.sirius.patrius.validation.events;
 
 import java.io.Serializable;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.DihedralFieldOfViewDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * <p>
@@ -334,5 +350,10 @@ public class EventsLogger {
             // Do nothing by default, event is not filtered
             return false;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

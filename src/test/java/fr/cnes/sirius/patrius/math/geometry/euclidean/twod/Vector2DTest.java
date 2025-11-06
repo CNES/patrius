@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-452:21/11/2024:Vector2D
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3134:10/05/2022:[PATRIUS] ameliorations mineures de Vector2D 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -31,8 +33,10 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -313,6 +317,34 @@ public class Vector2DTest {
         Assert.assertEquals(FastMath.PI / 4, PLUS_I.add(PLUS_J).getAlpha(), 1.0e-10);
     }
     
+    @Test
+    public void testAngle() {
+        // Case 1 : Angle between two orthogonal vectors
+        Vector2D v1 = new Vector2D(1, 0); // Vecteur sur l'axe X
+        Vector2D v2 = new Vector2D(0, 1); // Vecteur sur l'axe Y
+        Assert.assertEquals(Math.PI / 2, Vector2D.angle(v1, v2), 1e-10);
+
+        // Case 2 : Angle between two nearly positively aligned vectors
+        Vector2D v3 = new Vector2D(1, 0);
+        Vector2D v4 = new Vector2D(0.9999, 0.0001);
+        Assert.assertTrue(Vector2D.angle(v3, v4) < 1e-3);
+
+        // Case 3 : Angle between two nearly negatively aligned vectors
+        Vector2D v5 = new Vector2D(0, 1);
+        Vector2D v6 = new Vector2D(0, -0.9999);
+        Assert.assertEquals(Math.PI, Vector2D.angle(v5, v6), 1e-10);
+
+        // Case 4 : Exception for zero vector
+        Vector2D v7 = new Vector2D(0, 0);
+        Assert.assertThrows(MathArithmeticException.class, () -> Vector2D.angle(v1, v7));
+
+        // Case 5 : Angle between two identical vectors
+        Vector2D v8 = new Vector2D(1, 0);
+        Vector2D v9 = new Vector2D(1, 0);
+        Assert.assertEquals(0, Vector2D.angle(v8, v9), 1e-10);
+
+    }
+
     /**
      * Apply a rotation to the input vector, the output and input vectors are coplanar.
      * 
@@ -334,5 +366,10 @@ public class Vector2DTest {
         final Vector3D vRotated = rotation.applyTo(v3d);
         
         return new Vector2D(vRotated.getX(), vRotated.getY());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

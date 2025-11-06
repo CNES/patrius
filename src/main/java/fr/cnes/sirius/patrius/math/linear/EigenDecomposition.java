@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3111:10/05/2022:[PATRIUS] Suite FA 2999 Corrections mineures de la classe EigenDecomposition 
@@ -931,7 +933,8 @@ public class EigenDecomposition implements Decomposition {
 
             final int m = this.realEigenvalues.length;
             if (b.getDimension() != m) {
-                throw new DimensionMismatchException(b.getDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, b.getDimension(),
+                    m);
             }
 
             final double[] bp = new double[m];
@@ -957,7 +960,8 @@ public class EigenDecomposition implements Decomposition {
 
             final int m = this.realEigenvalues.length;
             if (b.getRowDimension() != m) {
-                throw new DimensionMismatchException(b.getRowDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, m,
+                    b.getRowDimension());
             }
 
             final int nColB = b.getColumnDimension();
