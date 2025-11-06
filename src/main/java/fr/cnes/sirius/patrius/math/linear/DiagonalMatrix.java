@@ -20,12 +20,14 @@
  */
 /* 
  * HISTORY
-* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
-* VERSION:4.8:FA:FA-2941:15/11/2021:[PATRIUS] Correction anomalies suite a DM 2767 
-* VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
+ * VERSION:4.8:FA:FA-2941:15/11/2021:[PATRIUS] Correction anomalies suite a DM 2767 
+ * VERSION:4.8:DM:DM-3040:15/11/2021:[PATRIUS]Reversement des evolutions de la branche patrius-for-lotus 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
  * VERSION:4.5.1:FA:FA-2540:04/08/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear
@@ -42,6 +44,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
+import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.exception.MathUnsupportedOperationException;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
@@ -918,7 +921,11 @@ public class DiagonalMatrix extends AbstractRealMatrix implements SymmetricMatri
     public double[] operate(final double[] v) {
         // Dimension check
         final int n = this.getRowDimension();
-        MatrixUtils.checkDimension(n, v.length);
+        if (v.length != n) {
+            // Exception
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_SQUARE_MATRIX_DIMENSIONS,
+                v.length, n);
+        }
 
         // Multiplication routine
         final double[] out = new double[n];
@@ -933,7 +940,11 @@ public class DiagonalMatrix extends AbstractRealMatrix implements SymmetricMatri
     public RealVector operate(final RealVector v) {
         // Dimension check
         final int n = this.getRowDimension();
-        MatrixUtils.checkDimension(n, v.getDimension());
+        if (v.getDimension() != n) {
+            // Exception
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_SQUARE_MATRIX_DIMENSIONS,
+                v.getDimension(), n);
+        }
 
         // Multiplication routine
         final RealVector out = new ArrayRealVector(n);

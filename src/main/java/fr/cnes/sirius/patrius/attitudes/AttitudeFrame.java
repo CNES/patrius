@@ -18,6 +18,7 @@
  * @history creation 21/12/2011
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-245:22/08/2024: Ajout d'un constructeur dans AbstractCelestialBody
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3157:10/05/2022:[PATRIUS] Construction d'un AttitudeFrame a partir d'un AttitudeProvider 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 

@@ -18,6 +18,9 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14.1:OPENFD-292:10/09/2024:Implémentation de multi-propagateurs mixtes
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le
@@ -58,12 +61,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import fr.cnes.sirius.patrius.assembly.properties.MassEquation;
@@ -96,13 +101,18 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.BoundedPropagator;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.MultiPropagator;
+import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
+import fr.cnes.sirius.patrius.propagation.SpacecraftStateProvider;
+import fr.cnes.sirius.patrius.propagation.analytical.multi.MultiAnalyticalPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquations;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalEquationsAndTolerances;
 import fr.cnes.sirius.patrius.propagation.numerical.AdditionalStateInfo;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation;
 import fr.cnes.sirius.patrius.propagation.numerical.AttitudeEquation.AttitudeType;
+import fr.cnes.sirius.patrius.propagation.numerical.NumericalPropagator;
 import fr.cnes.sirius.patrius.propagation.numerical.TimeDerivativesEquations;
+import fr.cnes.sirius.patrius.propagation.precomputed.Ephemeris;
 import fr.cnes.sirius.patrius.propagation.precomputed.multi.MultiIntegratedEphemeris;
 import fr.cnes.sirius.patrius.propagation.sampling.multi.MultiAdaptedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.multi.MultiPatriusFixedStepHandler;
@@ -123,14 +133,15 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
  * </p>
  * <p>
  * This class propagates N {@link SpacecraftState} using numerical integration. Each state is identified with an ID of
- * type String.
+ * type String. As of version 4.14, this class also handles hybrid propagation, meaning that analytical propagation can
+ * be performed at the same time. See the end of this Javadoc presentation for further details.
  * </p>
  * <p>
  * Multi spacecraft numerical propagation requires steps to set up the propagator to be used properly.
  * </p>
  * At least one satellite should be added to the propagator using {@link #addInitialState(SpacecraftState, String)}.
- * Then, the following configuration parameters
- * can be set for each state: </p>
+ * Then, the following configuration parameters can be set for each state:
+ * </p>
  * <ul>
  * <li>the central attraction coefficient ({@link #setMu(double, String)})</li>
  * <li>the various force models ({@link #addForceModel(ForceModel, String)}, {@link #removeForceModels()})</li>
@@ -172,7 +183,7 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
  * <li>the {@link fr.cnes.sirius.patrius.orbits.CircularOrbit circular orbit parameters} (a, e<sub>x</sub>,
  * e<sub>y</sub>, i, &Omega;, &alpha;<sub>M</sub> or &alpha;<sub>E</sub> or &alpha;<sub>v</sub>) in meters and rad,</li>
  * <li>the {@link fr.cnes.sirius.patrius.orbits.CartesianOrbit Cartesian orbit parameters} (x, y, z, v<sub>x</sub>,
- * v<sub>y</sub>, v<sub>z</sub>) in meters and meters per seconds.
+ * v<sub>y</sub>, v<sub>z</sub>) in meters and meters per seconds.</li>
  * </ul>
  * </p>
  * <p>
@@ -190,6 +201,31 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
  * integrator.setInitialStepSize(initStep);
  * propagator = new MultiNumericalPropagator(integrator);
  * </pre>
+ * 
+ * <p>
+ * As mentioned at the beginning of this description it is now possible to perform hybrid propagation with this
+ * multi-numerical propagator. A few constraints and information are useful to be known:
+ * <ul>
+ * <li>hybrid propagation means that analytical propagation is performed <i>at the same time</i> as numerical
+ * propagation thanks to additional {@link SpacecraftStateProvider SpacecraftStateProviders},</li>
+ * <li>at least one numerical propagation shall be performed, pure analytical propagation is not authorized. If needed,
+ * use {@link MultiAnalyticalPropagator} instead,</li>
+ * <li>any {@link SpacecraftStateProvider} is handled, therefore {@link Ephemeris} propagator is handled as well as any
+ * other implementation of {@link SpacecraftStateProvider}. It is not forbidden however strongly discouraged to add a
+ * {@link NumericalPropagator} at this point, add initial states thanks to dedicated method
+ * {@link #addInitialState(SpacecraftState, String)} for numerical propagation instead,</li>
+ * <li>note that any provider added thanks to {@link #addStateProvider(SpacecraftStateProvider, String)}, if
+ * implementing the interface {@link Propagator}, is automatically set to slave mode and its events detectors list is
+ * cleared so as not to interfere with multi-propagation detectors,</li>
+ * <li>all propagation modes are handled: mode handlers compute step dates which are then provided to
+ * {@link SpacecraftStateProvider SpacecraftStateProviders} to compute the {@link SpacecraftState} at input dates. As an
+ * example it is possible to add an {@link Ephemeris} mono-propagator to the map of providers and use ephemeris mode at
+ * multi-propagator level: the added mono-propagator {@link Ephemeris} is set to slave mode <i>but</i> handlers of the
+ * multi-propagator (which is set to ephemeris mode in our example) compute ephemeris dates that are provided to the
+ * {@link Ephemeris#getSpacecraftState(AbsoluteDate)} method.</li>
+ * </ul>
+ * </p>
+ * 
  * <p>
  * The same instance cannot be used simultaneously by different threads, the class is <em>not</em> thread-safe.
  * </p>
@@ -231,6 +267,12 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      * spacecraft.
      */
     private final Map<String, List<ForceModel>> forceModels;
+    
+    /** Map of additional spacecraft state providers. */
+    private final Map<String, SpacecraftStateProvider> addStateProviders;
+    
+    /** Map of additional spacecraft state providers frames. */
+    private final Map<String, Frame> addStateProvidersFrames;
 
     /** Event detectors not related to force models. */
     private final List<MultiEventDetector> multiDetectors;
@@ -243,6 +285,9 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
 
     /** Reference date. */
     private AbsoluteDate referenceDate;
+    
+    /** Set of numerically propagated IDs. */
+    private Set<String> propagatedIds;
 
     /** Map of initial states to propagate. */
     private Map<String, SpacecraftState> initialStates;
@@ -416,7 +461,6 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         this.attitudeProvidersEvents = new HashMap<>();
         this.attitudeProvidersByDefault = new HashMap<>();
         this.stateVector = new double[SpacecraftState.ORBIT_DIMENSION];
-        this.stateVector = new double[SpacecraftState.ORBIT_DIMENSION];
         // Store default tolerance array given to the integrator
         if (integratorIn instanceof AdaptiveStepsizeIntegrator) {
             this.orbitDefaultAbsoluteTolerance = storeAbsoluteDefaultTolerance(
@@ -435,6 +479,9 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         this.muMap = new HashMap<>();
         this.massMultiModelHandlers = new HashMap<>();
         this.nullMassDetectors = new HashMap<>();
+        this.addStateProviders = new HashMap<>();
+        this.addStateProvidersFrames = new HashMap<>();
+        this.propagatedIds = null;
         if (this.multiIntegrator instanceof AbstractIntegrator) {
             ((AbstractIntegrator) this.multiIntegrator).addObserver(this);
         }
@@ -537,12 +584,10 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         this.checkSatId(satId);
         MultiAttitudeProvider attProv = null;
         // If two attitude providers were provided
-        if (!this.attitudeProvidersByDefault.containsKey(satId)
-                || (this.attitudeProvidersByDefault.get(satId) == null)) {
-            if ((this.attitudeProvidersForces.containsKey(satId))
-                    || (this.attitudeProvidersForces.get(satId) != null)) {
+        if (this.attitudeProvidersByDefault.get(satId) == null) {
+            if (this.attitudeProvidersForces.get(satId) != null) {
                 attProv = this.attitudeProvidersForces.get(satId);
-            } else if (this.attitudeProvidersEvents.containsKey(satId)) {
+            } else if (this.attitudeProvidersEvents.get(satId) != null) {
                 attProv = this.attitudeProvidersEvents.get(satId);
             }
         } else {
@@ -556,20 +601,18 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     @Override
     public MultiAttitudeProvider getAttitudeProviderForces(final String satId) {
         this.checkSatId(satId);
-        if (this.attitudeProvidersForces.containsKey(satId)) {
-            return this.attitudeProvidersForces.get(satId);
-        }
-        return null;
+        
+        // Return the attitude provider (may be null!)
+        return this.attitudeProvidersForces.get(satId);
     }
 
     /** {@inheritDoc} */
     @Override
     public MultiAttitudeProvider getAttitudeProviderEvents(final String satId) {
         this.checkSatId(satId);
-        if (this.attitudeProvidersEvents.containsKey(satId)) {
-            return this.attitudeProvidersEvents.get(satId);
-        }
-        return null;
+        
+        // Return the attitude provider (may be null!)
+        return this.attitudeProvidersEvents.get(satId);
     }
 
     /**
@@ -593,10 +636,9 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      *         attitude (for events or forces computation)
      */
     private void checkSingleAttitudeTreatmentAttProv(final String satId) {
-        final MultiAttitudeProvider attitudeProviderForces = this.attitudeProvidersForces
-            .containsKey(satId) ? this.attitudeProvidersForces.get(satId) : null;
-        final MultiAttitudeProvider attitudeProviderEvents = this.attitudeProvidersEvents
-            .containsKey(satId) ? this.attitudeProvidersEvents.get(satId) : null;
+        // Retrieve attitude providers
+        final MultiAttitudeProvider attitudeProviderForces = this.attitudeProvidersForces.get(satId);
+        final MultiAttitudeProvider attitudeProviderEvents = this.attitudeProvidersEvents.get(satId);
         if ((attitudeProviderForces != null) || (attitudeProviderEvents != null)) {
             throw PatriusException.createIllegalStateException(
                 PatriusMessages.TWO_ATTITUDES_TREATMENT_EXPECTED);
@@ -611,8 +653,9 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      *         attitude (for events or forces computation)
      */
     private void checkSingleAttitudeTreatmentEquations(final String satId) {
-        if (this.addEquationsAndTolerances.containsKey(satId)) {
-            final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        // Retrieve attitude equations list (may be null!)
+        final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        if (eqs != null) {
             for (int i = 0; i < eqs.size(); i++) {
                 final String name = eqs.get(i).getEquations().getName();
                 if ((name.equals(AttitudeType.ATTITUDE_FORCES.toString()))
@@ -634,16 +677,19 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     private void checkTwoAttitudesTreatment(final String satId) {
         // Check sat ID existence
         this.checkSatId(satId);
-        final MultiAttitudeProvider attitudeProviderByDefault = this.attitudeProvidersByDefault
-            .containsKey(satId) ? this.attitudeProvidersByDefault.get(satId) : null;
+
+        // Retrieve attitude provider (may be null!)
+        final MultiAttitudeProvider attitudeProviderByDefault = this.attitudeProvidersByDefault.get(satId);
         if (attitudeProviderByDefault != null) {
             // There is already an attitude law
             throw PatriusException.createIllegalStateException(
                 PatriusMessages.SINGLE_ATTITUDE_TREATMENT_EXPECTED);
         }
-        if (this.addEquationsAndTolerances.containsKey(satId)) {
+        
+        // Retrieve attitude equations list (may be null!)
+        final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        if (eqs != null) {
             // Additional equations
-            final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
             for (int i = 0; i < eqs.size(); i++) {
                 final String name = eqs.get(i).getEquations().getName();
                 if (name.equals(AttitudeType.ATTITUDE.toString())) {
@@ -666,11 +712,12 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      * @param attitudeProvider attitude provider
      * @param satId satellite ID for attitude provider
      */
-    public void setAttitudeProvider(final MultiAttitudeProvider attitudeProvider,
-                                    final String satId) {
+    public void setAttitudeProvider(final MultiAttitudeProvider attitudeProvider, final String satId) {
         this.checkSingleAttitudeTreatment(satId);
-        if (this.addEquationsAndTolerances.containsKey(satId)) {
-            final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        
+        // Retrieve attitude equations list (may be null!)
+        final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        if (eqs != null) {
             for (int i = 0; i < eqs.size(); i++) {
                 if (eqs.get(i).getEquations().getName().equals(AttitudeType.ATTITUDE.toString())) {
                     // An additional equation is already defined for this Attitude
@@ -686,10 +733,8 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
 
     /** {@inheritDoc} */
     @Override
-    public void setAttitudeProviderForces(final AttitudeProvider attitudeProviderForces,
-                                          final String satId) {
-        this.setAttitudeProviderForces(new MultiAttitudeProviderWrapper(attitudeProviderForces, satId),
-            satId);
+    public void setAttitudeProviderForces(final AttitudeProvider attitudeProviderForces, final String satId) {
+        this.setAttitudeProviderForces(new MultiAttitudeProviderWrapper(attitudeProviderForces, satId), satId);
     }
 
     /**
@@ -698,11 +743,12 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      * @param attitudeProviderForces attitude provider for forces
      * @param satId satellite ID for attitude provider
      */
-    public void setAttitudeProviderForces(final MultiAttitudeProvider attitudeProviderForces,
-                                          final String satId) {
+    public void setAttitudeProviderForces(final MultiAttitudeProvider attitudeProviderForces, final String satId) {
         this.checkTwoAttitudesTreatment(satId);
-        if (this.addEquationsAndTolerances.containsKey(satId)) {
-            final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        
+        // Retrieve attitude equations list (may be null!)
+        final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        if (eqs != null) {
             for (int i = 0; i < eqs.size(); i++) {
                 if (eqs.get(i).getEquations().getName()
                     .equals(AttitudeType.ATTITUDE_FORCES.toString())) {
@@ -712,17 +758,15 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
                 }
             }
         }
-        // If an AttitudeProvider was already defined by the user or by default, it is replaced by
-        // the new one
+        
+        // If an AttitudeProvider was already defined by the user or by default, it is replaced by the new one
         this.attitudeProvidersForces.put(satId, attitudeProviderForces);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setAttitudeProviderEvents(final AttitudeProvider attitudeProviderEvents,
-                                          final String satId) {
-        this.setAttitudeProviderForces(new MultiAttitudeProviderWrapper(attitudeProviderEvents, satId),
-            satId);
+    public void setAttitudeProviderEvents(final AttitudeProvider attitudeProviderEvents, final String satId) {
+        this.setAttitudeProviderForces(new MultiAttitudeProviderWrapper(attitudeProviderEvents, satId), satId);
     }
 
     /**
@@ -734,8 +778,10 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     public void setAttitudeProviderEvents(final MultiAttitudeProvider attitudeProviderEvents,
                                           final String satId) {
         this.checkTwoAttitudesTreatment(satId);
-        if (this.addEquationsAndTolerances.containsKey(satId)) {
-            final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        
+        // Retrieve equations and tolerances list (may be null!)
+        final List<AdditionalEquationsAndTolerances> eqs = this.addEquationsAndTolerances.get(satId);
+        if (eqs != null) {
             for (int i = 0; i < eqs.size(); i++) {
                 if (eqs.get(i).getEquations().getName()
                     .equals(AttitudeType.ATTITUDE_EVENTS.toString())) {
@@ -745,8 +791,8 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
                 }
             }
         }
-        // If an AttitudeProvider was already defined by the user or by default, it is replaced by
-        // the new one
+        
+        // If an AttitudeProvider was already defined by the user or by default, it is replaced by the new one
         this.attitudeProvidersEvents.put(satId, attitudeProviderEvents);
     }
 
@@ -958,8 +1004,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
 
     /** {@inheritDoc} */
     @Override
-    public void addInitialState(final SpacecraftState initialState, final String satId)
-        throws PatriusException {
+    public void addInitialState(final SpacecraftState initialState, final String satId) throws PatriusException {
         // Check sat ID is not null or empty
         if (satId == null || satId.isEmpty()) {
             throw new PatriusException(PatriusMessages.PDB_NULL_STATE_ID);
@@ -969,7 +1014,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         } else {
             // Check sat ID is not already used
             if (this.initialStates.containsKey(satId)) {
-                throw new PatriusException(PatriusMessages.PDB_SAT_ID_ALREADY_USED, satId);
+                throw new PatriusException(PatriusMessages.PDB_SAT_ID_ALREADY_USED);
             }
             // Check date correspondence
             if (!this.startDate.equals(initialState.getDate())) {
@@ -981,6 +1026,76 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         if (!this.propagationFrameMap.containsKey(satId)) {
             this.propagationFrameMap.put(satId, null);
         }
+    }
+    
+    /**
+     * Get the map of additional spacecraft state providers
+     * 
+     * @return the map of additional spacecraft state providers
+     */
+    public Map<String, SpacecraftStateProvider> getStateProviders() {
+        return this.addStateProviders;
+    }
+
+    /**
+     * Add an additional spacecraft state provider to the propagator. At each propagation step, the additional states
+     * will be retrieved and added to the map of states along with the propagated states. This allows to pass additional
+     * states to the step handler and event detectors during propagation.
+     * <p>
+     * <b>Note</b>: the provider, if it is a Propagator, shall not contain event detectors nor handlers that could
+     * disturb the multi propagation. As a result the input propagator is set to slave mode and its list of detectors is
+     * cleared. Detectors shall be added in multi propagator.
+     * 
+     * @param provider
+     *        the spacecraft state provider
+     * @param satId
+     *        the spacecraft ID
+     * @throws PatriusException
+     *         if an initial state is already defined with this ID.if the input ID is null.
+     */
+    public void addStateProvider(final SpacecraftStateProvider provider, final String satId) throws PatriusException {
+        // Check sat ID is not null or empty
+        if (satId == null || satId.isEmpty()) {
+            throw new PatriusException(PatriusMessages.PDB_NULL_STATE_ID);
+        }
+        // Check sat ID is not already used
+        if (this.initialStates.containsKey(satId) || this.addStateProviders.containsKey(satId)) {
+            throw new PatriusException(PatriusMessages.PDB_SAT_ID_ALREADY_USED);
+        }
+
+        // The provider, if it is a Propagator, shall not contain event detectors nor handlers that could disturb the
+        // multi propagation. Detectors shall be added in multi propagator.
+        if (provider instanceof Propagator) {
+            // Clear detectors
+            ((Propagator) provider).clearEventsDetectors();
+            // Set to slave mode
+            ((Propagator) provider).setSlaveMode();
+        }
+        this.addStateProviders.put(satId, provider);
+        
+        // Add the initial state if start date is known, otherwise it will be added later
+        if (this.startDate != null) {
+            final SpacecraftState scState = provider.getSpacecraftState(this.startDate);
+            this.initialStates.put(satId, scState);
+            this.addStateProvidersFrames.put(satId, scState.getFrame());
+        }
+    }
+    
+    /**
+     * Get the list of sat IDs corresponding to states that are numerically propagated
+     * 
+     * @return the list of propagated sat IDs
+     */
+    private Set<String> getPropagatedSatIds() {
+        
+        // Compute if the Set is null
+        if (this.propagatedIds == null) {
+            this.propagatedIds = new HashSet<>(this.initialStates.keySet());
+            this.propagatedIds.removeAll(this.addStateProviders.keySet());
+        }
+        
+        // Return IDs
+        return this.propagatedIds;
     }
 
     /**
@@ -994,8 +1109,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     private AdditionalEquationsAndTolerances selectEquationsAndTolerances(final String addStateName,
                                                                           final String satId) throws PatriusException {
         this.checkSatId(satId);
-        for (final AdditionalEquationsAndTolerances equAndTolerances : this.addEquationsAndTolerances
-            .get(satId)) {
+        for (final AdditionalEquationsAndTolerances equAndTolerances : this.addEquationsAndTolerances.get(satId)) {
             if (equAndTolerances.getEquations().getName().equals(addStateName)) {
                 return equAndTolerances;
             }
@@ -1034,12 +1148,11 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     public void addAttitudeEquation(final AttitudeEquation addEqu, final String satId) {
         this.checkSatId(satId);
         final AttitudeType type = addEqu.getAttitudeType();
-        final MultiAttitudeProvider attitudeProviderForces = this.attitudeProvidersForces
-            .containsKey(satId) ? this.attitudeProvidersForces.get(satId) : null;
-        final MultiAttitudeProvider attitudeProviderEvents = this.attitudeProvidersEvents
-            .containsKey(satId) ? this.attitudeProvidersEvents.get(satId) : null;
-        final MultiAttitudeProvider attitudeProviderByDefault = this.attitudeProvidersByDefault
-            .containsKey(satId) ? this.attitudeProvidersByDefault.get(satId) : null;
+        
+        // Retrieve attitude providers (may be null!)
+        final MultiAttitudeProvider attitudeProviderForces = this.attitudeProvidersForces.get(satId);
+        final MultiAttitudeProvider attitudeProviderEvents = this.attitudeProvidersEvents.get(satId);
+        final MultiAttitudeProvider attitudeProviderByDefault = this.attitudeProvidersByDefault.get(satId);
 
         // check the attitude type to be integrated
         switch (type) {
@@ -1286,14 +1399,15 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
             this.currentStates = (Map<String, SpacecraftState>)
                 ((LinkedHashMap<String, SpacecraftState>) this.initialStates).clone();
 
-            // Get additional states infos
-            this.stateVectorInfo = new MultiStateVectorInfo(this.currentStates, this.muMap, this.propagationFrameMap);
+                // Get additional states infos
+                this.stateVectorInfo =
+                    new MultiStateVectorInfo(this.currentStates, this.propagationFrameMap, this.addStateProviders);
 
-            // Specific handling of Cowell integrator
+                // Specific handling of Cowell integrator
             if (this.multiIntegrator instanceof CowellIntegrator) {
                 ((CowellIntegrator) this.multiIntegrator).setMapper(new SecondOrderMapper(
                     this.addEquationsAndTolerances, this.stateVectorInfo.getIdList()));
-                if (!this.orbitType.equals(OrbitType.CARTESIAN)) {
+                if (this.orbitType != OrbitType.CARTESIAN) {
                     // Cowell integration must be performed in cartesian coordinates
                     throw new PropagationException(PatriusMessages.COWELL_REQUIRES_CARTESIAN_COORDINATES);
                 }
@@ -1302,8 +1416,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
             this.storeMuFrame();
 
             // initialize event handlers
-            this.initializeEventHandlers(activateHandlers, attitudeProvidersForcesLocal,
-                attitudeProvidersEventsLocal);
+            this.initializeEventHandlers(activateHandlers, attitudeProvidersForcesLocal, attitudeProvidersEventsLocal);
 
             // creating state vector
             this.stateVector = new double[this.stateVectorInfo.getStateVectorSize()];
@@ -1329,8 +1442,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
 
             // Add event handlers
             // Wrap all Orekit event detector and register it to the integrator.
-            this.addEventHandlers(activateHandlers, attitudeProvidersForcesLocal,
-                attitudeProvidersEventsLocal);
+            this.addEventHandlers(activateHandlers, attitudeProvidersForcesLocal, attitudeProvidersEventsLocal);
 
             // mathematical integration
             if (!this.addEquationsAndTolerances.isEmpty()) {
@@ -1412,8 +1524,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     private void manageStateFrame() throws PatriusException {
 
         // Loop on all initial states
-        for (final Entry<String, SpacecraftState> entry : this.initialStates.entrySet()) {
-            final String key = entry.getKey();
+        for (final String key : this.getPropagatedSatIds()) {
 
             final SpacecraftState state = this.initialStates.get(key);
             final Frame propagationFrame = this.propagationFrameMap.get(key);
@@ -1421,8 +1532,8 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
             if (this.propagationFrameMap.get(key) == null) {
                 // Propagation frame has not been provided: frame used is orbit frame is inertial
                 // or pseudo-inertial
-                if (this.initialStates.get(key).getFrame().isPseudoInertial()) {
-                    this.propagationFrameMap.put(key, this.initialStates.get(key).getFrame());
+                if (state.getFrame().isPseudoInertial()) {
+                    this.propagationFrameMap.put(key, state.getFrame());
                 } else {
                     // At least on propagation frame is not inertial
                     throw new PatriusException(PatriusMessages.PDB_NOT_INERTIAL_FRAME);
@@ -1437,17 +1548,14 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
                     // Update attitude in right frame
                     Attitude propagationAttitude = null;
                     if (state.getAttitude() != null) {
-                        propagationAttitude = state.getAttitude().withReferenceFrame(
-                            propagationFrame);
+                        propagationAttitude = state.getAttitude().withReferenceFrame(propagationFrame);
                     }
                     Attitude propagationAttitudeEvents = null;
                     if (state.getAttitudeEvents() != null) {
-                        propagationAttitudeEvents = state.getAttitudeEvents().withReferenceFrame(
-                            propagationFrame);
+                        propagationAttitudeEvents = state.getAttitudeEvents().withReferenceFrame(propagationFrame);
                     }
                     final SpacecraftState newState = new SpacecraftState(propagationOrbit, propagationAttitude,
-                            propagationAttitudeEvents,
-                        state.getAdditionalStates());
+                            propagationAttitudeEvents, state.getAdditionalStates());
 
                     this.initialStates.put(key, newState);
                 }
@@ -1463,17 +1571,14 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      */
     private void addAttitudeToAddStatesMap() throws PatriusException {
         // Loop on all states
-        for (final Entry<String, SpacecraftState> entry : this.initialStates.entrySet()) {
-            final String satId = entry.getKey();
-            //
-            if (this.addEquationsAndTolerances.containsKey(satId)) {
-                // Get additional equations associated with the current state
-                final List<AdditionalEquationsAndTolerances> addEqTols = this.addEquationsAndTolerances
-                    .get(satId);
+        for (final String satId : this.getPropagatedSatIds()) {
+            // Get additional equations associated with the current state (may be null!)
+            final List<AdditionalEquationsAndTolerances> addEqTols = this.addEquationsAndTolerances.get(satId);
+            if (addEqTols != null) {
                 for (int i = 0; i < addEqTols.size(); i++) {
                     // Add attitude to additional state map in initial SpacecraftState
                     final String name = addEqTols.get(i).getEquations().getName();
-                    this.addAttitudeToAddStatesMap(name, satId, entry.getValue());
+                    this.addAttitudeToAddStatesMap(name, satId, initialStates.get(satId));
                 }
             }
         }
@@ -1515,18 +1620,14 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      * @param attitudeProvidersEventsLocal placeholder where to put local attitude providers for
      *        events computation
      */
-    private void storeLocalAttitudeProviders(
-                                             final Map<String, MultiAttitudeProvider> attitudeProvidersForcesLocal,
+    private void storeLocalAttitudeProviders(final Map<String, MultiAttitudeProvider> attitudeProvidersForcesLocal,
                                              final Map<String, MultiAttitudeProvider> attitudeProvidersEventsLocal) {
-        for (final Entry<String, SpacecraftState> entry : this.initialStates.entrySet()) {
-            final String satId = entry.getKey();
-            final MultiAttitudeProvider attProvDefault = this.attitudeProvidersByDefault
-                .containsKey(satId) ? this.attitudeProvidersByDefault.get(satId) : null;
+        for (final String satId : this.getPropagatedSatIds()) {
+            // Retrieve attitude providers (may be null!)
+            final MultiAttitudeProvider attProvDefault = this.attitudeProvidersByDefault.get(satId);
             if (attProvDefault == null) {
-                final MultiAttitudeProvider attProvForces = this.attitudeProvidersForces
-                    .containsKey(satId) ? this.attitudeProvidersForces.get(satId) : null;
-                final MultiAttitudeProvider attProvEvents = this.attitudeProvidersEvents
-                    .containsKey(satId) ? this.attitudeProvidersEvents.get(satId) : null;
+                final MultiAttitudeProvider attProvForces = this.attitudeProvidersForces.get(satId);
+                final MultiAttitudeProvider attProvEvents = this.attitudeProvidersEvents.get(satId);
                 attitudeProvidersForcesLocal.put(satId, attProvForces);
                 attitudeProvidersEventsLocal.put(satId, attProvEvents);
             } else {
@@ -1551,8 +1652,9 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
                 .getFrame());
         }
 
-        // Update info with last mu and frame info
-        this.stateVectorInfo = new MultiStateVectorInfo(this.currentStates, this.muMap, this.propagationFrameMap);
+        // Update info with last frame info
+        this.stateVectorInfo =
+            new MultiStateVectorInfo(this.currentStates, this.propagationFrameMap, this.addStateProviders);
     }
 
     /**
@@ -1591,19 +1693,16 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
     private void checkStatesEquations(final String satId,
                                       final Map<String, double[]> additionalStates) throws PatriusException {
         // Get additional equations from addEquationsAndTolerances
-        final List<AdditionalEquationsAndTolerances> additionalEquation = this.addEquationsAndTolerances
-            .get(satId);
+        final List<AdditionalEquationsAndTolerances> additionalEquation = this.addEquationsAndTolerances.get(satId);
         if (!additionalEquation.isEmpty()) {
-            // Check correspondence between additional states numbers and additional equations
-            // numbers
+            // Check correspondence between additional states numbers and additional equations numbers
             final int eqsSize = additionalEquation.size();
             if ((!additionalStates.isEmpty()) && (additionalStates.size() == eqsSize)) {
                 // Check names correspondence
                 for (int i = 0; i < eqsSize; i++) {
                     final String eqName = additionalEquation.get(i).getEquations().getName();
                     if (!additionalStates.containsKey(eqName)) {
-                        throw new PatriusException(
-                            PatriusMessages.WRONG_CORRESPONDENCE_STATES_EQUATIONS);
+                        throw new PatriusException(PatriusMessages.WRONG_CORRESPONDENCE_STATES_EQUATIONS);
                     }
                 }
             } else {
@@ -1635,8 +1734,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         for (final String id : MultiNumericalPropagator.this.stateVectorInfo.getIdList()) {
             final List<AdditionalEquationsAndTolerances> list = this.addEquationsAndTolerances.get(id);
             int index = 3;
-            for (final Entry<String, double[]> addState : this.initialStates.get(id).getAdditionalStates()
-                .entrySet()) {
+            for (final Entry<String, double[]> addState : this.initialStates.get(id).getAdditionalStates().entrySet()) {
                 // Find corresponding equation
                 for (final AdditionalEquationsAndTolerances stateAndTol : list) {
                     if (stateAndTol.getEquations().getName().equals(addState.getKey())) {
@@ -1742,10 +1840,8 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
             final String satId = satIdList.get(i);
             final int satRank = this.stateVectorInfo.getSatRank(satId);
             // Get orbit tolerances
-            final double[] orbitTol;
-            if (orbitTolerancesArrays.containsKey(satId)) {
-                orbitTol = orbitTolerancesArrays.get(satId);
-            } else {
+            double[] orbitTol = orbitTolerancesArrays.get(satId);
+            if (orbitTol == null) {
                 orbitTol = orbitDefaultTol;
             }
 
@@ -1753,14 +1849,11 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
             System.arraycopy(orbitTol, 0, resizedArray, satRank, SpacecraftState.ORBIT_DIMENSION);
 
             // Get additional states tolerances
-            double[] addStatesTol = null;
-            if (addStatesTolerancesArrays.containsKey(satId)) {
-                addStatesTol = addStatesTolerancesArrays.get(satId);
-                // Add tolerances for additional states
-                if (addStatesTol != null) {
-                    System.arraycopy(addStatesTol, 0, resizedArray, satRank + SpacecraftState.ORBIT_DIMENSION,
-                        addStatesTol.length);
-                }
+            final double[] addStatesTol = addStatesTolerancesArrays.get(satId);
+            // Add tolerances for additional states
+            if (addStatesTol != null) {
+                System.arraycopy(addStatesTol, 0, resizedArray, satRank + SpacecraftState.ORBIT_DIMENSION,
+                    addStatesTol.length);
             }
         }
 
@@ -1802,9 +1895,12 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         }
 
         if (this.ephemerisMultiModeHandler != null) {
+            // Use all frames to build bounded propagators used for ephemeris
+            final Map<String, Frame> framesMap = new HashMap<String, Frame>(this.propagationFrameMap);
+            framesMap.putAll(this.addStateProvidersFrames);
             this.ephemerisMultiModeHandler.initialize(this.orbitType, this.angleType, localAttProvForces,
                 localAttProvEvents, this.stateVectorInfo, activateHandlers, this.referenceDate,
-                this.propagationFrameMap, this.muMap);
+                framesMap, this.muMap);
         }
 
         if (this.massMultiModelHandlers != null) {
@@ -1839,8 +1935,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
         if (!this.nullMassDetectors.isEmpty()) {
             // If single attitude treatment expected
             for (final Map.Entry<String, NullMassDetector> entry : this.nullMassDetectors.entrySet()) {
-                this.setUpEventDetector(entry.getValue(), localAttProvForces, localAttProvEvents,
-                    entry.getKey());
+                this.setUpEventDetector(entry.getValue(), localAttProvForces, localAttProvEvents, entry.getKey());
             }
         }
 
@@ -1866,8 +1961,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
                     // get events associated with the current force model
                     if (list.get(i) != null) {
                         final EventDetector[] modelDetectors = list.get(i).getEventsDetectors();
-                        this.addEventHandlers(satId, localAttProvForces, localAttProvEvents,
-                            modelDetectors);
+                        this.addEventHandlers(satId, localAttProvForces, localAttProvEvents, modelDetectors);
                     }
                 }
             }
@@ -1940,7 +2034,7 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
      */
     public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame,
                                           final String satId) throws PatriusException {
-        return this.propagate(date).get(satId).getPVCoordinates(frame);
+        return getSpacecraftState(date, satId).getPVCoordinates(frame);
     }
 
     /**
@@ -2262,4 +2356,5 @@ public class MultiNumericalPropagator implements MultiPropagator, Observer, Seri
             }
         }
     }
+    
 }

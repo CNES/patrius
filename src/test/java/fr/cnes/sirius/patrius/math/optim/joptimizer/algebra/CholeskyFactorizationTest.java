@@ -1,9 +1,12 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -47,7 +50,9 @@ package fr.cnes.sirius.patrius.math.optim.joptimizer.algebra;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
 import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
 import fr.cnes.sirius.patrius.math.linear.BlockRealMatrix;
@@ -56,9 +61,9 @@ import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
 import fr.cnes.sirius.patrius.math.linear.SingularValueDecomposition;
 import fr.cnes.sirius.patrius.math.optim.joptimizer.TestUtils;
-import fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import junit.framework.TestCase;
 
 /**
  * @author alberto trivellato (alberto.trivellato@gmail.com)
@@ -153,8 +158,10 @@ public class CholeskyFactorizationTest extends TestCase {
         
         //scaledResidual = ||Ax-b||_oo/( ||A||_oo . ||x||_oo + ||b||_oo )
         // with ||x||_oo = max(x[i])
-        final double scaledResidual = Utils.calculateScaledResidual(Q, x, b);
-        assertTrue(scaledResidual < Utils.getDoubleMachineEpsilon());
+        final double scaledResidual = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                .calculateScaledResidual(Q, x, b);
+        assertTrue(scaledResidual < fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                .getDoubleMachineEpsilon());
         
         //b - Q.x
         //checking the simple norm, this will fail
@@ -212,14 +219,19 @@ public class CholeskyFactorizationTest extends TestCase {
             //solve Q.x = b
             final RealVector b = AlgebraUtils.randomValuesVector(dim, -1, 1, 12345L);
             final RealVector x = cs.solve(U.operate(b));
-            final double scaledResidualx = Utils.calculateScaledResidual(AMatrix, U.operate(x), b);
-            assertTrue(scaledResidualx < Utils.getDoubleMachineEpsilon());
+            final double scaledResidualx = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                    .calculateScaledResidual(AMatrix, U.operate(x), b);
+            assertTrue(scaledResidualx < fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                    .getDoubleMachineEpsilon());
             
             //solve Q.X = B
-            final RealMatrix B = Utils.randomValuesMatrix(dim, 5, -1, 1, 12345L);
+            final RealMatrix B = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                    .randomValuesMatrix(dim, 5, -1, 1, 12345L);
             final RealMatrix X = cs.solve(U.multiply(B));
-            final double scaledResidualX = Utils.calculateScaledResidual(AMatrix, U.multiply(X), B);
-            assertTrue(scaledResidualX < Utils.getDoubleMachineEpsilon());
+            final double scaledResidualX = fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                    .calculateScaledResidual(AMatrix, U.multiply(X), B);
+            assertTrue(scaledResidualX < fr.cnes.sirius.patrius.math.optim.joptimizer.util.Utils
+                    .getDoubleMachineEpsilon());
         }
     }
     
@@ -285,5 +297,10 @@ public class CholeskyFactorizationTest extends TestCase {
             return;
         }
         fail();
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

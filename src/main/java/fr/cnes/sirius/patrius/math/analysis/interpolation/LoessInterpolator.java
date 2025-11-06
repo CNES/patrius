@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2089:15/05/2019:[PATRIUS] passage a Java 8
@@ -237,7 +239,7 @@ public class LoessInterpolator
         // CHECKSTYLE: resume ReturnCount check
         // CHECKSTYLE: resume CyclomaticComplexity check
         if (xval.length != yval.length) {
-            throw new DimensionMismatchException(xval.length, yval.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION, xval.length, yval.length);
         }
 
         final int n = xval.length;
@@ -406,7 +408,7 @@ public class LoessInterpolator
      */
     public final double[] smooth(final double[] xval, final double[] yval) {
         if (xval.length != yval.length) {
-            throw new DimensionMismatchException(xval.length, yval.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSION_MISMATCH_FUNCTION, xval.length, yval.length);
         }
 
         final double[] unitWeights = new double[xval.length];

@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15.1:OPENFD-487:28/01/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -42,15 +44,16 @@ import java.util.Collection;
 import java.util.List;
 
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.math.exception.ConvergenceException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.CartesianParameters;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.IOrbitalParameters;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 
 /**
  * This class holds cartesian orbital parameters.
@@ -446,6 +449,10 @@ public final class CartesianOrbit extends Orbit {
             sinThetaE = sincosThetaE[0];
 
         } while ((++iter < MAX_ITERATIONS) && (MathLib.abs(shift) > THRESHOLD));
+        
+        if (iter >= MAX_ITERATIONS) {
+        	throw new ConvergenceException();
+        }
 
         return thetaE;
 
@@ -464,12 +471,17 @@ public final class CartesianOrbit extends Orbit {
      *        eccentricity
      * @return the true anomaly
      */
-    private static double meanToHyperbolicEccentric(final double m, final double e) {
+    private static double meanToHyperbolicEccentric(final double m, final double e) { 
+    	
+    	final double maxShift = 5.0;
+        
+        // Use a local threshold to avoid numerical problems
+        final double localThreshold = MathLib.max(THRESHOLD, MathLib.abs(m) * THRESHOLD);
 
         // resolution of hyperbolic Kepler equation for keplerian parameters
-        double h = -m;
+        double h = 0;
         double shift = 0.0;
-        double hpM = 0.0;
+        double hpM = m;
         int iter = 0;
         do {
             // Loop until convergence
@@ -479,14 +491,29 @@ public final class CartesianOrbit extends Orbit {
             final double f2 = e * sinh;
             final double f1 = e * cosh - 1;
             final double f0 = f2 - hpM;
-
             final double f12 = 2 * f1;
+
             // Update loop variable
             shift = f0 * f12 / (f1 * f12 - f0 * f2);
+            
+            // Apply saturation on the shift, to avoid divergence
+            if (shift > maxShift) {
+            	shift = maxShift;
+            }
+            if (shift < -maxShift) {
+            	shift = -maxShift;
+            }
+            
+            // Apply shift
             hpM -= shift;
             h = hpM - m;
+            ++iter;
 
-        } while ((++iter < MAX_ITERATIONS) && (MathLib.abs(shift) > THRESHOLD));
+        } while ((iter < MAX_ITERATIONS) && (MathLib.abs(shift) > localThreshold));
+        
+        if (iter >= MAX_ITERATIONS) {
+            throw new ConvergenceException();
+        }
 
         // Return result
         return h;

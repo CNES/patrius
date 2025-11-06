@@ -1,7 +1,10 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -14,11 +17,18 @@
 package fr.cnes.sirius.patrius.utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.StringTablePrinter.StringAlign;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit test class for the {@link StringTablePrinter} class.
@@ -440,5 +450,10 @@ public class StringTablePrinterTest {
             // expected
             Assert.assertTrue(true);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

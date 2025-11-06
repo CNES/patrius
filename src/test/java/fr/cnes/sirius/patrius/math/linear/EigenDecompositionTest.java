@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:FA:FA-2999:15/11/2021:[PATRIUS] Anomalies classe EigenDecomposition 
@@ -43,6 +44,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathUnsupportedOperationException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
@@ -838,6 +840,7 @@ public class EigenDecompositionTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         this.refValues = new double[] {
             2.003, 2.002, 2.001, 1.001, 1.000, 0.001
         };

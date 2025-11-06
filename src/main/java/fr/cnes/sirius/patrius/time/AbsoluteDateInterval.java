@@ -18,6 +18,8 @@
  * @history 03/10/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-291:21/11/2024:[PATRIUS] Arguments non remontés dans une Exception
+ * VERSION:4.14:OPENFD-:22/08/2024:
  * VERSION:4.13:DM:DM-105:08/12/2023:[PATRIUS] Renommage de getDateList
  * VERSION:4.13:FA:FA-93:08/12/2023:[PATRIUS] Generation erronee de liste de dates à  partir d'un interval
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
@@ -149,10 +151,8 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
         // The parent constructor performs some validation
         super(lowerEndpointIn, lowerDataIn, upperDataIn, upperEndpointIn);
 
-        // calls the AbsoluteDate specific validation
-        if (!adIntervalIsOK(lowerEndpointIn, lowerDataIn, upperDataIn, upperEndpointIn)) {
-            throw new MathIllegalArgumentException(PatriusMessages.ARGUMENT_OUTSIDE_DOMAIN);
-        }
+        // calls the AbsoluteDate specific validation and throws a MathIllegalArgumentException if anything is wrong
+        adIntervalIsOK(lowerEndpointIn, lowerDataIn, upperDataIn, upperEndpointIn);
     }
 
     /**
@@ -204,7 +204,7 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      * Check the validity of the <code>AbsoluteDate</code>-based interval.<br>
      *
      * <p>
-     * Returns <code>false</code> if:
+     * Throws an exception if:
      * <ul>
      * <li>the the lower and the upper bounds are the same and any endpoints is open;
      * <li>if a bound is infinite with a closed endpoint.
@@ -219,12 +219,11 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
      *        Lower end boundary type
      * @param upperEndpointIn
      *        Upper end boundary type
-     * @return {@code true} if the dates are valid
+     * @throws MathIllegalArgumentException detailing the nature of the problem
      */
-    private static boolean adIntervalIsOK(final IntervalEndpointType lowerEndpointIn,
+    private static void adIntervalIsOK(final IntervalEndpointType lowerEndpointIn,
                                           final AbsoluteDate lowerDataIn, final AbsoluteDate upperDataIn,
                                           final IntervalEndpointType upperEndpointIn) {
-        boolean validFlag = true;
         final AbsoluteDate ld = lowerDataIn;
         final IntervalEndpointType le = lowerEndpointIn;
         final AbsoluteDate ud = upperDataIn;
@@ -235,17 +234,15 @@ public class AbsoluteDateInterval extends ComparableInterval<AbsoluteDate> {
         // An empty interval has one open endpoint and equal endpoint values
         if ((ld.compareTo(ud) == 0) &&
                 (le == IntervalEndpointType.OPEN || ue == IntervalEndpointType.OPEN)) {
-            validFlag = false;
+            throw new MathIllegalArgumentException(PatriusMessages.EMPTY_INTERVALS_ARE_FORBIDDEN);
         } else if ((ld.equals(past8) || ld.equals(future8)) &&
                 // A closed bracket does not make sense with an infinity endpoint, so we forbid it
                 le == IntervalEndpointType.CLOSED) {
-            validFlag = false;
+            throw new MathIllegalArgumentException(PatriusMessages.LOWER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE);
         } else if ((ud.equals(past8) || ud.equals(future8)) &&
                 ue == IntervalEndpointType.CLOSED) {
-            validFlag = false;
+            throw new MathIllegalArgumentException(PatriusMessages.UPPER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE);
         }
-        // return
-        return validFlag;
     }
 
     /**

@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -1029,6 +1030,7 @@ public class CunninghamGravityModelTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         this.ITRF2005 = null;
         this.propagator = null;
         Utils.setDataRoot("regular-data");

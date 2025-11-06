@@ -18,6 +18,11 @@
  * @history creation 15/10/2015
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -36,15 +41,15 @@
 package fr.cnes.sirius.patrius.attitudes.directions;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,13 +59,13 @@ import fr.cnes.sirius.patrius.attitudes.AbstractAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.AttitudesSequence;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.NadirSolarIncidenceDetector;
@@ -134,6 +139,7 @@ public class GlintApproximatePointingDirectionValTest {
      *         should not happen
      * @throws IOException
      *         should not happen
+     * @throws URISyntaxException
      * @testType VT
      * 
      * @testedMethod {@link GlintApproximatePointingDirection#getTargetPVCoordinates(PVCoordinatesProvider, AbsoluteDate, Frame)}
@@ -158,22 +164,22 @@ public class GlintApproximatePointingDirectionValTest {
      */
 
     @Test
-    public void glintPositionValTest() throws IOException, PatriusException {
+    public void glintPositionValTest() throws IOException, PatriusException, URISyntaxException {
 
-        final String rootResource = "glint-data/";
+        final String rootResource = "glint-data" + File.separator;
         // Read reference ephemeris
-        final URL url1 = GlintApproximatePointingDirectionValTest.class.getClassLoader().getResource(
-            rootResource + "Spacecraft_position.txt");
-        final URL url3 = GlintApproximatePointingDirectionValTest.class.getClassLoader().getResource(
-            rootResource + "Attitude_val.txt");
-        final MatrixFileReader mat1 = new MatrixFileReader(url1.getPath());
-        final MatrixFileReader mat3 = new MatrixFileReader(url3.getPath());
+        final String url1 =
+            new File(ClassLoader.getSystemResource(rootResource + "Spacecraft_position.txt").toURI()).getAbsolutePath();
+        final String url3 =
+            new File(ClassLoader.getSystemResource(rootResource + "Attitude_val.txt").toURI()).getAbsolutePath();
+        final MatrixFileReader mat1 = new MatrixFileReader(url1);
+        final MatrixFileReader mat3 = new MatrixFileReader(url3);
 
         final double[][] dataPV = mat1.getData();
         final double[][] dataVal = mat3.getData();
         final int nbLines = mat1.getData().length;
 
-        // Fill a table of spacecraft PVCoordinates, a table of dates, and a table of reference attitude
+        // Fill a table of spacecraft PVCoordinates, a table of dates, and a table of referenc e attitude
         final PVCoordinates[] spacecraftPvCoord = new PVCoordinates[nbLines];
         final AbsoluteDate[] dates = new AbsoluteDate[nbLines];
         final Rotation[] referenceRot = new Rotation[nbLines];
@@ -195,7 +201,8 @@ public class GlintApproximatePointingDirectionValTest {
             this.mu, this.frame);
 
         // build a TNW align attitude law with X earth pointed
-        final LofOffset tnwLaw = new LofOffset(LOFType.TNW, RotationOrder.XYZ, -FastMath.PI / 2, -FastMath.PI / 2, 0);
+        final LofOffset tnwLaw =
+            new LofOffset(LOFType.TNW, new Rotation(RotationOrder.XYZ, -FastMath.PI / 2, -FastMath.PI / 2, 0));
 
         final MyAttitudeLaw glintAttLaw = new MyAttitudeLaw();
 
@@ -272,8 +279,8 @@ public class GlintApproximatePointingDirectionValTest {
         private final GlintApproximatePointingDirection glint;
 
         /** Intermediate attitude law: offset from LOF. */
-        private final LofOffset intermediateLaw;// = new LofOffset(LOFType.LVLH, RotationOrder.YZX, -FastMath.PI / 2, 0,
-                                                // 0);
+        private final LofOffset intermediateLaw;
+        // = new LofOffset(LOFType.LVLH, new Rotation(RotationOrder.YZX, -FastMath.PI / 2, 0, 0);
 
         /**
          * Constructor
@@ -288,7 +295,8 @@ public class GlintApproximatePointingDirectionValTest {
             // Build inermediate frame
             final Rotation rotation = new Rotation(Vector3D.PLUS_I, Vector3D.PLUS_K, Vector3D.PLUS_K, Vector3D.MINUS_I);
             final double[] angles = rotation.getAngles(RotationOrder.YZX);
-            this.intermediateLaw = new LofOffset(LOFType.LVLH, RotationOrder.YZX, angles[0], angles[1], angles[2]);
+            this.intermediateLaw =
+                new LofOffset(LOFType.LVLH, new Rotation(RotationOrder.YZX, angles[0], angles[1], angles[2]));
         }
 
         /** {@inheritDoc} */
@@ -320,11 +328,12 @@ public class GlintApproximatePointingDirectionValTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         CNESUtils.clearNewFactoriesAndCallSetDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         this.sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         this.sun = new MeeusSun();
 

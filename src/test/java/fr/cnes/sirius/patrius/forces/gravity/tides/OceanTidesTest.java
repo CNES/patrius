@@ -18,6 +18,7 @@
  * @history Created 24/07/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -758,5 +759,10 @@ public class OceanTidesTest {
         fr.cnes.sirius.patrius.Utils.setDataRoot("oceanTides");
         OceanTidesCoefficientsFactory.clearOceanTidesCoefficientsReaders();
         FramesFactory.setConfiguration(Utils.getIERS2010Configuration());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

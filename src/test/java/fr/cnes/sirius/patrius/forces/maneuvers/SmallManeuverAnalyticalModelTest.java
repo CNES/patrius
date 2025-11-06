@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
 * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -45,12 +47,13 @@ import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
@@ -172,7 +175,7 @@ public class SmallManeuverAnalyticalModelTest {
         throws PatriusException {
 
         final AttitudeProvider law = new LofOffset(orbit.getFrame(), LOFType.LVLH,
-            RotationOrder.XZY, FastMath.PI / 2.0, -FastMath.PI / 2.0, 0.0);
+            new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.));
 
         final SpacecraftState initialState =
             new SpacecraftState(orbit, law.getAttitude(orbit, orbit.getDate(), orbit.getFrame()), mass);
@@ -194,8 +197,10 @@ public class SmallManeuverAnalyticalModelTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
     }
 
     private static final String thruster = "thruster";
+
 }

@@ -18,6 +18,10 @@
  * @history 30/08/2016 Creation of the class
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -105,7 +109,7 @@ public class IsisSunPointingTest {
      */
     @Test
     public void sunPointingTest() throws PatriusException {
-
+        
         Report.printMethodHeader("sunPointingTest", "Rotation computation", "Math", 1E-15, ComparisonType.RELATIVE);
 
         // The Sun
@@ -150,14 +154,17 @@ public class IsisSunPointingTest {
         // check that the sign of x component changes, sign on z component is continuous
         // also ensure that the "two" X axis are nearly collinear before the event, opposite after
         final Attitude attBeforeEvent1 = law.getAttitude(currentOrbit);
-        final Attitude attBeforeEvent2 = law.getAttitude(currentOrbit.shiftedBy(0.404));
-        final Attitude attAfterEvent = law.getAttitude(currentOrbit.shiftedBy(0.405));
+        final Attitude attBeforeEvent2 = law.getAttitude(currentOrbit.shiftedBy(0.403));
+        final Attitude attAfterEvent = law.getAttitude(currentOrbit.shiftedBy(0.404));
         final Vector3D xBefore1 = attBeforeEvent1.getRotation().applyTo(Vector3D.PLUS_I);
         final Vector3D xBefore2 = attBeforeEvent2.getRotation().applyTo(Vector3D.PLUS_I);
         final Vector3D xAfter = attAfterEvent.getRotation().applyTo(Vector3D.PLUS_I);
 
-        Assert.assertEquals(xBefore1.add(xBefore2).getNorm(), 2., 1.0E-14);
-        Assert.assertEquals(xBefore2.add(xAfter).getNorm(), 0., 4.0E-10);
+        // Check that xBefore1 and xBefore2 have the same sign (that the event occurs between xBefore2 and xAfter)
+        Assert.assertTrue(xBefore1.getX() * xBefore2.getX() > 0.);
+        // Check that xBefore2 and xAfter have opposite signs (that the event occurs between xBefore2 and xAfter)
+        Assert.assertTrue(xBefore2.getX() * xAfter.getX() < 0.);
+        // Check the direction of the x and z axes before and after the event
         Assert.assertTrue(xBefore2.getX() > 0.);
         Assert.assertTrue(xAfter.getX() < 0.);
         Assert.assertTrue(xBefore2.getZ() < 0.);
@@ -256,7 +263,9 @@ public class IsisSunPointingTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException {
+        Utils.clear();
         Report.printClassHeader(IsisSunPointingTest.class.getSimpleName(), "ISIS Sun pointing");
         Utils.setDataRoot("regular-dataCNES-2003");
     }
+
 }

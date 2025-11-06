@@ -18,6 +18,7 @@
  * @history Created 28/10/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-165:08/12/2023:[PATRIUS] SolarActivityDataReader.getMaxDate erronee
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -30,7 +31,6 @@ package fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.specialized;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -50,6 +50,7 @@ import fr.cnes.sirius.patrius.time.UTCScale;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
+import junit.framework.Assert;
 
 /**
  * Test class for {@link ContinuousMSISE2000SolarData}
@@ -405,6 +406,7 @@ public class ContinuousMSISE2000SolarDataTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("atmosphere");
         this.utc = TimeScalesFactory.getUTC();
         SolarActivityDataFactory.addSolarActivityDataReader(new ACSOLFormatReader(

@@ -17,6 +17,7 @@
  * @history creation 16/03/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2326:27/05/2020:Orbits - Correction equals & HashCode 
@@ -80,37 +81,37 @@ public class StelaEquinoctialParameters extends AbstractOrbitalParameters {
     private static final long serialVersionUID = -3632727570913759537L;
 
     /** Record of last RAAN used in T2 to T1 conversion (to save computation time). */
-    private static double raansvg = 0.0;
+    private double raansvg = 0.0;
     /** Record of last cosine of RAAN computed in T2 to T1 conversion (to save computation time). */
-    private static double cosRaansvg = 1.0;
+    private double cosRaansvg = 1.0;
     /** Record of last sine of RAAN computed in T2 to T1 conversion (to save computation time). */
-    private static double sinRaansvg = 0.0;
+    private double sinRaansvg = 0.0;
 
     /** Record of last perigee argument used in T2 to T1 conversion (to save computation time). */
-    private static double wsvg = 0.0;
+    private double wsvg = 0.0;
     /**
      * Record of last cosine of perigee argument computed in T2 to T1 conversion (to save
      * computation time).
      */
-    private static double coswsvg = 1.0;
+    private double coswsvg = 1.0;
     /**
      * Record of last sine of perigee argument computed in T2 to T1 conversion (to save computation
      * time).
      */
-    private static double sinwsvg = 0.0;
+    private double sinwsvg = 0.0;
 
     /** Record of last inclination used in T2 to T1 conversion (to save computation time). */
-    private static double inclsvg = 0.0;
+    private double inclsvg = 0.0;
     /**
      * Record of last cosine of inclination computed in T2 to T1 conversion (to save computation
      * time).
      */
-    private static double cosInclsvg = 1.0;
+    private double cosInclsvg = 1.0;
     /**
      * Record of last sine of inclination computed in T2 to T1 conversion (to save computation
      * time).
      */
-    private static double sinInclsvg = 0.0;
+    private double sinInclsvg = 0.0;
 
     /** Semi-major axis (m). */
     private final double a;

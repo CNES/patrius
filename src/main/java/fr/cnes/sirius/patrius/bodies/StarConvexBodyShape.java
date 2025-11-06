@@ -14,17 +14,17 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3259:22/05/2023:[PATRIUS] Creer une interface StarConvexBodyShape
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.bodies;
 
-
 /**
  * <p>
  * Extended interface for star-convex bodies shapes : extends the {@link BodyShape} interface by adding a method to get
- * a {@link GeodeticPoint} of the shape from given latitude,longitude and altitude.
+ * a {@link BodyPoint} of the shape from given latitude,longitude and altitude.
  * </p>
  *
  * @see BodyShape

@@ -17,6 +17,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-221:21/11/2024:[STELA-PATRIUS] Interpolateur STELA précis
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -32,19 +34,32 @@
 package fr.cnes.sirius.patrius.math.ode.nonstiff;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NumberIsTooSmallException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.AbstractIntegrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderDifferentialEquations;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.FirstOrderIntegrator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.events.EventHandler.Action;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepHandler;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.ode.sampling.StepInterpolator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @description test class for RungeKutta6Integrator
@@ -280,6 +295,7 @@ public class RungeKutta6IntegratorTest {
                 final double timeError = handler.getMaximalTimeError();
                 if (i > 4) {
                     Assert.assertTrue(timeError <= MathLib.abs(previousTimeError));
+                    
                 }
                 previousTimeError = timeError;
 
@@ -364,7 +380,7 @@ public class RungeKutta6IntegratorTest {
             pb.getFinalTime(), new double[pb.getDimension()]);
 
         Assert.assertTrue(handler.getLastError() > 2.5e-5);
-        Assert.assertTrue(handler.getMaximalValueError() > 0.009);
+        Assert.assertTrue(handler.getMaximalValueError() > 1e-4);
         Assert.assertEquals(0, handler.getMaximalTimeError(), 1.0e-12);
 
     }
@@ -646,4 +662,9 @@ public class RungeKutta6IntegratorTest {
         Assert.assertEquals(1, detector2.getCount());
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

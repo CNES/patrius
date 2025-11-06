@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -23,8 +24,7 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,6 +49,7 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for {@link SurfaceDistanceDetector}.
@@ -502,5 +503,10 @@ public class SurfaceDistanceDetectorTest {
             new SurfaceDistanceDetector(theEarth, targetDistance, BodyDistanceType.CLOSEST,
                 0.05 * tISSOrbit.getKeplerianPeriod(), AbstractDetector.DEFAULT_THRESHOLD);
         Assert.assertEquals(theEarth, detector.getBody());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

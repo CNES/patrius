@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -28,39 +29,73 @@
 package fr.cnes.sirius.patrius.math.random;
 
 import java.text.DecimalFormat;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.HashSet;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.runner.RunWith;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.Retry;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.RetryRunner;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.BetaDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.BinomialDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.BinomialDistributionTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.CauchyDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.ChiSquaredDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.ExponentialDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.FDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.GammaDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.HypergeometricDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.HypergeometricDistributionTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.PascalDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.PascalDistributionTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.PoissonDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.TDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.WeibullDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.ZipfDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.ZipfDistributionTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.stat.Frequency;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.stat.descriptive.SummaryStatistics;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.stat.inference.ChiSquareTest;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test cases for the RandomData class.
@@ -1198,5 +1233,10 @@ public class RandomDataTest {
         final PoissonDistribution y = new PoissonDistribution(3.0);
         y.reseedRandomGenerator(0);
         Assert.assertEquals(u, y.sample(), 0);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

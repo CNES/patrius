@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -30,9 +31,14 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 
 public class SingularValueSolverTest {
 
@@ -166,5 +172,10 @@ public class SingularValueSolverTest {
             { -0.0714905202, 0.053808742, 0.0006279816, -0.0176817782 }
         });
         Assert.assertEquals(0, expected.subtract(pseudoInverse).getNorm(), 1.0e-9);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

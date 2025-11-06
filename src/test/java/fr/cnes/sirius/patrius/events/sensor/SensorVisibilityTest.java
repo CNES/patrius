@@ -18,7 +18,12 @@
  * @history creation 23/04/2012
  *
  * HISTORY
-- * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
+ * VERSION:4.15.5:OPENFD-668:23/07/2025:[PATRIUS] Suite problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * - * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -63,7 +68,7 @@ import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.SensorInhibitionDetector;
 import fr.cnes.sirius.patrius.events.detectors.SensorVisibilityDetector;
@@ -722,7 +727,7 @@ public class SensorVisibilityTest {
 
         // Evaluate the others AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(initialOrbit, eventDetector.getReceiver(propagator.getInitialState()));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector.getEventDatationType());
     }
 
     /**
@@ -790,7 +795,7 @@ public class SensorVisibilityTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(eventDetector1.getSensor().getMainTarget(), eventDetector1.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
     }
 
     /**
@@ -858,6 +863,6 @@ public class SensorVisibilityTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(eventDetector1.getSensor().getMainTarget(), eventDetector1.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
     }
 }

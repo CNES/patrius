@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -470,7 +473,8 @@ public abstract class AbstractFieldMatrix<T extends FieldElement<T>>
 
         for (int r = 1; r < nRows; ++r) {
             if (subMatrix[r].length != nCols) {
-                throw new DimensionMismatchException(nCols, subMatrix[r].length);
+                throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS,
+                    nCols, subMatrix[r].length);
             }
         }
 
@@ -715,7 +719,8 @@ public abstract class AbstractFieldMatrix<T extends FieldElement<T>>
 
         final int nCols = this.getColumnDimension();
         if (v.length != nCols) {
-            throw new DimensionMismatchException(v.length, nCols);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                v.length, nCols);
         }
 
         final int nRows = this.getRowDimension();
@@ -741,7 +746,8 @@ public abstract class AbstractFieldMatrix<T extends FieldElement<T>>
         } catch (final ClassCastException cce) {
             final int nCols = this.getColumnDimension();
             if (v.getDimension() != nCols) {
-                throw new DimensionMismatchException(v.getDimension(), nCols);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                    v.getDimension(), nCols);
             }
 
             final int nRows = this.getRowDimension();
@@ -765,7 +771,8 @@ public abstract class AbstractFieldMatrix<T extends FieldElement<T>>
 
         final int nRows = this.getRowDimension();
         if (v.length != nRows) {
-            throw new DimensionMismatchException(v.length, nRows);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, v.length,
+                nRows);
         }
 
         final int nCols = this.getColumnDimension();
@@ -791,7 +798,8 @@ public abstract class AbstractFieldMatrix<T extends FieldElement<T>>
         } catch (final ClassCastException cce) {
             final int nRows = this.getRowDimension();
             if (v.getDimension() != nRows) {
-                throw new DimensionMismatchException(v.getDimension(), nRows);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS,
+                    v.getDimension(), nRows);
             }
 
             final int nCols = this.getColumnDimension();
@@ -1197,7 +1205,8 @@ public abstract class AbstractFieldMatrix<T extends FieldElement<T>>
      */
     protected void checkMultiplicationCompatible(final FieldMatrix<T> m) {
         if (this.getColumnDimension() != m.getRowDimension()) {
-            throw new DimensionMismatchException(m.getRowDimension(), this.getColumnDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_DIMENSIONS_MULTIPLICATION,
+                m.getRowDimension(), this.getColumnDimension());
         }
     }
 

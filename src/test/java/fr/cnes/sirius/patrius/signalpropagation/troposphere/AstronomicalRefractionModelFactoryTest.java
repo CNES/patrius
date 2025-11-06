@@ -13,10 +13,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * END-HISTORY
  */
 package fr.cnes.sirius.patrius.signalpropagation.troposphere;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -112,5 +117,10 @@ public class AstronomicalRefractionModelFactoryTest {
             // expected
             Assert.assertTrue(true);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

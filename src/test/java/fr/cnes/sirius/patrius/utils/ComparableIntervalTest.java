@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -26,16 +27,27 @@
 package fr.cnes.sirius.patrius.utils;
 
 import static org.junit.Assert.assertEquals;
+import fr.cnes.sirius.patrius.Utils;
 import static org.junit.Assert.assertNotNull;
+import fr.cnes.sirius.patrius.Utils;
 import static org.junit.Assert.assertTrue;
-import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.MathIllegalArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.ComparableInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for <code>ComparableInterval</code>.<br>
@@ -827,4 +839,9 @@ public class ComparableIntervalTest {
         Assert.assertEquals(0, actual3.compareTo(new ComparableInterval<>(this.open, -50.2, -0.1, this.closed)));
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

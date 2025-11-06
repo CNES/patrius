@@ -18,6 +18,7 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -31,8 +32,6 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.propagation.events;
-
-import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
@@ -56,6 +55,7 @@ import fr.cnes.sirius.patrius.time.TimeScale;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 public class BackAndForthDetectorTest {
 
@@ -125,6 +125,7 @@ public class BackAndForthDetectorTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

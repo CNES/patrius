@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-308:21/11/2024:[STELA-PATRIUS] Duplication entre MSIS00Adapter et MSIS2000
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -69,7 +72,6 @@ import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.stela.bodies.GeodPosition;
-import fr.cnes.sirius.patrius.stela.forces.atmospheres.MSIS00Adapter;
 import fr.cnes.sirius.patrius.stela.orbits.StelaEquinoctialOrbit;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.DateComponents;
@@ -235,7 +237,9 @@ public class StelaAeroModelTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
 
         // Atmosphere:
-        final Atmosphere atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f, sun);
+        final Atmosphere atmosphere =
+                new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                        new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
 
         sp = new StelaAeroModel(114.907, cd, 1.07, atmosphere, 50);
         date = AbsoluteDate.FIFTIES_EPOCH_TAI.shiftedBy(22369.928419882603 * 86400 + 35);
@@ -251,9 +255,9 @@ public class StelaAeroModelTest {
 
         // Expected result
         final double[][] expectedPos = {
-            { 1.393399688073637E-16, 4.82720547071102E-18, 1.693957101687806E-18 },
-            { -1.8266780779716133E-17, -3.333374472018368E-20, -2.570298968171376E-19 },
-            { -1.845499314840159E-17, -5.434255935225275E-19, -6.036121139914157E-19 },
+                { 1.3949710754896078E-16, 4.83294582520095E-18, 1.69606496794895E-18 },
+                { -1.81096382760756E-17, -2.759325280098341E-20, -2.549219800917741E-19 },
+                { -1.8297851992518465E-17, -5.376851508375593E-19, -6.015042153449318E-19 },
         };
         final double[][] expectedVel = {
             { 7.279555338502928E-15, 7.386489236157807E-16, -3.5887759000454154E-17 },
@@ -311,7 +315,8 @@ public class StelaAeroModelTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
 
         // Atmosphere:
-        final Atmosphere atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f, sun);
+        final Atmosphere atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
 
         final GeodPosition geodPosition = new GeodPosition(ae, 1 / f);
         sp = new StelaAeroModel(114.907, cd, 1.07, atmosphere, -10, geodPosition);
@@ -385,9 +390,11 @@ public class StelaAeroModelTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
 
         // Atmosphere:
-        final Atmosphere atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f, sun);
+        final Atmosphere atmosphere;
 
         try {
+            atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                    new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
             atmosphere.getDensity(date, new Vector3D(0., 10., 0.), FramesFactory.getITRF());
             Assert.assertTrue(false);
         } catch (final Exception e) {
@@ -433,7 +440,8 @@ public class StelaAeroModelTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
         final double f = 0.29825765000000E+03;
         final double ae = Constants.CNES_STELA_AE;
-        final Atmosphere atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f, sun);
+        final Atmosphere atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
         final Atmosphere refAtmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
             new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
         final Vector3D position = new Vector3D(6478000., 0., 0.);
@@ -469,8 +477,8 @@ public class StelaAeroModelTest {
         final ConstantSolarActivity solarActivity = new ConstantSolarActivity(140.00, 15.);
         final double f = 0.29825765000000E+03;
         final double ae = Constants.CNES_STELA_AE;
-        final MSIS00Adapter atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solarActivity), ae, 1 / f,
-            sun);
+        final Atmosphere atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solarActivity),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
 
         // Altitude
         final double alt1 = this.computeZ(20E3);
@@ -574,5 +582,10 @@ public class StelaAeroModelTest {
                 return "No name";
             }
         });
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

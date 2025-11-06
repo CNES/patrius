@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.11:DM:DM-3242:22/05/2023:[PATRIUS] Possibilite de definir les parametres circulaires adaptes pour des orbites hyperboliques
@@ -1167,6 +1168,7 @@ public class ConstantThrustManeuverTest {
      */
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataPBASE");
 
         // Body mu

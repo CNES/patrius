@@ -18,6 +18,7 @@
  * @history creation 27/09/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -123,6 +124,7 @@ public class BentModelTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("bent");
         FramesFactory.setConfiguration(Utils.getZOOMConfiguration());
 
@@ -697,4 +699,5 @@ public class BentModelTest {
             Report.printToReport("Electronic content", refTOTNA, computedTOTNA);
         }
     }
+
 }

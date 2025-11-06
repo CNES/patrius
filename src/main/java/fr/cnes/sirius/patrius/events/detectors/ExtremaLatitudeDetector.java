@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -45,7 +46,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * maximum is chosen through a constructor parameter, with values {@link ExtremaLatitudeDetector#MIN},
  * {@link ExtremaLatitudeDetector#MAX} and {@link ExtremaLatitudeDetector#MIN_MAX} for both.
  * <p>
- * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the
+ * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the
  * minimum/maximum latitude is reached. This can be changed by using provided constructors.
  * </p>
  * 
@@ -98,7 +99,7 @@ public class ExtremaLatitudeDetector extends AbstractDetector {
     /**
      * Constructor for a ExtremaLatitudeDetector instance.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extremum is reached.
      * </p>
      * 

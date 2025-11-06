@@ -18,6 +18,8 @@
  * @history creation 07/06/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -45,7 +47,6 @@ import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.groundstation.GeometricStationAntenna;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
-import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.TopocentricPosition;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.signalpropagation.AngularCorrection;
@@ -117,18 +118,19 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
      * @param linkTypeIn the type of link (it can be uplink or downlink)
      */
     protected AbstractStationToSatDetector(final GeometricStationAntenna stationModel,
-            final AngularCorrection correctionModel,
-            final SensorModel sensorModel,
-            final boolean withMasking,
-            final double maxCheck,
-            final double threshold,
-            final Action entry,
-            final Action exit,
-            final boolean removeEntry,
-            final boolean removeExit,
-            final int slopeSelection,
-            final LinkType linkTypeIn) {
-        super(slopeSelection, maxCheck, threshold, entry, exit, removeEntry, removeExit);
+                                           final AngularCorrection correctionModel,
+                                           final SensorModel sensorModel,
+                                           final boolean withMasking,
+                                           final double maxCheck,
+                                           final double threshold,
+                                           final Action entry,
+                                           final Action exit,
+                                           final boolean removeEntry,
+                                           final boolean removeExit,
+                                           final int slopeSelection,
+                                           final LinkType linkTypeIn) {
+        super(slopeSelection, maxCheck, threshold, entry, exit, removeEntry, removeExit,
+                new LinkTypeHandler(linkTypeIn, stationModel));
         this.correction = correctionModel;
         this.station = stationModel;
         this.linkType = linkTypeIn;
@@ -144,7 +146,9 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
     /**
      * {@inheritDoc}
      * 
-     * <p>Visibility from station only.</p>
+     * <p>
+     * Visibility from station only.
+     * </p>
      * <p>
      * This function measures the angular distance between the current apparent vector to the spacecraft and the border
      * of the station's field of view. It is positive when the spacecraft is in the field
@@ -161,10 +165,10 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
 
         // Define minimal masking distance
         final double minMaskingDistance;
-        if (isMaskingCheck()) {
+        if (this.isMaskingCheck()) {
             // Positive if no masking
-            final AbsoluteDate stationDate = getStationDate(state);
-            minMaskingDistance = getMinMaskingDistance(state, getSensor(), stationDate);
+            final AbsoluteDate stationDate = this.getOtherDate(state);
+            minMaskingDistance = this.getMinMaskingDistance(state, this.getSensor(), stationDate);
         } else {
             // No masking computation
             minMaskingDistance = Double.POSITIVE_INFINITY;
@@ -197,20 +201,8 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
             throw PatriusException.createIllegalArgumentException(PatriusMessages.NULL_LINK_TYPE);
         }
 
-        // Define relevant date
-        AbsoluteDate date = null;
-
-        // Check the type of link
-        if (this.linkType.equals(LinkType.DOWNLINK)) {
-            // It is downlink
-            // Emitter is the satellite, station is the receiver (since elevation is wrt to station),
-            // so compute the reception date
-            date = getSignalReceptionDate(s);
-        } else {
-            // It is uplink
-            // Emitter is the station, satellite is the receiver, so compute the emission date
-            date = getSignalEmissionDate(s);
-        }
+        // Compute the station date
+        final AbsoluteDate date = this.getOtherDate(s);
 
         // not corrected vector from the station to the spacecraft in the topocentric frame
         final Transform t = s.getFrame().getTransformTo(this.station.getTopoFrame(), date);
@@ -247,29 +239,8 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
     }
 
     /**
-     * Compute station date taking into account {@link PropagationDelayType} and {@link LinkType}.
-     * @param s spacecraft state
-     * @return station date
-     * @throws PatriusException thrown if computation failed
-     */
-    protected AbsoluteDate getStationDate(final SpacecraftState s) throws PatriusException {
-        // Define station date: date at which the station emits (uplink) or receives (downlink) the signal
-        AbsoluteDate stationDate = null;
-        // Check the type of link
-        if (this.linkType.equals(LinkType.DOWNLINK)) {
-            // It is downlink
-            // Emitter is the satellite, station is the receiver, so compute the reception date
-            stationDate = getSignalReceptionDate(s);
-        } else {
-            // It is uplink
-            // Emitter is the station, satellite is the receiver, so compute the emission date
-            stationDate = getSignalEmissionDate(s);
-        }
-        return stationDate;
-    }
-
-    /**
      * Computes minimum masking distance by either body or spacecraft defined in sensor model.
+     *
      * @param s spacecraft state
      * @param model spacecraft sensor model
      * @param stationDate station date
@@ -277,15 +248,17 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
      * @throws PatriusException thrown if computation failed
      */
     protected double getMinMaskingDistance(final SpacecraftState s,
-            final SensorModel model,
-            final AbsoluteDate stationDate) throws PatriusException {
+                                           final SensorModel model,
+                                           final AbsoluteDate stationDate)
+        throws PatriusException {
+
         // Check potential body masking (occulting body between station and spacecraft)
         final double bodyMaskingDistance = model.celestialBodiesMaskingDistance(s.getDate(), stationDate,
-            getPropagationDelayType(), this.linkType);
+            this.getPropagationDelayType(), this.linkType);
 
         // Check potential masking by another spacecraft
         final double spacecraftsMaskingDistance = model.spacecraftsMaskingDistance(s.getDate(), stationDate,
-            getPropagationDelayType(), this.linkType);
+            this.getPropagationDelayType(), this.linkType);
 
         // Positive if no masking
         return MathLib.min(bodyMaskingDistance, spacecraftsMaskingDistance);
@@ -343,41 +316,5 @@ public abstract class AbstractStationToSatDetector extends AbstractSignalPropaga
      */
     public boolean isMaskingCheck() {
         return this.maskingCheck;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        final PVCoordinatesProvider emitter;
-        if (this.linkType == LinkType.UPLINK) {
-            emitter = this.station;
-        } else { // DOWNLINK
-            emitter = s.getOrbit();
-        }
-        return emitter;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        final PVCoordinatesProvider receiver;
-        if (this.linkType == LinkType.UPLINK) {
-            receiver = s.getOrbit();
-        } else { // DOWNLINK
-            receiver = this.station;
-        }
-        return receiver;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        final DatationChoice datationChoice;
-        if (this.linkType == LinkType.UPLINK) {
-            datationChoice = DatationChoice.RECEIVER;
-        } else { // DOWNLINK
-            datationChoice = DatationChoice.EMITTER;
-        }
-        return datationChoice;
     }
 }

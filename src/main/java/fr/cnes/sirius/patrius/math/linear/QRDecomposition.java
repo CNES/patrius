@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-275:21/11/2024:[PATRIUS] Optimisation de la decomposition QR
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -31,9 +34,11 @@ package fr.cnes.sirius.patrius.math.linear;
 
 import java.util.Arrays;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 //CHECKSTYLE: stop CommentRatio check
 //Reason: model - Commons-Math code kept as such
@@ -93,6 +98,8 @@ public class QRDecomposition implements Decomposition {
     private RealMatrix cachedH;
     /** Singularity threshold. */
     private final double threshold;
+    /** Indicate if a parallel computation is done inside the {@link #performHouseholderReflection} method */
+    private final boolean parallel;
 
     /**
      * Simple constructor.
@@ -104,10 +111,10 @@ public class QRDecomposition implements Decomposition {
      *
      * @param matrix
      *        The matrix to decompose.
-     * @see #QRDecomposition(RealMatrix, double)
+     * @see #QRDecomposition(RealMatrix, double, boolean)
      */
     public QRDecomposition(final RealMatrix matrix) {
-        this(matrix, 0d);
+        this(matrix, 0d, false);
     }
 
     /**
@@ -121,8 +128,28 @@ public class QRDecomposition implements Decomposition {
      *        The matrix to decompose.
      * @param thresholdIn
      *        Singularity threshold.
+     * @see #QRDecomposition(RealMatrix, double, boolean)
      */
-    public QRDecomposition(final RealMatrix matrix, final double thresholdIn) {
+    public QRDecomposition(final RealMatrix matrix, final double inThreshold) {
+        this(matrix, inThreshold, false);
+    }
+
+    /**
+     * Constructor used to set the singularity threshold and enable parallel computation.
+     *
+     * <p>
+     * The decomposition is directly computed on the input matrix
+     * </p>
+     *
+     * @param matrix
+     *        The matrix to decompose.
+     * @param thresholdIn
+     *        Singularity threshold.
+     * @param parallel
+     *        Indicate if a part of the algorithm can be parallelized. It is advised to activate this for big matrices only. Indeed, for
+     *        small matrices the multi-thread management overload might be disadvantageous.
+     */
+    public QRDecomposition(final RealMatrix matrix, final double thresholdIn, final boolean parallel) {
         this.threshold = thresholdIn;
         final int m = matrix.getRowDimension();
         final int n = matrix.getColumnDimension();
@@ -132,6 +159,7 @@ public class QRDecomposition implements Decomposition {
         this.cachedQT = null;
         this.cachedR = null;
         this.cachedH = null;
+        this.parallel = parallel;
 
         qrDecompose();
 
@@ -149,18 +177,59 @@ public class QRDecomposition implements Decomposition {
      **/
     private void qrDecompose() {
         final int max = MathLib.min(this.qrt.length, this.qrt[0].length);
+
+        // Construction of the firstNonZeroRowArray for latter optimization
+        final int[] firstNonZeroRowArray = buildFirstNonZeroRowArray(this.qrt);
+
         for (int minor = 0; minor < max; minor++) {
-            performHouseholderReflection(minor);
+            performHouseholderReflection(minor, firstNonZeroRowArray);
         }
+    }
+
+    /**
+     * The firstNonZeroRowArray is designed to optimize sparse band matrices.
+     *
+     * <p>
+     * It is very efficient for band matrices since it will allow to skip a lot of useless zero multiplications.<br>
+     * It has no overhead in other cases since the time spent to go through the qrt matrix to find first non zero values will be gained in
+     * the
+     * {@code alpha} construction of the {@link #performHouseholderReflection} method.
+     * </p>
+     *
+     * @param qrt
+     *        The qrt matrix
+     * @return the array with all first non zero rows of the qrt matrix
+     */
+    private static int[] buildFirstNonZeroRowArray(final double[][] qrt) {
+        final int[] firstNonZeroRowArray = new int[qrt.length];
+        for (int i = 1; i < firstNonZeroRowArray.length; i++) {
+            final double[] qrtI = qrt[i];
+            int firstNonZeroRow = -1;
+            for (int j = 0; j < qrtI.length; j++) {
+                if (qrtI[j] != 0) {
+                    firstNonZeroRow = j;
+                    break;
+                }
+            }
+            if (firstNonZeroRow == -1) {
+                // No non zero value was detected: first non zero is set to the last row +1
+                firstNonZeroRowArray[i] = qrtI.length;
+            } else {
+                firstNonZeroRowArray[i] = firstNonZeroRow;
+            }
+        }
+        return firstNonZeroRowArray;
     }
 
     /**
      * Perform Householder reflection for a minor A(minor, minor) of A.
      *
-     * @param minor minor index
+     * @param minor
+     *        The minor index
+     * @param firstNonZeroRowArray
+     *        The array storing the first non zero row of each column
      */
-    protected void performHouseholderReflection(final int minor) {
-
+    private void performHouseholderReflection(final int minor, final int[] firstNonZeroRowArray) {
         final double[] qrtMinor = this.qrt[minor];
 
         /*
@@ -172,7 +241,8 @@ public class QRDecomposition implements Decomposition {
          */
         double xNormSqr = 0;
         int lastqrtMinorNonZeroRow = 0; // After this row, qrtMinor has only 0 values
-        for (int row = minor; row < qrtMinor.length; row++) {
+        final int minRow = MathLib.max(firstNonZeroRowArray[minor], minor);
+        for (int row = minRow; row < qrtMinor.length; row++) {
             final double c = qrtMinor[row];
             if (c != 0.0) {
                 xNormSqr += c * c;
@@ -196,31 +266,57 @@ public class QRDecomposition implements Decomposition {
             qrtMinor[minor] -= a; // now |v|^2 = -2a*(qr[minor][minor])
             final double normalization = a * qrtMinor[minor];
 
-            /*
-             * Transform the rest of the columns of the minor:
-             * They will be transformed by the matrix H = I-2vv'/|v|^2.
-             * If x is a column vector of the minor, then
-             * Hx = (I-2vv'/|v|^2)x = x-2vv'x/|v|^2 = x - 2<x,v>/|v|^2 v.
-             * Therefore the transformation is easily calculated by
-             * subtracting the column vector (2<x,v>/|v|^2)v from x.
-             * Let 2<x,v>/|v|^2 = alpha. From above we have
-             * |v|^2 = -2a*(qr[minor][minor]), so
-             * alpha = -<x,v>/(a*qr[minor][minor])
-             */
-            for (int col = minor + 1; col < this.qrt.length; col++) {
-                final double[] qrtCol = this.qrt[col];
-                double alpha = 0;
-                for (int row = minor; row <= lastqrtMinorNonZeroRow; row++) {
-                    alpha -= qrtCol[row] * qrtMinor[row];
+            // According to the setting, the following transformation on each column might be performed in parallel
+            if (this.parallel) {
+                final int finalLastqrtMinorNonZeroRow = lastqrtMinorNonZeroRow;
+                IntStream.range(minor + 1, this.qrt.length).parallel().forEach(col -> {
+                    transform(minor, qrtMinor, col, this.qrt[col], normalization, firstNonZeroRowArray, finalLastqrtMinorNonZeroRow);
+                });
+            } else {
+                for (int col = minor + 1; col < this.qrt.length; col++) {
+                    transform(minor, qrtMinor, col, this.qrt[col], normalization, firstNonZeroRowArray, lastqrtMinorNonZeroRow);
                 }
-                alpha /= normalization;
+            }
 
-                if (alpha != 0) {
-                    // Subtract the column vector alpha*v from x.
-                    for (int row = minor; row <= lastqrtMinorNonZeroRow; row++) {
-                        qrtCol[row] -= alpha * qrtMinor[row];
-                    }
-                }
+        }
+    }
+
+    /**
+     * Transform the rest of the columns of the minor: They will be transformed by the matrix H = I-2vv'/|v|^2.<br>
+     * If x is a column vector of the minor, then Hx = (I-2vv'/|v|^2)x = x-2vv'x/|v|^2 = x - 2<x,v>/|v|^2 v.<br>
+     * Therefore the transformation is easily calculated by subtracting the column vector (2<x,v>/|v|^2)v from x.<br>
+     * Let 2<x,v>/|v|^2 = alpha. From above we have |v|^2 = -2a*(qr[minor][minor]), so alpha = -<x,v>/(a*qr[minor][minor])
+     *
+     *
+     * @param minor
+     *        The minor index
+     * @param qrtMinor
+     *        The column associated to the minor
+     * @param col
+     *        The working column index
+     * @param qrtCol
+     *        The working column
+     * @param normalization
+     *        The normalization coefficient
+     * @param firstNonZeroRowArray
+     *        The array storing the first non zero row of each column
+     * @param lastqrtMinorNonZeroRow
+     *        The last non zero row of the minor column
+     */
+    private static void transform(final int minor, final double[] qrtMinor, final int col, final double[] qrtCol,
+                                  final double normalization, final int[] firstNonZeroRowArray, final int lastqrtMinorNonZeroRow) {
+        double alpha = 0;
+        final int firstRow = MathLib.max(firstNonZeroRowArray[col], minor);
+        for (int row = firstRow; row <= lastqrtMinorNonZeroRow; row++) {
+            alpha -= qrtCol[row] * qrtMinor[row];
+        }
+        alpha /= normalization;
+
+        if (alpha != 0) {
+            firstNonZeroRowArray[col] = minor;
+            // Subtract the column vector alpha*v from x.
+            for (int row = minor; row <= lastqrtMinorNonZeroRow; row++) {
+                qrtCol[row] -= alpha * qrtMinor[row];
             }
         }
     }
@@ -363,7 +459,7 @@ public class QRDecomposition implements Decomposition {
      * (i.e. a system with more equations than unknowns, which corresponds to a tall A
      * matrix with more rows than columns). In any case, if the matrix is singular
      * within the tolerance set at {@link QRDecomposition#QRDecomposition(RealMatrix,
-     * double) construction}, an error will be triggered when
+     * double, boolean) construction}, an error will be triggered when
      * the {@link DecompositionSolver#solve(RealVector) solve} method will be called.
      * </p>
      *
@@ -382,7 +478,20 @@ public class QRDecomposition implements Decomposition {
      * @return decomposition
      */
     public static Function<RealMatrix, Decomposition> decompositionBuilder(final double thresholdIn) {
-        return (realMatrix) -> new QRDecomposition(realMatrix, thresholdIn);
+        return decompositionBuilder(thresholdIn, false);
+    }
+
+    /**
+     * Builder for decomposition.
+     *
+     * @param thresholdIn
+     *        Singularity threshold.
+     * @param parallel
+     *        Indicate if a part of the algorithm can be performed in parallel
+     * @return decomposition
+     */
+    public static Function<RealMatrix, Decomposition> decompositionBuilder(final double thresholdIn, final boolean parallel) {
+        return (realMatrix) -> new QRDecomposition(realMatrix, thresholdIn, parallel);
     }
 
     /** Specialized solver. */
@@ -433,7 +542,8 @@ public class QRDecomposition implements Decomposition {
             // Sanity checks
             final int m = this.qrt[0].length;
             if (b.getDimension() != m) {
-                throw new DimensionMismatchException(b.getDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, b.getDimension(),
+                    m);
             }
             if (!this.isNonSingular()) {
                 throw new SingularMatrixException();
@@ -485,7 +595,8 @@ public class QRDecomposition implements Decomposition {
             // Sanity checks
             final int m = this.qrt[0].length;
             if (b.getRowDimension() != m) {
-                throw new DimensionMismatchException(b.getRowDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, m,
+                    b.getRowDimension());
             }
             if (!this.isNonSingular()) {
                 throw new SingularMatrixException();

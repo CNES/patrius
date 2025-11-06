@@ -18,6 +18,8 @@
  * @history creation 20/03/2017
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -30,7 +32,9 @@
  */
 package fr.cnes.sirius.patrius.assembly.models;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -72,6 +76,7 @@ public class InterpolatedDragReaderTest {
     /**
      * @throws IOException
      * @throws PatriusException
+     * @throws URISyntaxException
      * @testType UT
      * 
      * @testedFeature {@link features#INTERPOLATED_DRAG_READER}
@@ -94,15 +99,16 @@ public class InterpolatedDragReaderTest {
      * @nonRegressionVersion 3.4
      */
     @Test
-    public void testReaderRobustness() throws IOException, PatriusException {
+    public void testReaderRobustness() throws IOException, PatriusException, URISyntaxException {
 
         // Root resource
-        final String aeroFolder = "coeffaero/";
+        final String aeroFolder = "coeffaero" + File.separator;
 
         // 1) Read aero file without header
         // This file also has wrong number of column for last element
-        final String fileNoHeader = InterpolatedDragReaderTest.class.getClassLoader()
-            .getResource(aeroFolder + "CoeffAeroGlobalNoHeader.txt").getFile();
+        final String fileNoHeader =
+            new File(ClassLoader.getSystemResource(aeroFolder + "CoeffAeroGlobalNoHeader.txt").toURI())
+                .getAbsolutePath();
         InterpolatedDragReader reader1 = null;
         try {
             reader1 = new InterpolatedDragReader();
@@ -116,8 +122,9 @@ public class InterpolatedDragReaderTest {
         }
 
         // 2) Read aero file containing random spaces and tabulations
-        final String fileSpaceTab = InterpolatedDragReaderTest.class.getClassLoader()
-            .getResource(aeroFolder + "CoeffAeroGlobalSpacesTab.txt").getFile();
+        final String fileSpaceTab =
+            new File(ClassLoader.getSystemResource(aeroFolder + "CoeffAeroGlobalSpacesTab.txt").toURI())
+                .getAbsolutePath();
         InterpolatedDragReader reader2 = null;
         try {
             reader2 = new InterpolatedDragReader();
@@ -132,8 +139,9 @@ public class InterpolatedDragReaderTest {
         Assert.assertEquals(data2[0].length, 27, 0);
 
         // 2) Read aero file containing a larger number of columns
-        final String fileMoreCol = InterpolatedDragReaderTest.class.getClassLoader()
-            .getResource(aeroFolder + "CoeffAeroGlobalMultipleCol.txt").getFile();
+        final String fileMoreCol =
+            new File(ClassLoader.getSystemResource(aeroFolder + "CoeffAeroGlobalMultipleCol.txt").toURI())
+                .getAbsolutePath();
         InterpolatedDragReader reader3 = null;
         try {
             reader3 = new InterpolatedDragReader();
@@ -148,8 +156,9 @@ public class InterpolatedDragReaderTest {
         Assert.assertEquals(data3[0].length, 36, 0);
 
         // Check interpolation fails with some data are missing in the file
-        final String fileMissingLines = InterpolatedDragReaderTest.class.getClassLoader()
-            .getResource(aeroFolder + "CoeffAeroGlobalModelMissing.txt").getFile();
+        final String fileMissingLines =
+            new File(ClassLoader.getSystemResource(aeroFolder + "CoeffAeroGlobalModelMissing.txt").toURI())
+                .getAbsolutePath();
         try {
             new GlobalDragCoefficientProvider(INTERP.SPLINE, fileMissingLines);
             Assert.fail();
@@ -158,8 +167,9 @@ public class InterpolatedDragReaderTest {
         }
 
         // Check wrong number of columns
-        final String fileWrongColumns = InterpolatedDragReaderTest.class.getClassLoader()
-            .getResource(aeroFolder + "CoeffAeroGlobalMultipleCol.txt").getFile();
+        final String fileWrongColumns =
+            new File(ClassLoader.getSystemResource(aeroFolder + "CoeffAeroGlobalMultipleCol.txt").toURI())
+                .getAbsolutePath();
         try {
             new GlobalDragCoefficientProvider(INTERP.SPLINE, fileWrongColumns);
             Assert.fail();

@@ -18,6 +18,9 @@
  * @history created 07/03/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -50,9 +53,9 @@
 package fr.cnes.sirius.patrius.events.detectors;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -104,7 +107,7 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
     private final double time;
 
     /** Sun. */
-    private final CelestialPoint sun;
+    private final PVCoordinatesProvider sun;
 
     /** Action performed. */
     private final Action actionLocalTime;
@@ -265,7 +268,7 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
      *         the range [-&Pi;, &Pi;[
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
-        final double threshold, final Action action, final boolean remove, final CelestialPoint sun)
+        final double threshold, final Action action, final boolean remove, final PVCoordinatesProvider sun)
         throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, null, action, remove, sun);
     }
@@ -288,7 +291,7 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
      */
     public LocalTimeAngleDetector(final double localTimeAngle, final double maxCheck,
                                   final double threshold, final CelestialBodyFrame frame, final Action action,
-                                  final boolean remove, final CelestialPoint sun)
+                                  final boolean remove, final PVCoordinatesProvider sun)
         throws PatriusException {
         this(localTimeAngle, maxCheck, threshold, frame, action, remove, sun, EventDetector.INCREASING_DECREASING);
     }
@@ -320,10 +323,10 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
             final CelestialBodyFrame frame,
             final Action action,
             final boolean remove,
-            final CelestialPoint sun,
+            final PVCoordinatesProvider sun,
             final int slopeSelection) throws PatriusException {
         // the local time event is triggered when the g-function slope is positive at its zero:
-        super(slopeSelection, maxCheck, threshold);
+        super(slopeSelection, maxCheck, threshold, new LinkTypeHandler(SignalPropagationRole.RECEIVER, sun));
         this.time = localTimeAngle;
         if (this.time < -FastMath.PI || this.time >= FastMath.PI) {
             throw new PatriusException(PatriusMessages.LOCAL_SOLAR_TIME_OUT_OF_RANGE, "Local");
@@ -468,31 +471,7 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
      * @return the frame used for solar time computation
      */
     public CelestialBodyFrame getFrame() {
-        return frame;
-    }
-
-    /** @inheritDoc */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frameIn) {
-        super.setPropagationDelayType(propagationDelayType, frameIn);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.sun;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
+        return this.frame;
     }
 
     /** {@inheritDoc} */
@@ -500,7 +479,7 @@ public class LocalTimeAngleDetector extends AbstractSignalPropagationDetector {
     public EventDetector copy() {
         try {
             final LocalTimeAngleDetector res = new LocalTimeAngleDetector(this.time, this.getMaxCheckInterval(),
-                    this.getThreshold(), getFrame(), this.actionLocalTime, this.shouldBeRemovedFlag, sun);
+                this.getThreshold(), getFrame(), this.actionLocalTime, this.shouldBeRemovedFlag, this.sun);
             res.setPropagationDelayType(getPropagationDelayType(), getInertialFrame());
             return res;
         } catch (final PatriusException e) {

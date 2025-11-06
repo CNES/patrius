@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
@@ -113,15 +116,28 @@ public class UserCelestialBodyLoader implements CelestialBodyLoader {
     /** {@inheritDoc} */
     @Override
     public CelestialBody loadCelestialBody(final String name) {
-        return new UserCelestialBody(name, this.pvCoordinatesProvider, this.gm, this.celestialBodyOrientation,
+
+        final CelestialBody body;
+
+        // Assign the body depending on the orientation
+        if (this.celestialBodyOrientation instanceof CelestialBodyIAUOrientation) {
+            body = new UserIAUCelestialBody(name, this.pvCoordinatesProvider, this.gm,
+                (CelestialBodyIAUOrientation) this.celestialBodyOrientation,
                 this.parentFrame, this.shape, this.spiceJ2000Convention);
+        } else {
+            body = new UserCelestialBody(name, this.pvCoordinatesProvider, this.gm, this.celestialBodyOrientation,
+                this.parentFrame, this.shape, this.spiceJ2000Convention);
+        }
+
+        return body;
+
     }
 
     /** {@inheritDoc} */
     @Override
     public CelestialPoint loadCelestialPoint(final String name) throws PatriusException {
         return new BasicCelestialPoint(name, this.pvCoordinatesProvider, this.gm, this.parentFrame,
-                this.spiceJ2000Convention);
+            this.spiceJ2000Convention);
     }
 
     /** {@inheritDoc} */

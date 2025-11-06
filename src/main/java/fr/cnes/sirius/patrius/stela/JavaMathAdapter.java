@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-431:21/11/2024:[PATRIUS] Reliquat messages DimensionMismatchException
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -49,6 +50,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  */
 public final class JavaMathAdapter {
 
+    /** String literal to avoid writing it many times. */
+    private static String VECTOR_STRING = "vector";
+    
     static {
         // Bogus instance for code coverage only
         final JavaMathAdapter bogus = new JavaMathAdapter();
@@ -213,7 +217,8 @@ public final class JavaMathAdapter {
 
         if (row * col < vector.length) {
             // Dimension mismatch
-            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_SIMPLE, vector.length, row * col);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                    VECTOR_STRING, vector.length, "matrix (row * col)", row * col);
         }
 
         // Computation
@@ -241,8 +246,11 @@ public final class JavaMathAdapter {
 
         if (vector.length < row * col + offset) {
             // Dimension mismatch
-            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_SIMPLE, vector.length, row * col
-                + offset);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                    VECTOR_STRING,
+                    vector.length,
+                    "matrix (row * col + offset)",
+                    row * col + offset);
         }
 
         for (int i = 0; i < row * col; i++) {
@@ -264,7 +272,8 @@ public final class JavaMathAdapter {
         // Check
         if (m1[0].length != m2.length) {
             // Dimension mismatch
-            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_SIMPLE, m1[0].length, m2.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                    "matrix m1", m1[0].length, "matrix m2", m2.length);
         }
 
         // Homemade routine to save computation time
@@ -321,7 +330,9 @@ public final class JavaMathAdapter {
         // Check
         if (m[0].length != v.length) {
             // Dimension mismatch
-            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_SIMPLE, m[0].length, v.length);
+            throw new DimensionMismatchException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                    "matrix m (number of rows)", m[0].length, VECTOR_STRING, v.length);
+            
         }
 
         // Homemade routine to save computation time

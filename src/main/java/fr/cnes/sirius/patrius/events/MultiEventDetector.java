@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -184,9 +185,14 @@ public interface MultiEventDetector {
 
     /**
      * Filter last event: returns true if the last event is a false detection, false otherwise.
-     * <p>This method is called right before {@link #eventOccurred(SpacecraftState, boolean, boolean)} method.</p>
-     * <p>This may be useful in order to filter some events in particular when angles are at stake (see for example 
-     * {@link LocalTimeAngleDetector}).</p>
+     * <p>
+     * This method is called right before {@link #eventOccurred(Map, boolean, boolean)} method.
+     * </p>
+     * <p>
+     * This may be useful in order to filter some events in particular when angles are at stake (see for example
+     * {@link LocalTimeAngleDetector}).
+     * </p>
+     * 
      * @param states states at last event occurrence
      * @param increasing if true, the value of the switching function increases when times increases
      *        around event (note that increase is measured with respect to physical time, not with

@@ -18,6 +18,14 @@
  * @history created 12/04/12
  *
  * HISTORY
+ * VERSION:4.15.5:OPENFD-668:23/07/2025:[PATRIUS] Suite problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15:OPENFD-307:21/11/2024:[Patrius] Repère de la vitesse non inertiel (suite)
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -44,14 +52,16 @@
 package fr.cnes.sirius.patrius.events.detectors;
 
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -94,7 +104,7 @@ public class SolarTimeAngleDetector extends AbstractSignalPropagationDetector {
     private final double time;
 
     /** The Sun. */
-    private final CelestialPoint sun;
+    private final PVCoordinatesProvider sun;
 
     /** Action performed */
     private final Action actionSolarTime;
@@ -246,7 +256,7 @@ public class SolarTimeAngleDetector extends AbstractSignalPropagationDetector {
      * @throws PatriusException error when loading the ephemeris files or solar time angle not in
      *         the range [-&Pi;, &Pi;[
      */
-    public SolarTimeAngleDetector(final double solarTimeAngle, final CelestialPoint sunModel, final double maxCheck,
+    public SolarTimeAngleDetector(final double solarTimeAngle, final PVCoordinatesProvider sunModel, final double maxCheck,
         final double threshold, final Action action, final boolean remove)
         throws PatriusException {
         // the solar time event is triggered when the g-function slope is positive at its zero
@@ -269,12 +279,13 @@ public class SolarTimeAngleDetector extends AbstractSignalPropagationDetector {
      * @throws PatriusException error when loading the ephemeris files or solar time angle not in
      *         the range [-&Pi;, &Pi;[
      */
-    public SolarTimeAngleDetector(final double solarTimeAngle, final CelestialPoint sunModel, final double maxCheck,
+    public SolarTimeAngleDetector(final double solarTimeAngle, final PVCoordinatesProvider sunModel, final double maxCheck,
                                   final double threshold, final CelestialBodyFrame frame, final Action action,
                                   final boolean remove)
         throws PatriusException {
         // the solar time event is triggered when the g-function slope is positive at its zero
-        super(EventDetector.INCREASING, maxCheck, threshold);
+        super(EventDetector.INCREASING, maxCheck, threshold,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, sunModel));
         this.time = solarTimeAngle;
         if (this.time < -FastMath.PI || this.time >= FastMath.PI) {
             throw new PatriusException(PatriusMessages.LOCAL_SOLAR_TIME_OUT_OF_RANGE, "Solar");
@@ -312,22 +323,43 @@ public class SolarTimeAngleDetector extends AbstractSignalPropagationDetector {
         // Recovery of the event date
         final AbsoluteDate sunDate = getSignalEmissionDate(state);
         // Creation of the different 3D Vectors
-        final Vector3D sat;
+        final PVCoordinates pv;
         final Vector3D sunP;
-        final Vector3D n;
         if (this.frame == null) {
-            // Getting satellite position in the spacecraft reference frame
-            sat = state.getPVCoordinates().getPosition();
-            // Getting the position of the sun:
-            sunP = this.sun.getPVCoordinates(sunDate, state.getFrame()).getPosition();
-            n = state.getPVCoordinates().getMomentum().normalize();
+            // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
+            final PVCoordinates sPV = state.getPVCoordinates();
+            final Frame stateFrame = state.getFrame();
+            if (stateFrame.isPseudoInertial()) {
+                // Getting the satellite and sun positions in the spacecraft reference frame
+                pv = sPV;
+                sunP = this.sun.getPVCoordinates(sunDate, stateFrame).getPosition();
+            } else {
+                final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
+                final Transform t = stateFrame.getTransformTo(workFrame, sunDate);
+                // Getting the satellite and sun positions in the first pseudo-inertial ancestor of the spacecraft
+                // reference frame
+                pv = t.transformPVCoordinates(sPV);
+                sunP = this.sun.getPVCoordinates(sunDate, workFrame).getPosition();
+            }
         } else {
-            // Getting satellite position in the right frame
-            sat = state.getPVCoordinates(this.frame).getPosition();
-            // Getting the position of the sun in the right frame:
-            sunP = this.sun.getPVCoordinates(sunDate, this.frame).getPosition();
-            n = state.getPVCoordinates(this.frame).getMomentum().normalize();
+
+            // Verify if the detector frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
+            final PVCoordinates sPV = state.getPVCoordinates(this.frame);
+            if (this.frame.isPseudoInertial()) {
+                // Getting the satellite and sun positions in the detector frame
+                pv = sPV;
+                sunP = this.sun.getPVCoordinates(sunDate, this.frame).getPosition();
+            } else {
+                final Frame workFrame = this.frame.getFirstPseudoInertialAncestor();
+                final Transform t = this.frame.getTransformTo(workFrame, sunDate);
+                // Getting the satellite and sun positions in the first pseudo-inertial ancestor of the detector frame
+                pv = t.transformPVCoordinates(sPV);
+                sunP = this.sun.getPVCoordinates(sunDate, workFrame).getPosition();
+            }
         }
+
+        final Vector3D sat = pv.getPosition();
+        final Vector3D n = pv.getMomentum().normalize();
         final Vector3D sunPj = sunP.subtract(n.scalarMultiply(Vector3D.dotProduct(sunP, n)));
         // Computing the angle between the satellite and the sun projection over the orbital plane:
         double angle = Vector3D.angle(sunPj, sat);
@@ -361,31 +393,13 @@ public class SolarTimeAngleDetector extends AbstractSignalPropagationDetector {
      * @return the frame used for solar time computation
      */
     public CelestialBodyFrame getFrame() {
-        return frame;
+        return this.frame;
     }
     
     /** @inheritDoc */
     @Override
     public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frameIn) {
         super.setPropagationDelayType(propagationDelayType, frameIn);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.sun;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
     }
 
     /** {@inheritDoc} */

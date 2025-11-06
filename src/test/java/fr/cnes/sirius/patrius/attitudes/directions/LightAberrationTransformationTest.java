@@ -18,6 +18,7 @@
  * @history creation 30/11/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * END-HISTORY
  */
@@ -265,6 +266,7 @@ public class LightAberrationTransformationTest {
     /** Set up. */
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
     }
 }

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-299:22/08/2024: [PATRIUS] Boucle infinie lors de l'interpolation
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
@@ -769,6 +770,11 @@ public class TimeStampedInterpolableEphemeris<IN extends TimeStamped, OUT> imple
                 // Make sure the shift is strictly positive to avoid stagnation
                 if (indexShift == 0) {
                     indexShift += 1;
+                }
+                // Make sure the shift is smaller than the shift between inf and sup index for date values close to
+                // dateSup
+                if (indexShift == (indexSup - indexInf) && date.compareTo(dateSup) < 0) {
+                    indexShift = indexShift - 1;
                 }
                 return indexInf + indexShift;
             }

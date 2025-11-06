@@ -18,6 +18,13 @@
  * @history created 11/06/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:FA:FA-104:08/12/2023:[PATRIUS] Completer le TU de NadirSolarIncidenceDetector
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
@@ -51,6 +58,7 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.directions.BasicPVCoordinatesProvider;
+import fr.cnes.sirius.patrius.bodies.BasicCelestialPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
@@ -60,7 +68,7 @@ import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.NadirSolarIncidenceDetector;
 import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
@@ -169,7 +177,9 @@ public class NadirSolarIncidenceDetectorTest {
         final double sunDist = 1.e9;
         final Vector3D sunPos = new Vector3D(sunDist, 0., 0.);
         final PVCoordinates sunPV = new PVCoordinates(sunPos, Vector3D.ZERO);
-        final BasicPVCoordinatesProvider sun = new BasicPVCoordinatesProvider(sunPV, EME2000Frame);
+        final BasicPVCoordinatesProvider sunPVCP = new BasicPVCoordinatesProvider(sunPV, EME2000Frame);
+        final CelestialPoint sun =
+            new BasicCelestialPoint("sun", sunPVCP, Constants.IERS92_SUN_GRAVITATIONAL_PARAMETER, EME2000Frame);
 
         // detector
         final double incidenceToDetect = 3 * FastMath.PI / 8.;
@@ -362,8 +372,9 @@ public class NadirSolarIncidenceDetectorTest {
             for (final boolean increasing : increasingList) {
                 for (final boolean forward : forwardList) {
                     // Compute the if value built with the ^ (exclusive or) operator
-                    ifCaseValue = ((forward == true && (!increasing) == false) || (forward == false && (!increasing) == true))
-                        ? true : false;
+                    ifCaseValue =
+                        ((forward == true && (!increasing) == false) || (forward == false && (!increasing) == true))
+                            ? true : false;
                     // Check the action for the eventOccurred function
                     Assert.assertTrue(detector.eventOccurred(state, increasing, forward) == (ifCaseValue ? detector
                         .getActionAtEntry() : detector.getActionAtExit()));
@@ -444,6 +455,11 @@ public class NadirSolarIncidenceDetectorTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(sun, eventDetector1.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

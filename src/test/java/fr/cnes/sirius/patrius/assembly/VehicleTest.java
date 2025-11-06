@@ -18,6 +18,13 @@
  * @history creation 04/04/2017
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-359:21/11/2024:[PATRIUS] BodyCenterPointing est erroné lorsque
+ * le corps central n'est pas la terre
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
@@ -84,10 +91,10 @@ import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.atmospheres.Atmosphere;
 import fr.cnes.sirius.patrius.forces.atmospheres.ExtendedAtmosphere;
@@ -707,19 +714,24 @@ public class VehicleTest {
         final SpacecraftState finalState = propagator.propagate(date.shiftedBy(86400.));
 
         // Expected tank mass after maneuver
-        final double expectedTankMass = 468.13386834443986;
+        final double expectedTankMass = 468.1338683444398;
 
         // Comparisons on orbital elements and additional state (mass) -
         // Reference PATRIUS V4.13
         final CartesianOrbit finalOrbit = (CartesianOrbit) finalState.getOrbit();
         final PVCoordinates pv = finalOrbit.getPVCoordinates();
 
-        Assert.assertEquals(-6132894.431654451, pv.getPosition().getX(), 0.);
-        Assert.assertEquals(2967003.857203159, pv.getPosition().getY(), 0.);
-        Assert.assertEquals(1079892.9680359596, pv.getPosition().getZ(), 0.);
-        Assert.assertEquals(-3552.822061241578, pv.getVelocity().getX(), 0.);
-        Assert.assertEquals(-6267.477704802792, pv.getVelocity().getY(), 0.);
-        Assert.assertEquals(-2281.1629523446177, pv.getVelocity().getZ(), 0.);
+        final Vector3D expectedPos =
+                new Vector3D(-6132894.431660094, 2967003.8571928507, 1079892.968032208);
+        final Vector3D expectedVel =
+                new Vector3D(-3552.8220612293776, -6267.477704808826, -2281.1629523468014);
+
+        Assert.assertEquals(expectedPos.getX(), pv.getPosition().getX(), 0.);
+        Assert.assertEquals(expectedPos.getY(), pv.getPosition().getY(), 0.);
+        Assert.assertEquals(expectedPos.getZ(), pv.getPosition().getZ(), 0.);
+        Assert.assertEquals(expectedVel.getX(), pv.getVelocity().getX(), 0.);
+        Assert.assertEquals(expectedVel.getY(), pv.getVelocity().getY(), 0.);
+        Assert.assertEquals(expectedVel.getZ(), pv.getVelocity().getZ(), 0.);
 
         // Check the mass in the SpacecraftState as well as in the Assembly
         Assert.assertEquals(expectedTankMass, finalState.getMass("Tank"), 0.);
@@ -809,12 +821,17 @@ public class VehicleTest {
         final CartesianOrbit finalOrbit = (CartesianOrbit) finalState.getOrbit();
         final PVCoordinates pv = finalOrbit.getPVCoordinates();
 
-        Assert.assertEquals(-3579575.708651917, pv.getPosition().getX(), 0.);
-        Assert.assertEquals(-5308963.758953648, pv.getPosition().getY(), 0.);
-        Assert.assertEquals(-1932236.8270409629, pv.getPosition().getZ(), 0.);
-        Assert.assertEquals(6526.323735189411, pv.getVelocity().getX(), 0.);
-        Assert.assertEquals(-3873.6854655894394, pv.getVelocity().getY(), 0.);
-        Assert.assertEquals(-1409.8271190575606, pv.getVelocity().getZ(), 0.);
+        final Vector3D expectedPos =
+                new Vector3D(-3579575.7086685733, -5308963.758948016, -1932236.8270389414);
+        final Vector3D expectedVel =
+                new Vector3D(6526.3237351773405, -3873.6854656027654, -1409.8271190624366);
+
+        Assert.assertEquals(expectedPos.getX(), pv.getPosition().getX(), 0.);
+        Assert.assertEquals(expectedPos.getY(), pv.getPosition().getY(), 0.);
+        Assert.assertEquals(expectedPos.getZ(), pv.getPosition().getZ(), 0.);
+        Assert.assertEquals(expectedVel.getX(), pv.getVelocity().getX(), 0.);
+        Assert.assertEquals(expectedVel.getY(), pv.getVelocity().getY(), 0.);
+        Assert.assertEquals(expectedVel.getZ(), pv.getVelocity().getZ(), 0.);
     }
 
     /**
@@ -893,6 +910,8 @@ public class VehicleTest {
      */
     @BeforeClass
     public static void setUp() throws PatriusException, IOException {
+        
+        Utils.clear();
 
         // Data location
         Utils.setDataRoot("regular-dataPBASE");
@@ -902,7 +921,7 @@ public class VehicleTest {
 
         // Build a MSISE atmosphere model
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS, Constants.WGS84_EARTH_FLATTENING,
             FramesFactory.getITRF(), "Earth");
@@ -1050,4 +1069,5 @@ public class VehicleTest {
         // PROPAGATION
         return propagator.propagate(date.shiftedBy(86400.));
     }
+
 }

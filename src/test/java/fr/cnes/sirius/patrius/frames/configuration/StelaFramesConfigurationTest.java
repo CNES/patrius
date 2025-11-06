@@ -18,6 +18,7 @@
  * @history Created 15/04/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -32,14 +33,24 @@
 package fr.cnes.sirius.patrius.frames.configuration;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.frames.configuration.eop.PoleCorrection;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.CIPCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.configuration.precessionnutation.StelaPrecessionNutationModel;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for Stela frame configuration and underlying {@link StelaPrecessionNutationModel}.
@@ -115,5 +126,10 @@ public class StelaFramesConfigurationTest {
         for (int i = 0; i < dExpected.length; i++) {
             Assert.assertEquals(0, MathLib.abs((dExpected[i] - dActual[i]) / dExpected[i]), tol);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

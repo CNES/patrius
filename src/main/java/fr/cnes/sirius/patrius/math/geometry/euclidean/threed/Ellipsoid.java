@@ -18,6 +18,9 @@
  * @history Created on 05/10/2011
  *
  * HISTORY
+ * VERSION:4.15.3:OPENFD-576:02/07/2025:[PATRIUS] Problème de convergence dans Ellipsoid.runNewtonAlgorithmLine
+ * VERSION:4.15:OPENFD-384:21/11/2024:[PATRIUS] Non convergence de l'algo d'intersection avec un ellipsoïde
+ * VERSION:4.15:OPENFD-399:21/11/2024:problème de convergence dans EllipsoidPoint.closestPointTo
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.10:FA:FA-3220:03/11/2022:[PATRIUS] Anomalie dans le calcul de distance a une Line
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -45,13 +48,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
 import fr.cnes.sirius.patrius.math.exception.MaxCountExceededException;
 import fr.cnes.sirius.patrius.math.linear.Array2DRowRealMatrix;
 import fr.cnes.sirius.patrius.math.linear.DecompositionSolver;
 import fr.cnes.sirius.patrius.math.linear.LUDecomposition;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.utils.UtilsPatrius;
@@ -167,6 +170,12 @@ public class Ellipsoid implements IEllipsoid, Serializable {
 
     /** Normalized ellipsoid norm factor (average of [a, b, c]) */
     private final double normFactor;
+
+    /**
+     * Cache system to avoid recomputation of the closest point already computed once in the 1D method (used only by the
+     * runNewtonAlgorithmLine method).
+     */
+    private double[] currentClosestPoint;
 
     /** Used to pinpoint the smallest axis */
     private enum SmallestAxis {
@@ -559,9 +568,13 @@ public class Ellipsoid implements IEllipsoid, Serializable {
          * Solutions of this polynomial indicate that the point corresponding to the t_sol value satisfy the ellipsoid
          * equation, hereby belonging to the intersection of the line and the ellipsoid.
          */
-        final double t2coeff = ul.bx * ul.bx / this.a2 + ul.by * ul.by / this.b2 + ul.bz * ul.bz / this.c2;
-        final double t1coeff = (ul.bx * ul.ax / this.a2 + ul.by * ul.ay / this.b2 + ul.bz * ul.az / this.c2) * 2;
-        final double t0coeff = ul.ax * ul.ax / this.a2 + ul.ay * ul.ay / this.b2 + ul.az * ul.az / this.c2 - 1;
+
+        final double t2coeff =
+            ul.bx * ul.bx / this.a2 + ul.by * ul.by / this.b2 + ul.bz * ul.bz / this.c2;
+        final double t1coeff =
+            (ul.bx * ul.ax / this.a2 + ul.by * ul.ay / this.b2 + ul.bz * ul.az / this.c2) * 2;
+        final double t0coeff =
+            ul.ax * ul.ax / this.a2 + ul.ay * ul.ay / this.b2 + ul.az * ul.az / this.c2 - 1;
 
         final double delta = t1coeff * t1coeff - 4 * t2coeff * t0coeff;
 
@@ -626,7 +639,6 @@ public class Ellipsoid implements IEllipsoid, Serializable {
 
             // Compute the Positions in ellipsoid basis
             final Vector3D p1 = ul.getPoint(t1);
-
             // Return point expressed in standard basis.
             // This is an affine transformation.
             result[0] = this.getAffineStandardExpression(p1);
@@ -840,8 +852,10 @@ public class Ellipsoid implements IEllipsoid, Serializable {
             index = 1;
         }
 
+        final Vector3D optimizedStartingPoint = this.getAffineLocalExpression(intersections[index]);
+
         // get ellipsoidic coordinates!
-        return this.getEllipsoidicCoordinates(this.getAffineLocalExpression(intersections[index]));
+        return this.getEllipsoidicCoordinates(optimizedStartingPoint);
     }
 
     /**
@@ -854,6 +868,10 @@ public class Ellipsoid implements IEllipsoid, Serializable {
      * point. Tests show the starting location defined as being the intersection of the line (center to point) and
      * (ellipsoid) is slightly more efficient than the starting point suggested in the paper.
      * 
+     * <p>
+     * In case of non-convergence, a secondary "backup" algorithm is used.
+     * </p>
+     * 
      * @param x
      *        coordinate of user point
      * @param y
@@ -861,6 +879,8 @@ public class Ellipsoid implements IEllipsoid, Serializable {
      * @param z
      *        coordinate of user point
      * @return Cartesian coordinates (expressed in local basis) of closest computed point
+     * @throws MaxCountExceededException
+     *         if the algorithm was unable to converge
      * 
      * @see Ellipsoid#getFPoint(double, double, double, double, double)
      * @see Ellipsoid#getFpPoint(double, double, double, double, double)
@@ -875,16 +895,18 @@ public class Ellipsoid implements IEllipsoid, Serializable {
         final double zn = z / this.normFactor;
 
         // Incrementation thresholds
-        final double thetaRate = FastMath.PI / RATE;
-        final double phiRate = FastMath.PI / RATE;
+        final double thetaRate = MathLib.PI / RATE;
+        final double phiRate = MathLib.PI / RATE;
 
         // Initialisation of computed point coordinates
         final double[] coords = this.getOptimizedStartingLocation(new Vector3D(xn, yn, zn));
 
         /*
-         * The following angluar values are suggested as starting values for planetographic longitude and parametric
+         * The following angular values are suggested as starting values for planetographic
+         * longitude and parametric
          * latitude by the article.
-         * θ value : atan2(a * y, a * x) φ value : atan2(z, c * sqrt( (x * x / (a2) + y * y / (b2)) ) )
+         * θ value : atan2(a * y, a * x) φ value : atan2(z, c * sqrt( (x * x / (a2) + y * y / (b2))
+         * ) )
          */
 
         // The following starting point has been found to be slightly more efficient
@@ -916,8 +938,7 @@ public class Ellipsoid implements IEllipsoid, Serializable {
                 step = new double[2];
             } else {
                 invData = new double[][] {
-                    { MathLib.divide(myFp[1][1], det),
-                        -MathLib.divide(myFp[0][1], det) },
+                    { MathLib.divide(myFp[1][1], det), -MathLib.divide(myFp[0][1], det) },
                     { -MathLib.divide(myFp[1][0], det), MathLib.divide(myFp[0][0], det) } };
                 myFpInv = invData;
 
@@ -926,9 +947,19 @@ public class Ellipsoid implements IEllipsoid, Serializable {
                     myFpInv[1][0] * myF[0] + myFpInv[1][1] * myF[1] };
 
                 // Saturate incrementations in order to prevent divergence of algorithm
-                final double sign00 = step[0] >= 0 ? 1 : -1;
+                final double sign00;
+                if (step[0] >= 0) {
+                    sign00 = 1;
+                } else {
+                    sign00 = -1;
+                }
                 step[0] = sign00 * MathLib.min(MathLib.abs(step[0]), thetaRate);
-                final double sign10 = step[1] >= 0 ? 1 : -1;
+                final double sign10;
+                if (step[1] >= 0) {
+                    sign10 = 1;
+                } else {
+                    sign10 = -1;
+                }
                 step[1] = sign10 * MathLib.min(MathLib.abs(step[1]), phiRate);
             }
 
@@ -944,26 +975,154 @@ public class Ellipsoid implements IEllipsoid, Serializable {
             i++;
 
         }
-        if (i >= NEWTONLIMIT) {
-            throw new MaxCountExceededException(PatriusMessages.CONVERGENCE_FAILED, NEWTONLIMIT);
+
+        final double[] solution;
+        if (i < NEWTONLIMIT) {
+            // Compute the solution
+            solution = this.getCartesianCoordinates(theta, phi);
+
+        } else { // if the legacy method fails (to much iterations), we fall back on a new 1D method
+
+            // Run the modified newton algorithm
+            final double[] finalClosestPoint = runModifiedNewtonAlgorithm(xn, yn, zn);
+
+            // If steps number exceeds again, still no convergence: throws an exception
+            i = (int) finalClosestPoint[3];
+            if (i >= NEWTONLIMIT) {
+                throw new MaxCountExceededException(PatriusMessages.CONVERGENCE_FAILED, NEWTONLIMIT);
+            }
+
+            // Build the solution
+            solution = new double[] { finalClosestPoint[0] * this.normFactor, finalClosestPoint[1] * this.normFactor,
+                finalClosestPoint[2] * this.normFactor };
         }
 
-        return this.getCartesianCoordinates(theta, phi);
+        return solution;
+    }
+
+    /**
+     * Backup algorithm for convergence. Algorithm adapted from <a href="https://www.geometrictools.com/Documentation/DistancePointEllipseEllipsoid.pdf">Distance from a Point to an Ellipse, an Ellipsoid, or a
+     * Hyperellipsoid</a>.
+     *
+     * @param xn
+     *        normalized coordinate of user point
+     * @param yn
+     *        normalized coordinate of user point
+     * @param zn
+     *        normalized coordinate of user point
+     * @return { xSol, ySol, zSol, i } array, in normalized coordinates
+     */
+    private double[] runModifiedNewtonAlgorithm(final double xn, final double yn, final double zn) {
+
+        // Determine the smallest axis to the power of 2
+        final double smallestAxisSq;
+        switch (this.smallest) {
+            case A:
+                smallestAxisSq = this.a2n;
+                break;
+            case B:
+                smallestAxisSq = this.b2n;
+                break;
+            case C:
+                smallestAxisSq = this.c2n;
+                break;
+            default:
+                throw new PatriusRuntimeException(PatriusMessages.INTERNAL_ERROR, null);
+        }
+
+        // Initialisation of containers
+        double[] myFWithDer;
+        double myFAlt;
+        double myFpAlt;
+        double stepAlt;
+        // initialization of optimization variable
+        double t = 0;
+
+        int i = 0;
+        double stepNorm;
+        // iteration : we solve F(t) = 0
+        do {
+
+            // Get new step values
+            myFWithDer = this.getFPointWithDerivatives(t, xn, yn, zn);
+            myFAlt = myFWithDer[0];
+            myFpAlt = myFWithDer[1];
+
+            // Calculate step
+            // for Halley Method, second derivative could be used
+            stepAlt = myFAlt / myFpAlt;
+
+            // new Values
+            stepNorm = MathLib.abs(stepAlt);
+
+            // store t values
+            // t should never be less than -an^2, where an is the smallest axis of the ellipsoid
+            if (t - stepAlt <= -smallestAxisSq) {
+                t = (t - smallestAxisSq) / 2;
+            } else {
+                t = t - stepAlt;
+            }
+
+            // keep track of steps
+            i++;
+
+        } while (i < NEWTONLIMIT && stepNorm > this.epsNewton);
+
+        // we compute the solution based on the computed value of t
+        final double xSol = xn * this.a2n / (t + this.a2n);
+        final double ySol = yn * this.b2n / (t + this.b2n);
+        final double zSol = zn * this.c2n / (t + this.c2n);
+
+        // Also return "i" to keep track of the steps number
+        return new double[] { xSol, ySol, zSol, i };
+    }
+
+    /**
+     * This method computes an approximate closest point to the ellipsoid that lies on a given
+     * line.<br/>
+     * The approximation only considers the center of the ellipsoid and not its surface.<br/>
+     * It provides a good and reliable starting point for the runNewtonAlgorithmLine() function,
+     * even when
+     * the starting point of the line is very far away (in interplanetary cases, the origin of the
+     * line can be
+     * as large as 2e11 meters away from the ellipsoid for the Earth-Mars case).
+     * <p>
+     * The implemented solution solves the following equation :<br/>
+     * (origin + dir * t ) . (dir) = 0<br/>
+     * The dot product between the direction of the line and the point on the line at a given
+     * distance from the origin is zero when and only when the distance is minimized.
+     * </p>
+     * 
+     * @param line
+     *        Line parameters in the ellipsoid's frame. No frame conversion is performed.
+     * @return Point on the line that minimizes the distance to the center of the ellipsoid.
+     */
+    private Vector3D getApproximateClosestPoint(final LineCoefficients line) {
+        final Vector3D ori = line.getLineOrigin();
+        final Vector3D dir = line.getLineDirection();
+        final double tsol = -dir.dotProduct(ori) / dir.getNormSq();
+        return line.getPoint(tsol);
     }
 
     /**
      * This method is the Newton Algorithm that calculates the numerical solution of the multivariable problem
-     * {@code F(q_i) = 0}.
-     * 
+     * {@code F(q_i) = 0}.<br>
      * <center>{@code x(n+1) = x(n) - J(n)^-1 * F(n)}</center><br>
-     * 
+     * <p>
      * It implements an augmented version of the algorithm described in the below reference with the single difference
      * of the algorithm starting point. Tests show the starting location defined as being the intersection of the line
      * (center to point) and (ellipsoid) is slightly more efficient than the starting point suggested in the paper.
+     * </p>
+     * 
+     * <p>
+     * In case of non-convergence, a secondary "backup" algorithm is used.
+     * </p>
      * 
      * @param line
      *        user line expressed in local ellipsoid frame
      * @return Cartesian coordinates (expressed in local basis) of closest computed point
+     * @throws MaxCountExceededException
+     *         if the algorithm was unable to converge
      * 
      * @see Ellipsoid#getFLine(double, double, double, LineCoefficients)
      * @see Ellipsoid#getFpLine(double, double, double, LineCoefficients)
@@ -972,24 +1131,28 @@ public class Ellipsoid implements IEllipsoid, Serializable {
      */
     private double[] runNewtonAlgorithmLine(final LineCoefficients line) {
 
+        // Shift line origin to the approximate closest point to the ellipsoid. Necessary for interplanetary cases where
+        // the origin is very far away.
+        final Vector3D lineOrigin = getApproximateClosestPoint(line);
+
         // Build normalized line
-        final Vector3D normOrigin = line.getLineOrigin().scalarMultiply(1. / this.normFactor);
+        final Vector3D normOrigin = lineOrigin.scalarMultiply(1. / this.normFactor);
         final LineCoefficients normLine = new LineCoefficients(normOrigin, line.getLineDirection());
 
         // Incrementation thresholds
-        final double thetaRate = FastMath.PI / RATE;
-        final double phiRate = FastMath.PI / RATE;
+        final double thetaRate = MathLib.PI / RATE;
+        final double phiRate = MathLib.PI / RATE;
         final double tRate = thetaRate;
 
         // Initialisation of computed point coordinates
         final double[] coords = this.getOptimizedStartingLocation(normLine.getPoint(0));
-        if (Precision.equals(MathLib.abs(coords[1]), FastMath.PI / 2)) {
+        if (Precision.equals(MathLib.abs(coords[1]), MathLib.PI / 2)) {
             final double sign = coords[1] >= 0 ? 1 : -1;
-            coords[1] = sign * FastMath.PI / 4;
+            coords[1] = sign * MathLib.PI / 4;
         }
 
         /*
-         * The following angluar values are suggested as starting values for planetographic longitude and parametric
+         * The following angular values are suggested as starting values for planetographic longitude and parametric
          * latitude by the article.
          */
 
@@ -1058,13 +1221,83 @@ public class Ellipsoid implements IEllipsoid, Serializable {
             singularityFlag = !solver.isNonSingular();
 
         }
-        if (i >= NEWTONLIMIT) {
-            throw new MaxCountExceededException(PatriusMessages.CONVERGENCE_FAILED, NEWTONLIMIT);
+
+        final double[] solution;
+        if (i < NEWTONLIMIT) {
+            // Compute the solution
+            solution = this.getCartesianCoordinates(theta, phi);
+
+        } else { // if the legacy method fails (to much iterations), we fall back on a new 1D method
+
+            // Define the function F(t) representing the distance between the point and the ellipsoid
+            final UnivariateFunction distFunc = new UnivariateFunction(){
+
+                /** Serializable UID. */
+                private static final long serialVersionUID = -8808918540888586244L;
+
+                /** {@inheritDoc} */
+                @Override
+                public double value(final double x) {
+
+                    // cartesian coordinates of the point on the line
+                    final double xl = normLine.getPointX(x);
+                    final double yl = normLine.getPointY(x);
+                    final double zl = normLine.getPointZ(x);
+
+                    // cartesian coordinates of the point on the ellipsoid
+                    Ellipsoid.this.currentClosestPoint = runModifiedNewtonAlgorithm(xl, yl, zl);
+                    final double xp = Ellipsoid.this.currentClosestPoint[0];
+                    final double yp = Ellipsoid.this.currentClosestPoint[1];
+                    final double zp = Ellipsoid.this.currentClosestPoint[2];
+
+                    return (xp - xl) * line.bx + (yp - yl) * line.by + (zp - zl) * line.bz;
+                }
+            };
+
+            // Initial values
+            i = 0;
+            t = 0.;
+            double newtStep = 0.;
+            double stepSize = 0.;
+
+            // 1D problem : loop on the F(t) distance function to find t corresponding to the closest point
+            double fp;
+            do {
+
+                t += newtStep;
+
+                final double diffStep = MathLib.max(stepSize, 1e-11);
+                final double fPlus = distFunc.value(t + diffStep / 2.);
+                final double fMinus = distFunc.value(t - diffStep / 2.);
+                final double f = distFunc.value(t);
+                fp = (fPlus - fMinus) / diffStep;
+
+                // newton step = -f/f' ~= f
+                newtStep = -f / fp;
+                stepSize = MathLib.abs(newtStep);
+
+                // keep track of steps
+                i++;
+
+            } while (i < NEWTONLIMIT && stepSize > this.epsNewton
+                    && MathLib.abs(fp) > Precision.DOUBLE_COMPARISON_EPSILON);
+
+            // Avoid to recompute the last point found by the 1D function (performance-wise)
+            // The last point is already stored in the currentClosestPoint parameter
+
+            // If steps number exceeds again, still no convergence: throws an exception
+            i = (int) this.currentClosestPoint[3];
+            if (i >= NEWTONLIMIT) {
+                throw new MaxCountExceededException(PatriusMessages.CONVERGENCE_FAILED, NEWTONLIMIT);
+            }
+
+            // Build the solution
+            solution = new double[] { this.currentClosestPoint[0] * this.normFactor,
+                this.currentClosestPoint[1] * this.normFactor,
+                this.currentClosestPoint[2] * this.normFactor };
         }
 
-        final double[] coord = this.getCartesianCoordinates(theta, phi);
-
-        return new double[] { coord[0], coord[1], coord[2], t * this.normFactor };
+        return new double[] { solution[0], solution[1], solution[2], t * -this.normFactor };
     }
 
     /**
@@ -1175,6 +1408,44 @@ public class Ellipsoid implements IEllipsoid, Serializable {
 
         // Return Matrix3D
         return new double[][] { { fp11, fp12 }, { fp21, fp22 } };
+    }
+
+    /**
+     * Computes the value and first derivative of the 1D function used in the alternative method
+     * 
+     * @param t
+     *        the alternative method function parameter
+     * @param xn
+     *        normalized coordinate of the point
+     * @param yn
+     *        normalized coordinate of the point
+     * @param zn
+     *        normalized coordinate of the point
+     * @return the value of the function and its first derivative
+     */
+    private double[] getFPointWithDerivatives(final double t, final double xn, final double yn, final double zn) {
+
+        // Intermediary computations
+        final double xDenom = t + this.a2n;
+        final double yDenom = t + this.b2n;
+        final double zDenom = t + this.c2n;
+        final double xn2 = xn * xn;
+        final double yn2 = yn * yn;
+        final double zn2 = zn * zn;
+
+        // function
+        final double f0 = this.an * xn / xDenom;
+        final double f1 = this.bn * yn / yDenom;
+        final double f2 = this.cn * zn / zDenom;
+        final double f = f0 * f0 + f1 * f1 + f2 * f2 - 1;
+
+        // first derivative
+        final double fp0 = 2 * this.a2n * xn2 / (xDenom * xDenom * xDenom);
+        final double fp1 = 2 * this.b2n * yn2 / (yDenom * yDenom * yDenom);
+        final double fp2 = 2 * this.b2n * zn2 / (zDenom * zDenom * zDenom);
+        final double fp = -fp0 - fp1 - fp2;
+
+        return new double[] { f, fp };
     }
 
     /**
@@ -1313,6 +1584,8 @@ public class Ellipsoid implements IEllipsoid, Serializable {
      * @param point
      *        the point expressed in standard basis
      * @return the closest point to the user point on the ellipsoid surface
+     * @throws MaxCountExceededException
+     *         if the algorithm was unable to converge
      */
     @Override
     public Vector3D closestPointTo(final Vector3D point) {
@@ -1454,6 +1727,8 @@ public class Ellipsoid implements IEllipsoid, Serializable {
      * 
      * @return Array of length 2 containing the point of the line (slot [0]) and the point of the ellipsoid (slot [1])
      *         expressed as {@link Vector3D}
+     * @throws MaxCountExceededException
+     *         if the algorithm was unable to converge
      */
     @Override
     public Vector3D[] closestPointTo(final Line line) {
@@ -1517,7 +1792,6 @@ public class Ellipsoid implements IEllipsoid, Serializable {
                 points[0] = line.pointAt(minIscs);
                 points[1] = points[0];
             }
-            
         }
 
         return points;

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3288:22/05/2023:[PATRIUS] ID de facette pour un FacetBodyShape
  * VERSION:4.11:DM:DM-3297:22/05/2023:[PATRIUS] Optimisation des calculs de distance entre une Line et un FacetBodyShape 
@@ -28,11 +29,18 @@
 package fr.cnes.sirius.patrius.bodies.mesh;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@link Triangle} class.
@@ -403,5 +411,10 @@ public class TriangleTest {
         final Triangle triangle = new Triangle(12, v1, v2, v3);
 
         Assert.assertEquals("TriangleID: 12 ; Vertices[v0ID: 1001; v1ID: 1002; v2ID: 1003]", triangle.toString());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

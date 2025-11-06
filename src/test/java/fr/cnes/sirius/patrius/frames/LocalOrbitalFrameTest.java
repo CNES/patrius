@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -231,6 +232,7 @@ public class LocalOrbitalFrameTest {
 
     @Before
     public void setUp() throws PropagationException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         this.inertialFrame = FramesFactory.getGCRF();
         this.initDate = AbsoluteDate.J2000_EPOCH.shiftedBy(584.);
@@ -271,5 +273,4 @@ public class LocalOrbitalFrameTest {
     private AbsoluteDate initDate;
     private Orbit initialOrbit;
     private PVCoordinatesProvider provider;
-
 }

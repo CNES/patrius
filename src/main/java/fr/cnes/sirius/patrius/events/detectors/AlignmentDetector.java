@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+* VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+* VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -36,8 +40,9 @@ package fr.cnes.sirius.patrius.events.detectors;
 
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -55,7 +60,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * orbital plane of some body position.
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when alignment is
+ * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when alignment is
  * reached. This can be changed by using provided constructors.
  * </p>
  * 
@@ -89,18 +94,19 @@ public class AlignmentDetector extends AbstractDetector {
      * threshold according to orbit size.
      * </p>
      * <p>
-     * The default behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected alignment is
+     * The default behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected alignment is
      * reached.
      * </p>
      * 
-     * @param orbit initial orbit
-     * @param bodyIn the body to align
-     * @param alignAngleIn the alignment angle (rad)
+     * @param orbit
+     *        initial orbit
+     * @param bodyIn
+     *        the body to align
+     * @param alignAngleIn
+     *        the alignment angle (rad)
      */
-    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn,
-        final double alignAngleIn) {
-        this(orbit, bodyIn, alignAngleIn, DEFAULT_THRESHOLD * orbit.getKeplerianPeriod(),
-            Action.STOP, Action.CONTINUE);
+    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn, final double alignAngleIn) {
+        this(orbit, bodyIn, alignAngleIn, DEFAULT_THRESHOLD * orbit.getKeplerianPeriod(), Action.STOP, Action.CONTINUE);
     }
 
     /**
@@ -109,17 +115,21 @@ public class AlignmentDetector extends AbstractDetector {
      * The orbit is used only to set an upper bound for the max check interval to period/3.
      * </p>
      * <p>
-     * The default behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected alignment is
+     * The default behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected alignment is
      * reached.
      * </p>
      * 
-     * @param orbit initial orbit
-     * @param bodyIn the body to align
-     * @param alignAngleIn the alignment angle (rad)
-     * @param thresholdIn convergence threshold (s)
+     * @param orbit
+     *        initial orbit
+     * @param bodyIn
+     *        the body to align
+     * @param alignAngleIn
+     *        the alignment angle (rad)
+     * @param thresholdIn
+     *        convergence threshold (s)
      */
-    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn,
-        final double alignAngleIn, final double thresholdIn) {
+    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn, final double alignAngleIn,
+                             final double thresholdIn) {
         this(orbit, bodyIn, alignAngleIn, thresholdIn, Action.STOP, Action.CONTINUE);
     }
 
@@ -129,16 +139,21 @@ public class AlignmentDetector extends AbstractDetector {
      * The orbit is used only to set an upper bound for the max check interval to period/3.
      * </p>
      * 
-     * @param orbit initial orbit
-     * @param bodyIn the body to align
-     * @param alignAngleIn the alignment angle (rad)
-     * @param threshold convergence threshold (s)
-     * @param actionStart action performed when the alignment start
-     * @param actionEnd action performed when the alignment end
+     * @param orbit
+     *        initial orbit
+     * @param bodyIn
+     *        the body to align
+     * @param alignAngleIn
+     *        the alignment angle (rad)
+     * @param threshold
+     *        convergence threshold (s)
+     * @param actionStart
+     *        action performed when the alignment start
+     * @param actionEnd
+     *        action performed when the alignment end
      */
-    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn,
-        final double alignAngleIn, final double threshold, final Action actionStart,
-        final Action actionEnd) {
+    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn, final double alignAngleIn,
+                             final double threshold, final Action actionStart, final Action actionEnd) {
         this(orbit, bodyIn, alignAngleIn, threshold, actionStart, actionEnd, false, false);
     }
 
@@ -148,19 +163,27 @@ public class AlignmentDetector extends AbstractDetector {
      * The orbit is used only to set an upper bound for the max check interval to period/3.
      * </p>
      * 
-     * @param orbit initial orbit
-     * @param bodyIn the body to align
-     * @param alignAngleIn the alignment angle (rad)
-     * @param threshold convergence threshold (s)
-     * @param actionStart action performed when the alignment start
-     * @param actionEnd action performed when the alignment end
-     * @param removeStart true if detector should be removed when the alignment start
-     * @param removeEnd true if detector should be removed when the alignment end
+     * @param orbit
+     *        initial orbit
+     * @param bodyIn
+     *        the body to align
+     * @param alignAngleIn
+     *        the alignment angle (rad)
+     * @param threshold
+     *        convergence threshold (s)
+     * @param actionStart
+     *        action performed when the alignment start
+     * @param actionEnd
+     *        action performed when the alignment end
+     * @param removeStart
+     *        true if detector should be removed when the alignment start
+     * @param removeEnd
+     *        true if detector should be removed when the alignment end
      * @since 3.1
      */
-    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn,
-        final double alignAngleIn, final double threshold, final Action actionStart,
-        final Action actionEnd, final boolean removeStart, final boolean removeEnd) {
+    public AlignmentDetector(final Orbit orbit, final PVCoordinatesProvider bodyIn, final double alignAngleIn,
+                             final double threshold, final Action actionStart, final Action actionEnd,
+                             final boolean removeStart, final boolean removeEnd) {
         super(orbit.getKeplerianPeriod() / 3, threshold, actionStart, actionEnd, removeStart, removeEnd);
         this.body = bodyIn;
         this.alignAngle = alignAngleIn;
@@ -175,19 +198,27 @@ public class AlignmentDetector extends AbstractDetector {
      * The orbit is used only to set an upper bound for the max check interval to period/3.
      * </p>
      * 
-     * @param maxcheck max check interval
-     * @param bodyIn the body to align
-     * @param alignAngleIn the alignment angle (rad)
-     * @param threshold convergence threshold (s)
-     * @param actionStart action performed when the alignment start
-     * @param actionEnd action performed when the alignment end
-     * @param removeStart true if detector should be removed when the alignment start
-     * @param removeEnd true if detector should be removed when the alignment end
+     * @param bodyIn
+     *        the body to align
+     * @param alignAngleIn
+     *        the alignment angle (rad)
+     * @param maxcheck
+     *        max check interval
+     * @param threshold
+     *        convergence threshold (s)
+     * @param actionStart
+     *        action performed when the alignment start
+     * @param actionEnd
+     *        action performed when the alignment end
+     * @param removeStart
+     *        true if detector should be removed when the alignment start
+     * @param removeEnd
+     *        true if detector should be removed when the alignment end
      * @since 3.1
      */
     public AlignmentDetector(final PVCoordinatesProvider bodyIn, final double alignAngleIn,
-        final double maxcheck, final double threshold, final Action actionStart,
-        final Action actionEnd, final boolean removeStart, final boolean removeEnd) {
+                             final double maxcheck, final double threshold, final Action actionStart,
+                             final Action actionEnd, final boolean removeStart, final boolean removeEnd) {
         super(maxcheck, threshold, actionStart, actionEnd, removeStart, removeEnd);
         this.body = bodyIn;
         this.alignAngle = alignAngleIn;
@@ -217,20 +248,24 @@ public class AlignmentDetector extends AbstractDetector {
     /**
      * Handle an alignment event and choose what to do next.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when alignment is
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when alignment is
      * reached.
      * </p>
      * 
-     * @param s the current state information : date, kinematics, attitude
-     * @param increasing if true, the value of the switching function increases when times increases
+     * @param s
+     *        the current state information : date, kinematics, attitude
+     * @param increasing
+     *        if true, the value of the switching function increases when times increases
      *        around event
-     * @param forward if true, the integration variable (time) increases during integration.
+     * @param forward
+     *        if true, the integration variable (time) increases during integration.
      * @return the action performed when alignment is reached.
-     * @exception PatriusException if some specific error occurs
+     * @throws PatriusException
+     *            if some specific error occurs
      */
     @Override
-    public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                final boolean forward) throws PatriusException {
+    public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
+        throws PatriusException {
         return super.eventOccurred(s, increasing, forward);
     }
 
@@ -239,26 +274,39 @@ public class AlignmentDetector extends AbstractDetector {
      * the alignment angle and the angle between the satellite position and the body position
      * projection in the orbital plane.
      * 
-     * @param state state
+     * @param state
+     *        state
      * @return value of the switching function
-     * @exception PatriusException if some specific error occurs
+     * @throws PatriusException
+     *            if some specific error occurs
      */
     @Override
     @SuppressWarnings("PMD.ShortMethodName")
     public double g(final SpacecraftState state) throws PatriusException {
 
         // Intermediate computations
-        final PVCoordinates pv = state.getPVCoordinates();
+        PVCoordinates pv = state.getPVCoordinates();
+        // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
+        final PVCoordinates bodyPV;
+        final Frame stateFrame = state.getFrame();
+        if (stateFrame.isPseudoInertial()) {
+            bodyPV = this.body.getPVCoordinates(state.getDate(), stateFrame);
+        } else {
+            final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
+            final Transform t = stateFrame.getTransformTo(workFrame, state.getDate());
+            pv = t.transformPVCoordinates(pv);
+            bodyPV = this.body.getPVCoordinates(state.getDate(), workFrame);
+        }
         final Vector3D a = pv.getPosition().normalize();
         final Vector3D z = pv.getMomentum().negate().normalize();
         final Vector3D b = Vector3D.crossProduct(a, z).normalize();
         final Vector3D x = new Vector3D(this.cosAlignAngle, a, this.sinAlignAngle, b);
         final Vector3D y = new Vector3D(this.sinAlignAngle, a, -this.cosAlignAngle, b);
-        final Vector3D pb = this.body.getPVCoordinates(state.getDate(), state.getFrame()).getPosition();
+        final Vector3D pb = bodyPV.getPosition();
         // Computation
         final double beta = MathLib.atan2(Vector3D.dotProduct(pb, y), Vector3D.dotProduct(pb, x));
-        final double betm = -FastMath.PI - beta;
-        final double betp = FastMath.PI - beta;
+        final double betm = -MathLib.PI - beta;
+        final double betp = MathLib.PI - beta;
 
         // Compute result
         final double res;

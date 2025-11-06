@@ -14,6 +14,12 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -250,10 +256,10 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
     private transient ThreadLocal<AtomicReference<Map<String, Double>>> constants;
 
     /** Ephemeris type to generate. */
-    private final EphemerisType generateType;
+    private final PredefinedEphemerisType generateType;
 
     /** Ephemeris type to load. */
-    private final EphemerisType loadType;
+    private final PredefinedEphemerisType loadType;
 
     /** Chunks duration (in seconds). */
     private double maxChunksDuration;
@@ -273,7 +279,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
      *        ephemeris type to generate
      */
     public JPLHistoricEphemerisLoader(final String supportedNamesIn,
-                                      final EphemerisType generateTypeIn) {
+                                      final PredefinedEphemerisType generateTypeIn) {
         this.supportedNames = supportedNamesIn;
         this.constants = new ThreadLocal<AtomicReference<Map<String, Double>>>(){
             /** {@inheritDoc} */
@@ -285,10 +291,10 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
 
         this.maxChunksDuration = Double.NaN;
         this.generateType = generateTypeIn;
-        if (generateTypeIn == EphemerisType.SOLAR_SYSTEM_BARYCENTER) {
-            this.loadType = EphemerisType.EARTH_MOON;
-        } else if (generateTypeIn == EphemerisType.EARTH_MOON) {
-            this.loadType = EphemerisType.MOON;
+        if (generateTypeIn == PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER) {
+            this.loadType = PredefinedEphemerisType.EARTH_MOON;
+        } else if (generateTypeIn == PredefinedEphemerisType.EARTH_MOON) {
+            this.loadType = PredefinedEphemerisType.MOON;
         } else {
             this.loadType = generateTypeIn;
         }
@@ -372,7 +378,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
     // CHECKSTYLE: stop ReturnCount check
     // Reason: Orekit code kept as such
     @Override
-    public double getLoadedGravitationalCoefficient(final EphemerisType body)
+    public double getLoadedGravitationalCoefficient(final PredefinedEphemerisType body)
         throws PatriusException {
         // CHECKSTYLE: resume ReturnCount check
         // CHECKSTYLE: resume CyclomaticComplexity check
@@ -381,16 +387,16 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
         final double rawGM;
         switch (body) {
             case SOLAR_SYSTEM_BARYCENTER:
-                return getLoadedGravitationalCoefficient(EphemerisType.SUN) +
-                        getLoadedGravitationalCoefficient(EphemerisType.MERCURY) +
-                        getLoadedGravitationalCoefficient(EphemerisType.VENUS) +
-                        getLoadedGravitationalCoefficient(EphemerisType.EARTH_MOON) +
-                        getLoadedGravitationalCoefficient(EphemerisType.MARS) +
-                        getLoadedGravitationalCoefficient(EphemerisType.JUPITER) +
-                        getLoadedGravitationalCoefficient(EphemerisType.SATURN) +
-                        getLoadedGravitationalCoefficient(EphemerisType.URANUS) +
-                        getLoadedGravitationalCoefficient(EphemerisType.NEPTUNE) +
-                        getLoadedGravitationalCoefficient(EphemerisType.PLUTO);
+                return getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.MERCURY) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.VENUS) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH_MOON) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE) +
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO);
             case SUN:
                 rawGM = getLoadedConstant("GMS", "GM_Sun");
                 break;
@@ -406,27 +412,33 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             case EARTH:
                 // Deduced from E/M mass ratio
                 return getLoadedEarthMoonMassRatio() *
-                        getLoadedGravitationalCoefficient(EphemerisType.MOON);
+                        getLoadedGravitationalCoefficient(PredefinedEphemerisType.MOON);
             case MOON:
                 // Deduced from E/M mass ratio
-                return getLoadedGravitationalCoefficient(EphemerisType.EARTH_MOON) /
+                return getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH_MOON) /
                         (1.0 + getLoadedEarthMoonMassRatio());
             case MARS:
+            case MARS_BARY:
                 rawGM = getLoadedConstant("GM4", "GM_Mar");
                 break;
             case JUPITER:
+            case JUPITER_BARY:
                 rawGM = getLoadedConstant("GM5", "GM_Jup");
                 break;
             case SATURN:
+            case SATURN_BARY:
                 rawGM = getLoadedConstant("GM6", "GM_Sat");
                 break;
             case URANUS:
+            case URANUS_BARY:
                 rawGM = getLoadedConstant("GM7", "GM_Ura");
                 break;
             case NEPTUNE:
+            case NEPTUNE_BARY:
                 rawGM = getLoadedConstant("GM8", "GM_Nep");
                 break;
             case PLUTO:
+            case PLUTO_BARY:
                 rawGM = getLoadedConstant("GM9", "GM_Plu");
                 break;
             default:
@@ -963,7 +975,7 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             // Special case for Earth: we do not really load any ephemeris data
             // Other cases: we have to look for data in all available ephemerides files as there
             // may be data overlaps that result in incomplete data
-            return (JPLHistoricEphemerisLoader.this.generateType != EphemerisType.EARTH);
+            return (JPLHistoricEphemerisLoader.this.generateType != PredefinedEphemerisType.EARTH);
         }
 
         /** {@inheritDoc} */
@@ -1083,17 +1095,28 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
                 final int row3 = extractInt(record, HEADER_CHEBISHEV_INDICES_OFFSET + 8
                         + (4 + 8) * i);
                 ok = ok && (row1 >= 0) && (row2 >= 0) && (row3 >= 0);
-                final boolean c1 = (i == 0) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.MERCURY);
-                final boolean c2 = (i == 1) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.VENUS);
-                final boolean c3 = (i == 2) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.EARTH_MOON);
-                final boolean c4 = (i == 3) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.MARS);
-                final boolean c5 = (i == 4) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.JUPITER);
-                final boolean c6 = (i == 5) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.SATURN);
-                final boolean c7 = (i == 6) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.URANUS);
-                final boolean c8 = (i == C_7) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.NEPTUNE);
-                final boolean c9 = (i == C_8) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.PLUTO);
-                final boolean c10 = (i == C_9) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.MOON);
-                final boolean c11 = (i == C_10) && (JPLHistoricEphemerisLoader.this.loadType == EphemerisType.SUN);
+                final boolean c1 = (i == 0) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.MERCURY);
+                final boolean c2 = (i == 1) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.VENUS);
+                final boolean c3 = (i == 2) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.EARTH_MOON);
+                final boolean c4 = (i == 3) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.MARS
+                        || JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.MARS_BARY);
+                final boolean c5 =
+                    (i == 4) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.JUPITER
+                            || JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.JUPITER_BARY);
+                final boolean c6 =
+                    (i == 5) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.SATURN
+                            || JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.SATURN_BARY);
+                final boolean c7 =
+                    (i == 6) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.URANUS
+                            || JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.URANUS_BARY);
+                final boolean c8 =
+                    (i == C_7) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.NEPTUNE
+                            || JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.NEPTUNE_BARY);
+                final boolean c9 =
+                    (i == C_8) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.PLUTO
+                            || JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.PLUTO_BARY);
+                final boolean c10 = (i == C_9) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.MOON);
+                final boolean c11 = (i == C_10) && (JPLHistoricEphemerisLoader.this.loadType == PredefinedEphemerisType.SUN);
                 final boolean c1c2c3c4 = c1 || c2 || c3 || c4;
                 final boolean c5c6c7c8 = c5 || c6 || c7 || c8;
                 final boolean c9c10c11 = c9 || c10 || c11;
@@ -1160,11 +1183,32 @@ public class JPLHistoricEphemerisLoader implements JPLEphemerisLoader {
             final int first = this.firstIndex;
             final double duration = this.chunksDuration;
             for (int i = 0; i < nbChunks; ++i) {
-
+                
                 // set up chunk validity range
                 final AbsoluteDate chunkStart = chunkEnd;
-                chunkEnd = (i == nbChunks - 1) ? rangeEnd : rangeStart.shiftedBy((i + 1) * duration);
 
+                // Retrieve compatibility mode and adapt the computation accordingly
+                switch (PatriusConfiguration.getPatriusCompatibilityMode()) {
+                    case OLD_MODELS:
+                    case MIXED_MODELS:
+                        if (i == nbChunks - 1) {
+                            chunkEnd = rangeEnd;
+                        } else {
+                            chunkEnd = rangeStart.shiftedBy((i + 1) * duration);
+                        }
+                        break;
+                    case NEW_MODELS:
+                        if (i == nbChunks - 1) {
+                            chunkEnd = rangeEnd;
+                        } else {
+                            chunkEnd = rangeStart.shiftedBy((i + 1) * duration, timeScale);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException(
+                            "Unsupported compatibility mode : " + PatriusConfiguration.getPatriusCompatibilityMode());
+                }
+                
                 // extract Chebyshev coefficients for the selected body
                 // and convert them from kilometers to meters
                 final double[] xCoeffs = new double[nbCoeffs];

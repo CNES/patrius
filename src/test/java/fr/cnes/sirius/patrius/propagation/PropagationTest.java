@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3150:10/05/2022:[PATRIUS] Absence d'attitude lors de l'utilisation du mode Ephemeris du propagateur 
@@ -25,9 +26,12 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.propagation;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -113,4 +117,9 @@ public class PropagationTest {
 
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

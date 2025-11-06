@@ -17,6 +17,7 @@
  * @history Created 19/07/2012
  *
  * HISTORY
+ * VERSION:4.15.3:OPENFD-567:02/07/2025:[PATRIUS] Terme (1,1) dans le modèle de gravité de Balmino
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -165,7 +166,7 @@ public final class GravityToolbox {
 
         }
 
-        for (int l = 2; l < degree + 1; l++) {
+        for (int l = 1; l < degree + 1; l++) {
             for (int m = 1; m < MathLib.min(l + 1, order + 1); m++) {
                 aux = asr[l] * (coefficientsC[l][m] * gamma[m] + coefficientsS[l][m] * sigma[m]);
                 auxp = aux * phelm[l][m];

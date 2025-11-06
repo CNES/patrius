@@ -18,6 +18,7 @@
  * @history Created 25/02/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3126:10/05/2022:[PATRIUS] Imports obsoletes suite a suppression de reflexion Java dans Patrius 
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
@@ -34,8 +35,7 @@
  */
 package fr.cnes.sirius.patrius.stela;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -54,6 +54,7 @@ import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Test class for {@link StelaSpacecraftFactory}
@@ -135,5 +136,10 @@ public class StelaSpacecraftFactoryTest {
             ((RadiativeSphereProperty) sc.getMainPart().getProperty(PropertyType.RADIATIVE_CROSS_SECTION))
                 .getSphereRadius(), MathLib.sqrt(4 / FastMath.PI), EPS);
 
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

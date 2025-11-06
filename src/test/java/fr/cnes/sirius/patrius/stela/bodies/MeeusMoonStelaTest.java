@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -58,10 +61,12 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusMoon;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
@@ -110,7 +115,7 @@ public class MeeusMoonStelaTest {
     }
 
     /** Moon */
-    private CelestialBody moon;
+    private IAUCelestialBody moon;
     /** Date */
     private AbsoluteDate date;
     /** Radius */
@@ -128,6 +133,7 @@ public class MeeusMoonStelaTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
 
         final double earthRadius = 6378136.46;
         final double moonRadius = 1737400;

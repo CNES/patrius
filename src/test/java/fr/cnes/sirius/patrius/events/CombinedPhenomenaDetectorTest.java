@@ -17,6 +17,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -35,16 +38,14 @@ package fr.cnes.sirius.patrius.events;
 
 import java.util.Iterator;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.CombinedPhenomenaDetector;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
@@ -68,6 +69,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * <p>
@@ -300,6 +302,7 @@ public class CombinedPhenomenaDetectorTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Orekit initialization
         Utils.setDataRoot("regular-dataPBASE");
         final AbsoluteDate date = new AbsoluteDate(2000, 1, 10, TimeScalesFactory.getTT());
@@ -318,11 +321,11 @@ public class CombinedPhenomenaDetectorTest {
 
         // Create a total eclipse detector that does not stop the propagation
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER,
@@ -330,7 +333,7 @@ public class CombinedPhenomenaDetectorTest {
 
         final CelestialPoint sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH);
+            PredefinedEphemerisType.EARTH);
         final CelestialPoint earth = loaderEarth.loadCelestialPoint(CelestialBodyFactory.EARTH);
 
         umbra = new EclipseDetector(sun, Constants.SUN_RADIUS, earth,

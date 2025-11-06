@@ -20,10 +20,12 @@
  */
 /* 
  * HISTORY
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
-* VERSION:4.8:FA:FA-2956:15/11/2021:[PATRIUS] Temps de propagation non implemente pour certains evenements 
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:FA:FA-2940:15/11/2021:[PATRIUS] Anomalies suite a DM 2766 sur package fr.cnes.sirius.patrius.math.linear 
+ * VERSION:4.8:FA:FA-2956:15/11/2021:[PATRIUS] Temps de propagation non implemente pour certains evenements 
  * VERSION:4.7:DM:DM-2872:18/05/2021:Calcul de l'accélération dans la classe QuaternionPolynomialProfile 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -544,7 +546,8 @@ public class Array2DRowRealMatrix extends AbstractRealMatrix {
         final int nCols = this.getColumnDimension();
         if (v.length != nCols) {
             // Exception
-            throw new DimensionMismatchException(v.length, nCols);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                v.length, nCols);
         }
         // row count of the matrix
         final int nRows = this.getRowDimension();
@@ -568,8 +571,9 @@ public class Array2DRowRealMatrix extends AbstractRealMatrix {
         // row count of the matrix
         final int nRows = this.getRowDimension();
         if (v.length != nRows) {
-            // raise an exception if the v length is different of the row line numbers of the matrix
-            throw new DimensionMismatchException(v.length, nRows);
+            // raise an exception if the length of v is different than the number of rows of the matrix
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, v.length,
+                nRows);
         }
 
         // column count of the matrix

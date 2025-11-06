@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3319:22/05/2023:[PATRIUS] Rendre la classe QuaternionPolynomialSegment plus generique et ajouter de la coherence dans le package polynomials
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -30,16 +31,25 @@
  */
 package fr.cnes.sirius.patrius.propagation.analytical.twod;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.polynomials.DatePolynomialFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.math.analysis.polynomials.UnivariateDateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link Analytical2DParameterModel}
@@ -316,5 +326,10 @@ public class Analytical2DParameterModelTest {
 
         // Check max trigonometric order
         Assert.assertEquals(2, this.model.getMaxTrigonometricOrder());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

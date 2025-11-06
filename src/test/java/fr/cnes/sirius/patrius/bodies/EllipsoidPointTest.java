@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -28,19 +31,39 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
+import static org.junit.Assert.assertEquals;
+import fr.cnes.sirius.patrius.Utils;
+
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.SphericalCoordinates;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for class {@link EllipsoidPoint}.
@@ -367,5 +390,151 @@ public class EllipsoidPointTest {
         Assert.assertEquals(point1.getLLHCoordinates().getHeight(), point2.getLLHCoordinates().getHeight(), 0.);
 
         Assert.assertEquals(point1.toString(), point2.toString());
+    }
+
+    /**
+     * @description Tests the method {@link AbstractBodyPoint#getInputLLHCoordinates()} returns the expected value in a
+     *              nominal case where the input coordinates are defined.
+     * 
+     * @testedMethod {@link AbstractBodyPoint#getInputLLHCoordinates()}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testInputLLHCoordinatesGetterNominal() throws PatriusException {
+        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+        final double latitude = MathUtils.DEG_TO_RAD * 43;
+        final double longitude = MathUtils.DEG_TO_RAD * 1;
+        final double height = 35000 * 1e3;
+        final LLHCoordinates coord =
+            new LLHCoordinates(LLHCoordinatesSystem.BODYCENTRIC_NORMAL, latitude, longitude, height);
+        final String name = "name";
+        final EllipsoidPoint point = new EllipsoidPoint(shape, coord, name);
+        assertEquals(coord, point.getInputLLHCoordinates());
+    }
+
+    /**
+     * @description Tests the method {@link AbstractBodyPoint#getInputLLHCoordinates()} returns the expected value in a
+     *              non-nominal case where the input coordinates are not defined. The method should throw an error.
+     * 
+     * @testedMethod {@link AbstractBodyPoint#getInputLLHCoordinates()}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testInputLLHCoordinatesGetterError() throws PatriusException {
+        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+        final String name = "name";
+        final Vector3D vector = Vector3D.PLUS_I;
+        final EllipsoidPoint point = new EllipsoidPoint(shape, vector, name);
+        try {
+            point.getInputLLHCoordinates();
+            Assert.fail();
+        } catch (final PatriusException e) {
+            assertEquals(e.getMessage(), PatriusMessages.NO_LLHCOORDINATES_DEFINED.getSourceString());
+        }
+    }
+
+    /**
+     * @description This method verifies the method {@link AbstractBodyPoint#toStringWithInputCoords()} provides the
+     *              expected result in a nominal case where input coordinates are provided.
+     * 
+     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords()}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testToStringWithInputCoordsNominal() throws PatriusException {
+        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+        final double latitude = 0.54;
+        final double longitude = 1.54;
+        final double height = 250;
+        final LLHCoordinates coord =
+            new LLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC, latitude, longitude, height);
+        final String name = "name";
+        final EllipsoidPoint point = new EllipsoidPoint(shape, coord, name);
+
+        // Results are provided without recomputation
+        final String expString =
+            "EllipsoidPoint: name='name', surface ellipsodetic coord={lat=0.54, long=1.54}rad, normal height=250.0m, body='ONE_AXIS_ELLIPSOID'";
+        assertEquals(expString, point.toStringWithInputCoords());
+    }
+
+    /**
+     * @description This method verifies the method {@link AbstractBodyPoint#toStringWithInputCoords()} provides the
+     *              expected result in a non-nominal case where input coordinates are not provided.
+     * 
+     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords()}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testToStringWithInputCoordsError() throws PatriusException {
+        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+        final Vector3D vector = Vector3D.PLUS_I;
+        final String name = "name";
+        final EllipsoidPoint point = new EllipsoidPoint(shape, vector, name);
+
+        try{
+            point.toStringWithInputCoords();
+            Assert.fail();
+        } catch(final PatriusException e) {
+            assertEquals(e.getMessage(), PatriusMessages.NO_LLHCOORDINATES_DEFINED.getSourceString());
+        }
+    }
+
+    /**
+     * @description This test verifies the method
+     *              {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)} provides the expected
+     *              result in a nominal case where the LLHCoordinates are defined by user.
+     * 
+     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testToStringWithInputCoordsLHCCoordSystemNominal() throws PatriusException {
+        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+        final double latitude = 0.54;
+        final double longitude = 1.54;
+        final double height = 250.;
+        final LLHCoordinates coord =
+            new LLHCoordinates(LLHCoordinatesSystem.ELLIPSODETIC, latitude, longitude, height);
+        final String name = "name";
+        final EllipsoidPoint point = new EllipsoidPoint(shape, coord, name);
+        
+        // Results are provided with transformation computation
+        final String expString =
+            "EllipsoidPoint: name='name', surface bodycentric coord={lat=0.5399999999999999, long=1.54}rad, radial height=250.00000000011343m, body='ONE_AXIS_ELLIPSOID'";
+        assertEquals(expString,point.toStringWithInputCoords(LLHCoordinatesSystem.BODYCENTRIC_RADIAL));
+    }
+
+    /**
+     * @description This test verifies the method
+     *              {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)} provides the expected
+     *              result in a non-nominal case where the LLHCoordinates are not defined by user.
+     * 
+     * @testedMethod {@link AbstractBodyPoint#toStringWithInputCoords(LLHCoordinatesSystem)}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testToStringWithInputCoordsLHCCoordSystemError() throws PatriusException {
+        final OneAxisEllipsoid shape = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF());
+        final String name = "name";
+        final Vector3D vector = Vector3D.PLUS_I;
+        final EllipsoidPoint point = new EllipsoidPoint(shape, vector, name);
+
+        try {
+            point.toStringWithInputCoords(LLHCoordinatesSystem.ELLIPSODETIC);
+            Assert.fail();
+        } catch (final PatriusException e) {
+            assertEquals(e.getMessage(), PatriusMessages.NO_LLHCOORDINATES_DEFINED.getSourceString());
+        }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

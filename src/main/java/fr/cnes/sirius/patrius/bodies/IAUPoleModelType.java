@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3163:10/05/2022:[PATRIUS] Enrichissement des reperes planetaires 
@@ -35,7 +36,7 @@ public enum IAUPoleModelType {
         /** {@inheritDoc} */
         @Override
         boolean accept(final IAUPoleFunctionType type) {
-            return type.equals(IAUPoleFunctionType.CONSTANT);
+            return type == IAUPoleFunctionType.CONSTANT;
         }
     },
 
@@ -44,7 +45,7 @@ public enum IAUPoleModelType {
         /** {@inheritDoc} */
         @Override
         boolean accept(final IAUPoleFunctionType type) {
-            return type.equals(IAUPoleFunctionType.CONSTANT) || type.equals(IAUPoleFunctionType.SECULAR);
+            return type == IAUPoleFunctionType.CONSTANT || type == IAUPoleFunctionType.SECULAR;
         }
     },
 

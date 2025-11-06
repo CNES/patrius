@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le
@@ -139,29 +141,40 @@ public class ThirdBodyAttraction extends AbstractBodyAttraction {
 
             // Separate the central gamma from the non-central (harmonic) gamma for numerical precision
 
-            // Compute the spacecraft central gamma
-            final Vector3D scCentralGamma = harmonicGravityModel.computeCentralTermAcceleration(positionInBodyFrame);
-            // Compute the main body central gamma
-            final Vector3D mainBodyCentralGamma = harmonicGravityModel
-                .computeCentralTermAcceleration(mainBodyPositionInBodyFrame);
-            // Compute the difference between the spacecraft central gamma and the main body central gamma
-            final Vector3D diffCentralGamma = scCentralGamma.subtract(mainBodyCentralGamma);
-
             // Compute the spacecraft non-central (harmonic) gamma
-            final Vector3D scNonCentralGamma = harmonicGravityModel.computeNonCentralTermsAcceleration(
-                positionInBodyFrame, date);
+            final Vector3D scNonCentralGamma = harmonicGravityModel
+                    .computeNonCentralTermsAcceleration(positionInBodyFrame, date);
             // Compute the main body non-central (harmonic) gamma
-            final Vector3D mainBodyNonCentralGamma = harmonicGravityModel.computeNonCentralTermsAcceleration(
-                mainBodyPositionInBodyFrame, date);
-            // Compute the difference between the spacecraft non-central (harmonic) gamma and the main body non-central
+            final Vector3D mainBodyNonCentralGamma = harmonicGravityModel
+                    .computeNonCentralTermsAcceleration(mainBodyPositionInBodyFrame, date);
+            // Compute the difference between the spacecraft non-central (harmonic) gamma and the
+            // main body non-central
             // (harmonic) gamma
-            final Vector3D diffNonCentralGamma = scNonCentralGamma.subtract(mainBodyNonCentralGamma);
+            final Vector3D diffNonCentralGamma =
+                    scNonCentralGamma.subtract(mainBodyNonCentralGamma);
 
-            // Compute the gamma as the sum between diffCentralGamma (the difference between the spacecraft central
-            // gamma and the main body central gamma) and diffNonCentralGamma (the difference between the spacecraft
-            // non-central (harmonic) gamma and the main body non-central (harmonic) gamma)
-            gamma = diffCentralGamma.add(diffNonCentralGamma);
+            if (harmonicGravityModel.isCentralTermContributionApplied()) {
+                // Compute the spacecraft central gamma
+                final Vector3D scCentralGamma =
+                        harmonicGravityModel.computeCentralTermAcceleration(positionInBodyFrame);
+                // Compute the main body central gamma
+                final Vector3D mainBodyCentralGamma = harmonicGravityModel
+                        .computeCentralTermAcceleration(mainBodyPositionInBodyFrame);
+                // Compute the difference between the spacecraft central gamma and the main body
+                // central gamma
+                final Vector3D diffCentralGamma = scCentralGamma.subtract(mainBodyCentralGamma);
 
+                harmonicGravityModel.computeCentralTermAcceleration(mainBodyPositionInBodyFrame);
+
+                // Compute the gamma as the sum between diffCentralGamma (the difference between the
+                // spacecraft central
+                // gamma and the main body central gamma) and diffNonCentralGamma (the difference
+                // between the spacecraft
+                // non-central (harmonic) gamma and the main body non-central (harmonic) gamma)
+                gamma = diffCentralGamma.add(diffNonCentralGamma);
+            } else {
+                gamma = diffNonCentralGamma;
+            }
         } else {
             // Compute the spacecraft gamma
             final Vector3D scGamma = gravityModel.computeAcceleration(positionInBodyFrame, date);

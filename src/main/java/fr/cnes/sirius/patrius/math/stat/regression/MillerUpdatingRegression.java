@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-431:21/11/2024:[PATRIUS] Reliquat messages DimensionMismatchException
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -224,12 +225,24 @@ public class MillerUpdatingRegression implements UpdatingMultipleLinearRegressio
      */
     @Override
     public void addObservations(final double[][] x, final double[] y) {
-        if ((x == null) || (y == null) || (x.length != y.length)) {
-            throw new ModelSpecificationException(
-                PatriusMessages.DIMENSIONS_MISMATCH_SIMPLE,
-                (x == null) ? 0 : x.length,
-                (y == null) ? 0 : y.length);
+        if ((x == null)) {
+            if (y == null) {
+                throw new ModelSpecificationException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                        "x", 0, "y", 0);
+            } else {
+                throw new ModelSpecificationException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                        "x", 0, "y", y.length);
+            }
+        } else {
+            if (y == null) {
+                throw new ModelSpecificationException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                        "x", x.length, "y", 0);
+            } else if (x.length != y.length) {
+                throw new ModelSpecificationException(PatriusMessages.DIMENSIONS_MISMATCH_GENERIC,
+                        "x", x.length, "y", y.length);
+            }
         }
+
         if (x.length == 0) {
             // Must be no y data either
             throw new ModelSpecificationException(

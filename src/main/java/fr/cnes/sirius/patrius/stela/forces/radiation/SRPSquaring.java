@@ -18,6 +18,8 @@
  * @history 21/02/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -50,6 +52,7 @@ import fr.cnes.sirius.patrius.math.complex.Complex;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.orbitalparameters.KeplerianParameters;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -89,9 +92,6 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
 
      /** Serializable UID. */
     private static final long serialVersionUID = 7808923418399620235L;
-
-    /** 2π */
-    private static final double TWO_PI = 2 * FastMath.PI;
 
     /** Epsilon for Polynomial order determination, from STELA internal parameters file */
     private static final double TOL_MAX_DEG = 1E-06;
@@ -247,13 +247,13 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
 //        // Corresponding eccentric anomalies
 //        double anomEccIn = MathLib.atan2(sinEeccIn, (cosNuIn + e) / (1. + e * cosNuIn));
 //        double anomEccOut = MathLib.atan2(sinEeccOut, (cosNuOut + e) / (1. + e * cosNuOut));
-//        anomEccIn = JavaMathAdapter.mod(anomEccIn, TWO_PI);
-//        anomEccOut = JavaMathAdapter.mod(anomEccOut, TWO_PI);
+//        anomEccIn = JavaMathAdapter.mod(anomEccIn, MathUtils.TWO_PI);
+//        anomEccOut = JavaMathAdapter.mod(anomEccOut, MathUtils.TWO_PI);
 //
 //        // Quadrature points repartition
 //        final double deltaEi;
 //        if (anomEccIn <= anomEccOut) {
-//            deltaEi = (TWO_PI - (anomEccOut - anomEccIn)) / (this.quadPoints - 1);
+//            deltaEi = (MathUtils.TWO_PI - (anomEccOut - anomEccIn)) / (this.quadPoints - 1);
 //        } else {
 //            deltaEi = (anomEccIn - anomEccOut) / (this.quadPoints - 1);
 //        }
@@ -294,13 +294,13 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
         // Corresponding eccentric anomalies
         double anomEccIn = MathLib.atan2(sinEeccIn, (cosNuIn + e) / (1. + e * cosNuIn));
         double anomEccOut = MathLib.atan2(sinEeccOut, (cosNuOut + e) / (1. + e * cosNuOut));
-        anomEccIn = JavaMathAdapter.mod(anomEccIn, TWO_PI);
-        anomEccOut = JavaMathAdapter.mod(anomEccOut, TWO_PI);
+        anomEccIn = JavaMathAdapter.mod(anomEccIn, MathUtils.TWO_PI);
+        anomEccOut = JavaMathAdapter.mod(anomEccOut, MathUtils.TWO_PI);
 
         // Quadrature points repartition
         final double deltaEi;
         if (anomEccIn <= anomEccOut) {
-            deltaEi = (TWO_PI - (anomEccOut - anomEccIn)) / (this.quadPoints - 1);
+            deltaEi = (MathUtils.TWO_PI - (anomEccOut - anomEccIn)) / (this.quadPoints - 1);
         } else {
             deltaEi = (anomEccIn - anomEccOut) / (this.quadPoints - 1);
         }
@@ -326,8 +326,8 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
         // srp contribution for each quadrature point.
         for (int i = 0; i < this.quadPoints; i++) {
             // Get quadrature point date
-            final double minit = JavaMathAdapter.mod(orbit.getLM() - aopPlusRaan, TWO_PI);
-            final double mquad = JavaMathAdapter.mod(meanAnomalies[i], TWO_PI);
+            final double minit = JavaMathAdapter.mod(orbit.getLM() - aopPlusRaan, MathUtils.TWO_PI);
+            final double mquad = JavaMathAdapter.mod(meanAnomalies[i], MathUtils.TWO_PI);
             final AbsoluteDate date = orbit.getDate().shiftedBy(MathLib.divide(mquad - minit, n));
 
             // LOF for quadrature point
@@ -435,7 +435,7 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
      *        eccentric anomaly corresponding to orbit.
      * @return the adjustment coefficient.
      */
-    private static double computeAdjustCoef(final StelaEquinoctialOrbit orbit, final double eAnom) {
+    private double computeAdjustCoef(final StelaEquinoctialOrbit orbit, final double eAnom) {
         final double ex = orbit.getEquinoctialEx();
         final double ey = orbit.getEquinoctialEy();
         return 1.0 - MathLib.sqrt(ex * ex + ey * ey) * MathLib.cos(eAnom);
@@ -468,9 +468,9 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
         final double cosPhi = sincosphi[1];
         final double a = orbit.getA();
         final double e = orbit.getE();
-        final double raan = JavaMathAdapter.mod(MathLib.atan2(orbit.getIy(), orbit.getIx()), TWO_PI);
+        final double raan = JavaMathAdapter.mod(MathLib.atan2(orbit.getIy(), orbit.getIx()), MathUtils.TWO_PI);
         final double aop = JavaMathAdapter.mod(
-            MathLib.atan2(orbit.getEquinoctialEy(), orbit.getEquinoctialEx()) - raan, TWO_PI);
+            MathLib.atan2(orbit.getEquinoctialEy(), orbit.getEquinoctialEx()) - raan, MathUtils.TWO_PI);
         final double gamma = aop - phi;
         final double nuIn;
         final double nuOut;
@@ -534,8 +534,8 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
                 nuIn = 0;
                 nuOut = 0;
             } else {
-                nuIn = JavaMathAdapter.mod((alphaInOut[0] - gamma), TWO_PI);
-                nuOut = JavaMathAdapter.mod((alphaInOut[1] - gamma), TWO_PI);
+                nuIn = JavaMathAdapter.mod((alphaInOut[0] - gamma), MathUtils.TWO_PI);
+                nuOut = JavaMathAdapter.mod((alphaInOut[1] - gamma), MathUtils.TWO_PI);
             }
         }
         return new double[] { nuIn, nuOut };
@@ -569,25 +569,25 @@ public class SRPSquaring extends AbstractStelaGaussContribution {
         // Corresponding eccentric anomalies
         double anomEccIn = MathLib.atan2(sinEeccIn, (cosNuIn + e) / (1. + e * cosNuIn));
         double anomEccOut = MathLib.atan2(sinEeccOut, (cosNuOut + e) / (1. + e * cosNuOut));
-        anomEccIn = JavaMathAdapter.mod(anomEccIn, TWO_PI);
-        anomEccOut = JavaMathAdapter.mod(anomEccOut, TWO_PI);
+        anomEccIn = JavaMathAdapter.mod(anomEccIn, MathUtils.TWO_PI);
+        anomEccOut = JavaMathAdapter.mod(anomEccOut, MathUtils.TWO_PI);
 
         // Add 2Pi such that |v - E| < Pi
         if (anomEccIn < startPoint - MathLib.PI) {
             // Code from STELA 3.4. Unreachable code because quadrature points computation has changed
             // in the meantime from STELA 3.X to STELA 3.4
-            anomEccIn += TWO_PI;
+            anomEccIn += MathUtils.TWO_PI;
         }
         if (anomEccIn > startPoint + MathLib.PI) {
-            anomEccIn -= TWO_PI;
+            anomEccIn -= MathUtils.TWO_PI;
         }
         if (anomEccOut < endPoint - MathLib.PI) {
-            anomEccOut += TWO_PI;
+            anomEccOut += MathUtils.TWO_PI;
         }
         if (anomEccOut > endPoint + MathLib.PI) {
             // Code from STELA 3.4. Unreachable code because quadrature points computation has changed
             // in the meantime from STELA 3.X to STELA 3.4
-            anomEccOut -= TWO_PI;
+            anomEccOut -= MathUtils.TWO_PI;
         }
 
         // Return result

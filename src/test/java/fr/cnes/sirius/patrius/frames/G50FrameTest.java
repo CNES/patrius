@@ -14,12 +14,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.frames;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -70,5 +72,10 @@ public class G50FrameTest {
 
         // Check
         Assert.assertEquals(Rotation.distance(t.getRotation(), Rotation.IDENTITY), 0., 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

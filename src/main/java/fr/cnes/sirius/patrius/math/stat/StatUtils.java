@@ -19,6 +19,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -1065,7 +1067,7 @@ public final class StatUtils {
         final int n = sample1.length;
         if (n != sample2.length) {
             // Exception
-            throw new DimensionMismatchException(n, sample2.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, n, sample2.length);
         }
         if (n <= 0) {
             // Exception
@@ -1121,7 +1123,7 @@ public final class StatUtils {
         final int n = sample1.length;
         if (n != sample2.length) {
             // Exception
-            throw new DimensionMismatchException(n, sample2.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, n, sample2.length);
         }
         if (n < 2) {
             // Exception

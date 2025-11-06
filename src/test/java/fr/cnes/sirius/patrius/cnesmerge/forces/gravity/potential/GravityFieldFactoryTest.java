@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
@@ -27,14 +28,14 @@ package fr.cnes.sirius.patrius.cnesmerge.forces.gravity.potential;
 import java.io.IOException;
 import java.text.ParseException;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
 import fr.cnes.sirius.patrius.forces.gravity.potential.PotentialCoefficientsProvider;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for <code>GravityFieldFactory</code>.
@@ -142,4 +143,9 @@ public class GravityFieldFactoryTest {
         GravityFieldFactory.getPotentialProvider();
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

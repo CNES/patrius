@@ -16,6 +16,10 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -26,6 +30,7 @@ package fr.cnes.sirius.patrius.propagation.events;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -34,7 +39,7 @@ import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.SolarTimeAngleDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
@@ -75,7 +80,7 @@ public class SignalPropagationWrapperDetectorTest {
      * @testedMethod {@link SignalPropagationWrapperDetector#getMaxIterationCount()}
      * @testedMethod {@link SignalPropagationWrapperDetector#getSlopeSelection()}
      * @testedMethod {@link SignalPropagationWrapperDetector#getNBOccurredEvents()}
-     * @testedMethod {@link SignalPropagationWrapperDetector#getDatationChoice()}
+     * @testedMethod {@link SignalPropagationWrapperDetector#getEventDatationType()}
      * @testedMethod {@link SignalPropagationWrapperDetector#getWrappedDetector()}
      * @testedMethod {@link SignalPropagationWrapperDetector#getEmitterDatesMap()}
      * @testedMethod {@link SignalPropagationWrapperDetector#getEmitterDatesList()}
@@ -120,7 +125,7 @@ public class SignalPropagationWrapperDetectorTest {
         Assert.assertEquals(eventDetector.getSlopeSelection(), wrapper.getSlopeSelection(), 0.);
 
         Assert.assertEquals(2, wrapper.getNBOccurredEvents());
-        Assert.assertEquals(eventDetector.getDatationChoice(), wrapper.getDatationChoice());
+        Assert.assertEquals(eventDetector.getEventDatationType(), wrapper.getEventDatationType());
         Assert.assertEquals(eventDetector, wrapper.getWrappedDetector());
 
         Assert.assertEquals(2, wrapper.getEmitterDatesMap().size());
@@ -187,12 +192,17 @@ public class SignalPropagationWrapperDetectorTest {
 
         Assert.assertEquals(2, loggedEvent.size());
         Assert.assertTrue(new AbsoluteDate("2000-01-01T13:06:13.255")
-            .equals(loggedEvent.get(0).getEventDate(DatationChoice.EMITTER), 1e-3));
+            .equals(loggedEvent.get(0).getEventDate(EventDatationType.EMITTER), 1e-3));
         Assert.assertTrue(new AbsoluteDate("2000-01-01T13:14:23.910")
-            .equals(loggedEvent.get(0).getEventDate(DatationChoice.RECEIVER), 1e-3));
+            .equals(loggedEvent.get(0).getEventDate(EventDatationType.RECEIVER), 1e-3));
         Assert.assertTrue(new AbsoluteDate("2000-01-01T15:27:52.814")
-            .equals(loggedEvent.get(1).getEventDate(DatationChoice.EMITTER), 1e-3));
+            .equals(loggedEvent.get(1).getEventDate(EventDatationType.EMITTER), 1e-3));
         Assert.assertTrue(new AbsoluteDate("2000-01-01T15:36:03.469")
-            .equals(loggedEvent.get(1).getEventDate(DatationChoice.RECEIVER), 1e-3));
+            .equals(loggedEvent.get(1).getEventDate(EventDatationType.RECEIVER), 1e-3));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

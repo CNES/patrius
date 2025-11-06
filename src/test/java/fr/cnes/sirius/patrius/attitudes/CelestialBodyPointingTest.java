@@ -18,6 +18,7 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
  *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -244,6 +245,7 @@ public class CelestialBodyPointingTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
 
         this.sun = CelestialBodyFactory.getSun();
@@ -260,5 +262,4 @@ public class CelestialBodyPointingTest {
                 new Vector3D(0, 0, 3680.853673522056));
         this.orbit = new KeplerianOrbit(pv, this.frame, this.date, 3.986004415e14);
     }
-
 }

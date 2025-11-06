@@ -16,8 +16,11 @@
  *
  * 
  * @history creation 20/04/2012
+<<<<<<< HEAD
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-376:21/11/2024:[PATRIUS] Nombre max d'itérations pour la propagation du signal par SensorModel
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
@@ -73,7 +76,6 @@ import fr.cnes.sirius.patrius.events.detectors.SensorVisibilityDetector;
 import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.fieldsofview.CircularField;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
-import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.TopocentricFrame;
 import fr.cnes.sirius.patrius.frames.UpdatableFrame;
@@ -97,6 +99,7 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.Propagator;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
+import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
@@ -1538,6 +1541,66 @@ public class SensorModelTest {
                 845.e3);
         Assert.assertEquals(0., error, 6E-6);
     }
+    
+    /**
+     * This test checks the getter for maxIter parameter
+     * @throws PatriusException
+     */
+    @Test
+    public void testGetMaxIter() throws PatriusException {
+        
+        // Initialization
+
+        // State (polar orbit)
+        final Orbit orbit = new KeplerianOrbit(1E15, 0, FastMath.PI / 2., 0, 0, 0,
+                PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH,
+                Constants.EGM96_EARTH_MU);
+        final Attitude attitude = new ConstantAttitudeLaw(FramesFactory.getGCRF(),
+                Rotation.IDENTITY).getAttitude(orbit);
+        final SpacecraftState state = new SpacecraftState(orbit, attitude);
+
+        // Assembly
+        final AssemblyBuilder builder = new AssemblyBuilder();
+        builder.addMainPart(this.mainBody);
+        final SensorProperty sensorProperty = new SensorProperty(Vector3D.MINUS_I);
+        builder.addProperty(sensorProperty, this.mainBody);
+        final Assembly assembly = builder.returnAssembly();
+        
+        SensorModel sensorModel = new SensorModel(assembly, this.mainBody);
+        Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER, sensorModel.getMaxIter());
+    }
+
+    /**
+     * This test checks the setter for maxIter parameter
+     * @throws PatriusException
+     */
+    @Test
+    public void testSetMaxIter() throws PatriusException {
+
+        // Initialization
+
+        // State (polar orbit)
+        final Orbit orbit = new KeplerianOrbit(1E15, 0, FastMath.PI / 2., 0, 0, 0,
+                PositionAngle.TRUE, FramesFactory.getGCRF(), AbsoluteDate.J2000_EPOCH,
+                Constants.EGM96_EARTH_MU);
+        final Attitude attitude =
+                new ConstantAttitudeLaw(FramesFactory.getGCRF(), Rotation.IDENTITY)
+                        .getAttitude(orbit);
+        final SpacecraftState state = new SpacecraftState(orbit, attitude);
+
+        // Assembly
+        final AssemblyBuilder builder = new AssemblyBuilder();
+        builder.addMainPart(this.mainBody);
+        final SensorProperty sensorProperty = new SensorProperty(Vector3D.MINUS_I);
+        builder.addProperty(sensorProperty, this.mainBody);
+        final Assembly assembly = builder.returnAssembly();
+
+        SensorModel sensorModel = new SensorModel(assembly, this.mainBody);
+        Assert.assertEquals(VacuumSignalPropagationModel.DEFAULT_MAX_ITER,
+                sensorModel.getMaxIter());
+        sensorModel.setMaxIter(1);
+        Assert.assertEquals(1, sensorModel.getMaxIter());
+    }
 
     private static double erreurAngleHorizonCible(final EllipsoidBodyShape elli, final double lat,
             final double azim, final double altSat, final double altTarget) throws PatriusException {
@@ -1626,6 +1689,7 @@ public class SensorModelTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }

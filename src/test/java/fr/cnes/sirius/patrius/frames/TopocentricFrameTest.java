@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody 
+ *          car l'orientation n'est pas forcement IAU 
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
  *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
@@ -51,14 +54,13 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPointTest;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
-import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
+import fr.cnes.sirius.patrius.bodies.UserIAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape;
 import fr.cnes.sirius.patrius.bodies.mesh.ObjMeshLoader;
 import fr.cnes.sirius.patrius.cnesmerge.frames.TopocentricFrameTest.features;
@@ -1003,6 +1005,7 @@ public class TopocentricFrameTest {
     @Before
     public void setUp() throws IOException {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
 
             FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
@@ -1046,7 +1049,7 @@ public class TopocentricFrameTest {
                 }
             };
 
-            final CelestialBody celestialBody = new UserCelestialBody("My body", pvCoordinates, 0,
+            final UserIAUCelestialBody celestialBody = new UserIAUCelestialBody("My body", pvCoordinates, 0,
                 IAUPoleFactory.getIAUPole(null), FramesFactory.getGCRF(), null);
             this.earthFacetShape = new FacetBodyShape("My body", celestialBody.getRotatingFrame(IAUPoleModelType.TRUE),
                 new ObjMeshLoader(modelFile));

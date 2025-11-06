@@ -18,6 +18,8 @@
  * @history Created 25/02/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
@@ -34,7 +36,7 @@ package fr.cnes.sirius.patrius.stela.forces.radiation;
 
 import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.assembly.models.DirectRadiativeModel;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.stela.StelaSpacecraftFactory;
 import fr.cnes.sirius.patrius.stela.forces.AbstractStelaGaussContribution;
 import fr.cnes.sirius.patrius.stela.orbits.OrbitNatureConverter;
@@ -88,7 +90,7 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
     public StelaSRPSquaring(final double mass, final double surface, final double reflectionCoef,
-        final int quadraturePoints, final CelestialPoint sun) throws PatriusException {
+        final int quadraturePoints, final PVCoordinatesProvider sun) throws PatriusException {
         super();
         final Assembly radiativeSpacecraft = getSpacecraft(mass, surface, reflectionCoef);
         this.squaring = new SRPSquaring(new DirectRadiativeModel(radiativeSpacecraft), quadraturePoints, sun,
@@ -120,7 +122,7 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
     public StelaSRPSquaring(final double mass, final double surface, final double reflectionCoef,
-        final int quadraturePoints, final CelestialPoint sun, final double earthRadius, final double dRef,
+        final int quadraturePoints, final PVCoordinatesProvider sun, final double earthRadius, final double dRef,
         final double pRef) throws PatriusException {
         super();
         final Assembly radiativeSpacecraft = getSpacecraft(mass, surface, reflectionCoef);
@@ -153,7 +155,7 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
     public StelaSRPSquaring(final double mass, final double surface, final double reflectionCoef,
-        final int quadraturePoints, final CelestialPoint sun, final double earthRadius, final double dRef,
+        final int quadraturePoints, final PVCoordinatesProvider sun, final double earthRadius, final double dRef,
         final double pRef,
         final int orderFS) throws PatriusException {
         super();
@@ -176,7 +178,7 @@ public class StelaSRPSquaring extends AbstractStelaGaussContribution {
      * @throws PatriusException
      *         if the mass is negative (PatriusMessages.MASS_ARGUMENT_IS_NEGATIVE)
      */
-    private static Assembly getSpacecraft(final double mass, final double surface,
+    private Assembly getSpacecraft(final double mass, final double surface,
                                    final double reflectionCoef) throws PatriusException {
         return StelaSpacecraftFactory.createStelaRadiativeSpacecraft("main", mass,
             surface, reflectionCoef);

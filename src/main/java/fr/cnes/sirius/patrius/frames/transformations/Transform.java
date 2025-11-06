@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:DM:DM-75:30/06/2023:[PATRIUS] Degradation performance Patrius 4.11
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.10.1:FA:FA-3267:02/12/2022:[PATRIUS] Anomalie gestion acceleration null PVCoordinates (suite)
@@ -46,7 +47,6 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
-import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeInterpolable;
 import fr.cnes.sirius.patrius.time.TimeShiftable;
@@ -55,6 +55,7 @@ import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.AngularDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.CartesianDerivativesFilter;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.wrenches.Wrench;
 

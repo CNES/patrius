@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -27,19 +28,33 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.lang.reflect.InvocationTargetException;
+import fr.cnes.sirius.patrius.Utils;
 import java.lang.reflect.Method;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.HashSet;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Iterator;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Set;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.analysis.UnivariateFunction;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.analysis.function.Sin;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathUnsupportedOperationException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealVector.Entry;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This is an abstract test of the {@link RealVector#unmodifiableRealVector(RealVector) unmodifiable vector}
@@ -439,5 +454,10 @@ public abstract class UnmodifiableRealVectorAbstractTest {
             Assert.assertTrue("exception should have been thrown", flag);
         }
         Assert.assertFalse(j.hasNext());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -48,7 +50,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -57,6 +59,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -158,7 +161,7 @@ public class CovarianceInterpolationTest {
     // as of 06/05/2015
     // validation results are in accord with CNES results for order 0, 1
     // apparently small differences arise for the order 2 case
-    public void testInterpolation() throws PatriusException, IOException {
+    public void testInterpolation() throws PatriusException, IOException, URISyntaxException {
 
         // Load CNES ephemeris file (pos, vel, 6x6 covariance matrix)
         this.loadEphem();
@@ -258,7 +261,7 @@ public class CovarianceInterpolationTest {
      * @nonRegressionVersion 3.1
      */
     @Test
-    public void simpleInterpolationTest() throws PatriusException, IOException {
+    public void simpleInterpolationTest() throws PatriusException, IOException, URISyntaxException {
 
         // Load CNES ephemeris file (pos, vel, 6x6 covariance matrix)
         this.loadEphem();
@@ -319,18 +322,20 @@ public class CovarianceInterpolationTest {
      * Position, Velocity, 6x6 Covariance Matrix
      * 
      * @throws IOException
+     * @throws URISyntaxException
      * @since 3.0
      */
-    public void loadEphem() throws IOException {
+    public void loadEphem() throws IOException, URISyntaxException {
         // Read ephemeris file
         // interpolate with a 60s step in a 600s interval [ta, tb] with tb = ta + 600s
         // write results to file
         // residual wrt reference values will be plotted in scilab and serve as validation
 
         // Read reference ephemeris
-        final URL url = CovarianceInterpolationTest.class.getClassLoader().getResource(
-            "covariance_interpolation/" + "ephem_PV_covariance.txt");
-        final MatrixFileReader demo = new MatrixFileReader(url.getPath());
+        final String url = new File(ClassLoader
+            .getSystemResource("covariance_interpolation" + File.separator + "ephem_PV_covariance.txt").toURI())
+                .getAbsolutePath();
+        final MatrixFileReader demo = new MatrixFileReader(url);
         final double[][] data = demo.getData();
 
         final int length = data.length;
@@ -398,6 +403,8 @@ public class CovarianceInterpolationTest {
      */
     @Before
     public void setUp() {
+
+        Utils.clear();
 
         // usefull datas (JJCNES 21330 75360.0 : 2008-05-26:20:56:00 conv PHRLIB)
         final TimeScale tt = TimeScalesFactory.getTT();
@@ -530,25 +537,26 @@ public class CovarianceInterpolationTest {
     }
 
 /**
-     * @testType UT
-     *
-     * @testedFeature {@link features#COVARIANCE_INTERPOLATION}
-     *
-     * @testedMethod {@link CovarianceInterpolation#CovarianceInterpolation(AbsoluteDate, RealMatrix, AbsoluteDate, RealMatrix, int, Orbit, double)
-     *               more precisely, the tested method is createApproximatedTransitionMatrix() (private)
-     * 
-     * @description This test builds coverage
-     * @input an equinoctial orbit with PV coordinates which position is nearly null vector
-     *
-     * @testPassCriteria An exception must be risen
-     *
-     * @referenceVersion 3.1
-     * @nonRegressionVersion 3.1
-     * @throws PatriusException
-     * @throws IOException
-     */
+ * @testType UT
+ *
+ * @testedFeature {@link features#COVARIANCE_INTERPOLATION}
+ *
+ * @testedMethod {@link CovarianceInterpolation#CovarianceInterpolation(AbsoluteDate, RealMatrix, AbsoluteDate, RealMatrix, int, Orbit, double)
+ * more precisely, the tested method is createApproximatedTransitionMatrix() (private)
+ * 
+ * @description This test builds coverage
+ * @input an equinoctial orbit with PV coordinates which position is nearly null vector
+ *
+ * @testPassCriteria An exception must be risen
+ *
+ * @referenceVersion 3.1
+ * @nonRegressionVersion 3.1
+ * @throws PatriusException
+ * @throws IOException
+ * @throws URISyntaxException
+ */
     @Test(expected = IllegalArgumentException.class)
-    public void exceptionTestCovarianceInterpolation() throws PatriusException, IOException {
+    public void exceptionTestCovarianceInterpolation() throws PatriusException, IOException, URISyntaxException {
 
         this.loadEphem();
 
@@ -813,4 +821,5 @@ public class CovarianceInterpolationTest {
         }
 
     }
+
 }

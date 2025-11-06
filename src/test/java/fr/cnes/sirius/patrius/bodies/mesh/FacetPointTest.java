@@ -15,6 +15,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * END-HISTORY
  */
@@ -36,10 +38,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPointTest;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinates;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
-import fr.cnes.sirius.patrius.bodies.mesh.FacetBodyShape.EllipsoidType;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -61,9 +63,14 @@ public class FacetPointTest {
     /**
      * Builds a theoretical spherical celestial whose poles are aligned with GCRF and whose
      * PVCoordinates are (0, 0, 0)in GCRF frame.
+     * 
+     * @throws PatriusException
+     * @throws IOException
      */
     @Before
     public void setUp() throws PatriusException, IOException {
+
+        Utils.clear();
 
         // Build body file
         final String spherBodyObjPath = "src" + File.separator + "test" + File.separator
@@ -85,6 +92,9 @@ public class FacetPointTest {
      *        number longitude points
      * @param radius
      *        body radius (km)
+     * @param flattening
+     *        The flattening of the body
+     * @throws IOException
      */
     private static void writeBodyFile(final String modelFile, final int latitudeNumber, final int longitudeNumber,
                                       final double radius, final double flattening) throws IOException {

@@ -19,6 +19,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -84,6 +86,9 @@ public final class Precision {
 
     /** 0.5. */
     private static final double HALF = 0.5;
+
+    /** Factor used for splitting double numbers: n = 2^27 + 1 (i.e. {@value} ). */
+    private static final int SPLIT_FACTOR = 0x8000001;
 
     static {
         /*
@@ -476,8 +481,8 @@ public final class Precision {
      * arguments or the difference between them is within the range of allowed
      * error (inclusive).
      * 
-     * @see {@link Precision#equals(double, double, double)}
-     * @see {@link Precision#equalsWithRelativeTolerance(double, double, double)}
+     * @see #equals(double, double, double)
+     * @see #equalsWithRelativeTolerance(double, double, double)
      * 
      * @param x
      *        First value.
@@ -503,8 +508,8 @@ public final class Precision {
      * arguments or the difference between them is within the range of allowed
      * error (inclusive).
      * 
-     * @see {@link Precision#equals(double, double, double)}
-     * @see {@link Precision#equalsWithRelativeTolerance(double, double, double)}
+     * @see #equals(double, double, double)
+     * @see #equalsWithRelativeTolerance(double, double, double)
      * 
      * @param x
      *        First value.
@@ -741,6 +746,58 @@ public final class Precision {
     public static double representableDelta(final double x,
             final double originalDelta) {
         return x + originalDelta - x;
+    }
+    
+    /**
+     * Compute the exact round-off error of a floating point addition operation according to the Møller-Knuth TwoSum
+     * algorithm.
+     * <p>
+     * See, for example, the 2005 paper <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.2.1547">
+     * Accurate Sum and Dot Product</a> by Takeshi Ogita, Siegfried M. Rump, and Shin'ichi Oishi published in SIAM J.
+     * Sci. Comput.
+     * </p>
+     * 
+     * @param a
+     *        First element of the sum
+     * @param b Second element of the sum
+     * @param aPlusB
+     *        The floating sum of the first and second element. Note: could be internally recomputed, but is in argument
+     *        to minimize computation.
+     * @return the error e so that aPlusB + e = a+b, i.e. the floating point error of aPlusB
+     */
+    public static double twoSumError(final double a, final double b, final double aPlusB) {
+        final double aPrime = aPlusB - b;
+        final double bPrime = aPlusB - aPrime;
+        return (a - aPrime) + (b - bPrime);
+    }
+    
+    /**
+     * Compute the exact round-off error of a floating point multiplication operation according to the Veltkamp and
+     * Dekker algorithm.
+     * <p>
+     * See, for example, the 2005 paper <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.2.1547">
+     * Accurate Sum and Dot Product</a> by Takeshi Ogita, Siegfried M. Rump, and Shin'ichi Oishi published in SIAM J.
+     * Sci. Comput.
+     * </p>
+     * 
+     * @param a
+     *        First element of the product
+     * @param b
+     *        Second element of the product
+     * @param aDotB
+     *        The floating product of the first and second element. Note: could be internally recomputed, but is in
+     *        argument to minimize
+     *        computation.
+     * @return the error e so that aDotB + e = a*b, i.e. the floating point error of aDotB
+     */
+    public static double twoProductError(final double a, final double b, final double aDotB) {
+        final double ca = SPLIT_FACTOR * a;
+        final double aHigh = ca - (ca - a);
+        final double aLow = a - aHigh;
+        final double cb = SPLIT_FACTOR * b;
+        final double bHigh = cb - (cb - b);
+        final double bLow = b - bHigh;
+        return aLow * bLow - (((aDotB - aHigh * bHigh) - aLow * bHigh) - aHigh * bLow);
     }
 
     // CHECKSTYLE: resume CommentRatio check

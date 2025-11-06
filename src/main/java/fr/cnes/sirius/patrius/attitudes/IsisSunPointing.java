@@ -18,6 +18,7 @@
  * @history 30/08/2016 Creation of the class
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -31,7 +32,6 @@ package fr.cnes.sirius.patrius.attitudes;
 
 import fr.cnes.sirius.patrius.attitudes.directions.GenericTargetDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -94,7 +94,7 @@ public class IsisSunPointing extends AbstractAttitudeLaw {
      * @param sun
      *        the Sun
      */
-    public IsisSunPointing(final CelestialPoint sun) {
+    public IsisSunPointing(final PVCoordinatesProvider sun) {
         super();
         this.sunDirection = new GenericTargetDirection(sun);
     }

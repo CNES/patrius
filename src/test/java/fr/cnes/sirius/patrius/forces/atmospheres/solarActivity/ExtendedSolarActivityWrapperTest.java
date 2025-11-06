@@ -18,6 +18,7 @@
  * @history Created 10/02/2016
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -39,6 +40,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -759,5 +761,10 @@ public class ExtendedSolarActivityWrapperTest {
 
     private static URL getSolarAct() {
         return ExtendedSolarActivityWrapperTest.class.getClassLoader().getResource("shortACSOL/ACSOL_limited.act");
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

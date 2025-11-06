@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion 
+ *          des reperes predefinis et des corps predefinis 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
 * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -40,7 +43,7 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
-import fr.cnes.sirius.patrius.frames.Predefined;
+import fr.cnes.sirius.patrius.frames.PredefinedFrameType;
 import fr.cnes.sirius.patrius.math.analysis.polynomials.PolynomialFunction;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -205,7 +208,7 @@ public class TLESeriesTest {
         final TLE tle = new TLE("1 27421U 02021A   02124.48976499 -.00021470  00000-0 -89879-2 0    20",
             "2 27421  98.7490 199.5121 0001333 133.9522 226.1918 14.26113993    62");
         final Frame tleFrame = TLEPropagator.selectExtrapolator(tle).getFrame();
-        Assert.assertEquals(tleFrame.getName(), FramesFactory.getFrame(Predefined.TEME).getName());
+        Assert.assertEquals(tleFrame.getName(), FramesFactory.getFrame(PredefinedFrameType.TEME).getName());
     }
 
     @Test
@@ -233,6 +236,8 @@ public class TLESeriesTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
     }
+
 }

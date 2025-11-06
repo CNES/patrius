@@ -1,7 +1,10 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -18,10 +21,16 @@
 package fr.cnes.sirius.patrius.math.fitting;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * TU de la classe LinearRegression
@@ -79,4 +88,9 @@ public class LinearRegressionTest {
         lr.getOrigin();
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

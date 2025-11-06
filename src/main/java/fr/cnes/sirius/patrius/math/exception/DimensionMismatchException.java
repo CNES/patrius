@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-431:21/11/2024:[PATRIUS] Reliquat messages DimensionMismatchException
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -25,6 +28,7 @@
  */
 package fr.cnes.sirius.patrius.math.exception;
 
+import fr.cnes.sirius.patrius.math.exception.util.DummyLocalizable;
 import fr.cnes.sirius.patrius.math.exception.util.Localizable;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -51,12 +55,61 @@ public class DimensionMismatchException extends MathIllegalNumberException {
      *        Expected dimension.
      */
     public DimensionMismatchException(final Localizable specific,
-        final int wrong,
-        final int expected) {
+                                      final int wrong,
+                                      final int expected) {
         super(specific, wrong, expected);
         this.dimension = expected;
     }
 
+    /**
+     * Construct an exception from the mismatched dimensions.<br>
+     * Placeholders can be used in the string to include the "wrong" and "expected" values, using "{0}" and "{1}"
+     * respectively.
+     * 
+     * @param specific
+     *        Specific context information string.
+     * @param wrong
+     *        Wrong dimension.
+     * @param expected
+     *        Expected dimension.
+     */
+    public DimensionMismatchException(final String specific,
+                                      final int wrong,
+                                      final int expected) {
+        super(new DummyLocalizable(specific), wrong, expected);
+        this.dimension = expected;
+    }
+
+    /**
+     * Construct an exception from the mismatched dimensions.<br>
+     * Placeholders can be used in the string to include the "wrong" and "expected" names and values :
+     * </ul>
+     * <li>wrong value name : "{0}"</li>
+     * <li>wrong value : "{1}"</li>
+     * <li>expected value name : "{2}"</li>
+     * <li>expected value : "{3}"</li>
+     * </ul>
+     * 
+     * @param pattern
+     *        Specific context information string.
+     * @param wrongName
+     *        Wrong dimension name.
+     * @param wrong
+     *        Wrong dimension.
+     * @param expectedName
+     *        Expected dimension name.
+     * @param expected
+     *        Expected dimension.
+     */
+    public DimensionMismatchException(final Localizable pattern,
+                                      final String wrongName,
+                                      final int wrong,
+                                      final String expectedName,
+                                      final int expected) {
+        super(pattern, wrong, expected, wrongName, expectedName);
+        this.dimension = expected;
+    }
+    
     /**
      * Construct an exception from the mismatched dimensions.
      * 
@@ -64,9 +117,13 @@ public class DimensionMismatchException extends MathIllegalNumberException {
      *        Wrong dimension.
      * @param expected
      *        Expected dimension.
+     * @deprecated since 4.14, as the default message does not give the user enough context. Use
+     *             {@link DimensionMismatchException#DimensionMismatchException(Localizable, int, int) instead, with a
+     *             more explicit message.}
      */
+    @Deprecated
     public DimensionMismatchException(final int wrong,
-        final int expected) {
+                                      final int expected) {
         this(PatriusMessages.DIMENSIONS_MISMATCH_SIMPLE, wrong, expected);
     }
 

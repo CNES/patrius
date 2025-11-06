@@ -18,6 +18,7 @@
  * @history creation 06/08/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:DM:DM-88:30/06/2023:[PATRIUS] Complement FT 3319
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
@@ -342,6 +343,7 @@ public class CenteredAolPassageDetectorTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("analytical2Dvalidation");
         FramesFactory.setConfiguration(Utils.getIERS2010Configuration());
     }

@@ -18,6 +18,8 @@
  * @history creation 10/02/2012
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2653:18/05/2021:generalisation des sequences et correction/refonte des sequences de segments 
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -52,12 +55,13 @@ import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.frames.UpdatableFrame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EllipticCone;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.SolidShape;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Sphere;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
@@ -543,7 +547,7 @@ public class AssemblyTest {
         final PVCoordinates pv = new PVCoordinates(new Vector3D(7100e3, 0, 0), new Vector3D(0, 7000, 100));
         final Orbit orbit = new CartesianOrbit(pv, gcrf, myDate, Constants.EGM96_EARTH_MU);
 
-        final LofOffset attProv = new LofOffset(gcrf, LOFType.TNW, RotationOrder.YZX, .1, .2, .3);
+        final LofOffset attProv = new LofOffset(gcrf, LOFType.TNW, new EulerRotation(RotationOrder.YZX, .1, .2, .3));
         final Attitude initialAttitude = attProv.getAttitude(orbit, myDate, gcrf);
 
         final Transform tT = new Transform(myDate, pv);
@@ -622,7 +626,7 @@ public class AssemblyTest {
 
             @Override
             public Double getOrientationAngle(final PVCoordinatesProvider pvProv, final AbsoluteDate date) throws PatriusException {
-                return date.durationFrom(initialDate) * FastMath.PI / 4.;
+                return date.durationFrom(initialDate) * MathLib.PI / 4.;
             }
         };
         final OrientationAngleTransform t = new OrientationAngleTransform(Transform.IDENTITY, Vector3D.PLUS_K, oap);
@@ -631,7 +635,7 @@ public class AssemblyTest {
         final AssemblyBuilder builder = new AssemblyBuilder();
         builder.addMainPart("Main");
         final Rotation expectedRot0 = Rotation.IDENTITY;
-//        final Vector3D expectedRate0 = Vector3D.PLUS_K.scalarMultiply(FastMath.PI / 4.);
+//        final Vector3D expectedRate0 = Vector3D.PLUS_K.scalarMultiply(MathLib.PI / 4.);
         builder.addPart("Solar panel", "Main", t);
         builder.initMainPartFrame(state);
         final Assembly assembly = builder.returnAssembly();
@@ -654,7 +658,7 @@ public class AssemblyTest {
             .getRotation();
 //        final Vector3D rate2 = FramesFactory.getGCRF()
 //            .getTransformTo(assembly.getPart("Solar panel").getFrame(), date2).getRotationRate();
-        Assert.assertEquals(expectedRot0.getAngle(), rot2.getAngle(), FastMath.PI / 4.);
+        Assert.assertEquals(expectedRot0.getAngle(), rot2.getAngle(), MathLib.PI / 4.);
         Assert.assertEquals(0., rot2.getAxis().subtract(Vector3D.PLUS_K).getNorm(), 0.);
         
         // Other mobile parts tests (functional)
@@ -681,5 +685,10 @@ public class AssemblyTest {
         Assert.assertEquals(Transform.IDENTITY, t.getReference());
         Assert.assertEquals(Vector3D.PLUS_K, t.getAxis());
         Assert.assertEquals(oap, t.getOrientationAngleProvider());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

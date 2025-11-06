@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-359:21/11/2024:[PATRIUS] BodyCenterPointing est erroné lorsque
+ * le corps central n'est pas la terre
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -52,6 +55,7 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
@@ -148,8 +152,11 @@ public class AttitudeLegsSequenceTest {
     /** Attitude laws sequence */
     private StrictAttitudeLegsSequence<AttitudeLeg> sequence;
 
-    /** Earth. */
+    /** Moon. */
     private CelestialPoint moon;
+
+    /** Orbit */
+    private Orbit orbit;
 
     /** Reference frame. */
     private CelestialBodyFrame itrf;
@@ -292,21 +299,21 @@ public class AttitudeLegsSequenceTest {
 
         // Call getAttitude on the laws AND on the sequence,
         // results should be the same.
-        final Attitude expected1_1 = this.law1.getAttitude(this.moon, this.date1i, this.itrf);
-        final Attitude rez1_1 = this.sequence.getAttitude(this.moon, this.date1i, this.itrf);
+        final Attitude expected1_1 = this.law1.getAttitude(this.orbit, this.date1i, this.itrf);
+        final Attitude rez1_1 = this.sequence.getAttitude(this.orbit, this.date1i, this.itrf);
         compareAttitudes(expected1_1, rez1_1);
-        final Attitude expected1_2 = this.law2.getAttitude(this.moon, this.date1f, this.itrf);
-        final Attitude rez1_2 = this.sequence.getAttitude(this.moon, this.date1f, this.itrf);
+        final Attitude expected1_2 = this.law2.getAttitude(this.orbit, this.date1f, this.itrf);
+        final Attitude rez1_2 = this.sequence.getAttitude(this.orbit, this.date1f, this.itrf);
         compareAttitudes(expected1_2, rez1_2);
 
         final AbsoluteDate beforeDate2f = this.date2f.shiftedBy(-1.);
-        final Attitude expected2_1 = this.law2.getAttitude(this.moon, beforeDate2f, this.itrf);
+        final Attitude expected2_1 = this.law2.getAttitude(this.orbit, beforeDate2f, this.itrf);
         // For coverage, other getAttitude method
-        final Attitude rez2_1 = this.sequence.getAttitude(this.moon, beforeDate2f, this.itrf);
+        final Attitude rez2_1 = this.sequence.getAttitude(this.orbit, beforeDate2f, this.itrf);
         compareAttitudes(expected2_1, rez2_1);
 
         final AbsoluteDate afterDate3i = this.date3i.shiftedBy(1.);
-        final Attitude expected3_1 = this.law3.getAttitude(this.moon, afterDate3i, this.itrf);
+        final Attitude expected3_1 = this.law3.getAttitude(this.orbit, afterDate3i, this.itrf);
         // Shows the PvCoordinates parameter is ignored
         final Attitude rez3_1 = this.sequence.getAttitude(CelestialBodyFactory.getEarth(),
             afterDate3i, this.itrf);
@@ -722,6 +729,7 @@ public class AttitudeLegsSequenceTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
@@ -776,6 +784,21 @@ public class AttitudeLegsSequenceTest {
         this.date6i = new AbsoluteDate(2008, 4, 7, 15, 00, 0.0, TimeScalesFactory.getTT());
         this.date6f = new AbsoluteDate(2008, 4, 7, 15, 30, 0.0, TimeScalesFactory.getTT());
         this.law6 = new AttitudeLawLeg(fixedRate, this.date6i, this.date6f);
+
+        // The orbit
+
+        // orbital parameters (based on Moon Orbit)
+        final double a = 384400e3;
+        final double e = .0549;
+        final double i = FastMath.toRadians(5.145);
+        final double pa = FastMath.toRadians(53.01157);
+        final double raan = FastMath.toRadians(257.40484);
+        final double w = FastMath.toRadians(284.67298);
+
+        // initial orbit
+        this.orbit = new KeplerianOrbit(a, e, i, pa, raan, w, PositionAngle.TRUE,
+                FramesFactory.getGCRF(), this.date1i,
+                Constants.GRIM5C1_EARTH_MU);
     }
 
     /**

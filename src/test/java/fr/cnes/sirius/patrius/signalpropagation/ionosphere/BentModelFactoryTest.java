@@ -1,10 +1,13 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -113,6 +116,8 @@ public class BentModelFactoryTest {
     /** Setup. */
     @BeforeClass
     public static void setUp() {
+        Utils.clear();
         Utils.setDataRoot("bent");
     }
+
 }

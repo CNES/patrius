@@ -18,6 +18,13 @@
  * @history Created 17/02/2016
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -48,15 +55,15 @@ import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -88,7 +95,7 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
 public class CoriolisRelativisticEffectTest {
 
     /** Sun. */
-    private CelestialPoint sun;
+    private IAUCelestialBody sun;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -352,14 +359,15 @@ public class CoriolisRelativisticEffectTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
 
         Utils.setDataRoot("regular-dataCNES-2003");
 
-        final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405", EphemerisType.SUN);
-        final CelestialBody sunJPL = (CelestialBody) loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
+        final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405", PredefinedEphemerisType.SUN);
+        final IAUCelestialBody sunJPL = (IAUCelestialBody) loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
 
         // Specific Sun
-        this.sun = new CelestialBody(){
+        this.sun = new IAUCelestialBody(){
 
             /** Serializable UID. */
             private static final long serialVersionUID = -812434433805055185L;

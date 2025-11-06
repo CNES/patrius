@@ -14,6 +14,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -54,7 +58,6 @@ import fr.cnes.sirius.patrius.assembly.properties.TankProperty;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.forces.gravity.AbstractHarmonicGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.CunninghamGravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
@@ -73,12 +76,13 @@ import fr.cnes.sirius.patrius.frames.configuration.eop.EOP1980HistoryLoader;
 import fr.cnes.sirius.patrius.frames.configuration.eop.EOPHistoryFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.AdaptiveStepsizeIntegrator;
 import fr.cnes.sirius.patrius.math.ode.nonstiff.DormandPrince853Integrator;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.MathUtils;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
@@ -111,13 +115,13 @@ public class AdapterPropagatorTest {
         final double vExhaust = Constants.G0_STANDARD_GRAVITY * isp;
         final double dt = -(mass * vExhaust / f) * MathLib.expm1(-dV.getNorm() / vExhaust);
         final BoundedPropagator withoutManeuver = getEphemeris(leo, mass, 5,
-                new LofOffset(leo.getFrame(),
-                LOFType.LVLH, RotationOrder.XZY, FastMath.PI / 2.0, -FastMath.PI / 2.0, 0.0), t0, Vector3D.ZERO, f,
-                isp, false, false, null, 0, 0);
+            new LofOffset(leo.getFrame(), LOFType.LVLH,
+                new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.)),
+            t0, Vector3D.ZERO, f, isp, false, false, null, 0, 0);
         final BoundedPropagator withManeuver = getEphemeris(leo, mass, 5,
-                new LofOffset(leo.getFrame(),
-                LOFType.LVLH, RotationOrder.XZY, FastMath.PI / 2.0, -FastMath.PI / 2.0, 0.0), t0, dV, f, isp, false,
-                false, null, 0, 0);
+            new LofOffset(leo.getFrame(), LOFType.LVLH,
+                new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.)),
+            t0, dV, f, isp, false, false, null, 0, 0);
 
         // we set up a model that reverts the maneuvers
         final AdapterPropagator adapterPropagator = new AdapterPropagator(withManeuver);
@@ -149,12 +153,12 @@ public class AdapterPropagatorTest {
         final double dt = -(mass * vExhaust / f) * MathLib.expm1(-dV.getNorm() / vExhaust);
         final BoundedPropagator withoutManeuver = getEphemeris(heo, mass, 5,
                 new LofOffset(heo.getFrame(),
-                LOFType.LVLH, RotationOrder.XZY, FastMath.PI / 2.0, -FastMath.PI / 2.0, 0.0), t0, Vector3D.ZERO, f,
-                isp, false, false, null, 0, 0);
+                LOFType.LVLH, new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.)),
+            t0, Vector3D.ZERO, f, isp, false, false, null, 0, 0);
         final BoundedPropagator withManeuver = getEphemeris(heo, mass, 5,
                 new LofOffset(heo.getFrame(),
-                LOFType.LVLH, RotationOrder.XZY, FastMath.PI / 2.0, -FastMath.PI / 2.0, 0.0), t0, dV, f, isp, false,
-                false, null, 0, 0);
+                LOFType.LVLH, new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.)),
+            t0, dV, f, isp, false, false, null, 0, 0);
 
         // we set up a model that reverts the maneuvers
         final AdapterPropagator adapterPropagator = new AdapterPropagator(withManeuver);
@@ -314,13 +318,11 @@ public class AdapterPropagatorTest {
 
         if (sunAttraction) {
             final GravityModel sunGravityModel = CelestialBodyFactory.getSun().getGravityModel();
-            ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
             propagator.addForceModel(new ThirdBodyAttraction(sunGravityModel));
         }
 
         if (moonAttraction) {
             final GravityModel moonGravityModel = CelestialBodyFactory.getMoon().getGravityModel();
-            ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
             propagator.addForceModel(new ThirdBodyAttraction(moonGravityModel));
         }
 
@@ -361,12 +363,13 @@ public class AdapterPropagatorTest {
         final double vExhaust = Constants.G0_STANDARD_GRAVITY * isp;
         final double dt = -(mass * vExhaust / f) * MathLib.expm1(-dV.getNorm() / vExhaust);
         final BoundedPropagator withoutManeuver = getEphemeris(leo, mass, 5,
-                new LofOffset(leo.getFrame(), LOFType.LVLH, RotationOrder.XZY, FastMath.PI / 2.0,
-                        -FastMath.PI / 2.0, 0.0), t0, Vector3D.ZERO, f, isp, false, false, null, 0,
-                0);
+            new LofOffset(leo.getFrame(), LOFType.LVLH,
+                new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.)),
+            t0, Vector3D.ZERO, f, isp, false, false, null, 0, 0);
         final BoundedPropagator withManeuver = getEphemeris(leo, mass, 5,
-                new LofOffset(leo.getFrame(), LOFType.LVLH, RotationOrder.XZY, FastMath.PI / 2.0,
-                        -FastMath.PI / 2.0, 0.0), t0, dV, f, isp, false, false, null, 0, 0);
+            new LofOffset(leo.getFrame(), LOFType.LVLH,
+                new EulerRotation(RotationOrder.XZY, MathUtils.HALF_PI, -MathUtils.HALF_PI, 0.)),
+            t0, dV, f, isp, false, false, null, 0, 0);
 
         // we set up a model that reverts the maneuvers
         final AdapterPropagator adapterPropagator = new AdapterPropagator(withManeuver);
@@ -391,6 +394,7 @@ public class AdapterPropagatorTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }
@@ -399,4 +403,5 @@ public class AdapterPropagatorTest {
     public void tearDown() throws PatriusException {
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }
+
 }

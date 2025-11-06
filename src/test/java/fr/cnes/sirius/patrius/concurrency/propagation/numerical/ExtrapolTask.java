@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -41,9 +44,9 @@ import fr.cnes.sirius.patrius.SolarInputs97to05;
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.forces.ForceModel;
 import fr.cnes.sirius.patrius.forces.SphericalSpacecraft;
 import fr.cnes.sirius.patrius.forces.atmospheres.DTM2000;
@@ -321,7 +324,7 @@ public class ExtrapolTask implements ParallelTask {
         CelestialBodyFactory.clearCelestialBodyLoaders();
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
         final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
         return new ThirdBodyAttraction(moon.getGravityModel());
     }
@@ -338,7 +341,7 @@ public class ExtrapolTask implements ParallelTask {
 
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
         return new ThirdBodyAttraction(sun.getGravityModel());
     }
@@ -355,7 +358,7 @@ public class ExtrapolTask implements ParallelTask {
 
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.MARS);
+            PredefinedEphemerisType.MARS);
         final CelestialBody mars = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MARS);
         return new ThirdBodyAttraction(mars.getGravityModel());
     }
@@ -372,7 +375,7 @@ public class ExtrapolTask implements ParallelTask {
 
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.JUPITER);
+            PredefinedEphemerisType.JUPITER);
         final CelestialBody jupiter = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.JUPITER);
         return new ThirdBodyAttraction(jupiter.getGravityModel());
     }
@@ -389,7 +392,7 @@ public class ExtrapolTask implements ParallelTask {
 
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.VENUS);
+            PredefinedEphemerisType.VENUS);
         final CelestialBody venus = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.VENUS);
         return new ThirdBodyAttraction(venus.getGravityModel());
     }
@@ -499,6 +502,7 @@ public class ExtrapolTask implements ParallelTask {
      *         should not happen
      */
     private void setUp() throws IOException, ParseException, PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003:potentialCNES");
         FramesFactory.setConfiguration(fr.cnes.sirius.patrius.Utils.getIERS2003Configuration(true));
         // add a reader for gravity fields
@@ -508,14 +512,13 @@ public class ExtrapolTask implements ParallelTask {
 
         // JPL ephemeris
         loaderEMB = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         loaderSSB = new JPLCelestialBodyLoader(this.jplFile,
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
 
-        loaderSUN = new JPLCelestialBodyLoader(this.jplFile, EphemerisType.SUN);
+        loaderSUN = new JPLCelestialBodyLoader(this.jplFile, PredefinedEphemerisType.SUN);
         loaderSUN.loadCelestialPoint(CelestialBodyFactory.SUN);
     }
-
 }

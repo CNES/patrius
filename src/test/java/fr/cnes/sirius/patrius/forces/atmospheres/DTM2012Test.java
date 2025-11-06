@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -86,6 +87,7 @@ public class DTM2012Test {
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
             FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
 

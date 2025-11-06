@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -30,8 +31,7 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -55,6 +55,7 @@ import fr.cnes.sirius.patrius.propagation.analytical.KeplerianPropagator;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for {@link ExtremaLatitudeDetector}.
@@ -401,5 +402,10 @@ public class ExtremaLatitudeDetectorTest {
         curState = propagator.propagate(iniDate.shiftedBy(period));
         // check the minimum is when the eccentric anomaly of the satellite is 3/2PI
         Assert.assertEquals(FastMath.PI * 3 / 2, curState.getLE(), 1E-9);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

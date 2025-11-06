@@ -18,6 +18,7 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -220,6 +221,7 @@ public class MultiEventsLoggerTest {
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-dataPBASE");
             this.mu = 3.9860047e14;
             final Vector3D position = new Vector3D(-6142438.668, 3492467.560, -25767.25680);

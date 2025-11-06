@@ -1,23 +1,27 @@
 /**
- * 
+ *
  * Copyright 2011-2022 CNES
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * 
+ *
+ *
  * @history created 17/02/17
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-245:22/08/2024: Ajout d'un constructeur dans AbstractCelestialBody
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
@@ -46,6 +50,7 @@ package fr.cnes.sirius.patrius.bodies;
 import fr.cnes.sirius.patrius.bodies.bsp.BSPEphemerisLoader.SpiceJ2000ConventionEnum;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
+import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
@@ -59,9 +64,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <li>Its name</li>
  * <li>A {@link PVCoordinatesProvider} providing body position-velocity through time</li>
  * <li>Its gravitational constant</li>
- * <li>Its pole motion (reference data are provided by IAU)</li>
+ * <li>Its pole motion (if reference data are provided by IAU, prefer using {@link UserIAUCelestialBody} )</li>
  * </ul>
- * 
+ *
  * @concurrency immutable
  * @author Emmanuel Bignon
  * @version $Id: UserCelestialBody.java 17582 2017-05-10 12:58:16Z bignon $
@@ -77,7 +82,7 @@ public class UserCelestialBody extends AbstractCelestialBody {
 
     /**
      * Constructor.
-     * 
+     *
      * @param name
      *        name of the body
      * @param aPVCoordinateProvider
@@ -85,7 +90,7 @@ public class UserCelestialBody extends AbstractCelestialBody {
      *        should be identical (or near) to the given parentFrame, in order to minimize the frames transformations.
      * @param gravityModel
      *        gravitational attraction model
-     * @param celestialBodyOrientation
+     * @param orientation
      *        celestial body orientation
      * @param parentFrame
      *        parent frame (usually it should be the ICRF centered on the parent body)
@@ -95,22 +100,21 @@ public class UserCelestialBody extends AbstractCelestialBody {
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     // Reason: super attributes have been built at this point
     public UserCelestialBody(final String name,
-            final PVCoordinatesProvider aPVCoordinateProvider,
-            final GravityModel gravityModel,
-            final CelestialBodyOrientation celestialBodyOrientation,
-            final Frame parentFrame,
-            final BodyShape shape,
-            final SpiceJ2000ConventionEnum spiceJ2000Convention) {
-        super(name, gravityModel, celestialBodyOrientation, parentFrame, spiceJ2000Convention,
-                new CelestialBodyEphemeris() {
+                             final PVCoordinatesProvider aPVCoordinateProvider,
+                             final GravityModel gravityModel,
+                             final CelestialBodyOrientation orientation,
+                             final Frame parentFrame,
+                             final BodyShape shape,
+                             final SpiceJ2000ConventionEnum spiceJ2000Convention) {
+        super(name, gravityModel, orientation, parentFrame, spiceJ2000Convention, new CelestialBodyEphemeris(){
 
-            /** Serial UID. */
+            /** Serializable UID. */
             private static final long serialVersionUID = -6984943550925347950L;
 
             /** {@inheritDoc} */
             @Override
             public PVCoordinates getPVCoordinates(final AbsoluteDate date,
-                    final Frame frame) throws PatriusException {
+                                                  final Frame frame) throws PatriusException {
                 return aPVCoordinateProvider.getPVCoordinates(date, frame);
             }
 
@@ -122,11 +126,7 @@ public class UserCelestialBody extends AbstractCelestialBody {
         });
 
         // Create user celestial body string
-        final String abstractBodyString = super.toString();
-        final StringBuilder builder = new StringBuilder(abstractBodyString);
-        builder.append("- Ephemeris origin: " + aPVCoordinateProvider.toString() + " ("
-                + aPVCoordinateProvider.getClass() + ")");
-        this.bodyString = builder.toString();
+        this.bodyString = createCelestialBodyString(aPVCoordinateProvider).toString();
 
         this.setShape(shape);
     }
@@ -136,7 +136,7 @@ public class UserCelestialBody extends AbstractCelestialBody {
      * <p>
      * SpiceJ2000ConventionEnum is set to ICRF.
      * </p>
-     * 
+     *
      * @param name
      *        name of the body
      * @param aPVCoordinateProvider
@@ -151,11 +151,11 @@ public class UserCelestialBody extends AbstractCelestialBody {
      * @param shape body shape
      */
     public UserCelestialBody(final String name,
-            final PVCoordinatesProvider aPVCoordinateProvider,
-            final GravityModel gravityModel,
-            final CelestialBodyOrientation celestialBodyOrientation,
-            final Frame parentFrame,
-            final BodyShape shape) {
+                             final PVCoordinatesProvider aPVCoordinateProvider,
+                             final GravityModel gravityModel,
+                             final CelestialBodyOrientation celestialBodyOrientation,
+                             final Frame parentFrame,
+                             final BodyShape shape) {
         // Initial gravity model is required because of gm store for toString() method
         this(name, aPVCoordinateProvider, gravityModel, celestialBodyOrientation, parentFrame, shape,
                 SpiceJ2000ConventionEnum.ICRF);
@@ -163,7 +163,7 @@ public class UserCelestialBody extends AbstractCelestialBody {
 
     /**
      * Constructor.
-     * 
+     *
      * @param name
      *        name of the body
      * @param aPVCoordinateProvider
@@ -179,12 +179,12 @@ public class UserCelestialBody extends AbstractCelestialBody {
      * @param spiceJ2000Convention Spice convention
      */
     public UserCelestialBody(final String name,
-            final PVCoordinatesProvider aPVCoordinateProvider,
-            final double gm,
-            final CelestialBodyOrientation celestialBodyOrientation,
-            final Frame parentFrame,
-            final BodyShape shape,
-            final SpiceJ2000ConventionEnum spiceJ2000Convention) {
+                             final PVCoordinatesProvider aPVCoordinateProvider,
+                             final double gm,
+                             final CelestialBodyOrientation celestialBodyOrientation,
+                             final Frame parentFrame,
+                             final BodyShape shape,
+                             final SpiceJ2000ConventionEnum spiceJ2000Convention) {
         // Initial gravity model is required because of gm store for toString() method
         this(name, aPVCoordinateProvider, new NewtonianGravityModel(parentFrame, gm), celestialBodyOrientation,
                 parentFrame, shape, spiceJ2000Convention);
@@ -197,7 +197,7 @@ public class UserCelestialBody extends AbstractCelestialBody {
      * <p>
      * SpiceJ2000ConventionEnum is set to ICRF.
      * </p>
-     * 
+     *
      * @param name
      *        name of the body
      * @param aPVCoordinateProvider
@@ -212,13 +212,63 @@ public class UserCelestialBody extends AbstractCelestialBody {
      * @param shape body shape
      */
     public UserCelestialBody(final String name,
-            final PVCoordinatesProvider aPVCoordinateProvider,
-            final double gm,
-            final CelestialBodyOrientation celestialBodyOrientation,
-            final Frame parentFrame,
-            final BodyShape shape) {
+                             final PVCoordinatesProvider aPVCoordinateProvider,
+                             final double gm,
+                             final CelestialBodyOrientation celestialBodyOrientation,
+                             final Frame parentFrame,
+                             final BodyShape shape) {
         this(name, aPVCoordinateProvider, gm, celestialBodyOrientation, parentFrame, shape,
                 SpiceJ2000ConventionEnum.ICRF);
+    }
+
+    /**
+     * Constructor with user-defined ICRF frame.
+     *
+     * @param name
+     *        name of the body
+     * @param gm
+     *        gravitational attraction coefficient (in m<sup>3</sup>/s<sup>2</sup>)
+     * @param icrf
+     *        icrf frame centered on this body
+     * @param aPVCoordinateProvider
+     *        coordinates provider
+     */
+    public UserCelestialBody(final String name, final double gm,
+                             final CelestialBodyFrame icrf, final PVCoordinatesProvider aPVCoordinateProvider) {
+        super(name, gm, new CelestialBodyEphemeris(){
+
+            /** Serial UID. */
+            private static final long serialVersionUID = -6984943550925347950L;
+
+            /** {@inheritDoc} */
+            @Override
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date,
+                                                  final Frame frame)
+                throws PatriusException {
+                return aPVCoordinateProvider.getPVCoordinates(date, frame);
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+                return aPVCoordinateProvider.getNativeFrame(date);
+            }
+        }, icrf);
+
+        this.bodyString = createCelestialBodyString(aPVCoordinateProvider).toString();
+    }
+
+    /**
+     * @param aPVCoordinateProvider
+     *        PV coordinates provider
+     * @return a string containing the ephemeris origin
+     */
+    private StringBuilder createCelestialBodyString(final PVCoordinatesProvider aPVCoordinateProvider) {
+        final String abstractBodyString = super.toString();
+        final StringBuilder builder = new StringBuilder(abstractBodyString);
+        builder.append("- Ephemeris origin: " + aPVCoordinateProvider.toString() + " ("
+                + aPVCoordinateProvider.getClass() + ")");
+        return builder;
     }
 
     /** {@inheritDoc} */

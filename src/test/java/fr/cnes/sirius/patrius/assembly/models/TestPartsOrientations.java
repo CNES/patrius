@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -46,6 +49,7 @@
 package fr.cnes.sirius.patrius.assembly.models;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -58,12 +62,12 @@ import fr.cnes.sirius.patrius.assembly.properties.RadiativeProperty;
 import fr.cnes.sirius.patrius.assembly.properties.features.Facet;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyIAUOrientation;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.forces.gravity.GravityModel;
@@ -107,7 +111,7 @@ public class TestPartsOrientations {
     final AbsoluteDate date = new AbsoluteDate();
 
     /** Sun */
-    final CelestialBody sun = new CelestialBody(){
+    final IAUCelestialBody sun = new IAUCelestialBody(){
 
         /** Serializable UID. */
         private static final long serialVersionUID = -980113647486139909L;
@@ -411,5 +415,10 @@ public class TestPartsOrientations {
         Assert.assertEquals(1.3245120216684912E-8, acc.getY(), Precision.EPSILON);
         Assert.assertEquals(2.039856288450499E-8, acc.getZ(), Precision.EPSILON);
 
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

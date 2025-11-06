@@ -15,8 +15,11 @@
  * limitations under the License.
  *
  * HISTORY
- * VERSION:4.13.4:FA:FA-346:10/06/2024:[PATRIUS] Problème dans l’utilisation du
- * SatToSatMutualVisibilityDetector en mode de propagation MULTI
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
@@ -25,7 +28,12 @@
  */
 package fr.cnes.sirius.patrius.events.detectors;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import fr.cnes.sirius.patrius.events.AbstractDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
+import fr.cnes.sirius.patrius.events.detectors.VisibilityFromStationDetector.LinkType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
@@ -50,6 +58,9 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
     /** Serializable UID. */
     private static final long serialVersionUID = 6783957131213226783L;
 
+    /** Link type handler. */
+    private final LinkTypeHandler linkTypeHandler;
+
     /** Propagation delay type (initialized to {@link PropagationDelayType#INSTANTANEOUS} by default). */
     private PropagationDelayType propagationDelayType;
 
@@ -68,6 +79,9 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      */
     private int maxIterSignalPropagation = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
 
+    /** Other element date: date at which the other element emits or receives the signal. */
+    private final Map<AbsoluteDate, AbsoluteDate> otherDatesCache = new HashMap<>();
+
     /** Propagation delay type. */
     public enum PropagationDelayType {
 
@@ -78,8 +92,8 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
         LIGHT_SPEED;
     }
 
-    /** Describe if the datation choice corresponds to the emitter date or the receiver date. */
-    public enum DatationChoice {
+    /** Describe if the event datation type corresponds to the emitter date or the receiver date. */
+    public enum EventDatationType {
 
         /** Emitter date. */
         EMITTER,
@@ -95,10 +109,15 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      *        maximum checking interval (s)
      * @param thresholdIn
      *        convergence threshold (s)
+     * @param linkTypeHandler
+     *        link type handler
      */
-    public AbstractSignalPropagationDetector(final double maxCheckIn, final double thresholdIn) {
+    public AbstractSignalPropagationDetector(final double maxCheckIn, final double thresholdIn,
+                                             final LinkTypeHandler linkTypeHandler) {
         super(maxCheckIn, thresholdIn);
         this.propagationDelayType = PropagationDelayType.INSTANTANEOUS;
+        this.linkTypeHandler = linkTypeHandler;
+
     }
 
     /**
@@ -110,11 +129,15 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      *        maximum checking interval (s)
      * @param thresholdIn
      *        convergence threshold (s)
+     * @param linkTypeHandler
+     *        link type handler
      */
     public AbstractSignalPropagationDetector(final int slopeSelectionIn, final double maxCheckIn,
-                                             final double thresholdIn) {
+                                             final double thresholdIn, final LinkTypeHandler linkTypeHandler) {
         super(slopeSelectionIn, maxCheckIn, thresholdIn);
         this.propagationDelayType = PropagationDelayType.INSTANTANEOUS;
+        this.linkTypeHandler = linkTypeHandler;
+
     }
 
     /**
@@ -130,11 +153,16 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      *        action performed when entering/exiting the eclipse depending on slope selection
      * @param removeIn
      *        when the spacecraft point enters or exit the zone depending on slope selection
+     * @param linkTypeHandler
+     *        link type handler
      */
     public AbstractSignalPropagationDetector(final int slopeSelectionIn, final double maxCheckIn,
-                                             final double thresholdIn, final Action actionIn, final boolean removeIn) {
+                                             final double thresholdIn, final Action actionIn, final boolean removeIn,
+                                             final LinkTypeHandler linkTypeHandler) {
         super(slopeSelectionIn, maxCheckIn, thresholdIn, actionIn, removeIn);
         this.propagationDelayType = PropagationDelayType.INSTANTANEOUS;
+        this.linkTypeHandler = linkTypeHandler;
+
     }
 
     /**
@@ -152,12 +180,17 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      *        states if the detector should be removed at increasing event detection
      * @param removeAtExitIn
      *        states if the detector should be removed at decreasing event detection
+     * @param linkTypeHandler
+     *        link type handler
      */
     public AbstractSignalPropagationDetector(final double maxCheckIn, final double thresholdIn,
                                              final Action actionAtEntryIn, final Action actionAtExitIn,
-                                             final boolean removeAtEntryIn, final boolean removeAtExitIn) {
+                                             final boolean removeAtEntryIn, final boolean removeAtExitIn,
+                                             final LinkTypeHandler linkTypeHandler) {
         super(maxCheckIn, thresholdIn, actionAtEntryIn, actionAtExitIn, removeAtEntryIn, removeAtExitIn);
         this.propagationDelayType = PropagationDelayType.INSTANTANEOUS;
+        this.linkTypeHandler = linkTypeHandler;
+
     }
 
     /**
@@ -177,14 +210,27 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      *        states if the detector should be removed at increasing event detection
      * @param removeAtExitIn
      *        states if the detector should be removed at decreasing event detection
+     * @param linkTypeHandler
+     *        link type handler
      */
     public AbstractSignalPropagationDetector(final int slopeSelectionIn, final double maxCheckIn,
                                              final double thresholdIn, final Action actionAtEntryIn,
                                              final Action actionAtExitIn, final boolean removeAtEntryIn,
-                                             final boolean removeAtExitIn) {
+                                             final boolean removeAtExitIn, final LinkTypeHandler linkTypeHandler) {
         super(slopeSelectionIn, maxCheckIn, thresholdIn, actionAtEntryIn, actionAtExitIn, removeAtEntryIn,
                 removeAtExitIn);
         this.propagationDelayType = PropagationDelayType.INSTANTANEOUS;
+        this.linkTypeHandler = linkTypeHandler;
+
+    }
+
+    /**
+     * Getter for the link type handler.
+     * 
+     * @return the link type handler
+     */
+    public LinkTypeHandler getLinkTypeHandler() {
+        return this.linkTypeHandler;
     }
 
     /**
@@ -193,9 +239,17 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      * @param s
      *        the spacecraft state used by the detector
      * @return the signal emitter
-     * @throws PatriusException 
      */
-    public abstract PVCoordinatesProvider getEmitter(final SpacecraftState s) throws PatriusException;
+    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
+        final PVCoordinatesProvider emitter;
+        // Determine the signal emitter depending on the role of the main element (SpacecraftState)
+        if (this.linkTypeHandler.getMainRole() == SignalPropagationRole.EMITTER) {
+            emitter = s.getOrbit();
+        } else {
+            emitter = this.linkTypeHandler.getOtherElement();
+        }
+        return emitter;
+    }
 
     /**
      * Getter for the signal receiver.
@@ -203,16 +257,33 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      * @param s
      *        the spacecraft state used by the detector
      * @return the signal receiver
-     * @throws PatriusException 
      */
-    public abstract PVCoordinatesProvider getReceiver(final SpacecraftState s) throws PatriusException ;
+    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
+        final PVCoordinatesProvider receiver;
+        // Determine the signal receiver depending on the role of the main element (SpacecraftState)
+        if (this.linkTypeHandler.getMainRole() == SignalPropagationRole.RECEIVER) {
+            receiver = s.getOrbit();
+        } else {
+            receiver = this.linkTypeHandler.getOtherElement();
+        }
+        return receiver;
+    }
 
     /**
-     * Specify if the datation choice corresponds to the emitter date or the receiver date.
+     * Specify if the event datation type corresponds to the emitter date or the receiver date.
      * 
-     * @return the corresponding datation choice
+     * @return the corresponding event datation type
      */
-    public abstract DatationChoice getDatationChoice();
+    public EventDatationType getEventDatationType() {
+        final EventDatationType eventDatationType;
+        // Determine the event datation type depending on role of the main element (SpacecraftState)
+        if (this.linkTypeHandler.getMainRole() == SignalPropagationRole.EMITTER) {
+            eventDatationType = EventDatationType.EMITTER;
+        } else {
+            eventDatationType = EventDatationType.RECEIVER;
+        }
+        return eventDatationType;
+    }
 
     /**
      * Setter for the propagation delay computation type. Warning: check Javadoc of detector to see if detector takes
@@ -250,7 +321,7 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      *         if computation failed
      */
     public AbsoluteDate getSignalEmissionDate(final SpacecraftState s) throws PatriusException {
-        return getSignalEmissionDate(getEmitter(s), s.getOrbit(), s.getDate());
+        return this.getSignalEmissionDate(this.getEmitter(s), s.getOrbit(), s.getDate());
     }
 
     /**
@@ -284,7 +355,7 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
      * @throws PatriusException thrown if computation failed
      */
     public AbsoluteDate getSignalReceptionDate(final SpacecraftState s) throws PatriusException {
-        return getSignalReceptionDate(getReceiver(s), s.getOrbit(), s.getDate());
+        return this.getSignalReceptionDate(this.getReceiver(s), s.getOrbit(), s.getDate());
     }
 
     /**
@@ -305,6 +376,35 @@ public abstract class AbstractSignalPropagationDetector extends AbstractDetector
         throws PatriusException {
         return VacuumSignalPropagationModel.getSignalReceptionDate(receiver, orbit, date, this.epsSignalPropagation,
             this.propagationDelayType, this.inertialFrame, this.maxIterSignalPropagation);
+    }
+
+    /**
+     * Compute other element date taking into account {@link PropagationDelayType} and {@link LinkType}.
+     * <p>
+     * Note: once computed, the other element date is saved in cache. one for each spacecraftstate date.
+     * </p>
+     * 
+     * @param s
+     *        spacecraft state
+     * @return other element date
+     * @throws PatriusException
+     *         if computation failed
+     */
+    public AbsoluteDate getOtherDate(final SpacecraftState s) throws PatriusException {
+        // Define other element date: date at which the other element emits or receives the signal
+        if (!this.otherDatesCache.containsKey(s.getDate())) {
+            // Check the type of link
+            if (this.linkTypeHandler.getMainRole() == SignalPropagationRole.EMITTER) {
+                // The main role satellite is the emitter, the other element is the receiver, so compute the reception
+                // date
+                this.otherDatesCache.put(s.getDate(), this.getSignalReceptionDate(s));
+            } else {
+                // The main role satellite is the emitter, the other element is the receiver, so compute the emission
+                // date
+                this.otherDatesCache.put(s.getDate(), this.getSignalEmissionDate(s));
+            }
+        }
+        return this.otherDatesCache.get(s.getDate());
     }
 
     /**

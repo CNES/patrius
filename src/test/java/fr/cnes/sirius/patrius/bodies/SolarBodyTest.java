@@ -18,6 +18,12 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+* VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody 
+ *          car l'orientation n'est pas forcement IAU 
+* VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer 
+ *          les polynemes de Chebyshev des fichiers JPL historiques 
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
 * VERSION:4.11:FA:FA-3257:22/05/2023:[PATRIUS] Suite 3182
@@ -63,17 +69,19 @@ public class SolarBodyTest {
     @Test
     public void geocentricPV() throws PatriusException {
         Utils.setDataRoot("regular-data");
+        
         final AbsoluteDate date = new AbsoluteDate(1969, 06, 25, TimeScalesFactory.getTDB());
         final Frame geocentricFrame = FramesFactory.getGCRF();
         checkPV(CelestialBodyFactory.getMoon(), date, geocentricFrame,
-            new Vector3D(-0.0022350411591597575, -0.0010106334699928434, -5.658291803646671E-4),
-            new Vector3D(3.1279236468844985E-4, -4.526815459166321E-4, -2.428841016970333E-4));
+            new Vector3D(-0.002235041161839614, -0.0010106334661144824, -5.658291782837514E-4),
+            new Vector3D(3.127923636026137E-4, -4.526815464007358E-4, -2.428841019689141E-4));
         checkPV(CelestialBodyFactory.getEarth(), date, geocentricFrame, Vector3D.ZERO, Vector3D.ZERO);
     }
 
     @Test
     public void heliocentricPV() throws PatriusException {
         Utils.setDataRoot("regular-data");
+        
         final AbsoluteDate date = new AbsoluteDate(1969, 06, 25, TimeScalesFactory.getTDB());
         final Frame eme2000 = FramesFactory.getGCRF();
         final Frame heliocentricFrame = new Frame(eme2000, new TransformProvider(){
@@ -108,29 +116,29 @@ public class SolarBodyTest {
         }, "heliocentric/aligned EME2000", true);
         checkPV(CelestialBodyFactory.getSun(), date, heliocentricFrame, Vector3D.ZERO, Vector3D.ZERO);
         checkPV(CelestialBodyFactory.getMercury(), date, heliocentricFrame,
-            new Vector3D(0.3388866970713254, -0.16350851403469605, -0.12250815624343761),
-            new Vector3D(0.008716751907934464, 0.02294287010530833, 0.011349219084264612));
+            new Vector3D(0.33888669699664453, -0.16350851423125973, -0.1225081563406723),
+            new Vector3D(0.008716751921799989, 0.022942870098618402, 0.0113492190792522));
         checkPV(CelestialBodyFactory.getVenus(), date, heliocentricFrame,
-            new Vector3D(0.5733328682513444, -0.3947124128748959, -0.21383496742544283),
-            new Vector3D(0.012311818929592546, 0.014756722625966128, 0.005857890214695866));
+            new Vector3D(0.5733328681458626, -0.3947124130013246, -0.2138349674756305),
+            new Vector3D(0.0123118189333572, 0.01475672262337433, 0.005857890213291766));
         checkPV(CelestialBodyFactory.getMars(), date, heliocentricFrame,
-            new Vector3D(-0.15808000178306866, -1.3285167111540124, -0.6050478023304016),
-            new Vector3D(0.014443621048367267, -1.3669889027283553E-4, -4.542404441793112E-4));
+            new Vector3D(-0.15808000190681482, -1.3285167111528413, -0.60504780232651),
+            new Vector3D(0.014443621048240674, -1.366988913368054E-4, -4.542404446638782E-4));
         checkPV(CelestialBodyFactory.getJupiter(), date, heliocentricFrame,
-            new Vector3D(-5.387442227958154, -0.8116709870422928, -0.21662388956102652),
-            new Vector3D(0.0010628473875341506, -0.006527800816267844, -0.0028242250304474767));
+            new Vector3D(-5.3874422279672585, -0.8116709869863658, -0.21662388953682987),
+            new Vector3D(0.0010628473874498294, -0.006527800816280563, -0.002824225030450875));
         checkPV(CelestialBodyFactory.getSaturn(), date, heliocentricFrame,
-            new Vector3D(7.89952834654684, 4.582711147265509, 1.552649660593234),
-            new Vector3D(-0.003208403682518813, 0.004335751536569781, 0.001928152129122073));
+            new Vector3D(7.899528346574328, 4.5827111472283635, 1.5526496605767146),
+            new Vector3D(-0.0032084036824936717, 0.004335751536584378, 0.0019281521291270168));
         checkPV(CelestialBodyFactory.getUranus(), date, heliocentricFrame,
-            new Vector3D(-18.2705614311796, -1.151408356279009, -0.24540975062356502),
-            new Vector3D(2.1887052624725852E-4, -0.0037678288699642877, -0.0016532828516810242));
+            new Vector3D(-18.270561431181477, -1.1514083562467279, -0.24540975060940048),
+            new Vector3D(2.188705262396331E-4, -0.0037678288699647864, -0.0016532828516811352));
         checkPV(CelestialBodyFactory.getNeptune(), date, heliocentricFrame,
-            new Vector3D(-16.06747366050193, -23.938436657940095, -9.39837851302005),
-            new Vector3D(0.0026425894813251684, -0.0015042632480101307, -6.815738977894145E-4));
+            new Vector3D(-16.06747366052457, -23.938436657927202, -9.39837851301421),
+            new Vector3D(0.002642589481323644, -0.0015042632480123332, -6.815738977902796E-4));
         checkPV(CelestialBodyFactory.getPluto(), date, heliocentricFrame,
-            new Vector3D(-30.488788499360652, -0.8637991387172488, 8.914537151982762),
-            new Vector3D(3.21695873843002E-4, -0.0031487797507673814, -0.0010799339515148705));
+            new Vector3D(-30.488788499363405, -0.8637991386902716, 8.914537151992015),
+            new Vector3D(3.2169587384052705E-4, -0.003148779750767472, -0.001079933951514174));
     }
 
     @Test(expected = PatriusException.class)
@@ -204,8 +212,8 @@ public class SolarBodyTest {
                                                                           throws PatriusException {
 
         final PVCoordinates pv = body.getPVCoordinates(date, frame);
-
-        final double posScale = 149597870691.0;
+        
+        final double posScale = Constants.JPL_SSD_ASTRONOMICAL_UNIT;
         final double velScale = posScale / Constants.JULIAN_DAY;
         final PVCoordinates reference =
             new PVCoordinates(new Vector3D(posScale, position), new Vector3D(velScale, velocity));
@@ -213,15 +221,14 @@ public class SolarBodyTest {
         final PVCoordinates error = new PVCoordinates(reference, pv);
         Assert.assertEquals(0, error.getPosition().getNorm(), 2.0e-3);
         Assert.assertEquals(0, error.getVelocity().getNorm(), 5.0e-10);
-
     }
 
     @Test
     public void testFrameShift() throws PatriusException {
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(FramesConfigurationFactory.getSimpleConfiguration(false));
-        final Frame moon = CelestialBodyFactory.getMoon().getRotatingFrame(IAUPoleModelType.TRUE);
-        final Frame earth = CelestialBodyFactory.getEarth().getRotatingFrame(IAUPoleModelType.TRUE);
+        final Frame moon = CelestialBodyFactory.getMoon().getRotatingFrame();
+        final Frame earth = CelestialBodyFactory.getEarth().getRotatingFrame();
         final AbsoluteDate date0 = new AbsoluteDate(1969, 06, 25, TimeScalesFactory.getTDB());
 
         for (double t = 0; t < Constants.JULIAN_DAY; t += 3600) {
@@ -246,21 +253,25 @@ public class SolarBodyTest {
         Utils.setDataRoot("regular-data");
         final AbsoluteDate date = new AbsoluteDate(1969, 06, 28, TimeScalesFactory.getTT());
         final double au = 149597870691.0;
-        checkKepler(CelestialBodyFactory.getMoon(), CelestialBodyFactory.getEarth(), date, 3.844e8, 0.012);
-        checkKepler(CelestialBodyFactory.getMercury(), CelestialBodyFactory.getSun(), date, 0.387 * au, 4.0e-9);
-        checkKepler(CelestialBodyFactory.getVenus(), CelestialBodyFactory.getSun(), date, 0.723 * au, 8.0e-9);
-        checkKepler(CelestialBodyFactory.getEarth(), CelestialBodyFactory.getSun(), date, 1.000 * au, 2.0e-5);
-        checkKepler(CelestialBodyFactory.getMars(), CelestialBodyFactory.getSun(), date, 1.52 * au, 2.0e-7);
-        checkKepler(CelestialBodyFactory.getJupiter(), CelestialBodyFactory.getSun(), date, 5.20 * au, 2.0e-6);
-        checkKepler(CelestialBodyFactory.getSaturn(), CelestialBodyFactory.getSun(), date, 9.58 * au, 8.0e-7);
-        checkKepler(CelestialBodyFactory.getUranus(), CelestialBodyFactory.getSun(), date, 19.20 * au, 6.0e-7);
-        checkKepler(CelestialBodyFactory.getNeptune(), CelestialBodyFactory.getSun(), date, 30.05 * au, 4.0e-7);
-        checkKepler(CelestialBodyFactory.getPluto(), CelestialBodyFactory.getSun(), date, 39.24 * au, 3.0e-7);
+
+        final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
+        final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
+
+        checkKepler(CelestialBodyFactory.getMoon(), earth, date, 3.844e8, 0.012);
+        checkKepler(CelestialBodyFactory.getMercury(), sun, date, 0.387 * au, 4.0e-9);
+        checkKepler(CelestialBodyFactory.getVenus(), sun, date, 0.723 * au, 8.0e-9);
+        checkKepler(earth, sun, date, 1.000 * au, 2.0e-5);
+        checkKepler(CelestialBodyFactory.getMars(), sun, date, 1.52 * au, 2.0e-7);
+        checkKepler(CelestialBodyFactory.getJupiter(), sun, date, 5.20 * au, 2.0e-6);
+        checkKepler(CelestialBodyFactory.getSaturn(), sun, date, 9.58 * au, 8.0e-7);
+        checkKepler(CelestialBodyFactory.getUranus(), sun, date, 19.20 * au, 6.0e-7);
+        checkKepler(CelestialBodyFactory.getNeptune(), sun, date, 30.05 * au, 4.0e-7);
+        checkKepler(CelestialBodyFactory.getPluto(), sun, date, 39.24 * au, 3.0e-7);
     }
 
-    private static void checkKepler(final PVCoordinatesProvider orbiting, final CelestialBody central,
-                             final AbsoluteDate start, final double a, final double epsilon)
-                                                                                            throws PatriusException {
+    private static void checkKepler(final PVCoordinatesProvider orbiting, final IAUCelestialBody central,
+                                    final AbsoluteDate start, final double a, final double epsilon)
+        throws PatriusException {
 
         // set up Keplerian orbit of orbiting body around central body
         final Orbit orbit = new KeplerianOrbit(orbiting.getPVCoordinates(start,
@@ -282,6 +293,7 @@ public class SolarBodyTest {
 
     @Before
     public void setup() {
+        Utils.clear();
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
     }
 
@@ -290,4 +302,8 @@ public class SolarBodyTest {
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }
 
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

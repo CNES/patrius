@@ -16,6 +16,12 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
@@ -60,9 +66,9 @@ import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.TwoDirectionAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.directions.ConstantVectorDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
@@ -125,7 +131,7 @@ public class CentralBodyMaskCircularFOVDetectorTest {
     private static Frame itrf;
 
     /** The Earth. */
-    private static CelestialBody earth;
+    private static IAUCelestialBody earth;
 
     /** A generic orbit. */
     private static KeplerianOrbit orbit;
@@ -153,8 +159,9 @@ public class CentralBodyMaskCircularFOVDetectorTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Celestial bodies initialisation:
-        earth = CelestialBodyFactory.getEarth();
+        earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         // Orbit initialisation:
         date = new AbsoluteDate("2002-04-01T12:00:00Z", TimeScalesFactory.getTT());
         final double mu = earth.getGM();
@@ -231,7 +238,7 @@ public class CentralBodyMaskCircularFOVDetectorTest {
         final EclipseDetector eclipseDetector = eventDetector1.getEclipseDetector();
         Assert.assertEquals(eclipseDetector.getEmitter(finalState), eventDetector1.getEmitter(finalState));
         Assert.assertEquals(eclipseDetector.getReceiver(finalState), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(eclipseDetector.getDatationChoice(), eventDetector1.getDatationChoice());
+        Assert.assertEquals(eclipseDetector.getEventDatationType(), eventDetector1.getEventDatationType());
     }
 
     /**

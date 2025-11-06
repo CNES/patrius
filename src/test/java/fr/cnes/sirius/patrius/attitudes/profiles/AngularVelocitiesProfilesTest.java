@@ -18,6 +18,7 @@
  * @history Created 04/04/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -53,8 +54,7 @@ package fr.cnes.sirius.patrius.attitudes.profiles;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -90,6 +90,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import junit.framework.Assert;
 
 /**
  * Unit tests for the angular velocity polynomial guidance profile
@@ -1485,5 +1486,10 @@ public class AngularVelocitiesProfilesTest {
         } catch (final IllegalArgumentException e) {
             Assert.assertTrue(true);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

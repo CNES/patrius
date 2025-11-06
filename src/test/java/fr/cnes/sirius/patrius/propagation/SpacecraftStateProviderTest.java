@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
  *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -51,8 +52,6 @@
  */
 package fr.cnes.sirius.patrius.propagation;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,6 +68,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
+import junit.framework.Assert;
 
 public class SpacecraftStateProviderTest {
 
@@ -143,6 +143,7 @@ public class SpacecraftStateProviderTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }
@@ -154,4 +155,5 @@ public class SpacecraftStateProviderTest {
     public void tearDown() throws PatriusException {
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }
+
 }

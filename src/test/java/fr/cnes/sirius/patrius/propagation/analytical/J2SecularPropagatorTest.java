@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
@@ -44,8 +45,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -85,6 +85,7 @@ import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
+import junit.framework.Assert;
 
 /**
  * Test class for {@link J2SecularPropagator}.
@@ -1458,5 +1459,10 @@ public class J2SecularPropagatorTest {
             return MathLib.abs(expected - actual);
         }
         return MathLib.abs((expected - actual) / expected);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -17,6 +17,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-289:21/11/2024:Calcul de l'orbite moyenne sur la discontinuité du modèle Lyddane
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -39,8 +41,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -67,6 +68,7 @@ import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.OrbitType;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.propagation.MassProvider;
 import fr.cnes.sirius.patrius.propagation.ParametersType;
 import fr.cnes.sirius.patrius.propagation.SimpleMassModel;
@@ -76,6 +78,7 @@ import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
+import junit.framework.Assert;
 
 /**
  * Test class for {@link LyddaneLongPeriodPropagator}.
@@ -1131,6 +1134,27 @@ public class LyddaneLongPeriodPropagatorTest {
         // Return result
         return list;
     }
+    /** A test to ensure proper eccentricity handling during propagation with a LyddanePropagator
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testEccentricitryThreshold() throws PatriusException {
+        final Vector3D pos =
+                new Vector3D(3863247.3964604246, -2362207.282266474, 4793172.453552773);
+        final Vector3D vel = new Vector3D(-5757.84110493715, 1638.8475143517514, 5237.974170230261);
+        final PVCoordinates pvc = new PVCoordinates(pos, vel);
+        final Orbit orbit = new CartesianOrbit(pvc, FramesFactory.getGCRF(),
+                new AbsoluteDate("2000-10-10T23:45:03.923"), 3.9860043770442E14);
+        // PropagationException
+        final LyddaneLongPeriodPropagator lyddane =
+                new LyddaneLongPeriodPropagator(orbit, 6378136.3, 3.986004415E14,
+                        -0.001082627246953823, 2.5327827239726562E-6, 1.6212006093366603E-6,
+                        2.2755021304822206E-7, FramesFactory.getCIRF(), ParametersType.OSCULATING);
+        Orbit orbitCirf = orbit.getType().convertOrbit(orbit, FramesFactory.getCIRF());
+        lyddane.osc2mean(orbitCirf);
+        System.out.println("OK");
+    }
 
     /**
      * Compute relative difference.
@@ -1146,5 +1170,10 @@ public class LyddaneLongPeriodPropagatorTest {
             return MathLib.abs(expected - actual);
         }
         return MathLib.abs((expected - actual) / expected);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

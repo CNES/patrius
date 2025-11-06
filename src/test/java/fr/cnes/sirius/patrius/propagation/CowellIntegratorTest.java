@@ -15,6 +15,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:FA:FA-111:08/12/2023:[PATRIUS] Problemes lies à  l'utilisation des bsp
@@ -217,10 +220,8 @@ public class CowellIntegratorTest {
         forceModels.add(balminoAttraction());
         forceModels.add(dragMSIS2000(assembly));
         final GravityModel moonGravityModel = new MeeusMoon().getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
         final GravityModel sunGravityModel = new MeeusSun().getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         forceModels.add(moonAttraction);
         forceModels.add(sunAttraction);
@@ -260,10 +261,8 @@ public class CowellIntegratorTest {
         forceModels.add(balminoAttraction());
         forceModels.add(dragMSIS2000(assembly));
         final GravityModel moonGravityModel = new MeeusMoon().getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
         final GravityModel sunGravityModel = new MeeusSun().getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         forceModels.add(moonAttraction);
         forceModels.add(sunAttraction);
@@ -303,10 +302,8 @@ public class CowellIntegratorTest {
         forceModels.add(balminoAttraction());
         forceModels.add(dragMSIS2000(assembly));
         final GravityModel moonGravityModel = new MeeusMoon().getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
         final GravityModel sunGravityModel = new MeeusSun().getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         forceModels.add(moonAttraction);
         forceModels.add(sunAttraction);
@@ -714,11 +711,9 @@ public class CowellIntegratorTest {
         forceModels.add(balminoAttraction());
         forceModels.add(dragMSIS2000(assembly));
         final GravityModel moonGravityModel = new MeeusMoon().getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ThirdBodyAttraction moonForceModel = new ThirdBodyAttraction(moonGravityModel);
         forceModels.add(moonForceModel);
         final GravityModel sunGravityModel = new MeeusSun().getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ThirdBodyAttraction sunForceModel = new ThirdBodyAttraction(sunGravityModel);
         forceModels.add(sunForceModel);
         final ForceModel newtonianAttraction = new DirectBodyAttraction(new NewtonianGravityModel(initialOrbit.getMu()));
@@ -1349,4 +1344,5 @@ public class CowellIntegratorTest {
             yDDot[0] = -y[0];
         }
     }
+
 }

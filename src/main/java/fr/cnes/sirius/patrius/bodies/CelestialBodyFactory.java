@@ -15,6 +15,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-256:22/08/2024:[PATRIUS] Ajout d'une methode pour
+ * savoir si un corps celeste a un loader defini
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -100,101 +108,143 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * Once loaded, data are stored in static variables and are used to retrieve planetary bodies through the various
  * available getters.
  * </p>
- * 
+ *
  * @author Luc Maisonobe
  */
 public final class CelestialBodyFactory {
 
     /**
      * Predefined name for solar system barycenter.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String SOLAR_SYSTEM_BARYCENTER = "solar system barycenter";
 
     /**
      * Predefined name for Sun.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String SUN = "Sun";
 
     /**
      * Predefined name for Mercury.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String MERCURY = "Mercury";
 
     /**
      * Predefined name for Venus.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String VENUS = "Venus";
 
     /**
      * Predefined name for Earth-Moon barycenter.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String EARTH_MOON = "Earth-Moon barycenter";
-    
+
     /**
      * Predefined name for Earth.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String EARTH = "Earth";
 
     /**
      * Predefined name for Moon.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String MOON = "Moon";
 
     /**
      * Predefined name for Mars.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String MARS = "Mars";
 
     /**
+     * Predefined name for Mars barycenter.
+     *
+     * @see #getBody(String)
+     */
+    public static final String MARS_BARY = "Mars barycenter";
+
+    /**
      * Predefined name for Jupiter.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String JUPITER = "Jupiter";
 
     /**
+     * Predefined name for Jupiter barycenter.
+     *
+     * @see #getBody(String)
+     */
+    public static final String JUPITER_BARY = "Jupiter barycenter";
+
+    /**
      * Predefined name for Saturn.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String SATURN = "Saturn";
 
     /**
+     * Predefined name for Saturn barycenter.
+     *
+     * @see #getBody(String)
+     */
+    public static final String SATURN_BARY = "Saturn barycenter";
+
+    /**
      * Predefined name for Uranus.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String URANUS = "Uranus";
 
     /**
+     * Predefined name for Uranus barycenter.
+     *
+     * @see #getBody(String)
+     */
+    public static final String URANUS_BARY = "Uranus barycenter";
+
+    /**
      * Predefined name for Neptune.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String NEPTUNE = "Neptune";
 
     /**
+     * Predefined name for Neptune.
+     *
+     * @see #getBody(String)
+     */
+    public static final String NEPTUNE_BARY = "Neptune barycenter";
+
+    /**
      * Predefined name for Pluto.
-     * 
+     *
      * @see #getBody(String)
      */
     public static final String PLUTO = "Pluto";
+
+    /**
+     * Predefined name for Pluto barycenter.
+     *
+     * @see #getBody(String)
+     */
+    public static final String PLUTO_BARY = "Pluto barycenter";
 
     /** Celestial body loaders map. */
     private static final Map<String, CopyOnWriteArrayList<CelestialBodyLoader>> LOADERS_MAP = new ConcurrentHashMap<>();
@@ -214,7 +264,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Add a loader for celestial bodies.
-     * 
+     *
      * @param name
      *        name of the body (may be one of the predefined names or a user-defined name)
      * @param loader
@@ -235,7 +285,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Add the default loaders for all predefined celestial bodies.
-     * 
+     *
      * @param supportedNames
      *        regular expression for supported files names
      *        (may be null if the default JPL file names are used)
@@ -262,16 +312,22 @@ public final class CelestialBodyFactory {
         addDefaultCelestialBodyLoader(EARTH, supportedNames);
         addDefaultCelestialBodyLoader(MOON, supportedNames);
         addDefaultCelestialBodyLoader(MARS, supportedNames);
+        addDefaultCelestialBodyLoader(MARS_BARY, supportedNames);
         addDefaultCelestialBodyLoader(JUPITER, supportedNames);
+        addDefaultCelestialBodyLoader(JUPITER_BARY, supportedNames);
         addDefaultCelestialBodyLoader(SATURN, supportedNames);
+        addDefaultCelestialBodyLoader(SATURN_BARY, supportedNames);
         addDefaultCelestialBodyLoader(URANUS, supportedNames);
+        addDefaultCelestialBodyLoader(URANUS_BARY, supportedNames);
         addDefaultCelestialBodyLoader(NEPTUNE, supportedNames);
+        addDefaultCelestialBodyLoader(NEPTUNE_BARY, supportedNames);
         addDefaultCelestialBodyLoader(PLUTO, supportedNames);
+        addDefaultCelestialBodyLoader(PLUTO_BARY, supportedNames);
     }
 
     /**
      * Add the default loaders for celestial bodies.
-     * 
+     *
      * @param name
      *        name of the body (if not one of the predefined names, the method does nothing)
      * @param supportedNames
@@ -301,33 +357,68 @@ public final class CelestialBodyFactory {
         // - Sun
 
         // Get loader
-        CelestialBodyLoader loader = null;
-        if (name.equals(SOLAR_SYSTEM_BARYCENTER)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.SOLAR_SYSTEM_BARYCENTER);
-        } else if (name.equals(SUN)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.SUN);
-        } else if (name.equals(MERCURY)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.MERCURY);
-        } else if (name.equals(VENUS)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.VENUS);
-        } else if (name.equals(EARTH_MOON)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.EARTH_MOON);
-        } else if (name.equals(EARTH)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.EARTH);
-        } else if (name.equals(MOON)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.MOON);
-        } else if (name.equals(MARS)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.MARS);
-        } else if (name.equals(JUPITER)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.JUPITER);
-        } else if (name.equals(SATURN)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.SATURN);
-        } else if (name.equals(URANUS)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.URANUS);
-        } else if (name.equals(NEPTUNE)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.NEPTUNE);
-        } else if (name.equals(PLUTO)) {
-            loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.PLUTO);
+        CelestialBodyLoader loader;
+        switch(name) {
+            case SOLAR_SYSTEM_BARYCENTER:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
+                break;
+            case SUN:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.SUN);
+                break;
+            case MERCURY: 
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.MERCURY);
+                break;
+            case VENUS :
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.VENUS);
+                break;
+            case EARTH_MOON :
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.EARTH_MOON);
+                break;
+            case EARTH :
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.EARTH);
+                break;
+            case MOON :
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.MOON);
+                break;
+            case MARS:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.MARS);
+                break;
+            case MARS_BARY:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.MARS_BARY);
+                break;
+            case JUPITER:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.JUPITER);
+                break;
+            case JUPITER_BARY:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.JUPITER_BARY);
+                break;
+            case SATURN:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.SATURN);
+                break;
+            case SATURN_BARY:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.SATURN_BARY);
+                break;
+            case URANUS:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.URANUS);
+                break;
+            case URANUS_BARY:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.URANUS_BARY);
+                break;
+            case NEPTUNE:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.NEPTUNE);
+                break;
+            case NEPTUNE_BARY:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.NEPTUNE_BARY);
+                break;
+            case PLUTO:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.PLUTO);
+                break;
+            case PLUTO_BARY:
+                loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.PLUTO_BARY);
+                break;
+            default:
+                loader = null;
+                break;
         }
 
         // Add loader if not null
@@ -339,7 +430,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Clear loaders for one celestial body/point.
-     * 
+     *
      * @param name
      *        name of the body
      * @see #addCelestialBodyLoader(String, CelestialBodyLoader)
@@ -352,7 +443,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Clear loaders for all celestial bodies/points.
-     * 
+     *
      * @see #addCelestialBodyLoader(String, CelestialBodyLoader)
      * @see #clearCelestialBodyLoaders(String)
      */
@@ -362,8 +453,22 @@ public final class CelestialBodyFactory {
     }
 
     /**
+     * Return true if the body has no loader defined (which means that
+     * the default loaders will be called if the user calls the factory).
+     *
+     * @param name
+     *        Name of the celestial body for which the user needs to know the existence of predefined loaders.
+     *
+     * @return true if the body has no predefined loader
+     */
+    public static boolean hasNoLoader(final String name) {
+        final List<CelestialBodyLoader> loaders = LOADERS_MAP.get(name);
+        return loaders == null || loaders.isEmpty();
+    }
+
+    /**
      * Get the solar system barycenter aggregated body.
-     * 
+     *
      * @return solar system barycenter aggregated body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -374,7 +479,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Sun singleton body.
-     * 
+     *
      * @return Sun body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -385,7 +490,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Mercury singleton body.
-     * 
+     *
      * @return Sun body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -396,7 +501,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Venus singleton body.
-     * 
+     *
      * @return Venus body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -407,7 +512,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Earth-Moon barycenter singleton bodies pair.
-     * 
+     *
      * @return Earth-Moon barycenter bodies pair
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -418,7 +523,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Earth singleton body.
-     * 
+     *
      * @return Earth body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -429,7 +534,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Moon singleton body.
-     * 
+     *
      * @return Moon body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -440,7 +545,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Mars singleton body.
-     * 
+     *
      * @return Mars body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -451,7 +556,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Jupiter singleton body.
-     * 
+     *
      * @return Jupiter body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -462,7 +567,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Saturn singleton body.
-     * 
+     *
      * @return Saturn body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -473,7 +578,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Uranus singleton body.
-     * 
+     *
      * @return Uranus body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -484,7 +589,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Neptune singleton body.
-     * 
+     *
      * @return Neptune body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -495,7 +600,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get the Pluto singleton body.
-     * 
+     *
      * @return Pluto body
      * @exception PatriusException
      *            if the celestial body cannot be built
@@ -506,15 +611,7 @@ public final class CelestialBodyFactory {
 
     /**
      * Get a celestial body.
-     * <p>
-     * If no {@link CelestialBodyLoader} has been added by calling
-     * {@link #addCelestialBodyLoader(String, CelestialBodyLoader)
-     * addCelestialBodyLoader} or if {@link #clearCelestialBodyLoaders(String)
-     * clearCelestialBodyLoaders} has been called afterwards, the {@link #addDefaultCelestialBodyLoader(String, String)
-     * addDefaultCelestialBodyLoader} method will be called automatically, once with the default name for JPL DE
-     * ephemerides and once with the default name for IMCCE INPOP files.
-     * </p>
-     * 
+     *
      * @param name
      *        name of the celestial body
      * @return celestial body
@@ -522,56 +619,59 @@ public final class CelestialBodyFactory {
      *            if the celestial body cannot be built or if the body already exists and is a point
      */
     public static CelestialBody getBody(final String name) throws PatriusException {
-        // Get body
+        // Get the existing celestial body (if any)
         final CelestialPoint existingBody = CELESTIAL_BODIES_MAP.get(name);
         if (existingBody != null && !(existingBody instanceof CelestialBody)) {
             // Object is existing in the map but is not a body
             throw new PatriusException(PatriusMessages.NOT_A_CELESTIAL_BODY, name);
         }
-        // Initialization
         CelestialBody body = (CelestialBody) existingBody;
         if (body == null) {
-            // Body has not been loaded: try to load it
-            List<CelestialBodyLoader> loaders = LOADERS_MAP.get(name);
-            if ((loaders == null) || loaders.isEmpty()) {
-                // No loaders: add default loaders
-                addDefaultCelestialBodyLoader(name, JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES);
-                addDefaultCelestialBodyLoader(name, JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES);
-                addCelestialBodyLoader(name, new BSPCelestialBodyLoader(
-                        BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES));
-                loaders = LOADERS_MAP.get(name);
-            }
-            PatriusException delayedException = null;
-            CelestialBody body2 = null;
-            for (final CelestialBodyLoader loader : loaders) {
-                try {
-                    // Try to load body
-                    body2 = loader.loadCelestialBody(name);
-                    if (body2 != null) {
-                        break;
-                    }
-                } catch (final PatriusException oe) {
-                    delayedException = oe;
-                }
-            }
-            if (body2 == null) {
-                // No data found for required body
-                throw (delayedException == null) ? new PatriusException(
-                        PatriusMessages.NO_DATA_LOADED_FOR_CELESTIAL_BODY, name) : delayedException;
-            }
-            body = body2;
-
-            // save the body
+            // Load the celestial body
+            body = getLoader(name).loadCelestialBody(name);
+            // Save the celestial body in the map
             CELESTIAL_BODIES_MAP.put(name, body);
         }
 
-        // Return the body
+        // Return the celestial body
         return body;
-
     }
 
     /**
      * Get a celestial point.
+     *
+     * @param name
+     *        name of the celestial point
+     * @return celestial point
+     * @exception PatriusException
+     *            if the celestial point cannot be built
+     */
+    public static CelestialPoint getPoint(final String name) throws PatriusException {
+        // Get the existing celestial point (if any)
+        CelestialPoint point = CELESTIAL_BODIES_MAP.get(name);
+        if (point == null) {
+            // Otherwise, load the celestial point
+            point = getLoader(name).loadCelestialPoint(name);
+            // Save the celestial point in the map
+            CELESTIAL_BODIES_MAP.put(name, point);
+        }
+        // Return the celestial point
+        return point;
+    }
+
+    /**
+     * Returns the celestial bodies/points map available in the factory.
+     *
+     * @return the celestial bodies/points map available in the factory
+     */
+    public static Map<String, CelestialPoint> getBodies() {
+        final Map<String, CelestialPoint> bodiesMap = CELESTIAL_BODIES_MAP; 
+        return bodiesMap;
+    }
+
+    /**
+     * Gets the loader for the specific name of the celestial body provided in input.
+     * 
      * <p>
      * If no {@link CelestialBodyLoader} has been added by calling
      * {@link #addCelestialBodyLoader(String, CelestialBodyLoader)
@@ -581,65 +681,48 @@ public final class CelestialBodyFactory {
      * ephemerides and once with the default name for IMCCE INPOP files.
      * </p>
      * 
-     * @param name
-     *        name of the celestial point
-     * @return celestial point
-     * @exception PatriusException
-     *            if the celestial point cannot be built
+     * @param name name of the celestial body to look for
+     * @return the body loader found
+     * @throws PatriusException if no data has been found for the given body
      */
-    public static CelestialPoint getPoint(final String name) throws PatriusException {
-        // Initialization
-        CelestialPoint body = null;
-        // Get body
-        body = CELESTIAL_BODIES_MAP.get(name);
-        if (body == null) {
-            // Body has not been loaded: try to load it
-            List<CelestialBodyLoader> loaders = LOADERS_MAP.get(name);
-            if ((loaders == null) || loaders.isEmpty()) {
-                // No loaders: add default loaders
-                addDefaultCelestialBodyLoader(name, JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES);
-                addDefaultCelestialBodyLoader(name, JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES);
-                addCelestialBodyLoader(name, new BSPCelestialBodyLoader(
-                        BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES));
-                loaders = LOADERS_MAP.get(name);
-            }
-            PatriusException delayedException = null;
-            CelestialPoint body2 = null;
-            for (final CelestialBodyLoader loader : loaders) {
-                try {
-                    // Try to load body
-                    body2 = loader.loadCelestialPoint(name);
-                    if (body2 != null) {
-                        break;
-                    }
-                } catch (final PatriusException oe) {
-                    delayedException = oe;
-                }
-            }
-            if (body2 == null) {
-                // No data found for required body
-                throw (delayedException == null) ? new PatriusException(
-                        PatriusMessages.NO_DATA_LOADED_FOR_CELESTIAL_BODY, name) : delayedException;
-            }
-            body = body2;
+    public static CelestialBodyLoader getLoader(String name) throws PatriusException {
 
-            // save the body
-            CELESTIAL_BODIES_MAP.put(name, body);
+        // Initialise the body loader
+        CelestialBodyLoader bodyLoader = null;
+
+        // Body has not been loaded: try to load it
+        List<CelestialBodyLoader> loaders = LOADERS_MAP.get(name);
+        if ((loaders == null) || loaders.isEmpty()) {
+            // No loaders: add default loaders
+            addDefaultCelestialBodyLoader(name, JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES);
+            addDefaultCelestialBodyLoader(name, JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES);
+            addCelestialBodyLoader(name, new BSPCelestialBodyLoader(
+                BSPCelestialBodyLoader.DEFAULT_BSP_SUPPORTED_NAMES));
+            loaders = LOADERS_MAP.get(name);
         }
 
-        // Return the body
-        return body;
+        PatriusException delayedException = null;
+        CelestialPoint body = null;
+        for (final CelestialBodyLoader loader : loaders) {
+            try {
+                // Try to load body
+                body = loader.loadCelestialPoint(name);
+                if (body != null) {
+                    bodyLoader = loader;
+                    break;
+                }
+            } catch (final PatriusException oe) {
+                delayedException = oe;
+            }
+        }
+        if (bodyLoader == null) {
+            // No data found for required body
+            throw (delayedException == null) ? new PatriusException(
+                PatriusMessages.NO_DATA_LOADED_FOR_CELESTIAL_BODY, name) : delayedException;
+        }
+
+        return bodyLoader;
 
     }
 
-    /**
-     * Returns the celestial bodies/points map available in the factory.
-     * 
-     * @return the celestial bodies/points map available in the factory
-     */
-    public static Map<String, CelestialPoint> getBodies() {
-        return CELESTIAL_BODIES_MAP;
-    }
-
-    // CHECKSTYLE: resume NestedBlockDepth check
 }

@@ -18,6 +18,7 @@
  * @history created 05/03/12
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -51,7 +52,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * Anomaly is not defined for all kinds of orbits: this detector will detect anomaly events only if
  * the corresponding orbit is not a circular orbit, otherwise it may trigger events randomly.
  * <p>
- * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the anomaly
+ * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the anomaly
  * &theta; is reached. This can be changed by using provided constructors.
  * </p>
  * This detector is unusable on a circular orbit where the perigee always moves very fast and in any
@@ -96,7 +97,7 @@ public class AnomalyDetector extends AbstractDetector {
     /**
      * Constructor for an AnomalyDetector instance with complementary parameters.
      * <p>
-     * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the anomaly is
+     * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the anomaly is
      * reached.
      * </p>
      * 

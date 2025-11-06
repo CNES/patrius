@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
 * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -399,6 +400,7 @@ public class DrozinerGravityModelTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         this.ITRF2005 = null;
         this.propagator = null;
         Utils.setDataRoot("regular-data");
@@ -620,5 +622,4 @@ public class DrozinerGravityModelTest {
     private Frame ITRF2005;
     private NumericalPropagator propagator;
     private AdaptiveStepsizeIntegrator integrator;
-
 }

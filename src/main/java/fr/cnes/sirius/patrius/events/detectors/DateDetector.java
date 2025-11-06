@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -60,7 +61,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * The gap between the added dates must be more than the maxCheck.
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation at the first event date
+ * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation at the first event date
  * occurrence. This can be changed by using provided constructors.
  * </p>
  * 
@@ -99,7 +100,7 @@ public class DateDetector extends AbstractDetector implements TimeStamped {
      * triggered later by adding some event date, it then acts like a timer.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation at date occurrence.
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation at date occurrence.
      * </p>
      * 
      * @param maxCheck maximum checking interval (s)
@@ -156,7 +157,7 @@ public class DateDetector extends AbstractDetector implements TimeStamped {
      * First event date is set here, but others can be added later with {@link #addEventDate(AbsoluteDate)}.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation at date occurrence.
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation at date occurrence.
      * </p>
      * 
      * @param target target date

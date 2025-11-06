@@ -17,6 +17,8 @@
  */
 /*
  * HISTORY
+* VERSION:4.14:OPENFD-316:22/08/2024:[Patrius] TargetGroundPointing - Restauration de 
+ *          l'ancienne methode getTargetPosition() 
 * VERSION:4.13:FA:FA-145:08/12/2023:[PATRIUS] Utilisation en dur du 
  *          repere EME2000 dans la classe AbstractGroundPointing 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -72,7 +74,6 @@ import fr.cnes.sirius.patrius.utils.exception.PropagationException;
  * @see AttitudeProvider
  * @author V&eacute;ronique Pommier-Maurussane
  */
-@SuppressWarnings("PMD.NullAssignment")
 public abstract class AbstractGroundPointing extends AbstractAttitudeLaw {
 
     /** Serializable UID. */

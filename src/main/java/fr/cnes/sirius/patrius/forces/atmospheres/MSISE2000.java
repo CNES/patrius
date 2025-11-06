@@ -26,6 +26,7 @@
  * @history Created 25/04/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.12.1:FA:FA-123:05/09/2023:[PATRIUS] Utilisation de getLLHCoordinates() au
@@ -62,7 +63,6 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
@@ -163,7 +163,7 @@ public class MSISE2000 implements ExtendedAtmosphere {
     private final EllipsoidBodyShape earth;
 
     /** Sun. */
-    private final CelestialPoint sun;
+    private final PVCoordinatesProvider sun;
 
     /** Solar activity data container. */
     private final MSISE2000InputParameters inputParams;
@@ -200,7 +200,7 @@ public class MSISE2000 implements ExtendedAtmosphere {
      *        the sun
      */
     public MSISE2000(final MSISE2000InputParameters data, final EllipsoidBodyShape earthBody,
-                     final CelestialPoint sun) {
+                     final PVCoordinatesProvider sun) {
 
         this.earth = earthBody;
         this.sun = sun;
@@ -445,7 +445,7 @@ public class MSISE2000 implements ExtendedAtmosphere {
      *
      * @return the Sun
      */
-    public CelestialPoint getSun() {
+    public PVCoordinatesProvider getSun() {
         return this.sun;
     }
 

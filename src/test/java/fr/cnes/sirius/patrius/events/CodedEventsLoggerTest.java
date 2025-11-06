@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -42,10 +43,8 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
-import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
-import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
 import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
@@ -55,12 +54,12 @@ import fr.cnes.sirius.patrius.events.detectors.NodeDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.CodedEvent;
 import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsList;
 import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger;
+import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger.LoggedCodedEvent;
 import fr.cnes.sirius.patrius.events.postprocessing.CodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
 import fr.cnes.sirius.patrius.events.postprocessing.GenericCodingEventDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.PhenomenaList;
 import fr.cnes.sirius.patrius.events.postprocessing.Phenomenon;
-import fr.cnes.sirius.patrius.events.postprocessing.CodedEventsLogger.LoggedCodedEvent;
 import fr.cnes.sirius.patrius.forces.gravity.DirectBodyAttraction;
 import fr.cnes.sirius.patrius.forces.gravity.NewtonianGravityModel;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -188,6 +187,7 @@ public class CodedEventsLoggerTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Orekit initialization
         Utils.setDataRoot("regular-dataPBASE");
 

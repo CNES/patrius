@@ -18,6 +18,9 @@
  * @history creation 13/09/2016
  *
  * HISTORY
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2767:18/05/2021:Evolutions et corrections diverses 
@@ -256,15 +259,19 @@ public final class GlobalAeroModel implements DragSensitive {
             dAccdPos[2][2] += (shiftedZp.getZ() - shiftedZm.getZ()) / (2. * this.hPos);
         }
 
-        // Compute derivatives wrt velocity using analytical derivation and Sc derivative computed by finite 
-        // differences
+        // Compute derivatives wrt velocity using analytical derivation and Sc derivative computed by finite differences
         if (computeGradientVelocity) {
             // Compute derivatives wrt velocity
+            final Frame stateFrame = s.getFrame();
+            if (!stateFrame.isPseudoInertial()) {
+                // If state frame is not pseudo-inertial, an exception is thrown
+                throw new PatriusException(PatriusMessages.NOT_INERTIAL_FRAME);
+            }
             final PVCoordinates pv = s.getPVCoordinates();
             final double hVel = s.getMu() * this.hPos / (pv.getVelocity().getNorm() * pv.getPosition().getNormSq());
 
             // SC vector
-            final Vector3D sc = this.computeSC(s, s.getFrame(), relativeVelocity);
+            final Vector3D sc = this.computeSC(s, stateFrame, relativeVelocity);
 
             // SC derivatives
             final Vector3D scDerX = computeSCderivative(s, relativeVelocity, Vector3D.PLUS_I, hVel);

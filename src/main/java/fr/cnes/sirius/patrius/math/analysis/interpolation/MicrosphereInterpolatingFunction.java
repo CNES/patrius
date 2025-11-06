@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -39,6 +41,7 @@ import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
 import fr.cnes.sirius.patrius.math.random.UnitSphereRandomVectorGenerator;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Interpolating function that implements the
@@ -105,7 +108,8 @@ public class MicrosphereInterpolatingFunction
             throw new NoDataException();
         }
         if (xval.length != yval.length) {
-            throw new DimensionMismatchException(xval.length, yval.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS,
+                yval.length, xval.length);
         }
         if (xval[0] == null) {
             throw new NullArgumentException();
@@ -122,7 +126,7 @@ public class MicrosphereInterpolatingFunction
                 throw new NullArgumentException();
             }
             if (xvalI.length != dimension) {
-                throw new DimensionMismatchException(xvalI.length, dimension);
+                throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, xvalI.length, dimension);
             }
 
             this.samples.put(new ArrayRealVector(xvalI), yval[i]);

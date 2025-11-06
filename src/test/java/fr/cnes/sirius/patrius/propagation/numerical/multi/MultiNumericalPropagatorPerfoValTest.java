@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:FA:FA-3314:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un ForceModel lorsque le SpacecraftState est en ITRF
@@ -41,8 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -96,6 +98,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * <p>
@@ -259,10 +262,8 @@ public class MultiNumericalPropagatorPerfoValTest {
         final ForceModel earthPotential = new DirectBodyAttraction(earthGravityModel);
 
         GravityModel sunGravityModel = CelestialBodyFactory.getSun().getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         GravityModel moonGravityModel = CelestialBodyFactory.getMoon().getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
 
         final ForceModel newtonianAttraction = new DirectBodyAttraction(new NewtonianGravityModel(provider.getMu()));
@@ -403,5 +404,10 @@ public class MultiNumericalPropagatorPerfoValTest {
             nEvent += loggers[i].getCodedEventsList().getList().size();
         }
         Assert.assertEquals(nEvent, logger.getCodedEventsList().getList().size(), 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

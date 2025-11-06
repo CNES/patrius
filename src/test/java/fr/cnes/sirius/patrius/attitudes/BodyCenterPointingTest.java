@@ -18,6 +18,9 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.15:OPENFD-359:21/11/2024:[PATRIUS] BodyCenterPointing est erroné lorsque 
+ *          le corps central n'est pas la terre 
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
  *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
@@ -56,6 +59,7 @@ import org.junit.Test;
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
 import fr.cnes.sirius.patrius.Utils;
+import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
@@ -235,8 +239,72 @@ public class BodyCenterPointingTest {
     }
 
     @Test
+    public void testSpinNoAcc() throws PatriusException {
+
+        final PVCoordinates pv = new PVCoordinates(new Vector3D(7000000, 6000000, 5000000),
+                new Vector3D(1000, 7000, 2000), null);
+        final Vector3D pos = pv.getPosition();
+        final PVCoordinatesProvider pvProvider = new PVCoordinatesProvider() {
+            /** Serializable UID. */
+            private static final long serialVersionUID = -4283626681085109147L;
+
+            @Override
+            public PVCoordinates getPVCoordinates(final AbsoluteDate date, final Frame frame)
+                    throws PatriusException {
+                return pv;
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public Frame getNativeFrame(final AbsoluteDate date) throws PatriusException {
+                return FramesFactory.getGCRF();
+            }
+        };
+
+        // Build profile
+        final StrictAttitudeLegsSequence<AttitudeLeg> provider = new StrictAttitudeLegsSequence<>();
+        final AbsoluteDate date1 = AbsoluteDate.J2000_EPOCH.shiftedBy(0.);
+        final AbsoluteDate date2 = AbsoluteDate.J2000_EPOCH.shiftedBy(10.);
+        final AbsoluteDate date3 = AbsoluteDate.J2000_EPOCH.shiftedBy(20.);
+        final AbsoluteDate date4 = AbsoluteDate.J2000_EPOCH.shiftedBy(30.);
+        final AttitudeLeg leg1 = new AttitudeLawLeg(new BodyCenterPointing(), date1, date2);
+        final AttitudeLeg leg2 = new AttitudeLawLeg(
+                new SunPointing(Vector3D.PLUS_K, Vector3D.PLUS_I, new MeeusSun()), date2, date3);
+        final AttitudeLeg leg3 = new AttitudeLawLeg(
+                new ConstantAttitudeLaw(FramesFactory.getGCRF(), Rotation.IDENTITY), date3, date4);
+        provider.add(leg1);
+        provider.add(leg2);
+        provider.add(leg3);
+
+        // Computation and check angle on each segment
+        // Each segment performs a rotation of [0, 0, 1] vector
+        final Rotation rot1 = provider
+                .getAttitude(pvProvider, date1.shiftedBy(0), FramesFactory.getGCRF()).getRotation();
+        final Rotation rot2 = provider
+                .getAttitude(pvProvider, date2.shiftedBy(1), FramesFactory.getGCRF()).getRotation();
+        final Rotation rot3 = provider
+                .getAttitude(pvProvider, date3.shiftedBy(1), FramesFactory.getGCRF()).getRotation();
+        final Vector3D actual1 = rot1.applyTo(Vector3D.PLUS_K);
+        final Vector3D actual2 = rot2.applyTo(Vector3D.PLUS_K);
+        final Vector3D actual3 = rot3.applyTo(Vector3D.PLUS_K);
+        final Vector3D expected1 = pos.normalize().negate();
+        final Vector3D expected2 =
+                new MeeusSun().getPVCoordinates(date2.shiftedBy(1), FramesFactory.getGCRF())
+                        .getPosition().subtract(pos).normalize();
+        final Vector3D expected3 = Vector3D.PLUS_K;
+        Report.printToReport("Image of +K on 1st segment", expected1, actual1);
+        Report.printToReport("Image of +K on 2nd segment", expected2, actual2);
+        Report.printToReport("Image of +K on 3rd segment", expected3, actual3);
+        Assert.assertEquals(0., expected1.subtract(actual1).getNorm(), 1E-6);
+        Assert.assertEquals(0., expected2.subtract(actual2).getNorm(), 1E-6);
+        Assert.assertEquals(0., expected3.subtract(actual3).getNorm(), 1E-6);
+    }
+
+
+    @Test
     public void testCoverage() {
         final BodyCenterPointing attitudeLaw = new BodyCenterPointing(this.itrf);
+        final BodyCenterPointing attitudeLawNoJerk = new BodyCenterPointing(this.itrf, false);
         final PVCoordinatesProvider pvProv = new PVCoordinatesProvider(){
             /** Serializable UID. */
             private static final long serialVersionUID = -6160408969537441420L;
@@ -429,6 +497,8 @@ public class BodyCenterPointingTest {
     public void setUp() {
         try {
 
+            Utils.clear();
+
             Utils.setDataRoot("regular-data");
             FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
@@ -495,5 +565,4 @@ public class BodyCenterPointingTest {
         this.circ = null;
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }
-
 }

@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+ * VERSION:4.15.6:OPENFD-678:17/10/2025:[PATRIUS] Ajout constructeur LofOffset incluant une Rotation
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
  *          retourner un CelestialBodyFrame 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -50,11 +52,11 @@ import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.LOFType;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.AbstractVector3DFunction;
+import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.EulerRotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.RotationOrder;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3DFunction;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
@@ -134,7 +136,8 @@ public class LofOffsetPointingTest {
             new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
                 MathLib.toRadians(5.300), PositionAngle.MEAN,
                 FramesFactory.getEME2000(), this.date, this.mu);
-        final LofOffset upsideDown = new LofOffset(circ.getFrame(), LOFType.LVLH, RotationOrder.XYX, FastMath.PI, 0, 0);
+        final LofOffset upsideDown =
+            new LofOffset(circ.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYX, MathLib.PI, 0., 0.));
         final LofOffsetPointing pointing = new LofOffsetPointing(this.earthSpheric, upsideDown, Vector3D.PLUS_K);
         pointing.getTargetPosition(circ, this.date, circ.getFrame());
     }
@@ -143,9 +146,9 @@ public class LofOffsetPointingTest {
     public void testMiss2() throws PatriusException {
         final CircularOrbit circ =
             new CircularOrbit(7178000.0, 0.5e-4, -0.5e-4, MathLib.toRadians(0.), MathLib.toRadians(270.),
-                MathLib.toRadians(5.300), PositionAngle.MEAN,
-                FramesFactory.getEME2000(), this.date, this.mu);
-        final LofOffset upsideDown = new LofOffset(circ.getFrame(), LOFType.LVLH, RotationOrder.XYX, FastMath.PI, 0, 0);
+                MathLib.toRadians(5.300), PositionAngle.MEAN, FramesFactory.getEME2000(), this.date, this.mu);
+        final LofOffset upsideDown =
+            new LofOffset(circ.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYX, MathLib.PI, 0., 0.));
         final LofOffsetPointing pointing = new LofOffsetPointing(this.earthSpheric, upsideDown, Vector3D.PLUS_K);
         pointing.getTargetPV(circ, this.date, circ.getFrame());
     }
@@ -165,10 +168,9 @@ public class LofOffsetPointingTest {
                 MathLib.toRadians(30.), PositionAngle.MEAN,
                 FramesFactory.getEME2000(), date, 3.986004415e14);
 
-        final LofOffsetPointing law =
-            new LofOffsetPointing(this.earthSpheric,
-                new LofOffset(orbit.getFrame(), LOFType.LVLH, RotationOrder.XYX, 0.1, 0.2, 0.3),
-                Vector3D.PLUS_K);
+        final LofOffsetPointing law = new LofOffsetPointing(this.earthSpheric,
+            new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYX, 0.1, 0.2, 0.3)),
+            Vector3D.PLUS_K);
 
         final Propagator propagator = new KeplerianPropagator(orbit, law);
 
@@ -213,10 +215,9 @@ public class LofOffsetPointingTest {
                 MathLib.toRadians(30.), PositionAngle.MEAN,
                 FramesFactory.getEME2000(), date, 3.986004415e14);
 
-        final LofOffsetPointing law =
-            new LofOffsetPointing(this.earthSpheric,
-                new LofOffset(orbit.getFrame(), LOFType.LVLH, RotationOrder.XYX, 0.1, 0.2, 0.3),
-                Vector3D.PLUS_K);
+        final LofOffsetPointing law = new LofOffsetPointing(this.earthSpheric,
+            new LofOffset(orbit.getFrame(), LOFType.LVLH, new EulerRotation(RotationOrder.XYX, 0.1, 0.2, 0.3)),
+            Vector3D.PLUS_K);
         law.setSpinDerivativesComputation(true);
         // Check that derivation of spin with finite difference method is closed to acceleration
         for (int i = 0; i < orbit.getKeplerianPeriod(); i += 1) {
@@ -290,6 +291,7 @@ public class LofOffsetPointingTest {
 
     @After
     public void tearDown() throws PatriusException {
+        Utils.clear();
         this.date = null;
         this.frameItrf2005 = null;
         this.earthSpheric = null;

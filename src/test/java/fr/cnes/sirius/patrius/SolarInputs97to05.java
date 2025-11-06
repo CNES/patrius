@@ -17,6 +17,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.8:DM:DM-2967:15/11/2021:[PATRIUS] corriger les utilisations de java.util.Date 
  * VERSION:4.5:DM:DM-2445:27/05/2020:optimisation de SolarActivityReader 
@@ -26,30 +27,57 @@
 package fr.cnes.sirius.patrius;
 
 import java.io.BufferedReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStreamReader;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.Serializable;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.Instant;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.LocalDateTime;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.ZoneOffset;
+import fr.cnes.sirius.patrius.Utils;
 import java.time.temporal.ChronoField;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Calendar;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.GregorianCalendar;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.SortedSet;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.TimeZone;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.TreeSet;
+import fr.cnes.sirius.patrius.Utils;
+
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.forces.atmospheres.DTMInputParameters;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.forces.atmospheres.JB2006InputParameters;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.util.DummyLocalizable;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.ChronologicalComparator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeStamped;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This class reads and provides solar activity data needed by the
@@ -451,4 +479,9 @@ public class SolarInputs97to05 implements JB2006InputParameters, DTMInputParamet
         // Nothing to do (test)
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

@@ -18,6 +18,7 @@
  * @history created 23/01/17
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * VERSION:4.11:DM:DM-3217:22/05/2023:[PATRIUS] Modeles broadcast et almanach GNSS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,8 +34,6 @@
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.attitudes;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -78,6 +77,7 @@ import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * @description <p>
@@ -631,6 +631,7 @@ public class AeroAttitudeLawTest {
      */
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
     }
 }

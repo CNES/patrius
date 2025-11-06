@@ -18,6 +18,13 @@
  * @history creation 02/04/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3311:22/05/2023:[PATRIUS] Evolutions mineures sur CelestialBody, shape et reperes
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -36,8 +43,6 @@
  */
 package fr.cnes.sirius.patrius.attitudes;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -53,12 +58,12 @@ import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.NadirDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.VelocityDirection;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
-import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -74,6 +79,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * @description <p>
@@ -89,9 +95,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 public class TwoDirectionAttitudeLawTest {
 
     /** Sun. */
-    private static CelestialBody sun;
+    private static IAUCelestialBody sun;
     /** Earth. */
-    private static CelestialBody earth;
+    private static IAUCelestialBody earth;
     /** Epsilon. */
     private final double epsilon = Precision.DOUBLE_COMPARISON_EPSILON;
 
@@ -483,26 +489,26 @@ public class TwoDirectionAttitudeLawTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        sun = (CelestialBody) loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
+        sun = (IAUCelestialBody) loaderSun.loadCelestialBody(CelestialBodyFactory.SUN);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SUN, loaderSun);
-        final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH);
+        final JPLCelestialBodyLoader loaderEarth = new JPLCelestialBodyLoader("unxp2000.405", PredefinedEphemerisType.EARTH);
 
-        earth = (CelestialBody) loaderEarth.loadCelestialPoint(CelestialBodyFactory.EARTH);
+        earth = (IAUCelestialBody) loaderEarth.loadCelestialBody(CelestialBodyFactory.EARTH);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH, loaderEarth);
     }
 

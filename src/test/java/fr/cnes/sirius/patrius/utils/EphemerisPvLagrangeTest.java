@@ -18,6 +18,9 @@
  * @history 25/09/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
  * VERSION:4.13:FA:FA-140:08/12/2023:[PATRIUS] Imprecision numerique dans EphemerisPvLagrange et EphemerisPvHermite
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -32,6 +35,7 @@ package fr.cnes.sirius.patrius.utils;
 import java.util.Arrays;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -566,9 +570,6 @@ public class EphemerisPvLagrangeTest {
      * 
      * @testPassCriteria OrekitException
      * 
-     * @throws PatriusException
-     *         as expected
-     * 
      * @referenceVersion 3.1
      * 
      * @nonRegressionVersion 3.1
@@ -657,8 +658,7 @@ public class EphemerisPvLagrangeTest {
     @Test
     public void testEphemerisPvLagrangeNumericalPrecision() throws PatriusException {
         // initial orbit : date = 01/01/2005 00:00:00.000 in TAI, a = 1.5 UA, e = 0.001, i = 40
-        // deg, po = 10 deg, go
-        // = 15 deg, M = 20 deg in GCRF
+        // deg, po = 10 deg, go = 15 deg, M = 20 deg in GCRF
         final AbsoluteDate date = new AbsoluteDate(2005, 1, 1, TimeScalesFactory.getTAI());
         final double a = 75e9;
         final Orbit initialOrbit = new KeplerianOrbit(a, 0.5, MathLib.toRadians(40),
@@ -698,15 +698,19 @@ public class EphemerisPvLagrangeTest {
         final PVCoordinates longEphemPV =
                 longEphem.getPVCoordinates(date.shiftedBy(shift + shiftEps), null);
 
+        // Epsilon for numerical comparisons : should be within 0.5 ULP of the vector norm
+        final double epsilonPos = MathLib.ulp(shortEphemPV.getPosition().getNorm()) / 2;
+        final double epsilonVel = MathLib.ulp(shortEphemPV.getVelocity().getNorm()) / 2;
+        
         // the distance between each position should be 0
         final double distPos =
-                Vector3D.distance(shortEphemPV.getPosition(), longEphemPV.getPosition());
-        Assert.assertEquals(0., distPos, 0);
+            Vector3D.distance(shortEphemPV.getPosition(), longEphemPV.getPosition());
+        Assert.assertEquals(0., distPos, epsilonPos);
 
         // the distance between each velocity should be 0
         final double distVel =
-                Vector3D.distance(shortEphemPV.getVelocity(), longEphemPV.getVelocity());
-        Assert.assertEquals(0., distVel, 0);
+            Vector3D.distance(shortEphemPV.getVelocity(), longEphemPV.getVelocity());
+        Assert.assertEquals(0., distVel, epsilonVel);
     }
 
     /**
@@ -741,5 +745,10 @@ public class EphemerisPvLagrangeTest {
                 .getSearchIndex().getTab()));
         Assert.assertEquals(ephem.getMinDate(), deserializedEphem.getMinDate());
         Assert.assertEquals(ephem.getMaxDate(), deserializedEphem.getMaxDate());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

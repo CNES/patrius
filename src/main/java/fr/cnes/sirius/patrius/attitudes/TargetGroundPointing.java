@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-316:22/08/2024:[Patrius] TargetGroundPointing - Restauration de
+ * l'ancienne methode getTargetPosition()
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:FA:FA-146:08/12/2023:[PATRIUS] Erreur dans la methode
  * getTargetPosition de la classe TargetGroundPointing
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -39,8 +42,6 @@ package fr.cnes.sirius.patrius.attitudes;
 import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.transformations.Transform;
-import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
@@ -176,15 +177,8 @@ public class TargetGroundPointing extends AbstractGroundPointing {
     @Override
     protected Vector3D getTargetPosition(final PVCoordinatesProvider pvProv, final AbsoluteDate date,
                                          final Frame frame) throws PatriusException {
-        // Body frame - frame transform:
-        final Transform transform = getBodyFrame().getTransformTo(frame, date, getSpinDerivativesComputation());
-        final Vector3D satPos = pvProv.getPVCoordinates(date, getBodyFrame()).getPosition();
-        final Vector3D target = this.targetPoint.getPosition();
-        // Create the line joining the body center and the target: 
-        final Line line = new Line(satPos, target); 
-        // Compute the intersection between the body shape and the center-target direction: 
-        final BodyPoint cTargetPoint = getBodyShape().getIntersectionPoint(line, satPos, getBodyFrame(), date); 
-        return transform.transformPosition(cTargetPoint.getPosition());
+        
+        return this.targetPoint.getPVCoordinates(date, frame).getPosition();
     }
 
     /**

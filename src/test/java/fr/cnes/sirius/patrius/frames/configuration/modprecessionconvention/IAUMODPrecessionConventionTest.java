@@ -13,16 +13,23 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-108:08/12/2023:[PATRIUS] Modele d'obliquite et de precession de la Terre
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.frames.configuration.modprecessionconvention;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.frames.configuration.modprecession.IAUMODPrecessionConvention;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link IAUMODPrecessionConvention}.
@@ -117,5 +124,10 @@ public class IAUMODPrecessionConventionTest {
         Assert.assertEquals(0.0182273 * Constants.ARC_SECONDS_TO_RADIANS, convention.getPrecessionZCoefs()[3], 0.);
         Assert.assertEquals(0.0000470 * Constants.ARC_SECONDS_TO_RADIANS, convention.getPrecessionZCoefs()[4], 0.);
         Assert.assertEquals(-0.0000003 * Constants.ARC_SECONDS_TO_RADIANS, convention.getPrecessionZCoefs()[5], 0.);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

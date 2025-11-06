@@ -18,6 +18,10 @@
  * @history creation 18/10/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
@@ -32,14 +36,24 @@
 package fr.cnes.sirius.patrius.frames.configuration.precessionnutation;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.frames.configuration.FrameConvention;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link IERS20032010PrecessionNutation}.
@@ -199,5 +213,10 @@ public class IERS20032010PrecessionNutationTest {
         for (int i = 0; i < exp.length; i++) {
             Assert.assertEquals(0, (exp[i] - act[i]) / act[i], eps);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

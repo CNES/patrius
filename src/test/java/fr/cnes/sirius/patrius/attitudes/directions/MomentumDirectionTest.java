@@ -18,6 +18,11 @@
  * @history creation 01/12/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.4:DM:DM-339:10/06/2024:[PATRIUS] Complément OPENFD-99 sur MomentumDirection
  * pour débloquer le FDS STD 2.10
  * VERSION:4.13:FA:FA-118:08/12/2023:[PATRIUS] Calcul d'union de PyramidalField invalide
@@ -50,6 +55,7 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
@@ -132,7 +138,7 @@ public class MomentumDirectionTest {
         // frames creation
         // creation of the earth as CelestialBody
         final CelestialBody earth = CelestialBodyFactory.getEarth();
-        final Frame earthFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
+        final Frame earthFrame = earth.getInertialFrame();
 
         // another one
         final Vector3D translationVect = new Vector3D(10.0, 10.0, 10.0);
@@ -169,7 +175,7 @@ public class MomentumDirectionTest {
         inOrigin = new BasicPVCoordinatesProvider(originPV, earthFrame);
 
         // direction creation
-        direction = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
+        direction = new MomentumDirection(earth.getInertialFrame());
 
     }
     
@@ -182,7 +188,7 @@ public class MomentumDirectionTest {
         try {
             // frames creation
             // creation of the earth as CelestialBody
-            final CelestialBody earth = CelestialBodyFactory.getEarth();
+            final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
             final Frame earthFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
 
             // another one
@@ -263,7 +269,7 @@ public class MomentumDirectionTest {
     public void testGetVectorNewOutputFrame() throws PatriusException {
         // frames creation
         // creation of the earth as CelestialBody
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         final Frame earthFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
 
         // origin creation from the earth frame
@@ -364,7 +370,7 @@ public class MomentumDirectionTest {
 
             // frames creation
             // creation of the earth as CelestialBody
-            final CelestialBody earth = CelestialBodyFactory.getEarth();
+            final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
             final Frame earthFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
 
             // another one
@@ -452,12 +458,13 @@ public class MomentumDirectionTest {
         final Propagator propagator = new KeplerianPropagator(orbit);
         propagator.setAttitudeProvider(new ConstantAttitudeLaw(FramesFactory.getEME2000(), Rotation.IDENTITY));
         // eme2000 frame
-        final Frame bodyFrame = CelestialBodyFactory.getEarth().getInertialFrame(IAUPoleModelType.CONSTANT);
+        final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
+        final Frame bodyFrame = earth.getInertialFrame(IAUPoleModelType.CONSTANT);
         // satellite frame
         final Frame satellite = new LocalOrbitalFrame(FramesFactory.getEME2000(), LOFType.TNW, propagator, "LOF");
 
         // momentum direction with respect to eme2000 projected on the satellite frame
-        final IDirection dir = new MomentumDirection(CelestialBodyFactory.getEarth().getInertialFrame(IAUPoleModelType.CONSTANT));
+        final IDirection dir = new MomentumDirection(earth.getInertialFrame(IAUPoleModelType.CONSTANT));
         final AbsoluteDate targetDate = date.shiftedBy(84600.);
         final Vector3D m1 = dir.getVector(null, targetDate, satellite);
 
@@ -485,6 +492,7 @@ public class MomentumDirectionTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }

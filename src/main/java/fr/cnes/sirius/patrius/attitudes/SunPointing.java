@@ -18,6 +18,7 @@
  * @history creation 03/04/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-99:08/12/2023:[PATRIUS] Ajout du repere de calcul dans MomentumDirection
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -38,6 +39,7 @@ import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
@@ -120,7 +122,7 @@ public class SunPointing extends TwoDirectionAttitudeLaw {
      * @throws PatriusException thrown if body inertial frame cannot be built
      */
     public SunPointing(final CelestialBodyFrame bodyFrame, final Vector3D firstAxis,
-        final Vector3D secondAxis, final CelestialBody sun) throws PatriusException {
+        final Vector3D secondAxis, final PVCoordinatesProvider sun) throws PatriusException {
         super(new GenericTargetDirection(sun), new MomentumDirection(bodyFrame),
                 firstAxis, secondAxis);
     }

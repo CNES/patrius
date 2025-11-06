@@ -18,6 +18,9 @@
  * @history created 11/06/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
@@ -51,9 +54,9 @@ import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
@@ -190,8 +193,9 @@ public class NadirSolarIncidenceDetector extends AbstractSignalPropagationDetect
      */
     public NadirSolarIncidenceDetector(final double incidence, final BodyShape bodyShape, final double maxCheck,
                                        final double threshold, final Action action, final boolean remove,
-                                       final CelestialPoint sun) {
-        super(maxCheck, threshold, action, action, remove, remove);
+                                       final PVCoordinatesProvider sun) {
+        super(maxCheck, threshold, action, action, remove, remove,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, sun));
         this.bodyShape = bodyShape;
         this.incidenceRef = incidence;
         this.sun = sun;
@@ -225,9 +229,9 @@ public class NadirSolarIncidenceDetector extends AbstractSignalPropagationDetect
     public NadirSolarIncidenceDetector(final int slopeSelectionIn, final double incidence, final BodyShape bodyShape,
                                        final double maxCheck, final double threshold, final Action actionAtIncreasing,
                                        final Action actionAtDecreasing, final boolean removeAtIncreasing,
-                                       final boolean removeAtDecreasing, final CelestialPoint sun) {
+                                       final boolean removeAtDecreasing, final PVCoordinatesProvider sun) {
         super(slopeSelectionIn, maxCheck, threshold, actionAtIncreasing, actionAtDecreasing, removeAtIncreasing,
-                removeAtDecreasing);
+                removeAtDecreasing, new LinkTypeHandler(SignalPropagationRole.RECEIVER, sun));
         this.bodyShape = bodyShape;
         this.incidenceRef = incidence;
         this.sun = sun;
@@ -335,30 +339,6 @@ public class NadirSolarIncidenceDetector extends AbstractSignalPropagationDetect
         return this.incidenceRef;
     }
 
-    /** @inheritDoc */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame) {
-        super.setPropagationDelayType(propagationDelayType, frame);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.sun;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
-    }
-
     /**
      * {@inheritDoc}
      * <p>
@@ -372,8 +352,7 @@ public class NadirSolarIncidenceDetector extends AbstractSignalPropagationDetect
     public EventDetector copy() {
         final NadirSolarIncidenceDetector res = new NadirSolarIncidenceDetector(this.getSlopeSelection(),
             this.incidenceRef, this.bodyShape, this.getMaxCheckInterval(), this.getThreshold(), this.actionAtEntry,
-            this.actionAtExit, this.removeAtEntry, this.removeAtExit, null);
-        res.setSun(this.sun);
+            this.actionAtExit, this.removeAtEntry, this.removeAtExit, sun);
         res.setPropagationDelayType(getPropagationDelayType(), getInertialFrame());
         return res;
     }

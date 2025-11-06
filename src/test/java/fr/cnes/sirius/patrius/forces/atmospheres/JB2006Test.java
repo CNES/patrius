@@ -18,6 +18,9 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer 
+ *          les polynemes de Chebyshev des fichiers JPL historiques 
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
  *          retourner un CelestialBodyFrame 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -244,7 +247,7 @@ public class JB2006Test {
     /** FT 268 : drag and lift implementation */
     @Test
     public void testGetSpeedOfSound() throws PatriusException {
-
+        
         final CelestialBodyFrame itrf = FramesFactory.getITRF();
         final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
         final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.460, 1.0 / 298.257222101, itrf);
@@ -257,7 +260,7 @@ public class JB2006Test {
 
         final Vector3D position = new Vector3D(6500000., 0., 0.);
         final double speedOfSound = atm.getSpeedOfSound(date, position, gcrf);
-        final double ref = 394.0444634250377;
+        final double ref = 394.04446342594775;
         Assert.assertEquals(ref, speedOfSound, 1E-14);
     }
 
@@ -429,6 +432,7 @@ public class JB2006Test {
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
             FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
         } catch (final PatriusException oe) {

@@ -14,6 +14,17 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15.2:OPENFD-547:25/02/2025:[PATRIUS] Mauvaise gestion de computeSpinDerivatives dans BSPEphemerisLoader
+ * VERSION:4.15:OPENFD-428:21/11/2024:[PATRIUS] Robustesse aux bsp contenant l'échelle TDB
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-171:22/08/2024: [PATRIUS] Lecture d'un corps celeste quelconque dans un fichier bsp
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13.1:FA:FA-170:17/01/2024:[PATRIUS] Impossible d'utiliser le corps racine d'un bsp comme corps pivot
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -34,20 +45,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import fr.cnes.sirius.patrius.bodies.BSPCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemeris;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyEphemerisLoader;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLEphemerisLoader;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.DafHandle;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.DafReader;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.FindArraysDAF;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceBody;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceCommon;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceFrame;
-import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceKernelManager;
 import fr.cnes.sirius.patrius.bodies.bsp.spice.SpkReader;
 import fr.cnes.sirius.patrius.data.DataLoader;
 import fr.cnes.sirius.patrius.data.DataProvidersManager;
@@ -75,10 +86,16 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * <p>
  *
  * @author Emmanuel Bignon
- * 
+ *
  * @since 4.11.1
  */
 public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
+
+    /** Identifier of an empty target ID in a bsp file managing TT-TDB tabulation */
+    private static final int TARGET_ID_FOR_TDB_SEGMENTS = 1000000001;
+
+    /** Identifier of an empty observer ID in a bsp file managing TT-TDB tabulation */
+    private static final int OBSERVER_ID_FOR_TBD_SEGMENTS = 1000000000;
 
     /** Default supported files name pattern for BSP files. */
     public static final String DEFAULT_BSP_SUPPORTED_NAMES = "*\\.bsp$";
@@ -158,7 +175,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         ICRF;
     }
 
-    /** BSP ephemeris <Body name, BSPCelestialBodyEphemeris>, one per segment. */
+    /** BSP ephemeris (Body name, BSPCelestialBodyEphemeris), one per segment. */
     private final Map<String, BSPCelestialBodyEphemeris> ephemeris;
 
     /** Supported file names. */
@@ -178,7 +195,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
     /**
      * Read all BSP segments.
-     * 
+     *
      * @param bspFile
      *        BSP file
      * @return a map of the segments contained in the file
@@ -187,8 +204,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
      * @throws IOException
      *         if there is a problem tempting to read the first record
      */
-    private Map<String, BSPCelestialBodyEphemeris> readSegments(final String bspFile) throws
-        PatriusException, IOException {
+    private Map<String, BSPCelestialBodyEphemeris> readSegments(final String bspFile)
+        throws PatriusException, IOException {
         // Initialization of SPK reading by getting the initial handle
         final int[] handle = new int[1];
         final boolean loaded = DafHandle.isLoaded(bspFile, handle);
@@ -213,7 +230,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
     /**
      * Read a record.
-     * 
+     *
      * @param handle
      *        handle
      * @return the record
@@ -235,7 +252,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
     /**
      * Read all segments.
-     * 
+     *
      * @param nd
      *        kernel record size
      * @param ni
@@ -306,27 +323,85 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
     /**
      * Load celestial body ephemeris.
      *
-     * @param patriusName body name known by Patrius
+     * @param patriusName
+     *        body name known by Patrius
      * @return loaded celestial body
      * @throws PatriusException
      *         if the body, given its name, is not in the file
      */
     @Override
     public CelestialBodyEphemeris loadCelestialBodyEphemeris(final String patriusName) throws PatriusException {
-        final String bspName = BSPCelestialBodyLoader.toSpiceName(patriusName);
-        if (this.ephemeris.get(bspName) == null) {
+        if (this.ephemeris.isEmpty()) {
             // No loaded ephemeris at the moment, try loading new ephemeris
             if (!DataProvidersManager.getInstance().feed(this.supportedNames, this)) {
                 throw new PatriusException(PatriusMessages.NO_JPL_EPHEMERIDES_BINARY_FILES_FOUND);
             }
         }
+
+        // Retrieve the bsp name
+        final String bspName = BSPCelestialBodyLoader.toSpiceName(patriusName);
         // Get body ephemeris
-        final CelestialBodyEphemeris res = this.ephemeris.get(bspName);
+        CelestialBodyEphemeris res = this.ephemeris.get(bspName);
         if (res == null) {
-            // Body not in file
-            throw new PatriusException(PatriusMessages.BODY_NOT_AVAILABLE_IN_BSP_FILE, bspName, this.supportedNames);
+
+            // Update ephemeris if necessary based on provided bsp name
+            updateEphemeris(bspName);
+
+            res = this.ephemeris.get(bspName);
+            if (res == null) {
+                // Body not in file
+                throw new PatriusException(PatriusMessages.BODY_NOT_AVAILABLE_IN_BSP_FILE, bspName,
+                    this.supportedNames);
+            }
         }
         return res;
+    }
+
+    /**
+     * Updates map of BSPCelestialBodyEphemeris based on eventual elements added on the BodyCodeNameMapping.
+     *
+     * @param bspName
+     *        the name of the bsp to be verified
+     */
+    private void updateEphemeris(final String bspName) {
+
+        // Check if the BodyCodeNameMapping contains the bsp name provided
+        if (SpiceBody.getBodycodenamemapping().containsValue(bspName)) {
+
+            final Map<String, BSPCelestialBodyEphemeris> compEphem = new ConcurrentHashMap<>();
+            final List<String> ephemWithoutName = new ArrayList<>();
+
+            // Go over the elements of the current map of BSPCelestialEphemeris
+            for (final Entry<String, BSPCelestialBodyEphemeris> emphemsEntry : this.ephemeris.entrySet()) {
+
+                // Check if the ephemeris name is empty
+                final String ephemName = emphemsEntry.getKey();
+                if (ephemName.isEmpty()) {
+                    final BSPCelestialBodyEphemeris ephem = emphemsEntry.getValue();
+                    final int targetID = ephem.segment.targetID;
+
+                    // Build the complementary ephemeris based on the BodyCodeNameMapping
+                    for (final Integer entry : SpiceBody.getBodycodenamemapping().keySet()) {
+                        if (entry.equals(targetID)) {
+                            ephemWithoutName.add(emphemsEntry.getKey());
+                            compEphem.put(bspName, ephem);
+                        }
+                    }
+                }
+            }
+
+            // Remove the ephemeris without name
+            for (final String str : ephemWithoutName) {
+                this.ephemeris.remove(str);
+            }
+
+            // Add the ephemeris with the updated name coming from the BodyCodeNameMapping and set the target name of
+            // the associated segment
+            for (final Entry<String, BSPCelestialBodyEphemeris> compEphemsEntry : compEphem.entrySet()) {
+                this.ephemeris.put(compEphemsEntry.getKey(), compEphemsEntry.getValue());
+                this.ephemeris.get(compEphemsEntry.getKey()).segment.setTargetName(compEphemsEntry.getKey());
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -346,12 +421,11 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         // File name
         final String bspFile = ((PATRIUSFileInputStream) input).getFile().getAbsolutePath();
 
-        // Loading the file data in the kernel pool
-        SpiceKernelManager.loadSpiceKernel(bspFile);
-
         // Read segments and add to ephemeris map
         // WARNING: already known objects may be overridden
         this.ephemeris.putAll(readSegments(bspFile));
+
+        manageSpecialSegments();
 
         // Add root object which is not defined as a segment in BSP file
         final int rootID = getRootID();
@@ -359,10 +433,43 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         final BSPCelestialBodyEphemeris rootEphem = new BSPCelestialBodyEphemeris(rootSegment);
         this.ephemeris.put(SpiceBody.bodyCode2Name(rootID), rootEphem);
     }
-    
+
+    /**
+     * Manages special segments within the ephemeris data.
+     * <p>
+     * This method iterates through the segments in the ephemeris data structure and identifies "special segments" (not
+     * trajectory segments). These identified segments are subsequently removed from the ephemeris.
+     * </p>
+     * <p>
+     * This functionality is useful for handling specialized cases (e.g.,
+     * TT-TDB time correction segments) that should not be part of the primary
+     * ephemeris data.
+     * </p>
+     *
+     * @see DAFSegment
+     * @see BSPCelestialBodyEphemeris
+     */
+    private void manageSpecialSegments() {
+        // Manage special segments
+        final List<String> keysToBeRemoved = new ArrayList<>();
+        for (final Entry<String, BSPCelestialBodyEphemeris> ephemEntry : this.ephemeris.entrySet()) {
+
+            final DAFSegment segment = ephemEntry.getValue().segment;
+            // Special segment for TT-TDB
+            if (segment.observerID == OBSERVER_ID_FOR_TBD_SEGMENTS && segment.targetID == TARGET_ID_FOR_TDB_SEGMENTS) {
+                keysToBeRemoved.add(ephemEntry.getKey());
+            }
+        }
+
+        // Remove special segments
+        for (final String key : keysToBeRemoved) {
+            this.ephemeris.remove(key);
+        }
+    }
+
     /**
      * Returns the root ID.
-     * 
+     *
      * @return the root ID
      */
     private int getRootID() {
@@ -390,16 +497,17 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
     // CHECKSTYLE: stop CyclomaticComplexity check
     // Reason: enumeration of solar system bodies
     @Override
-    public double getLoadedGravitationalCoefficient(final EphemerisType body) {
+    public double getLoadedGravitationalCoefficient(final PredefinedEphemerisType body) {
         // CHECKSTYLE: resume CyclomaticComplexity check
 
         final double mu;
         switch (body) {
-        // SSB
+            // SSB
             case SOLAR_SYSTEM_BARYCENTER:
-                return MU_SUN + MU_MERCURY + MU_VENUS + MU_EARTH_MOON + MU_MARS + MU_JUPITER + MU_SATURN + MU_URANUS
+                mu = MU_SUN + MU_MERCURY + MU_VENUS + MU_EARTH_MOON + MU_MARS + MU_JUPITER + MU_SATURN + MU_URANUS
                         + MU_NEPTUNE + MU_PLUTO;
-                // SUN
+                break;
+            // SUN
             case SUN:
                 mu = MU_SUN;
                 break;
@@ -425,26 +533,32 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 break;
             // MARS
             case MARS:
+            case MARS_BARY:
                 mu = MU_MARS;
                 break;
             // JUPITER
             case JUPITER:
+            case JUPITER_BARY:
                 mu = MU_JUPITER;
                 break;
             // SATURN
             case SATURN:
+            case SATURN_BARY:
                 mu = MU_SATURN;
                 break;
             // URANUS
             case URANUS:
+            case URANUS_BARY:
                 mu = MU_URANUS;
                 break;
             // NEPTUNE
             case NEPTUNE:
+            case NEPTUNE_BARY:
                 mu = MU_NEPTUNE;
                 break;
             // PLUTO
             case PLUTO:
+            case PLUTO_BARY:
                 mu = MU_PLUTO;
                 break;
             default:
@@ -475,7 +589,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
     /**
      * Setter for the Spice J2000 convention.
-     * 
+     *
      * @param newConvention
      *        Spice J2000 convention
      */
@@ -485,7 +599,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
     /**
      * Getter for the Spice J2000 convention.
-     * 
+     *
      * @return the Spice J2000 convention
      */
     public SpiceJ2000ConventionEnum getConvention() {
@@ -494,6 +608,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
     /**
      * Returns the BSP body name linked to PATRIUS frame tree.
+     *
      * @return the BSP body name linked to PATRIUS frame tree
      */
     public String getBodyLink() {
@@ -508,7 +623,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
      * <p>
      * By default, BSP ICRF and PATRIUS ICRF are linked together (they are the same frame).
      * </p>
-     * 
+     *
      * @param patriusFrame
      *        an existing PATRIUS frame
      * @param bspBodyName
@@ -524,6 +639,32 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         // Store PATRIUS frame tree - BSP link
         this.rootPatriusFrame = patriusFrame;
         this.bspBodyLink = bspBodyName.toUpperCase(Locale.US);
+    }
+
+    /**
+     * Add complementary (body code, body name) mapping which is not included in
+     * SPICE default mapping.
+     * <P>
+     * Warning: this method should be called before any computation using
+     * {@link BSPEphemerisLoader}.
+     * </p>
+     * <p>
+     * SPICE body code-name mapping is defined statically and is therefore
+     * common to all {@link BSPEphemerisLoader}.
+     * </p>
+     *
+     * @param bodyCodeNameMapping
+     *        (body code, body name) mapping
+     */
+    public static void addSpiceBodyMapping(final Map<Integer, String> bodyCodeNameMapping) {
+        SpiceBody.addSpiceBodyMapping(bodyCodeNameMapping);
+    }
+
+    /**
+     * Clear the SPICE Body mapping
+     */
+    public static void clearSpiceBodyMapping() {
+        SpiceBody.clearSpiceBodyMapping();
     }
 
     /** Local celestial body ephemeris class. */
@@ -548,7 +689,8 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         /** {@inheritDoc} */
         @Override
         public PVCoordinates getPVCoordinates(final AbsoluteDate date,
-                                              final Frame frame) throws PatriusException {
+                                              final Frame frame)
+            throws PatriusException {
             // Get PV in parent frame
             final PVCoordinates pvParentFrame = this.segment.getRawPVCoordinates(date);
             // Get PV in output frame
@@ -587,7 +729,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         private final String observerFrameName;
 
         /** Target name. */
-        private final String targetName;
+        private String targetName;
 
         /** Children segments (may be empty) - Set after construction. */
         private final List<DAFSegment> children;
@@ -598,9 +740,12 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         /** Parent segment (null if root segment) - Set after construction. */
         private DAFSegment parent;
 
+        /** Target identifier */
+        private final int targetID;
+
         /**
          * Constructor.
-         * 
+         *
          * @param targetID
          *        target ID
          * @param centerID
@@ -613,6 +758,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         public DAFSegment(final int targetID, final int centerID, final int frameID) throws PatriusException {
             this.observerID = centerID;
             this.targetName = SpiceBody.bodyCode2Name(targetID);
+            this.targetID = targetID;
             this.observerName = SpiceBody.bodyCode2Name(centerID);
             this.observerFrameName = SpiceFrame.frameId2Name(frameID);
             this.children = new ArrayList<>();
@@ -620,7 +766,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
         /**
          * Getter for the PV coordinates of target of segment in center frame.
-         * 
+         *
          * @param date
          *        a date
          * @return returns the PV coordinates of target of segment in center frame
@@ -649,7 +795,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
         /**
          * Getter for the segment observer frame. Built recursively on the fly (lazy initialization).
-         * 
+         *
          * @return the segment observer frame
          * @throws PatriusException
          *         if failed to retrieve body name from ID
@@ -664,7 +810,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         /**
          * Setter for the observer frame. Also set frame for segments having the same parent. This avoid different
          * references.
-         * 
+         *
          * @param frame
          *        frame to set
          */
@@ -678,8 +824,18 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         }
 
         /**
+         * Setter for the target name. It is used in case the ephemeris are updated based on new information provided on
+         * the bodyCodeNameMapping.
+         *
+         * @param targetName
+         */
+        private void setTargetName(final String targetName) {
+            this.targetName = targetName;
+        }
+
+        /**
          * Build full observer frame name.
-         * 
+         *
          * @return full observer frame name
          */
         private String buildFullObserverFrameName() {
@@ -696,8 +852,10 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
          * <li>Current observer is below BSP body link</li>
          * <li>Current observer is on a different branch from BSP body link - SSB</li>
          * </ul>
-         * <p>SSB has to be treated separately since it is not defined in BSP file (it only has observer ID = 0).</p>
-         * 
+         * <p>
+         * SSB has to be treated separately since it is not defined in BSP file (it only has observer ID = 0).
+         * </p>
+         *
          * @throws PatriusException
          *         if failed to retrieve body name from ID
          */
@@ -720,7 +878,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 // Segment associated to BSP body link
                 final DAFSegment bspBodyLinkSegment = BSPEphemerisLoader.this.ephemeris
                     .get(BSPEphemerisLoader.this.bspBodyLink).segment;
-                
+
                 // Check if current observer name is on the ancestors path of BSP body link segment observers
                 // (until ICRF if required)
                 DAFSegment currentS = bspBodyLinkSegment;
@@ -728,23 +886,23 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 final List<DAFSegment> segments = new ArrayList<>();
                 while (currentS != null && !isOnPathBSPLinkToICRF) {
                     segments.add(currentS);
-                    isOnPathBSPLinkToICRF = currentS.observerName == this.observerName;
+                    isOnPathBSPLinkToICRF = currentS.observerName.equals(this.observerName);
                     currentS = currentS.parent;
                 }
-                
+
                 if (isOnPathBSPLinkToICRF) {
                     // Build frames tree iteratively (not recursively) from BSP body link frame to current frame
                     // - Inverted transforms
 
                     // Link with BSP body link
                     Frame intermediateFrame = new CelestialBodyFrame(BSPEphemerisLoader.this.rootPatriusFrame,
-                            getTransformProvider(bspBodyLinkSegment, true),
-                            bspBodyLinkSegment.buildFullObserverFrameName(), null);
+                        getTransformProvider(bspBodyLinkSegment, true),
+                        bspBodyLinkSegment.buildFullObserverFrameName(), null);
                     setObserverFrame(intermediateFrame);
                     // Other frames until current frame
-                    for(int i = 1; i < segments.size(); i++) {
-                        intermediateFrame =  new CelestialBodyFrame(intermediateFrame, getTransformProvider(
-                                segments.get(i), true), segments.get(i).buildFullObserverFrameName(), null);
+                    for (int i = 1; i < segments.size(); i++) {
+                        intermediateFrame = new CelestialBodyFrame(intermediateFrame, getTransformProvider(
+                            segments.get(i), true), segments.get(i).buildFullObserverFrameName(), null);
                         setObserverFrame(intermediateFrame);
                     }
                 } else {
@@ -786,16 +944,16 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
         /**
          * Recursively build segment center frame on the fly in upward direct (from this to parent frame
          * until SSB if required).
-         * 
+         *
          * @throws PatriusException
          *         if failed to retrieve body name from ID
          */
         private void buildFrameUpward() throws PatriusException {
             if (this.observerID == 0) {
                 // Root frame default case (ICRF or EME2000)
-                if (BSPEphemerisLoader.this.convention.equals(SpiceJ2000ConventionEnum.ICRF)) {
+                if (BSPEphemerisLoader.this.convention == SpiceJ2000ConventionEnum.ICRF) {
                     setObserverFrame(FramesFactory.getICRF());
-                } else if (BSPEphemerisLoader.this.convention.equals(SpiceJ2000ConventionEnum.EME2000)) {
+                } else if (BSPEphemerisLoader.this.convention == SpiceJ2000ConventionEnum.EME2000) {
                     // EME2000 convention is not handled in this case
                     throw new PatriusException(PatriusMessages.EME2000_CONVENTION_NOT_SUPPORTED);
                 }
@@ -811,7 +969,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
         /**
          * Find position of body name in children segments.
-         * 
+         *
          * @param target
          *        a body name
          * @return position of body name in children segments if found, -1 otherwise
@@ -828,7 +986,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
 
         /**
          * Build transform.
-         * 
+         *
          * @param segment
          *        a segment
          * @param isInverted
@@ -843,15 +1001,17 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 /** {@inheritDoc} */
                 @Override
                 public Transform getTransform(final AbsoluteDate date, final FramesConfiguration config,
-                                              final boolean computeSpinDerivatives) throws PatriusException {
-                    return getTransform(date);
+                                              final boolean computeSpinDerivatives)
+                    throws PatriusException {
+                    return getTransform(date, computeSpinDerivatives);
                 }
 
                 /** {@inheritDoc} */
                 @Override
                 public Transform getTransform(final AbsoluteDate date, final boolean computeSpinDerivatives)
                     throws PatriusException {
-                    return getTransform(date);
+                    final Transform t = new Transform(date, segment.getRawPVCoordinates(date));
+                    return isInverted ? t.getInverse(computeSpinDerivatives) : t;
                 }
 
                 /** {@inheritDoc} */
@@ -864,8 +1024,7 @@ public class BSPEphemerisLoader implements JPLEphemerisLoader, DataLoader {
                 /** {@inheritDoc} */
                 @Override
                 public Transform getTransform(final AbsoluteDate date) throws PatriusException {
-                    final Transform t = new Transform(date, segment.getRawPVCoordinates(date));
-                    return isInverted ? t.getInverse() : t;
+                    return getTransform(date, false);
                 }
             };
         }

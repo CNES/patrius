@@ -16,13 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ *
+ * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * END-HISTORY
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 
 public class SegmentTest {
     
@@ -89,4 +98,9 @@ public class SegmentTest {
         Assert.assertEquals(true, Segment.isIntersectingSegments(segments));
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

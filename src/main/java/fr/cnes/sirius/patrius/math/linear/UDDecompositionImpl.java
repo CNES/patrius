@@ -18,6 +18,8 @@
  * @history creation 10/08/2011
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -35,6 +37,7 @@ import java.util.function.Function;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Calculates the UD decomposition of a matrix.
@@ -291,7 +294,7 @@ public final class UDDecompositionImpl implements UDDecomposition, Decomposition
         public double[] solve(final double[] b) {
             final int m = this.uData.length;
             if (b.length != m) {
-                throw new DimensionMismatchException(b.length, m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, b.length, m);
             }
 
             final double[] x = b.clone();
@@ -351,7 +354,8 @@ public final class UDDecompositionImpl implements UDDecomposition, Decomposition
 
                 final int m = this.uData.length;
                 if (b.getDimension() != m) {
-                    throw new DimensionMismatchException(b.getDimension(), m);
+                    throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS,
+                        b.getDimension(), m);
                 }
 
                 final double[] x = b.toArray();
@@ -397,7 +401,8 @@ public final class UDDecompositionImpl implements UDDecomposition, Decomposition
             final int m = this.uData.length;
             if (b.length != m) {
                 // the B and U dimensions do not match:
-                throw new DimensionMismatchException(b.length, m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, m,
+                    b.length);
             }
 
             final int nColB = b[0].length;

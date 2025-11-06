@@ -18,6 +18,13 @@
  * @history creation 05/10/2011
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3300:22/05/2023:[PATRIUS] Nouvelle approche pour le calcul de la position relative de 2 corps celestes 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -37,7 +44,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.net.URL;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -45,11 +51,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.JPLHistoricEphemerisLoader;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -89,7 +95,7 @@ public class JPLEphemerisValTest {
     static BufferedReader readerSun2;
 
     /** Folder to JPL reference ephemeris. */
-    private static final String jplFolder = "jpl_ephem_data/";
+    private static final String jplFolder = "jpl_ephem_data" + File.separator;
 
     /** Moon and Sun ephemeris files. */
     // Moon
@@ -224,7 +230,7 @@ public class JPLEphemerisValTest {
          * Initialisation of the OREKIT ephemeris
          */
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         final CelestialPoint moon = loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
@@ -356,9 +362,10 @@ public class JPLEphemerisValTest {
      * @throws PatriusException
      *         if the header constants cannot be read
      * @throws IOException
+     * @throws URISyntaxException
      */
     @Test
-    public void validateSunEphemerisWrtJPLReferenceFile405() throws PatriusException, IOException {
+    public void validateSunEphemerisWrtJPLReferenceFile405() throws PatriusException, IOException, URISyntaxException {
 
         // J2000 date with TT time scale
         AbsoluteDate date = new AbsoluteDate();
@@ -407,15 +414,15 @@ public class JPLEphemerisValTest {
          * Initialisation of the OREKIT ephemeris
          */
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         // Sun body
         de405("unxp2000.405");
         final CelestialPoint sun = loader.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         // Reader for Moon ephemeris (other reader because the first one have been used in other test)
-        final URL url = JPLEphemerisValTest.class.getClassLoader().getResource(ephemMoon);
-        final BufferedReader readerMoonClone = new BufferedReader(new FileReader(new File(url.getPath())));
+        final String url = new File(ClassLoader.getSystemResource(ephemMoon).toURI()).getAbsolutePath();
+        final BufferedReader readerMoonClone = new BufferedReader(new FileReader(new File(url)));
 
         // Sets of coordinates which will be compared
         PVCoordinates pvSunJPL;
@@ -677,7 +684,7 @@ public class JPLEphemerisValTest {
          * Initialisation of the OREKIT ephemeris
          */
         final JPLCelestialBodyLoader loaderDE405 = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         final CelestialPoint moonDE405 = loaderDE405.loadCelestialPoint(CelestialBodyFactory.MOON);
 
@@ -685,7 +692,7 @@ public class JPLEphemerisValTest {
          * Initialisation of the OREKIT ephemeris
          */
         final JPLCelestialBodyLoader loaderDE406 = new JPLCelestialBodyLoader("unxp1800.406",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final CelestialPoint moonDE406 = loaderDE406.loadCelestialPoint(CelestialBodyFactory.MOON);
 
@@ -793,7 +800,7 @@ public class JPLEphemerisValTest {
          * Initialisation of the OREKIT ephemeris
          */
         final JPLCelestialBodyLoader loaderDE405 = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         de405("unxp2000.405");
         final CelestialPoint sunDE405 = loaderDE405.loadCelestialPoint(CelestialBodyFactory.SUN);
 
@@ -801,7 +808,7 @@ public class JPLEphemerisValTest {
          * Initialisation of the OREKIT ephemeris
          */
         final JPLCelestialBodyLoader loaderDE406 = new JPLCelestialBodyLoader("unxp1800.406",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         de406("unxp1800.406");
         final CelestialPoint sunDE406 = loaderDE406.loadCelestialPoint(CelestialBodyFactory.SUN);
 
@@ -882,7 +889,7 @@ public class JPLEphemerisValTest {
      */
     @Test
     public void validateBodiesEphemeridesWrtCOMPASReferenceFile() throws PatriusException {
-
+        
         // J2000 date with TT time scale
         final AbsoluteDate date = new AbsoluteDate();
 
@@ -890,179 +897,177 @@ public class JPLEphemerisValTest {
          * OREKIT ephemeris of the Sun
          */
         JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         de405("unxp2000.405");
         final CelestialPoint sun = loader.loadCelestialPoint(CelestialBodyFactory.SUN);
 
         PVCoordinates pvOREKIT = sun.getPVCoordinates(date, gcrf);
 
         // relative comparison
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), 2.6499034219411404E10, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), 2.649903422669749E10, this.epsilon,
             26499034229., 1E-9, "x component deviation for the sun");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -1.3275741766627747E11, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -1.3275741766505022E11, this.epsilon,
             -132757417665., 1E-9, "y component deviation for the sun");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -5.755671744859666E10, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -5.755671744806469E10, this.epsilon,
             -57556717448., 1E-9, "z component deviation for the sun");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 29794.260048710246, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 29794.26004844542, this.epsilon,
             29794.260, 1E-6, "x component deviation for the sun");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), 5018.052458653004, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), 5018.052460011432, this.epsilon,
             5018.052, 1E-6, "y component deviation for the sun");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), 2175.3937278440676, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), 2175.3937284322847, this.epsilon,
             2175.394, 1E-6, "z component deviation for the sun");
 
         // absolute comparison
-        validate.assertEquals(pvOREKIT.getPosition().getX(), 2.6499034219411404E10, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getX(), 2.649903422669749E10, 1E-4,
             26499034229., 10, "x component deviation for the sun");
-        validate.assertEquals(pvOREKIT.getPosition().getY(), -1.3275741766627747E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getY(), -1.3275741766505022E11, 1E-4,
             -132757417665., 10, "y component deviation for the sun");
-        validate.assertEquals(pvOREKIT.getPosition().getZ(), -5.755671744859666E10, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getZ(), -5.755671744806469E10, 1E-4,
             -57556717448., 10, "z component deviation for the sun");
-        validate.assertEquals(pvOREKIT.getVelocity().getX(), 29794.260048710246, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getX(), 29794.26004844542, this.epsilon,
             29794.260, 1E-2, "x component deviation for the sun");
-        validate.assertEquals(pvOREKIT.getVelocity().getY(), 5018.052458653004, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getY(), 5018.052460011432, this.epsilon,
             5018.052, 1E-2, "y component deviation for the sun");
-        validate.assertEquals(pvOREKIT.getVelocity().getZ(), 2175.3937278440676, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getZ(), 2175.3937284322847, this.epsilon,
             2175.394, 1E-2, "z component deviation for the sun");
 
         loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         final CelestialPoint moon = loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
         pvOREKIT = moon.getPVCoordinates(date, gcrf);
 
         // relative comparison
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), -2.916083886613286E8, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), -2.9160838850395584E8, this.epsilon,
             -291608388., 1E-8, "x component deviation for the moon");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -2.667168290261366E8, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -2.6671682918902588E8, this.epsilon,
             -266716829., 1E-8, "y component deviation for the moon");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -7.610248122761913E7, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -7.610248130130768E7, this.epsilon,
             -76102481., 1E-8, "z component deviation for the moon");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 643.5313730299109, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 643.5313734755473, this.epsilon,
             643.531, 1E-6, "x component deviation for the moon");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), -666.0876960856899, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), -666.0876956852162, this.epsilon,
             -666.088, 1E-6, "y component deviation for the moon");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), -301.3257067549776, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), -301.32570664160266, this.epsilon,
             -301.326, 1E-6, "z component deviation for the moon");
 
         // absolute comparison
         final double epsilonTest = 1E-5;
-        validate.assertEquals(pvOREKIT.getPosition().getX(), -2.916083886613286E8, epsilonTest,
+        validate.assertEquals(pvOREKIT.getPosition().getX(), -2.9160838850395584E8, epsilonTest,
             -291608388., 1, "x component deviation for the moon");
-        validate.assertEquals(pvOREKIT.getPosition().getY(), -2.667168290261366E8, epsilonTest,
+        validate.assertEquals(pvOREKIT.getPosition().getY(), -2.6671682918902588E8, epsilonTest,
             -266716829., 1, "y component deviation for the moon");
-        validate.assertEquals(pvOREKIT.getPosition().getZ(), -7.610248122761913E7, epsilonTest,
+        validate.assertEquals(pvOREKIT.getPosition().getZ(), -7.610248130130768E7, epsilonTest,
             -76102481., 1, "z component deviation for the moon");
-        validate.assertEquals(pvOREKIT.getVelocity().getX(), 643.5313730299109, epsilonTest,
+        validate.assertEquals(pvOREKIT.getVelocity().getX(), 643.5313734755473, epsilonTest,
             643.531, 1E-3, "x component deviation for the moon");
-        validate.assertEquals(pvOREKIT.getVelocity().getY(), -666.0876960856899, epsilonTest,
+        validate.assertEquals(pvOREKIT.getVelocity().getY(), -666.0876956852162, epsilonTest,
             -666.088, 1E-3, "y component deviation for the moon");
-        validate.assertEquals(pvOREKIT.getVelocity().getZ(), -301.3257067549776, epsilonTest,
+        validate.assertEquals(pvOREKIT.getVelocity().getZ(), -301.32570664160266, epsilonTest,
             -301.326, 1E-3, "z component deviation for the moon");
 
         loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.VENUS);
+            PredefinedEphemerisType.VENUS);
         de405("unxp2000.405");
         final CelestialPoint venus = loader.loadCelestialPoint(CelestialBodyFactory.VENUS);
 
         pvOREKIT = venus.getPVCoordinates(date, gcrf);
 
         // relative comparison
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), -8.095745976035785E10, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), -8.09574597527338E10, this.epsilon,
             -80957459750., 1E-9, "x component deviation for venus");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -1.3967994701465866E11, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -1.396799470212613E11, this.epsilon,
             -139679947023., 1E-9, "y component deviation for venus");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -5.387052975987144E10, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -5.387052976288341E10, this.epsilon,
             -53870529764., 1E-9, "z component deviation for venus");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 31176.16616264989, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 31176.166165173425, this.epsilon,
             31176.166, 1E-7, "x component deviation for venus");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), -26999.766060020007, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), -26999.766058481953, this.epsilon,
             -26999.766, 1E-7, "y component deviation for venus");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), -12316.44154611773, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), -12316.441545625168, this.epsilon,
             -12316.442, 1E-7, "z component deviation for venus");
 
         // absolute comparison
-        validate.assertEquals(pvOREKIT.getPosition().getX(), -8.095745976035785E10, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getX(), -8.09574597527338E10, 1E-4,
             -80957459750., 100, "x component deviation for venus");
-        validate.assertEquals(pvOREKIT.getPosition().getY(), -1.3967994701465866E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getY(), -1.396799470212613E11, 1E-4,
             -139679947023., 100, "y component deviation for venus");
-        validate.assertEquals(pvOREKIT.getPosition().getZ(), -5.387052975987144E10, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getZ(), -5.387052976288341E10, 1E-4,
             -53870529764., 100, "z component deviation for venus");
-        validate.assertEquals(pvOREKIT.getVelocity().getX(), 31176.16616264989, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getX(), 31176.166165173425, this.epsilon,
             31176.166, 1E-3, "x component deviation for venus");
-        validate.assertEquals(pvOREKIT.getVelocity().getY(), -26999.766060020007, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getY(), -26999.766058481953, this.epsilon,
             -26999.766, 1E-3, "y component deviation for venus");
-        validate.assertEquals(pvOREKIT.getVelocity().getZ(), -12316.44154611773, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getZ(), -12316.441545625168, this.epsilon,
             -12316.442, 1E-3, "z component deviation for venus");
 
         loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MARS);
+            PredefinedEphemerisType.MARS);
         de405("unxp2000.405");
         final CelestialPoint mars = loader.loadCelestialPoint(CelestialBodyFactory.MARS);
 
         pvOREKIT = mars.getPVCoordinates(date, gcrf);
 
         // relative comparison
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), 2.3454717486124158E11, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), 2.3454717486881198E11, this.epsilon,
             234547174871., 1E-10, "x component deviation for mars");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -1.3254779779212714E11, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), -1.3254779778505072E11, this.epsilon,
             -132547797783., 1E-10, "y component deviation for mars");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -6.308587985737891E10, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), -6.308587985417179E10, this.epsilon,
             -63085879853., 1E-10, "z component deviation for mars");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 30956.932405412874, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 30956.93240439906, this.epsilon,
             30956.932, 1E-7, "x component deviation for mars");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), 28936.462238564196, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), 28936.462239921897, this.epsilon,
             28936.462, 1E-7, "y component deviation for mars");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), 13114.565454395733, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), 13114.56545500387, this.epsilon,
             13114.565, 1E-7, "z component deviation for mars");
 
         // absolute comparison
-        validate.assertEquals(pvOREKIT.getPosition().getX(), 2.3454717486124158E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getX(), 2.3454717486881198E11, 1E-4,
             234547174871., 10, "x component deviation for mars");
-        validate.assertEquals(pvOREKIT.getPosition().getY(), -1.3254779779212714E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getY(), -1.3254779778505072E11, 1E-4,
             -132547797783., 10, "y component deviation for mars");
-        validate.assertEquals(pvOREKIT.getPosition().getZ(), -6.308587985737891E10, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getZ(), -6.308587985417179E10, 1E-4,
             -63085879853., 10, "z component deviation for mars");
-        validate.assertEquals(pvOREKIT.getVelocity().getX(), 30956.932405412874, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getX(), 30956.93240439906, this.epsilon,
             30956.932, 1E-3, "x component deviation for mars");
-        validate.assertEquals(pvOREKIT.getVelocity().getY(), 28936.462238564196, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getY(), 28936.462239921897, this.epsilon,
             28936.462, 1E-3, "y component deviation for mars");
-        validate.assertEquals(pvOREKIT.getVelocity().getZ(), 13114.565454395733, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getZ(), 13114.56545500387, this.epsilon,
             13114.565, 1E-3, "z component deviation for mars");
 
         loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.JUPITER);
+            PredefinedEphemerisType.JUPITER);
         de405("unxp2000.405");
         final CelestialPoint jupiter = loader.loadCelestialPoint(CelestialBodyFactory.JUPITER);
 
         pvOREKIT = jupiter.getPVCoordinates(date, gcrf);
 
         // relative comparison
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), 6.250665759029778E11, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getX(), 6.250665759083295E11, this.epsilon,
             625066616968., 1E-6, "x component deviation for jupiter");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), 2.7662896308906433E11, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getY(), 2.76628963092782E11, this.epsilon,
             276628918962., 1E-6, "y component deviation for jupiter");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getPosition().getZ(), 1.033376442659299E11, this.epsilon,
-            103337624023., 1E-6, "z component deviation for jupiter");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 21884.42157327971, this.epsilon,
+         validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getX(), 21884.421572967458, this.epsilon,
             21884.399, 1E-5, "x component deviation for jupiter");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), 15201.54985491874, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getY(), 15201.549856244736, this.epsilon,
             15201.626, 1E-5, "y component deviation for jupiter");
-        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), 6733.11288726119, this.epsilon,
+        validate.assertEqualsWithRelativeTolerance(pvOREKIT.getVelocity().getZ(), 6733.112887836656, this.epsilon,
             6733.149, 1E-5, "z component deviation for jupiter");
 
         // absolute comparison
-        validate.assertEquals(pvOREKIT.getPosition().getX(), 6.250665759029778E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getX(), 6.250665759083295E11, 1E-4,
             625066616968., 50000, "x component deviation for jupiter");
-        validate.assertEquals(pvOREKIT.getPosition().getY(), 2.7662896308906433E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getY(), 2.76628963092782E11, 1E-4,
             276628918962., 50000, "y component deviation for jupiter");
-        validate.assertEquals(pvOREKIT.getPosition().getZ(), 1.033376442659299E11, 1E-4,
+        validate.assertEquals(pvOREKIT.getPosition().getZ(), 1.0333764426757645E11, 1E-4,
             103337624023., 50000, "z component deviation for jupiter");
-        validate.assertEquals(pvOREKIT.getVelocity().getX(), 21884.42157327971, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getX(), 21884.421572967458, this.epsilon,
             21884.399, 0.1, "x component deviation for jupiter");
-        validate.assertEquals(pvOREKIT.getVelocity().getY(), 15201.54985491874, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getY(), 15201.549856244736, this.epsilon,
             15201.626, 0.1, "y component deviation for jupiter");
-        validate.assertEquals(pvOREKIT.getVelocity().getZ(), 6733.11288726119, this.epsilon,
+        validate.assertEquals(pvOREKIT.getVelocity().getZ(), 6733.112887836656, this.epsilon,
             6733.149, 0.1, "z component deviation for jupiter");
     }
 
@@ -1096,7 +1101,7 @@ public class JPLEphemerisValTest {
          * OREKIT ephemeris of the Sun
          */
         JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
         de405("unxp2000.405");
         final CelestialPoint sun = loader.loadCelestialPoint(CelestialBodyFactory.SUN);
 
@@ -1105,7 +1110,7 @@ public class JPLEphemerisValTest {
             1E-13, "GM sun deviation");
 
         loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH);
+            PredefinedEphemerisType.EARTH);
 
         final CelestialPoint earth = loader.loadCelestialPoint(CelestialBodyFactory.EARTH);
 
@@ -1114,7 +1119,7 @@ public class JPLEphemerisValTest {
             1E-7, "GM earth deviation");
 
         loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         final CelestialPoint moon = loader.loadCelestialPoint(CelestialBodyFactory.MOON);
 
@@ -1137,9 +1142,9 @@ public class JPLEphemerisValTest {
         CelestialBodyFactory.clearCelestialBodyLoaders();
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
     }
@@ -1158,47 +1163,50 @@ public class JPLEphemerisValTest {
         CelestialBodyFactory.clearCelestialBodyLoaders();
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(fileName,
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
     }
 
     /**
      * set up
+     * 
+     * @throws URISyntaxException
      */
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws URISyntaxException {
         try {
+            Utils.clear();
             gcrf = FramesFactory.getGCRF();
 
-            Utils.setDataRoot("regular-dataCNES-2003/de406-ephemerides");
+            Utils.setDataRoot("regular-dataCNES-2003" + File.separator + "de406-ephemerides");
             de406("unxp1800.406");
             icrf406 = FramesFactory.getICRF();
 
-            Utils.setDataRoot("regular-dataCNES-2003/de405-ephemerides");
+            Utils.setDataRoot("regular-dataCNES-2003" + File.separatorChar + "de405-ephemerides");
             de405("unxp2000.405");
             icrf405 = FramesFactory.getICRF();
 
             // Reader for Moon ephemeris
-            final URL url1 = JPLEphemerisValTest.class.getClassLoader().getResource(ephemMoon);
+            final String url1 = new File(ClassLoader.getSystemResource(ephemMoon).toURI()).getAbsolutePath();
             FileInputStream stream1 = null;
             try {
-                stream1 = new FileInputStream(new File(url1.getFile()));
+                stream1 = new FileInputStream(url1);
             } catch (final FileNotFoundException e) {
                 e.printStackTrace();
             }
             readerMoon = new BufferedReader(new InputStreamReader(stream1));
 
             // Readers for Sun ephemeris
-            final URL url2 = JPLEphemerisValTest.class.getClassLoader().getResource(ephemSun1);
-            final URL url3 = JPLEphemerisValTest.class.getClassLoader().getResource(ephemSun2);
+            final String url2 = new File(ClassLoader.getSystemResource(ephemSun1).toURI()).getAbsolutePath();
+            final String url3 = new File(ClassLoader.getSystemResource(ephemSun2).toURI()).getAbsolutePath();
             FileInputStream stream2 = null;
             FileInputStream stream3 = null;
             try {
-                stream2 = new FileInputStream(new File(url2.getFile()));
-                stream3 = new FileInputStream(new File(url3.getFile()));
+                stream2 = new FileInputStream(url2);
+                stream3 = new FileInputStream(url3);
             } catch (final FileNotFoundException e) {
                 e.printStackTrace();
             }

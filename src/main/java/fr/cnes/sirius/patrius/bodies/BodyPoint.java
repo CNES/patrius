@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -120,7 +121,7 @@ public interface BodyPoint extends PVCoordinatesProvider {
      * Returns true if point is on body shape surface (i.e. its normal height is smaller than the body shape altitude
      * epsilon), false otherwise.
      *
-     * @return {@code true} if point is on body shape surface, {@code false otherwise
+     * @return {@code true} if point is on body shape surface, {@code false otherwise}
      */
     public default boolean isOnShapeSurface() {
         return MathLib.abs(getNormalHeight()) < getBodyShape().getDistanceEpsilon();

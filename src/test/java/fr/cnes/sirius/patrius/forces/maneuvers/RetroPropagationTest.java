@@ -18,6 +18,13 @@
  * @history creation 29/07/2014
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-103:08/12/2023:[PATRIUS] Optimisation du CIRFProvider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -63,8 +70,8 @@ import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.detectors.ApsideDetector;
 import fr.cnes.sirius.patrius.events.detectors.DateDetector;
@@ -519,6 +526,7 @@ public class RetroPropagationTest {
 
     @Before
     public void setUp() throws PatriusException, IOException, ParseException {
+        Utils.clear();
         /*
          * Load gravity field
          */
@@ -587,26 +595,24 @@ public class RetroPropagationTest {
         // Add third body attraction
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SUN);
+            PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER,
             loaderSSB);
 
-        final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
-        final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
+        final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
 
 
         final GravityModel sunGravityModel = sun.getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         final GravityModel moonGravityModel = moon.getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
 
         final SpacecraftState initialState = new SpacecraftState(initialOrbit, massModel);

@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-307:21/11/2024:[Patrius] Repère de la vitesse non inertiel (suite)
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -49,6 +52,7 @@ import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.ConstantAttitudeLaw;
 import fr.cnes.sirius.patrius.attitudes.directions.BasicPVCoordinatesProvider;
+import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
@@ -61,7 +65,9 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.orbits.EquinoctialOrbit;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
+import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.PositionAngle;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
@@ -494,12 +500,41 @@ public class ExtremaThreeBodiesAngleDetectorTest {
     }
 
     /**
+     * @description This test is implemented as part of FA307. It ensures that the frame in which the state used as
+     *              input for the detection function is pseudo-inertial.
+     * 
+     * @testedMethod {@link ExtremaThreeBodiesAngleDetector#g(SpacecraftState)}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testStateFrameNotPseudoInertial() throws PatriusException {
+        Utils.setDataRoot("regular-dataPBASE");
+        final AbsoluteDate startDate = AbsoluteDate.J2000_EPOCH;
+        final double a = 7000000.0;
+        final double mu = 3.9860047e14;
+        final Vector3D position = new Vector3D(-6142438.668, 3492467.560, -25767.25680);
+        final Vector3D velocity = new Vector3D(505.8479685, 942.7809215, 7435.922231);
+        final Orbit orbit =
+            new EquinoctialOrbit(new PVCoordinates(position, velocity), FramesFactory.getITRF(), startDate, mu);
+        final SpacecraftState state = new SpacecraftState(orbit);
+        final PVCoordinatesProvider sun = CelestialBodyFactory.getSun();
+        final PVCoordinatesProvider moon = CelestialBodyFactory.getEarth();
+        System.out.println(state.getFrame().isPseudoInertial());
+        final ExtremaThreeBodiesAngleDetector detector =
+            new ExtremaThreeBodiesAngleDetector(orbit, sun, moon, 0);
+        detector.g(state);
+        System.out.println(state.getFrame().isPseudoInertial());
+    }
+
+    /**
      * Initializations
      * 
      * @since 3.0
      */
     @Before
     public void setUp() {
+        Utils.clear();
         // frame and date
         this.eme2000Frame = FramesFactory.getEME2000();
         this.startDate = AbsoluteDate.J2000_EPOCH;
@@ -510,5 +545,4 @@ public class ExtremaThreeBodiesAngleDetectorTest {
             PositionAngle.TRUE, this.eme2000Frame, this.startDate, Utils.mu);
         this.period = 2.0 * FastMath.PI * MathLib.sqrt(a * a * a / Utils.mu);
     }
-
 }

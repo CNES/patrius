@@ -16,6 +16,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-308:21/11/2024:[STELA-PATRIUS] Duplication entre MSIS00Adapter et MSIS2000
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -47,12 +50,15 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import junit.framework.Assert;
+import org.junit.Before;
+
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.assembly.Assembly;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.MeeusSun.MODEL;
+import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.forces.atmospheres.MSISE2000;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.ConstantSolarActivity;
 import fr.cnes.sirius.patrius.forces.atmospheres.solarActivity.specialized.ClassicalMSISE2000SolarData;
 import fr.cnes.sirius.patrius.forces.gravity.potential.GravityFieldFactory;
@@ -71,7 +77,6 @@ import fr.cnes.sirius.patrius.stela.JavaMathAdapter;
 import fr.cnes.sirius.patrius.stela.PerigeeAltitudeDetector;
 import fr.cnes.sirius.patrius.stela.bodies.MeeusMoonStela;
 import fr.cnes.sirius.patrius.stela.forces.StelaForceModel;
-import fr.cnes.sirius.patrius.stela.forces.atmospheres.MSIS00Adapter;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaAeroModel;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaAtmosphericDrag;
 import fr.cnes.sirius.patrius.stela.forces.drag.StelaCd;
@@ -89,6 +94,7 @@ import fr.cnes.sirius.patrius.tools.validationTool.TemporaryDirectory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
+import junit.framework.Assert;
 
 /**
  * Test for transition matric computation
@@ -135,7 +141,7 @@ public class GenericTransitionMatrixTest {
     /** Internal parameters */
     private StelaGTOPropagator propagator;
     /** Internal parameters */
-    private MSIS00Adapter atmosphere;
+    private MSISE2000 atmosphere;
     /** Internal parameters */
     private StelaEquinoctialOrbit stelaOrbit;
     /** Internal parameters */
@@ -1233,11 +1239,17 @@ public class GenericTransitionMatrixTest {
         final ConstantSolarActivity solar = new ConstantSolarActivity(solarActivityIn[0], 15.);
 
         // Atmosphere:
-        this.atmosphere = new MSIS00Adapter(new ClassicalMSISE2000SolarData(solar), ae, 1 / f, sun);
+        this.atmosphere = new MSISE2000(new ClassicalMSISE2000SolarData(solar),
+                new OneAxisEllipsoid(ae, 1 / f, FramesFactory.getTIRF()), sun);
 
         // trying exponential implementation, as used in test class
         // final Frame mod = FramesFactory.getMOD(false);
         // atmosphere = new SimpleExponentialAtmosphere(new OneAxisEllipsoid(Utils.ae, 1.0 / 298.257222101, mod),
         // 0.0004, 42000.0, 7500.0);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -30,6 +32,7 @@ import java.lang.reflect.Array;
 import fr.cnes.sirius.patrius.math.Field;
 import fr.cnes.sirius.patrius.math.FieldElement;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Calculates the LUP-decomposition of a square matrix.
@@ -356,7 +359,8 @@ public class FieldLUDecomposition<T extends FieldElement<T>> {
                 final int m = this.pivot.length;
                 if (b.getDimension() != m) {
                     // Exception
-                    throw new DimensionMismatchException(b.getDimension(), m);
+                    throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS,
+                        b.getDimension(), m);
                 }
                 if (this.singular) {
                     // Exception
@@ -415,7 +419,7 @@ public class FieldLUDecomposition<T extends FieldElement<T>> {
             final int length = b.getDimension();
             if (length != m) {
                 // Exception on dimensions
-                throw new DimensionMismatchException(length, m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, length, m);
             }
             if (this.singular) {
                 // Exception
@@ -463,7 +467,8 @@ public class FieldLUDecomposition<T extends FieldElement<T>> {
             final int m = this.pivot.length;
             if (b.getRowDimension() != m) {
                 // Dimensions mismatch
-                throw new DimensionMismatchException(b.getRowDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, m,
+                    b.getRowDimension());
             }
             // Check matrix singularity
             if (this.singular) {

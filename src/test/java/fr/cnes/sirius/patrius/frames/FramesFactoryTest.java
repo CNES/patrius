@@ -18,6 +18,9 @@
 /*
  * 
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion 
+ *          des reperes predefinis et des corps predefinis 
 * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
 * VERSION:4.11:FA:FA-3321:22/05/2023:[PATRIUS] Thread safety issue a la creation des FactoryManagedFrame
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -37,14 +40,13 @@ import java.util.HashSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 public class FramesFactoryTest {
 
@@ -63,7 +65,7 @@ public class FramesFactoryTest {
     @Test
     public void testTreeRoot() throws PatriusException {
         // ICRF is root frame, it has no parent
-        Assert.assertNull(FramesFactory.getFrame(Predefined.ICRF).getParent());
+        Assert.assertNull(FramesFactory.getFrame(PredefinedFrameType.ICRF).getParent());
         // Check also JPL bodies frame tree
         Assert.assertNull(CelestialBodyFactory.getSolarSystemBarycenter().getICRF().getParent());
     }
@@ -71,9 +73,9 @@ public class FramesFactoryTest {
     @Test
     public void testTreeICRF() throws PatriusException {
         // Since PATRIUS 4.9, GCRF parent parent frame is ICRF and EMB is GCRF parent
-        final Frame gcrf = FramesFactory.getFrame(Predefined.GCRF);
+        final Frame gcrf = FramesFactory.getFrame(PredefinedFrameType.GCRF);
         Assert.assertEquals(CelestialBodyFactory.EARTH_MOON + " ICRF frame", gcrf.getParent().getName());
-        Assert.assertEquals(Predefined.ICRF.getName(), gcrf.getParent().getParent().getName());
+        Assert.assertEquals(PredefinedFrameType.ICRF.getName(), gcrf.getParent().getParent().getName());
         // Check also JPL bodies frame tree is consistent
         Assert.assertEquals(CelestialBodyFactory.getSolarSystemBarycenter().getICRF(), gcrf.getParent().getParent());
         Assert.assertEquals(CelestialBodyFactory.getEarthMoonBarycenter().getICRF(), gcrf.getParent());
@@ -82,28 +84,28 @@ public class FramesFactoryTest {
 
     @Test
     public void testTree() throws PatriusException {
-        Assert.assertEquals(20, Predefined.values().length);
-        final Predefined[][] reference = new Predefined[][] {
-            { Predefined.EME2000, Predefined.GCRF },
-            { Predefined.ITRF, Predefined.TIRF },
-            { Predefined.ITRF_EQUINOX, Predefined.GTOD_WITH_EOP_CORRECTIONS },
-            { Predefined.TIRF, Predefined.CIRF },
-            { Predefined.CIRF, Predefined.GCRF },
-            { Predefined.GCRF, Predefined.EMB },
-            { Predefined.VEIS_1950, Predefined.GTOD_WITHOUT_EOP_CORRECTIONS },
-            { Predefined.G50, Predefined.GTOD_WITHOUT_EOP_CORRECTIONS },
-            { Predefined.GTOD_WITHOUT_EOP_CORRECTIONS, Predefined.TOD_WITHOUT_EOP_CORRECTIONS },
-            { Predefined.GTOD_WITH_EOP_CORRECTIONS, Predefined.TOD_WITH_EOP_CORRECTIONS },
-            { Predefined.TOD_WITHOUT_EOP_CORRECTIONS, Predefined.MOD_WITHOUT_EOP_CORRECTIONS },
-            { Predefined.TOD_WITH_EOP_CORRECTIONS, Predefined.MOD_WITH_EOP_CORRECTIONS },
-            { Predefined.MOD_WITHOUT_EOP_CORRECTIONS, Predefined.EME2000 },
-            { Predefined.MOD_WITH_EOP_CORRECTIONS, Predefined.GCRF },
-            { Predefined.ECLIPTIC_J2000, Predefined.ICRF },
-            { Predefined.TEME, Predefined.TOD_WITHOUT_EOP_CORRECTIONS },
-            { Predefined.ECLIPTIC_MOD_WITH_EOP_CORRECTIONS, Predefined.MOD_WITH_EOP_CORRECTIONS },
-            { Predefined.ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS, Predefined.MOD_WITHOUT_EOP_CORRECTIONS }
+        Assert.assertEquals(20, PredefinedFrameType.values().length);
+        final PredefinedFrameType[][] reference = new PredefinedFrameType[][] {
+            { PredefinedFrameType.EME2000, PredefinedFrameType.GCRF },
+            { PredefinedFrameType.ITRF, PredefinedFrameType.TIRF },
+            { PredefinedFrameType.ITRF_EQUINOX, PredefinedFrameType.GTOD_WITH_EOP_CORRECTIONS },
+            { PredefinedFrameType.TIRF, PredefinedFrameType.CIRF },
+            { PredefinedFrameType.CIRF, PredefinedFrameType.GCRF },
+            { PredefinedFrameType.GCRF, PredefinedFrameType.EMB },
+            { PredefinedFrameType.VEIS_1950, PredefinedFrameType.GTOD_WITHOUT_EOP_CORRECTIONS },
+            { PredefinedFrameType.G50, PredefinedFrameType.GTOD_WITHOUT_EOP_CORRECTIONS },
+            { PredefinedFrameType.GTOD_WITHOUT_EOP_CORRECTIONS, PredefinedFrameType.TOD_WITHOUT_EOP_CORRECTIONS },
+            { PredefinedFrameType.GTOD_WITH_EOP_CORRECTIONS, PredefinedFrameType.TOD_WITH_EOP_CORRECTIONS },
+            { PredefinedFrameType.TOD_WITHOUT_EOP_CORRECTIONS, PredefinedFrameType.MOD_WITHOUT_EOP_CORRECTIONS },
+            { PredefinedFrameType.TOD_WITH_EOP_CORRECTIONS, PredefinedFrameType.MOD_WITH_EOP_CORRECTIONS },
+            { PredefinedFrameType.MOD_WITHOUT_EOP_CORRECTIONS, PredefinedFrameType.EME2000 },
+            { PredefinedFrameType.MOD_WITH_EOP_CORRECTIONS, PredefinedFrameType.GCRF },
+            { PredefinedFrameType.ECLIPTIC_J2000, PredefinedFrameType.ICRF },
+            { PredefinedFrameType.TEME, PredefinedFrameType.TOD_WITHOUT_EOP_CORRECTIONS },
+            { PredefinedFrameType.ECLIPTIC_MOD_WITH_EOP_CORRECTIONS, PredefinedFrameType.MOD_WITH_EOP_CORRECTIONS },
+            { PredefinedFrameType.ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS, PredefinedFrameType.MOD_WITHOUT_EOP_CORRECTIONS }
         };
-        for (final Predefined[] pair : reference) {
+        for (final PredefinedFrameType[] pair : reference) {
             final Frame child = FramesFactory.getFrame(pair[0]);
             final Frame parent = FramesFactory.getFrame(pair[1]);
             Assert.assertEquals("wrong parent for " + child.getName(),
@@ -113,7 +115,7 @@ public class FramesFactoryTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
     }
-
 }

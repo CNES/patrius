@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-136:22/08/2024: [PATRIUS] Fitting d'un ThreeAxisEllipsoid sur un FacetBodyShape
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
@@ -80,7 +82,6 @@ import fr.cnes.sirius.patrius.bodies.BodyPoint;
 import fr.cnes.sirius.patrius.bodies.BodyPoint.BodyPointName;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.bodies.LLHCoordinatesSystem;
-import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.fieldsofview.IFieldOfView;
@@ -88,21 +89,11 @@ import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
-import fr.cnes.sirius.patrius.math.analysis.MultivariateFunction;
 import fr.cnes.sirius.patrius.math.exception.MaxCountExceededException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Line;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Plane;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
-import fr.cnes.sirius.patrius.math.optim.InitialGuess;
-import fr.cnes.sirius.patrius.math.optim.MaxEval;
-import fr.cnes.sirius.patrius.math.optim.PointValuePair;
-import fr.cnes.sirius.patrius.math.optim.SimpleBounds;
-import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.GoalType;
-import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.MultivariateOptimizer;
-import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.ObjectiveFunction;
-import fr.cnes.sirius.patrius.math.optim.nonlinear.scalar.noderiv.PowellOptimizer;
-import fr.cnes.sirius.patrius.math.util.FastMath;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.propagation.SpacecraftState;
@@ -110,7 +101,6 @@ import fr.cnes.sirius.patrius.signalpropagation.VacuumSignalPropagationModel;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
-import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
 
 /**
  * Facet body shape defined by a list of facets. A facet is a 3D triangle defined in the body frame.
@@ -145,17 +135,8 @@ public class FacetBodyShape extends AbstractBodyShape {
     /** Epsilon (squared) for distance comparison. */
     private static final double EPSILON2 = 1E-12;
 
-    /** Epsilon for fitted ellipsoid computation. */
-    private static final double EPS_OPT = 1E-8;
-
     /** Default threshold needed for apparent radius determination convergence. */
     private static final double DEFAULT_THRESHOLD = 1E-2;
-
-    /** Maximum number of criterion evaluation for fitted ellipsoid computation. */
-    private static final int MAX_EVAL = 1000;
-
-    /** First guess of the flattening value for the optimizer. Flattening value is between 0 and 1. */
-    private static final double FIRST_GUESS_FLATTENING = 1E-1;
 
     /** Default maximum number of steps for apparent radius calculation */
     private static final int DEFAULT_MAX_APPARENT_RADIUS_STEPS = 100;
@@ -175,21 +156,6 @@ public class FacetBodyShape extends AbstractBodyShape {
     /** Distance from center to farthest vertex to center. */
     private final double maxNorm;
 
-    /** Fitted ellipsoid which is the ellipsoid (a, f) which minimizes the distance to all vertices. */
-    private OneAxisEllipsoid fittedEllipsoid;
-
-    /** Inner ellipsoid which is the largest ellipsoid strictly contained in the mesh and centered around (0, 0, 0). */
-    private OneAxisEllipsoid innerEllipsoid;
-
-    /** Outer ellipsoid which is the smallest ellipsoid englobing the shape and centered around (0, 0, 0). */
-    private OneAxisEllipsoid outerEllipsoid;
-
-    /** Inner sphere which is the largest sphere strictly contained in the mesh and centered around (0, 0, 0). */
-    private OneAxisEllipsoid innerSphere;
-
-    /** Outer sphere which is the smallest sphere englobing the shape and centered around (0, 0, 0). */
-    private OneAxisEllipsoid outerSphere;
-
     /** Threshold needed for apparent radius determination convergence. */
     private double threshold;
 
@@ -198,23 +164,9 @@ public class FacetBodyShape extends AbstractBodyShape {
 
     /**
      * Maximum angle between the normal to a facet of the body and the vector from the origin to the
-     * centre of the facet.
+     * center of the facet.
      */
     private final double maxSlope;
-
-    /** Type of ellipsoid to apply transformation methods on. */
-    public enum EllipsoidType {
-        /** Inner sphere. */
-        INNER_SPHERE,
-        /** Outer sphere. */
-        OUTER_SPHERE,
-        /** Inner ellipsoid. */
-        INNER_ELLIPSOID,
-        /** Outer ellipsoid. */
-        OUTER_ELLIPSOID,
-        /** Fitted ellipsoid. */
-        FITTED_ELLIPSOID;
-    }
 
     /**
      * Constructor.
@@ -290,212 +242,6 @@ public class FacetBodyShape extends AbstractBodyShape {
                 }
             }
         }
-    }
-
-    /**
-     * Build fitted ellipsoid which is the ellipsoid (a, f) which minimizes the distance to all vertices. Minimization
-     * is reached with a {@link PowellOptimizer}.
-     *
-     * @param vertices
-     *        list of vertices
-     * @return fitted ellipsoid
-     */
-    private OneAxisEllipsoid buildFittedEllipsoid(final Map<Integer, Vertex> vertices) {
-        // Precompute sin and cos of all vertices position
-        final double[] cosLon = new double[vertices.size()];
-        final double[] sinLon = new double[vertices.size()];
-        final double[] cosLat = new double[vertices.size()];
-        final double[] sinLat = new double[vertices.size()];
-        int i = 0;
-        for (final Vertex v : vertices.values()) {
-            // Geodetic point
-            Vector3D normedPoint = Vector3D.ZERO;
-            if (v.getPosition().getNorm() > 0) {
-                normedPoint = v.getPosition().normalize();
-            }
-            final double latitude = MathLib.asin(normedPoint.getZ());
-            final double longitude = MathLib.atan2(normedPoint.getY(), normedPoint.getX());
-
-            // cos/sin for given geodetic point
-            final double[] sincosLon = MathLib.sinAndCos(longitude);
-            sinLon[i] = sincosLon[0];
-            cosLon[i] = sincosLon[1];
-            final double[] sincosLat = MathLib.sinAndCos(latitude);
-            sinLat[i] = sincosLat[0];
-            cosLat[i] = sincosLat[1];
-            i++;
-        }
-
-        // Use optimizer
-        final MultivariateOptimizer optimizer = new PowellOptimizer(EPS_OPT, EPS_OPT);
-        // Cost function to minimize
-        final MultivariateFunction func = point -> {
-            final double a = point[0];
-            final double f = point[1];
-            final double b = a * (1. - f);
-            final double e2 = 1 - (1. - f) * (1. - f);
-            double cost = 0;
-            int i1 = 0;
-            for (final Vertex v : vertices.values()) {
-                final double r = b / FastMath.sqrt(1. - e2 * cosLat[i1] * cosLat[i1]);
-                // Theoretical point for current a and f values
-                final Vector3D vTh = new Vector3D(r * cosLat[i1] * cosLon[i1], r * cosLat[i1] * sinLon[i1], r
-                        * sinLat[i1]);
-                // Distance squared: add to cost function
-                cost += vTh.distanceSq(v.getPosition());
-                i1++;
-            }
-            return cost;
-        };
-        // Run optimizer
-        // Semi-major axis is in [this.minNorm, this.maxNorm]
-        // Flattening is in [0, 1]
-        final PointValuePair res = optimizer.optimize(new MaxEval(MAX_EVAL), new ObjectiveFunction(func),
-            GoalType.MINIMIZE, GoalType.MINIMIZE, new InitialGuess(new double[] { (this.minNorm + this.maxNorm) / 2.,
-                FIRST_GUESS_FLATTENING }), new SimpleBounds(new double[] { this.minNorm, 0. },
-                new double[] { this.maxNorm, 1. }));
-
-        // Build ellipsoid with optimum values (a, f)
-        return new OneAxisEllipsoid(res.getPoint()[0], res.getPoint()[1], getBodyFrame(), getName());
-    }
-
-    /**
-     * Build inner ellipsoid which is the largest ellipsoid strictly contained in the mesh and centered around (0, 0,
-     * 0).
-     *
-     * @param vertices
-     *        list of vertices
-     * @return inner ellipsoid
-     */
-    private OneAxisEllipsoid buildInnerEllipsoid(final Map<Integer, Vertex> vertices) {
-
-        // Flattening of the fitted ellipsoid
-        final double flattening = getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening();
-        // Dilatation of the ellipsoidal DTM into a spherical DTM to find the largest inscribed
-        // sphere contained within it.
-        final double dilatation = 1. / (1. - flattening);
-
-        double minDilatedRadius = Double.POSITIVE_INFINITY;
-        for (final Vertex v : this.meshProvider.getVertices().values()) {
-            final Vector3D dilatedPoint = new Vector3D(v.getPosition().getX(), v.getPosition().getY(), v.getPosition()
-                .getZ() * dilatation);
-            final double dilatedRadius = dilatedPoint.getNorm();
-            minDilatedRadius = MathLib.min(minDilatedRadius, dilatedRadius);
-        }
-
-        // Return the inner ellipsoid, i.e. the biggest ellipsoid strictly contained in
-        // the mesh. The dilated radius of the inscribed sphere (found in the spherical problem)
-        // corresponds to the equatorial radius of the largest inner ellipsoid (flattened problem)
-        return new OneAxisEllipsoid(minDilatedRadius, flattening, getBodyFrame(), getName());
-    }
-
-    /**
-     * Build outer ellipsoid which is the smallest ellipsoid englobing the shape and centered around (0, 0, 0).
-     *
-     * @param vertices
-     *        list of vertices
-     * @return outer ellipsoid
-     */
-    private OneAxisEllipsoid buildOuterEllipsoid(final Map<Integer, Vertex> vertices) {
-        final double dilatation = 1. / (1. - getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening());
-
-        double maxDilatedRadius = Double.NEGATIVE_INFINITY;
-        for (final Vertex v : this.meshProvider.getVertices().values()) {
-            final Vector3D dilatedPoint = new Vector3D(v.getPosition().getX(), v.getPosition().getY(), v.getPosition()
-                .getZ() * dilatation);
-            final double dilatedRadius = dilatedPoint.getNorm();
-            maxDilatedRadius = MathLib.max(maxDilatedRadius, dilatedRadius);
-        }
-
-        // Return the outer ellipsoid, i.e. the smallest ellipsoid englobing the mesh. The dilated
-        // radius of the englobing sphere (found in the spherical problem) corresponds to the
-        // equatorial radius of the smaller outer ellipsoid (flattened problem)
-        return new OneAxisEllipsoid(maxDilatedRadius, getEllipsoid(EllipsoidType.FITTED_ELLIPSOID).getFlattening(),
-            getBodyFrame(), getName());
-    }
-
-    /**
-     * Build inner sphere which is largest sphere strictly contained in the mesh and centered around (0, 0, 0).
-     *
-     * @param vertices
-     *        list of vertices
-     * @return inner sphere
-     */
-    private OneAxisEllipsoid buildInnerSphere(final Map<Integer, Vertex> vertices) {
-        // Return the inner sphere (whose radius is equal to the minimum distance) strictly
-        // contained in the mesh
-        return new OneAxisEllipsoid(getMinNorm(), 0., getBodyFrame(), getName());
-    }
-
-    /**
-     * Build outer sphere which is the smallest sphere englobing the shape and centered around (0, 0, 0).
-     *
-     * @param vertices
-     *        list of vertices
-     * @return outer sphere
-     */
-    private OneAxisEllipsoid buildOuterSphere(final Map<Integer, Vertex> vertices) {
-        // Return the outer sphere (whose radius is equal to the maximum distance) englobing the
-        // shape
-        return new OneAxisEllipsoid(getMaxNorm(), 0., getBodyFrame(), getName());
-    }
-
-    /**
-     * Getter for the ellipsoid of the desired type.
-     * Once computed, the required ellipsoid is stored for future use.
-     * 
-     * @param ellipsoidTypeIn
-     *        the type of the ellipsoid to be returned
-     * @return the desired ellipsoid
-     */
-    public OneAxisEllipsoid getEllipsoid(final EllipsoidType ellipsoidTypeIn) {
-        final OneAxisEllipsoid ellipsoid;
-        switch (ellipsoidTypeIn) {
-            case FITTED_ELLIPSOID:
-                // The fitted ellipsoid
-                // If the fitted ellipsoid is null, build it
-                if (this.fittedEllipsoid == null) {
-                    this.fittedEllipsoid = buildFittedEllipsoid(this.meshProvider.getVertices());
-                }
-                ellipsoid = this.fittedEllipsoid;
-                break;
-            case INNER_ELLIPSOID:
-                // The inner ellipsoid
-                // If the inner ellipsoid is null, build it
-                if (this.innerEllipsoid == null) {
-                    this.innerEllipsoid = buildInnerEllipsoid(this.meshProvider.getVertices());
-                }
-                ellipsoid = this.innerEllipsoid;
-                break;
-            case OUTER_ELLIPSOID:
-                // The outer ellipsoid
-                // If the outer ellipsoid is null, build it
-                if (this.outerEllipsoid == null) {
-                    this.outerEllipsoid = buildOuterEllipsoid(this.meshProvider.getVertices());
-                }
-                ellipsoid = this.outerEllipsoid;
-                break;
-            case INNER_SPHERE:
-                // The inner sphere
-                // If the inner sphere is null, build it
-                if (this.innerSphere == null) {
-                    this.innerSphere = buildInnerSphere(this.meshProvider.getVertices());
-                }
-                ellipsoid = this.innerSphere;
-                break;
-            case OUTER_SPHERE:
-                // The outer sphere
-                // If the outer sphere is null, build it
-                if (this.outerSphere == null) {
-                    this.outerSphere = buildOuterSphere(this.meshProvider.getVertices());
-                }
-                ellipsoid = this.outerSphere;
-                break;
-            default:
-                // cannot happen
-                throw new PatriusRuntimeException(PatriusMessages.INTERNAL_ERROR, null);
-        }
-        return ellipsoid;
     }
 
     /**
@@ -835,16 +581,15 @@ public class FacetBodyShape extends AbstractBodyShape {
      * {@inheritDoc}
      * <p>
      * To compute the apparent radius (in meters), the algorithm iterates, until convergence, between the minimum and
-     * the maximum angles (and so radii too), given by the apparent angles (and so radii too) of the inner and outer
-     * ellipsoid of this occulting body. Given the plane containing the observer, the occulted body and this occulting
-     * body, if the line lying on this plane and connecting the observer to the hypothetical tangential point of this
-     * occulting body actually intersects this occulting body, the search for the correct angle value by which this line
-     * shall be rotated (within the given plane) to be tangential to this occulting body will continue towards a larger
-     * angle, otherwise it will continue towards a smaller angle. Each time, this line is rotated by the current value
-     * of the angle and the value of the apparent radius is computed thanks to the current angle and the distance
-     * between the observer and this occulting body. Convergence is reached when the absolute value of the difference
-     * between the current value of the apparent radius and the previous one is smaller than a specified threshold (in
-     * meters).
+     * the maximum angles (and so radii too), given by the apparent angles (and so radii too) of this occulting body.
+     * Given the plane containing the observer, the occulted body and this occulting body, if the line lying on this
+     * plane and connecting the observer to the hypothetical tangential point of this occulting body actually intersects
+     * this occulting body, the search for the correct angle value by which this line shall be rotated (within the given
+     * plane) to be tangential to this occulting body will continue towards a larger angle, otherwise it will continue
+     * towards a smaller angle. Each time, this line is rotated by the current value of the angle and the value of the
+     * apparent radius is computed thanks to the current angle and the distance between the observer and this occulting
+     * body. Convergence is reached when the absolute value of the difference between the current value of the apparent
+     * radius and the previous one is smaller than a specified threshold (in meters).
      * </p>
      */
     @Override
@@ -1703,7 +1448,7 @@ public class FacetBodyShape extends AbstractBodyShape {
 
     /**
      * Setter for the maximum number of steps in the while loop of
-     * {@link #getApparentRadius(PVCoordinatesProvider, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
+     * {@link BodyShape#getApparentRadius(PVCoordinatesProvider, AbsoluteDate, PVCoordinatesProvider, PropagationDelayType)}
      * method.
      *
      * @param newLimit

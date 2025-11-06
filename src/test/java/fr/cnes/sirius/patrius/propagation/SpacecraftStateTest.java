@@ -18,6 +18,8 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
 * VERSION:4.11:DM:DM-3235:22/05/2023:[PATRIUS][TEMPS_CALCUL] L'attitude des spacecraft state devrait etre initialisee de maniere lazy
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3166:10/05/2022:[PATRIUS] Definir l'ICRF comme repere racine 
@@ -967,7 +969,7 @@ public class SpacecraftStateTest {
         final double[] states = { 0 };
         final String name = "states";
         // One additional state
-        final TreeMap<String, double[]> treeMap = new TreeMap<String, double[]>();
+        final TreeMap<String, double[]> treeMap = new TreeMap<>();
         treeMap.put(name, states);
         Assert.assertEquals(treeMap.size(), 1);
         // The constructor adds adds automatically a mass provider
@@ -981,9 +983,55 @@ public class SpacecraftStateTest {
         Assert.assertEquals(massState[0], 1000.0, Precision.DOUBLE_COMPARISON_EPSILON);
     }
 
+    /**
+     * @throws PatriusException
+     * @description This test is implemented as part of FA307. It ensures the orbit used in SpacecraftState for certain
+     *              methods is expressed in an inertial frame.
+     * 
+     * @testedMethod {@link SpacecraftState#toTransform(LOFType)}
+     * @testedMethod {@link SpacecraftState#toTransform(Frame, LOFType)}
+     */
+    @Test
+    public void testFA307() throws PatriusException {
+        // Define orbital parameters
+        final double a = 42000;
+        final double e = 0;
+        final double i = 0;
+        final double pa = 0;
+        final double raan = 0;
+        final double anomaly = 0;
+
+        // Define orbit and SpacecraftState in non-inertial frame
+        final Orbit orbit1 =
+            new KeplerianOrbit(a, e, i, pa, raan, anomaly, PositionAngle.TRUE, FramesFactory.getITRF(),
+                new AbsoluteDate(2002, 2, 2, TimeScalesFactory.getTAI()),
+                Constants.WGS84_EARTH_MU);
+        final SpacecraftState s1 = new SpacecraftState(orbit1);
+
+        // Define orbit with same parameters in inertial frame
+        final Orbit orbit2 =
+            new KeplerianOrbit(a, e, i, pa, raan, anomaly, PositionAngle.TRUE, FramesFactory.getEME2000(),
+                new AbsoluteDate(2002, 2, 2, TimeScalesFactory.getTAI()),
+                Constants.WGS84_EARTH_MU);
+        final SpacecraftState s2 = new SpacecraftState(orbit2);
+
+        // Build transforms for both cases and assert they are not identical, i.e., verify the state has been modified
+        // in non-inertial case
+        final LOFType lofType = LOFType.LVLH;
+        final Transform t1 = s1.toTransform(lofType);
+        final Transform t2 = s2.toTransform(lofType);
+        Assert.assertNotEquals(t1, t2);
+
+        final Frame frame = FramesFactory.getEME2000();
+        final Transform t3 = s1.toTransform(frame, lofType);
+        final Transform t4 = s2.toTransform(frame, lofType);
+        Assert.assertNotEquals(t3, t4);
+    }
+
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
             FramesFactory.clear();
             final double mu = 3.9860047e14;

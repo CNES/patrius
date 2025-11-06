@@ -18,6 +18,11 @@
  * @history created 11/07/2012
  *
  * HISTORY
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+ * VERSION:4.15:OPENFD-307:21/11/2024:[Patrius] Repère de la vitesse non inertiel (suite)
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -42,6 +47,8 @@ import java.util.Map;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.MultiEventDetector;
+import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -62,24 +69,24 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
  * {@link ExtremaLatitudeDetector#MIN_MAX} for both.
  * 
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation at minimum or/and
+ * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation at minimum or/and
  * maximum angle between three bodies depending on extremum type defined. This can be changed by overriding one of the
  * following constructors :
  * </p>
  * <ul>
  * <li>
- * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, BodyOrder, int, double, 
+ * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, BodyOrder, int, double,
  * double, EventDetector.Action)
  * ExtremaThreeBodiesAngleDetector} or
- * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, PVCoordinatesProvider, int, 
+ * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, PVCoordinatesProvider, int,
  * double, double, EventDetector.Action)
  * ExtremaThreeBodiesAngleDetector}: the defined action is performed at maximal OR/AND minimal angle depending on slope
  * selection defined.
  * <li>
- * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, BodyOrder, double, double, 
+ * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, BodyOrder, double, double,
  * EventDetector.Action, EventDetector.Action)
  * ExtremaThreeBodiesAngleDetector} or
- * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, BodyOrder, double, double, 
+ * {@link #ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, PVCoordinatesProvider, BodyOrder, double, double,
  * EventDetector.Action, EventDetector.Action)
  * ExtremaThreeBodiesAngleDetector} : the defined actions are performed at minimal AND maximal angle.
  * </ul>
@@ -91,7 +98,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
  * ExtremaThreeBodiesAngleDetector}: the defined action is performed at maximal OR/AND minimal angle depending on slope
  * selection defined.
  * <li>
- * {@link #ExtremaThreeBodiesAngleDetector(String, String, String, double, double, EventDetector.Action, 
+ * {@link #ExtremaThreeBodiesAngleDetector(String, String, String, double, double, EventDetector.Action,
  * EventDetector.Action)
  * ExtremaThreeBodiesAngleDetector} : the defined actions are performed at minimal AND maximal angle.
  * </p>
@@ -167,14 +174,18 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extrema is reached.
      * </p>
      * 
-     * @param firstBody the body "1"
-     * @param secondBody the body "2"
-     * @param thirdBody the body "3"
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param firstBody
+     *        the body "1"
+     * @param secondBody
+     *        the body "2"
+     * @param thirdBody
+     *        the body "3"
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
@@ -194,19 +205,25 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extrema is reached.
      * </p>
      * 
-     * @param firstBody the body "1"
-     * @param secondBody the body "2"
-     * @param thirdBody the body "3"
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param firstBody
+     *        the body "1"
+     * @param secondBody
+     *        the body "2"
+     * @param thirdBody
+     *        the body "3"
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
      */
     public ExtremaThreeBodiesAngleDetector(final PVCoordinatesProvider firstBody,
                                            final PVCoordinatesProvider secondBody,
@@ -224,13 +241,20 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1"
-     * @param secondBody the body "2"
-     * @param thirdBody the body "3"
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param actionMin action to be performed when the expected local minimum is reached
-     * @param actionMax action to be performed when the expected local maximum is reached
+     * @param firstBody
+     *        the body "1"
+     * @param secondBody
+     *        the body "2"
+     * @param thirdBody
+     *        the body "3"
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param actionMin
+     *        action to be performed when the expected local minimum is reached
+     * @param actionMax
+     *        action to be performed when the expected local maximum is reached
      */
     public ExtremaThreeBodiesAngleDetector(final PVCoordinatesProvider firstBody,
                                            final PVCoordinatesProvider secondBody,
@@ -250,16 +274,25 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1"
-     * @param secondBody the body "2"
-     * @param thirdBody the body "3"
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param actionMin action to be performed when the expected local minimum is reached
-     * @param actionMax action to be performed when the expected local maximum is reached
-     * @param removeMin true if detector should be removed when the expected local minimum is
+     * @param firstBody
+     *        the body "1"
+     * @param secondBody
+     *        the body "2"
+     * @param thirdBody
+     *        the body "3"
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param actionMin
+     *        action to be performed when the expected local minimum is reached
+     * @param actionMax
+     *        action to be performed when the expected local maximum is reached
+     * @param removeMin
+     *        true if detector should be removed when the expected local minimum is
      *        reached
-     * @param removeMax true if detector should be removed when the expected local maximum is
+     * @param removeMax
+     *        true if detector should be removed when the expected local maximum is
      *        reached
      * @since 3.1
      */
@@ -287,16 +320,23 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1"
-     * @param secondBody the body "2"
-     * @param thirdBody the body "3"
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param firstBody
+     *        the body "1"
+     * @param secondBody
+     *        the body "2"
+     * @param thirdBody
+     *        the body "3"
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param action action to be performed when the expected extrema is reached.
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param action
+     *        action to be performed when the expected extrema is reached.
      */
     public ExtremaThreeBodiesAngleDetector(final PVCoordinatesProvider firstBody,
                                            final PVCoordinatesProvider secondBody,
@@ -315,25 +355,33 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1"
-     * @param secondBody the body "2"
-     * @param thirdBody the body "3"
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param firstBody
+     *        the body "1"
+     * @param secondBody
+     *        the body "2"
+     * @param thirdBody
+     *        the body "3"
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param action action to be performed when the expected extrema is reached.
-     * @param remove true if detector should be removed when the expected extrema is reached.
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param action
+     *        action to be performed when the expected extrema is reached.
+     * @param remove
+     *        true if detector should be removed when the expected extrema is reached.
      * 
      *        NB : If remove is true, it means detector should be removed at detection, so the value
      *        of attributes removeMIN and removeMAX must be decided according extremumType. Doing
      *        it, we ensure that detector will be removed well at propagation when calling method
      *        eventOccured (in which the value of attribute shouldBeRemoved is decided). In this
      *        case, users should better create an ExtremaThreeBodiesAngleDetector with constructor
-     *        {@link ExtremaThreeBodiesAngleDetector#ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, 
-     *        PVCoordinatesProvider, PVCoordinatesProvider, double, double, EventDetector.Action, 
+     *        {@link ExtremaThreeBodiesAngleDetector#ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider,
+     *        PVCoordinatesProvider, PVCoordinatesProvider, double, double, EventDetector.Action,
      *        EventDetector.Action, boolean, boolean)}
      * @since 3.1
      */
@@ -377,7 +425,7 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * implicitly the one which is propagated by the propagator associated to this event detector.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extrema is reached.
      * </p>
      * <p>
@@ -386,11 +434,15 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise.
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise.
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise.
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise.
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector.
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection.
@@ -408,7 +460,7 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * this event detector.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extrema is reached.
      * </p>
      * <p>
@@ -417,16 +469,22 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
      */
     public ExtremaThreeBodiesAngleDetector(final PVCoordinatesProvider bodyA,
                                            final PVCoordinatesProvider bodyB, final BodyOrder bodyC,
@@ -447,14 +505,21 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise.
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise.
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise.
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise.
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector.
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param actionMin action to be perform when the expected local minimum is reached.
-     * @param actionMax action to be perform when the expected local maximum is reached.
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param actionMin
+     *        action to be perform when the expected local minimum is reached.
+     * @param actionMax
+     *        action to be perform when the expected local maximum is reached.
      */
     public ExtremaThreeBodiesAngleDetector(final PVCoordinatesProvider bodyA,
                                            final PVCoordinatesProvider bodyB, final BodyOrder bodyC,
@@ -475,17 +540,26 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise.
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise.
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise.
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise.
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector.
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param actionMin action to be perform when the expected local minimum is reached
-     * @param actionMax action to be perform when the expected local maximum is reached
-     * @param removeMin true if detector should be removed when the expected local minimum is
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param actionMin
+     *        action to be perform when the expected local minimum is reached
+     * @param actionMax
+     *        action to be perform when the expected local maximum is reached
+     * @param removeMin
+     *        true if detector should be removed when the expected local minimum is
      *        reached
-     * @param removeMax true if detector should be removed when the expected local maximum is
+     * @param removeMax
+     *        true if detector should be removed when the expected local maximum is
      *        reached
      * @since 3.1
      */
@@ -516,17 +590,24 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise.
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise.
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise.
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise.
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector.
-     * @param extremumType the extremum type : {@link ExtremaThreeBodiesAngleDetector#MIN} for
+     * @param extremumType
+     *        the extremum type : {@link ExtremaThreeBodiesAngleDetector#MIN} for
      *        minimal angle detection, {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle
      *        detection or {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and
      *        maximal angle detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param action action to be perform when the expected local maximum is reached
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param action
+     *        action to be perform when the expected local maximum is reached
      */
     public ExtremaThreeBodiesAngleDetector(final PVCoordinatesProvider bodyA,
                                            final PVCoordinatesProvider bodyB, final BodyOrder bodyC,
@@ -547,26 +628,34 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector
-     * @param extremumType the extremum type : {@link ExtremaThreeBodiesAngleDetector#MIN} for
+     * @param extremumType
+     *        the extremum type : {@link ExtremaThreeBodiesAngleDetector#MIN} for
      *        minimal angle detection, {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle
      *        detection or {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and
      *        maximal angle detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param action action to be perform when the expected local maximum is reached
-     * @param remove true if detector should be removed when the expected extrema is reached.
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param action
+     *        action to be perform when the expected local maximum is reached
+     * @param remove
+     *        true if detector should be removed when the expected extrema is reached.
      * 
      *        NB : If remove is true, it means detector should be removed at detection, so the value
      *        of attributes removeMIN and removeMAX must be decided according extremumType. Doing
      *        it, we ensure that detector will be removed well at propagation when calling method
      *        eventOccured (in which the value of attribute shouldBeRemoved is decided). In this
      *        case, users should better create an ExtremaThreeBodiesAngleDetector with constructor
-     *        {@link ExtremaThreeBodiesAngleDetector#ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider, 
-     *        PVCoordinatesProvider, BodyOrder, double, double, EventDetector.Action, EventDetector.Action, 
+     *        {@link ExtremaThreeBodiesAngleDetector#ExtremaThreeBodiesAngleDetector(PVCoordinatesProvider,
+     *        PVCoordinatesProvider, BodyOrder, double, double, EventDetector.Action, EventDetector.Action,
      *        boolean, boolean)}
      *        .
      */
@@ -613,13 +702,20 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1" id
-     * @param secondBody the body "2" id
-     * @param thirdBody the body "3" id
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param actionMin action to be performed when the expected local minimum is reached
-     * @param actionMax action to be performed when the expected local maximum is reached
+     * @param firstBody
+     *        the body "1" id
+     * @param secondBody
+     *        the body "2" id
+     * @param thirdBody
+     *        the body "3" id
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param actionMin
+     *        action to be performed when the expected local minimum is reached
+     * @param actionMax
+     *        action to be performed when the expected local maximum is reached
      */
     public ExtremaThreeBodiesAngleDetector(final String firstBody, final String secondBody,
                                            final String thirdBody, final double maxCheck, final double threshold,
@@ -637,16 +733,25 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1" id
-     * @param secondBody the body "2" id
-     * @param thirdBody the body "3" id
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param actionMin action to be performed when the expected local minimum is reached
-     * @param actionMax action to be performed when the expected local maximum is reached
-     * @param removeMin true if detector should be removed when the expected local minimum is
+     * @param firstBody
+     *        the body "1" id
+     * @param secondBody
+     *        the body "2" id
+     * @param thirdBody
+     *        the body "3" id
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param actionMin
+     *        action to be performed when the expected local minimum is reached
+     * @param actionMax
+     *        action to be performed when the expected local maximum is reached
+     * @param removeMin
+     *        true if detector should be removed when the expected local minimum is
      *        reached.
-     * @param removeMax true if detector should be removed when the expected local maximum is
+     * @param removeMax
+     *        true if detector should be removed when the expected local maximum is
      *        reached.
      */
     public ExtremaThreeBodiesAngleDetector(final String firstBody, final String secondBody,
@@ -676,16 +781,23 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1" id
-     * @param secondBody the body "2" id
-     * @param thirdBody the body "3" id
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param firstBody
+     *        the body "1" id
+     * @param secondBody
+     *        the body "2" id
+     * @param thirdBody
+     *        the body "3" id
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param action action to be performed when the expected extrema is reached.
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param action
+     *        action to be performed when the expected extrema is reached.
      */
     public ExtremaThreeBodiesAngleDetector(final String firstBody, final String secondBody,
                                            final String thirdBody, final int extremumType, final double maxCheck,
@@ -702,24 +814,32 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * and v<sub>23</sub>.
      * </p>
      * 
-     * @param firstBody the body "1" id
-     * @param secondBody the body "2" id
-     * @param thirdBody the body "3" id
-     * @param extremumType {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
+     * @param firstBody
+     *        the body "1" id
+     * @param secondBody
+     *        the body "2" id
+     * @param thirdBody
+     *        the body "3" id
+     * @param extremumType
+     *        {@link ExtremaThreeBodiesAngleDetector#MIN} for minimal angle detection,
      *        {@link ExtremaThreeBodiesAngleDetector#MAX} for maximal angle detection or
      *        {@link ExtremaThreeBodiesAngleDetector#MIN_MAX} for both minimal and maximal angle
      *        detection
-     * @param maxCheck maximum check (see {@link AbstractDetector})
-     * @param threshold convergence threshold (see {@link AbstractDetector})
-     * @param action action to be performed when the expected extrema is reached.
-     * @param remove true if detector should be removed when the expected extrema is reached.
+     * @param maxCheck
+     *        maximum check (see {@link AbstractDetector})
+     * @param threshold
+     *        convergence threshold (see {@link AbstractDetector})
+     * @param action
+     *        action to be performed when the expected extrema is reached.
+     * @param remove
+     *        true if detector should be removed when the expected extrema is reached.
      * 
      *        NB : If remove is true, it means detector should be removed at detection, so the value
      *        of attributes removeMIN and removeMAX must be decided according extremumType. Doing
      *        it, we ensure that detector will be removed well at propagation when calling method
      *        eventOccured (in which the value of attribute shouldBeRemoved is decided). In this
      *        case, users should better create an ExtremaThreeBodiesAngleDetector with constructor
-     *        {@link ExtremaThreeBodiesAngleDetector#ExtremaThreeBodiesAngleDetector(String, String, String, double, 
+     *        {@link ExtremaThreeBodiesAngleDetector#ExtremaThreeBodiesAngleDetector(String, String, String, double,
      *        double, EventDetector.Action, EventDetector.Action, boolean, boolean)}
      */
     public ExtremaThreeBodiesAngleDetector(final String firstBody, final String secondBody,
@@ -761,11 +881,15 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
     /**
      * Private constructor to avoid code duplication
      * 
-     * @param bodyA first body (if the body C is the second or third body), second body otherwise
-     * @param bodyB third body (if the body C is the first or second body), second body otherwise
-     * @param bodyC position within the constellation of the body whose orbit will be propagated by
+     * @param bodyA
+     *        first body (if the body C is the second or third body), second body otherwise
+     * @param bodyB
+     *        third body (if the body C is the first or second body), second body otherwise
+     * @param bodyC
+     *        position within the constellation of the body whose orbit will be propagated by
      *        the propagator associated to this event detector
-     * @param bodyNb first, second or thrid body
+     * @param bodyNb
+     *        first, second or third body
      * @return the expected body
      * 
      * @since 3.0
@@ -775,7 +899,7 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
         // Initialize output body
         PVCoordinatesProvider body = null;
         switch (bodyC) {
-        // first body
+            // first body
             case FIRST:
                 if (bodyNb == 2) {
                     // Second body is bodyA
@@ -823,20 +947,24 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
     /**
      * Handle a min or max angle event and choose what to do next.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the angle is
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the angle is
      * reached.
      * </p>
      * 
-     * @param s the current state information : date, kinematics, attitude
-     * @param increasing if true, the value of the switching function increases when times increases
+     * @param s
+     *        the current state information : date, kinematics, attitude
+     * @param increasing
+     *        if true, the value of the switching function increases when times increases
      *        around event
-     * @param forward if true, the integration variable (time) increases during integration.
+     * @param forward
+     *        if true, the integration variable (time) increases during integration.
      * @return the action performed when the expected angle is reached.
-     * @exception PatriusException if some specific error occurs
+     * @exception PatriusException
+     *            if some specific error occurs
      */
     @Override
-    public Action eventOccurred(final SpacecraftState s, final boolean increasing,
-                                final boolean forward) throws PatriusException {
+    public Action eventOccurred(final SpacecraftState s, final boolean increasing, final boolean forward)
+        throws PatriusException {
         return this.eventOccurred(increasing, forward);
     }
 
@@ -854,15 +982,25 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
         }
 
         // computes the positions of the three bodies is a common frame:
-        final PVCoordinates p1 =
+        PVCoordinates p1 =
             (this.body1 == null) ? state.getPVCoordinates() : this.body1.getPVCoordinates(state.getDate(),
                 state.getFrame());
-        final PVCoordinates p2 =
+        PVCoordinates p2 =
             (this.body2 == null) ? state.getPVCoordinates() : this.body2.getPVCoordinates(state.getDate(),
                 state.getFrame());
-        final PVCoordinates p3 =
+        PVCoordinates p3 =
             (this.body3 == null) ? state.getPVCoordinates() : this.body3.getPVCoordinates(state.getDate(),
                 state.getFrame());
+
+        // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
+        final Frame stateFrame = state.getFrame();
+        if (!stateFrame.isPseudoInertial()) {
+            final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
+            final Transform t = stateFrame.getTransformTo(workFrame, state.getDate());
+            p1 = t.transformPVCoordinates(p1);
+            p2 = t.transformPVCoordinates(p2);
+            p3 = t.transformPVCoordinates(p3);
+        }
 
         return g(p1, p2, p3);
     }
@@ -930,24 +1068,35 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
             this.firstCall = false;
         }
         // Get PVCoordinates from map of states
-        final PVCoordinates p1 = s.get(this.inSpacecraftId1).getPVCoordinates();
-        final PVCoordinates p2 = s.get(this.inSpacecraftId2).getPVCoordinates();
-        final PVCoordinates p3 = s.get(this.inSpacecraftId3).getPVCoordinates();
+
+        final SpacecraftState state1 = s.get(this.inSpacecraftId1);
+        final SpacecraftState state2 = s.get(this.inSpacecraftId2);
+        final SpacecraftState state3 = s.get(this.inSpacecraftId3);
+
+        final Frame firstPseudoIntertialAncestor = findFirstCommonPseudoInertial(state1, state2, state3);
+
+        final Transform t1 = state1.getFrame().getTransformTo(firstPseudoIntertialAncestor, state1.getDate());
+        final Transform t2 = state2.getFrame().getTransformTo(firstPseudoIntertialAncestor, state2.getDate());
+        final Transform t3 = state3.getFrame().getTransformTo(firstPseudoIntertialAncestor, state3.getDate());
+
+        final PVCoordinates p1 = t1.transformPVCoordinates(state1.getPVCoordinates());
+        final PVCoordinates p2 = t2.transformPVCoordinates(state2.getPVCoordinates());
+        final PVCoordinates p3 = t3.transformPVCoordinates(state3.getPVCoordinates());
+
         return g(p1, p2, p3);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Action eventOccurred(final Map<String, SpacecraftState> s, final boolean increasing,
-                                final boolean forward) throws PatriusException {
+    public Action eventOccurred(final Map<String, SpacecraftState> s, final boolean increasing, final boolean forward)
+        throws PatriusException {
         return this.eventOccurred(increasing, forward);
     }
 
     /** {@inheritDoc} */
     @Override
-    public Map<String, SpacecraftState>
-        resetStates(final Map<String, SpacecraftState> oldStates)
-            throws PatriusException {
+    public Map<String, SpacecraftState> resetStates(final Map<String, SpacecraftState> oldStates)
+        throws PatriusException {
         return oldStates;
     }
 
@@ -956,9 +1105,11 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
      * 
      * @precondition
      * 
-     * @param increasing if true, the value of the switching function increases when times increases
+     * @param increasing
+     *        if true, the value of the switching function increases when times increases
      *        around event
-     * @param forward if true, the integration variable (time) increases during integration.
+     * @param forward
+     *        if true, the integration variable (time) increases during integration.
      * @return the action performed when the expected angle is reached.
      * @since 3.0
      */
@@ -991,11 +1142,15 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
     /**
      * Private g() method for both multi and mono event detection.
      * 
-     * @param p1 main PVCoordinates
-     * @param p2 secondary PVCoordinates
-     * @param p3 third PVCoordinates
+     * @param p1
+     *        main PVCoordinates
+     * @param p2
+     *        secondary PVCoordinates
+     * @param p3
+     *        third PVCoordinates
      * @return value of the switching function
-     * @throws PatriusException if some specific error occurs
+     * @throws PatriusException
+     *         if some specific error occurs
      * 
      * @since 3.0
      */
@@ -1022,14 +1177,12 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
         // this double has the same sign as the angle derivative :
         // (this part of the derivative expression, the ignored factor part
         // having a constant negative sign)
-        return -(MathLib.divide(pos1Vel3 + pos3Vel1, norm1 * norm3) - MathLib.divide(pos1Pos3,
-            pos1Pos1 * pos3Pos3)
-                * (pos1Vel1 * MathLib.divide(norm3, norm1) + pos3Vel3
-                        * MathLib.divide(norm1, norm3)));
+        return -(MathLib.divide(pos1Vel3 + pos3Vel1, norm1 * norm3) - MathLib.divide(pos1Pos3, pos1Pos1 * pos3Pos3)
+                * (pos1Vel1 * MathLib.divide(norm3, norm1) + pos3Vel3 * MathLib.divide(norm1, norm3)));
     }
 
     /**
-     * Get the first spacecraft id
+     * Get the first spacecraft id.
      * 
      * @return the first spacecraft id
      */
@@ -1038,7 +1191,7 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
     }
 
     /**
-     * Get the second spacecraft id
+     * Get the second spacecraft id.
      * 
      * @return the second spacecraft id
      */
@@ -1047,7 +1200,7 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
     }
 
     /**
-     * Get the third spacecraft id
+     * Get the third spacecraft id.
      * 
      * @return the third spacecraft id
      */
@@ -1070,27 +1223,43 @@ public class ExtremaThreeBodiesAngleDetector extends AbstractDetector implements
     public EventDetector copy() {
         final EventDetector result;
         if (this.getSlopeSelection() == MIN_MAX) {
-            result =
-                new ExtremaThreeBodiesAngleDetector(this.body1, this.body2, this.body3, this.getMaxCheckInterval(),
-                    this.getThreshold(), this.getActionAtEntry(), this.getActionAtExit(), this.isRemoveAtEntry(),
-                    this.isRemoveAtExit());
+            result = new ExtremaThreeBodiesAngleDetector(this.body1, this.body2, this.body3, this.getMaxCheckInterval(),
+                this.getThreshold(), this.getActionAtEntry(), this.getActionAtExit(), this.isRemoveAtEntry(),
+                this.isRemoveAtExit());
         } else if (this.getSlopeSelection() == MIN) {
-            result =
-                new ExtremaThreeBodiesAngleDetector(this.body1, this.body2, this.body3, this.getSlopeSelection(),
-                    this.getMaxCheckInterval(), this.getThreshold(), this.getActionAtEntry(), this.isRemoveAtEntry());
+            result = new ExtremaThreeBodiesAngleDetector(this.body1, this.body2, this.body3, this.getSlopeSelection(),
+                this.getMaxCheckInterval(), this.getThreshold(), this.getActionAtEntry(), this.isRemoveAtEntry());
         } else {
-            result =
-                new ExtremaThreeBodiesAngleDetector(this.body1, this.body2, this.body3, this.getSlopeSelection(),
-                    this.getMaxCheckInterval(), this.getThreshold(), this.getActionAtExit(), this.isRemoveAtExit());
+            result = new ExtremaThreeBodiesAngleDetector(this.body1, this.body2, this.body3, this.getSlopeSelection(),
+                this.getMaxCheckInterval(), this.getThreshold(), this.getActionAtExit(), this.isRemoveAtExit());
         }
         return result;
     }
 
     /** {@inheritDoc} */
     @Override
-    public boolean filterEvent(final Map<String, SpacecraftState> states,
-            final boolean increasing,
-            final boolean forward) throws PatriusException {
+    public boolean filterEvent(final Map<String, SpacecraftState> states, final boolean increasing,
+                               final boolean forward)
+        throws PatriusException {
         return false;
+    }
+
+    /**
+     * Returns the first common pseudo inertial ancestor between the frames of 3 SpacecraftStates
+     * 
+     * @param s1
+     *        The first SpacecraftState
+     * @param s2
+     *        The second SpacecraftState
+     * @param s3
+     *        The third SpacecraftState
+     * @return the first common pseudo inertial ancestor between the frames of 3 SpacecraftStates
+     */
+    public Frame findFirstCommonPseudoInertial(final SpacecraftState s1, final SpacecraftState s2,
+                                               final SpacecraftState s3) {
+        final Frame frame1 = s1.getFrame();
+        final Frame frame2 = s2.getFrame();
+        final Frame frame3 = s3.getFrame();
+        return frame1.getFirstCommonPseudoInertialAncestor(frame2.getFirstCommonPseudoInertialAncestor(frame3));
     }
 }

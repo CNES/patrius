@@ -18,6 +18,7 @@
  * @history creation 25/05/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
@@ -370,7 +371,7 @@ public class StationToSatMutualVisibilityDetector extends AbstractStationToSatDe
         final double angularDistanceInStationSensor = super.g(state);
 
         // Angular distance of the station in the spacecraft sensor field of view
-        final AbsoluteDate stationDate = getStationDate(state);
+        final AbsoluteDate stationDate = getOtherDate(state);
         final double angularRadiusInSpacecraftSensor = getSensor().getTargetCenterFOVAngle(stationDate);
 
         // Mutual visibility

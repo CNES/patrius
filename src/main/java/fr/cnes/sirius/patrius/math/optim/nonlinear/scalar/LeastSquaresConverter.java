@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -29,6 +31,7 @@ import fr.cnes.sirius.patrius.math.analysis.MultivariateFunction;
 import fr.cnes.sirius.patrius.math.analysis.MultivariateVectorFunction;
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * This class converts {@link MultivariateVectorFunction vectorial objective functions} to {@link MultivariateFunction
@@ -120,7 +123,8 @@ public class LeastSquaresConverter implements MultivariateFunction {
         final double[] observationsIn,
         final double[] weightsIn) {
         if (observationsIn.length != weightsIn.length) {
-            throw new DimensionMismatchException(observationsIn.length, weightsIn.length);
+            throw new DimensionMismatchException(PatriusMessages.POINT_WEIGHT_DIMENSION_MISMATCH,
+                observationsIn.length, weightsIn.length);
         }
         this.function = functionIn;
         this.observations = observationsIn.clone();
@@ -159,7 +163,8 @@ public class LeastSquaresConverter implements MultivariateFunction {
         final double[] observationsIn,
         final RealMatrix scaleIn) {
         if (observationsIn.length != scaleIn.getColumnDimension()) {
-            throw new DimensionMismatchException(observationsIn.length, scaleIn.getColumnDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                observationsIn.length, scaleIn.getColumnDimension());
         }
         this.function = functionIn;
         this.observations = observationsIn.clone();
@@ -173,7 +178,8 @@ public class LeastSquaresConverter implements MultivariateFunction {
         // compute residuals
         final double[] residuals = this.function.value(point);
         if (residuals.length != this.observations.length) {
-            throw new DimensionMismatchException(residuals.length, this.observations.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_RESIDUALS_OBSERVATION_DIMENSION,
+                residuals.length, this.observations.length);
         }
         for (int i = 0; i < residuals.length; ++i) {
             residuals[i] -= this.observations[i];

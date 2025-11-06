@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-32:08/12/2023:[PATRIUS] Ajout d'un ThreeAxisEllipsoid
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
@@ -270,7 +271,7 @@ public class ThreeAxisEllipsoid extends AbstractEllipsoidBodyShape {
         final double newC;
 
         // Check the margin type
-        if (marginType.equals(MarginType.DISTANCE)) {
+        if (marginType == MarginType.DISTANCE) {
             // The margin type is distance
             // Check if the margin value is larger than the opposite of the smallest radius, to be sure that the
             // resulting smallest radius will be positive

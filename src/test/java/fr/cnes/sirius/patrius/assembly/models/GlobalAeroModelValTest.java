@@ -17,6 +17,8 @@
  * @history creation 29/06/2017
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
  * VERSION:4.11:DM:DM-3256:22/05/2023:[PATRIUS] Suite 3246
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -30,11 +32,11 @@
  */
 package fr.cnes.sirius.patrius.assembly.models;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URISyntaxException;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -80,10 +82,12 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 public class GlobalAeroModelValTest {
 
     /**
+     * @throws URISyntaxException
      * @testType VT
      * 
      * @description performs two propagations: one with AeroModel and the other one with GlobalAeroModel.
@@ -100,7 +104,7 @@ public class GlobalAeroModelValTest {
      * @nonRegressionVersion 4.0
      */
     @Test
-    public void globalAeroModelValidationTest() throws PatriusException, IOException {
+    public void globalAeroModelValidationTest() throws PatriusException, IOException, URISyntaxException {
 
         // Initialization
         Utils.setDataRoot("regular-dataPBASE");
@@ -170,9 +174,10 @@ public class GlobalAeroModelValTest {
         propagator.removeForceModels();
         propagator.setInitialState(initialState);
 
-        final URL url = GlobalAeroModelValTest.class.getClassLoader().getResource("coeffaero/CoeffAeroGlobalModel.txt");
-        final DragCoefficientProvider coefficientProvider = new GlobalDragCoefficientProvider(INTERP.LINEAR,
-            url.getPath());
+        final String url =
+            new File(ClassLoader.getSystemResource("coeffaero" + File.separator + "CoeffAeroGlobalModel.txt").toURI())
+                .getAbsolutePath();
+        final DragCoefficientProvider coefficientProvider = new GlobalDragCoefficientProvider(INTERP.LINEAR, url);
         final DragSensitive spacecraftGlobalAero = new GlobalAeroModel(assembly, coefficientProvider, atmosphere);
         final ForceModel dragGlobalAero = new DragForce(atmosphere, spacecraftGlobalAero);
         propagator.addForceModel(dragGlobalAero);
@@ -218,4 +223,9 @@ public class GlobalAeroModelValTest {
         }
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

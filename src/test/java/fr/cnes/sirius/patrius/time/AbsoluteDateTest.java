@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
 * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours 
  *          juliens dans TidesToolbox.computeFundamentalArguments() 
 * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -878,6 +879,7 @@ public class AbsoluteDateTest {
 
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-data");
         this.utc = TimeScalesFactory.getUTC();
     }

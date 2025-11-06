@@ -14,6 +14,14 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-380:21/11/2024:Prise en compte des NEW_MODELS dans les tests
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
@@ -72,6 +80,8 @@ import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration;
+import fr.cnes.sirius.patrius.utils.PatriusConfiguration.PatriusVersionCompatibility;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 public class JPLCelestialBodyLoaderTest {
@@ -124,7 +134,7 @@ public class JPLCelestialBodyLoaderTest {
         Utils.setDataRoot("regular-data/de405-ephemerides");
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
-            JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.SUN);
+            JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, PredefinedEphemerisType.SUN);
         Assert.assertEquals(149597870691.0, ((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedAstronomicalUnit(), 0.1);
         Assert.assertEquals(81.30056, ((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedEarthMoonMassRatio(), 1.0e-8);
     }
@@ -133,7 +143,7 @@ public class JPLCelestialBodyLoaderTest {
     public void testConstantsInpop() throws PatriusException {
         Utils.setDataRoot("inpop");
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
-            JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES, EphemerisType.SUN);
+            JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES, PredefinedEphemerisType.SUN);
         Assert.assertEquals(149597870691.0, ((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedAstronomicalUnit(), 0.1);
         Assert.assertEquals(81.30057, ((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedEarthMoonMassRatio(), 1.0e-8);
     }
@@ -143,18 +153,18 @@ public class JPLCelestialBodyLoaderTest {
         Utils.setDataRoot("regular-data/de405-ephemerides");
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
-            JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.SUN);
-        Assert.assertEquals(22032.080e9, loader.getLoadedGravitationalCoefficient(EphemerisType.MERCURY), 1.0e6);
-        Assert.assertEquals(324858.599e9, loader.getLoadedGravitationalCoefficient(EphemerisType.VENUS), 1.0e6);
-        Assert.assertEquals(42828.314e9, loader.getLoadedGravitationalCoefficient(EphemerisType.MARS), 1.0e6);
-        Assert.assertEquals(126712767.863e9, loader.getLoadedGravitationalCoefficient(EphemerisType.JUPITER), 6.0e7);
-        Assert.assertEquals(37940626.063e9, loader.getLoadedGravitationalCoefficient(EphemerisType.SATURN), 2.0e6);
-        Assert.assertEquals(5794549.007e9, loader.getLoadedGravitationalCoefficient(EphemerisType.URANUS), 1.0e6);
-        Assert.assertEquals(6836534.064e9, loader.getLoadedGravitationalCoefficient(EphemerisType.NEPTUNE), 1.0e6);
-        Assert.assertEquals(981.601e9, loader.getLoadedGravitationalCoefficient(EphemerisType.PLUTO), 1.0e6);
-        Assert.assertEquals(132712440017.987e9, loader.getLoadedGravitationalCoefficient(EphemerisType.SUN), 1.0e6);
-        Assert.assertEquals(4902.801e9, loader.getLoadedGravitationalCoefficient(EphemerisType.MOON), 1.0e6);
-        Assert.assertEquals(403503.233e9, loader.getLoadedGravitationalCoefficient(EphemerisType.EARTH_MOON), 1.0e6);
+            JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, PredefinedEphemerisType.SUN);
+        Assert.assertEquals(22032.080e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MERCURY), 1.0e6);
+        Assert.assertEquals(324858.599e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.VENUS), 1.0e6);
+        Assert.assertEquals(42828.314e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS), 1.0e6);
+        Assert.assertEquals(126712767.863e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER), 6.0e7);
+        Assert.assertEquals(37940626.063e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN), 2.0e6);
+        Assert.assertEquals(5794549.007e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS), 1.0e6);
+        Assert.assertEquals(6836534.064e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE), 1.0e6);
+        Assert.assertEquals(981.601e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO), 1.0e6);
+        Assert.assertEquals(132712440017.987e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN), 1.0e6);
+        Assert.assertEquals(4902.801e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MOON), 1.0e6);
+        Assert.assertEquals(403503.233e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH_MOON), 1.0e6);
     }
 
     @Test
@@ -163,23 +173,24 @@ public class JPLCelestialBodyLoaderTest {
         Utils.setDataRoot("inpop");
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
-            JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES, EphemerisType.SUN);
-        Assert.assertEquals(22032.081e9, loader.getLoadedGravitationalCoefficient(EphemerisType.MERCURY), 1.0e6);
-        Assert.assertEquals(324858.597e9, loader.getLoadedGravitationalCoefficient(EphemerisType.VENUS), 1.0e6);
-        Assert.assertEquals(42828.376e9, loader.getLoadedGravitationalCoefficient(EphemerisType.MARS), 1.0e6);
-        Assert.assertEquals(126712764.535e9, loader.getLoadedGravitationalCoefficient(EphemerisType.JUPITER), 6.0e7);
-        Assert.assertEquals(37940585.443e9, loader.getLoadedGravitationalCoefficient(EphemerisType.SATURN), 2.0e6);
-        Assert.assertEquals(5794549.099e9, loader.getLoadedGravitationalCoefficient(EphemerisType.URANUS), 1.0e6);
-        Assert.assertEquals(6836527.128e9, loader.getLoadedGravitationalCoefficient(EphemerisType.NEPTUNE), 1.0e6);
-        Assert.assertEquals(971.114e9, loader.getLoadedGravitationalCoefficient(EphemerisType.PLUTO), 1.0e6);
-        Assert.assertEquals(132712442110.032e9, loader.getLoadedGravitationalCoefficient(EphemerisType.SUN), 1.0e6);
-        Assert.assertEquals(4902.800e9, loader.getLoadedGravitationalCoefficient(EphemerisType.MOON), 1.0e6);
-        Assert.assertEquals(403503.250e9, loader.getLoadedGravitationalCoefficient(EphemerisType.EARTH_MOON), 1.0e6);
+            JPLCelestialBodyLoader.DEFAULT_INPOP_SUPPORTED_NAMES, PredefinedEphemerisType.SUN);
+        Assert.assertEquals(22032.081e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MERCURY), 1.0e6);
+        Assert.assertEquals(324858.597e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.VENUS), 1.0e6);
+        Assert.assertEquals(42828.376e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MARS), 1.0e6);
+        Assert.assertEquals(126712764.535e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.JUPITER), 6.0e7);
+        Assert.assertEquals(37940585.443e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SATURN), 2.0e6);
+        Assert.assertEquals(5794549.099e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.URANUS), 1.0e6);
+        Assert.assertEquals(6836527.128e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.NEPTUNE), 1.0e6);
+        Assert.assertEquals(971.114e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.PLUTO), 1.0e6);
+        Assert.assertEquals(132712442110.032e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN), 1.0e6);
+        Assert.assertEquals(4902.800e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.MOON), 1.0e6);
+        Assert.assertEquals(403503.250e9, loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.EARTH_MOON), 1.0e6);
     }
 
     @Test
     public void testDerivative405() throws PatriusException {
         Utils.setDataRoot("regular-data/de405-ephemerides");
+        
         checkDerivative(JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, new AbsoluteDate(1969, 6,
             25, TimeScalesFactory.getTT()));
     }
@@ -187,6 +198,7 @@ public class JPLCelestialBodyLoaderTest {
     @Test
     public void testDerivative406() throws PatriusException {
         Utils.setDataRoot("regular-data:regular-data/de406-ephemerides");
+        
         checkDerivative(JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, new AbsoluteDate(2964, 9,
             26, TimeScalesFactory.getTT()));
     }
@@ -194,7 +206,7 @@ public class JPLCelestialBodyLoaderTest {
     @Test
     public void testEndianness() throws PatriusException {
         Utils.setDataRoot("inpop");
-        final EphemerisType type = EphemerisType.MARS;
+        final PredefinedEphemerisType type = PredefinedEphemerisType.MARS;
         final JPLCelestialBodyLoader loaderInpopTCBBig = new JPLCelestialBodyLoader("^inpop.*_TCB_.*_bigendian\\.dat$",
             type);
         final CelestialPoint bodysInpopTCBBig = loaderInpopTCBBig.loadCelestialPoint(CelestialBodyFactory.MARS);
@@ -219,7 +231,7 @@ public class JPLCelestialBodyLoaderTest {
     @Test
     public void testInpopvsJPL() throws PatriusException {
         Utils.setDataRoot("regular-data:inpop");
-        final EphemerisType type = EphemerisType.MARS;
+        final PredefinedEphemerisType type = PredefinedEphemerisType.MARS;
         final JPLCelestialBodyLoader loaderDE405 = new JPLCelestialBodyLoader("^unxp(\\d\\d\\d\\d)\\.405$", type);
         final CelestialPoint bodysDE405 = loaderDE405.loadCelestialPoint(CelestialBodyFactory.MARS);
         final JPLCelestialBodyLoader loaderInpopTDBBig = new JPLCelestialBodyLoader("^inpop.*_TDB_.*_bigendian\\.dat$",
@@ -250,7 +262,7 @@ public class JPLCelestialBodyLoaderTest {
         Utils.setDataRoot("regular-dataPBASE");
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
-            JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.EARTH);
+            JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, PredefinedEphemerisType.EARTH);
         Assert.assertEquals("Earth", loader.loadCelestialPoint("Earth").getName());
 
         Assert.assertEquals(Double.NaN, ((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedConstant("Mock"), 0.0);
@@ -286,7 +298,7 @@ public class JPLCelestialBodyLoaderTest {
         // Test exception in case of loading barycenter as CelestialBody
         try {
             final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(
-                    JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+                    JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
             loaderSSB.loadCelestialBody("");
             Assert.fail();
         } catch (final PatriusException e) {
@@ -294,7 +306,7 @@ public class JPLCelestialBodyLoaderTest {
         }
         try {
             final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(
-                    JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, EphemerisType.EARTH_MOON);
+                    JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, PredefinedEphemerisType.EARTH_MOON);
             loaderEMB.loadCelestialBody("");
             Assert.fail();
         } catch (final PatriusException e) {
@@ -323,7 +335,7 @@ public class JPLCelestialBodyLoaderTest {
     @Test
     public void testEarth() throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
-        final CelestialBody earth = CelestialBodyFactory.getEarth();
+        final IAUCelestialBody earth = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         Assert.assertEquals(FramesFactory.getGCRF(), earth.getICRF());
         Assert.assertEquals(FramesFactory.getGCRF(), earth.getInertialFrame(IAUPoleModelType.CONSTANT));
         Assert.assertEquals(FramesFactory.getMOD(true), earth.getInertialFrame(IAUPoleModelType.MEAN));
@@ -353,17 +365,17 @@ public class JPLCelestialBodyLoaderTest {
      */
     private enum Body {
 
-        SUN(EphemerisType.SUN, 696000000., 696000000.), MERCURY(EphemerisType.MERCURY, 2439700.,
-                2439700.), VENUS(EphemerisType.VENUS, 6051800., 6051800.), EARTH(
-                EphemerisType.EARTH, 6378136.6, 6356751.9), MOON(EphemerisType.MOON, 1737400.,
-                1737400.), MARS(EphemerisType.MARS, 3396190., 3376200.), JUPITER(
-                EphemerisType.JUPITER, 71492000., 66854000.), SATURN(EphemerisType.SATURN,
-                60268000., 54364000.), URANUS(EphemerisType.URANUS, 25559000., 24973000.), NEPTUNE(
-                EphemerisType.NEPTUNE, 24764000., 24341000.), PLUTO(EphemerisType.PLUTO, 1195000.,
-                1195000.), EARTH_MOON(EphemerisType.EARTH_MOON, 1, 1), SOLAR_SYSTEM_BARYCENTER(
-                EphemerisType.SOLAR_SYSTEM_BARYCENTER, 1, 1);
+        SUN(PredefinedEphemerisType.SUN, 696000000., 696000000.), MERCURY(PredefinedEphemerisType.MERCURY, 2439700.,
+                2439700.), VENUS(PredefinedEphemerisType.VENUS, 6051800., 6051800.), EARTH(
+                PredefinedEphemerisType.EARTH, 6378136.6, 6356751.9), MOON(PredefinedEphemerisType.MOON, 1737400.,
+                1737400.), MARS(PredefinedEphemerisType.MARS, 3396190., 3376200.), JUPITER(
+                PredefinedEphemerisType.JUPITER, 71492000., 66854000.), SATURN(PredefinedEphemerisType.SATURN,
+                60268000., 54364000.), URANUS(PredefinedEphemerisType.URANUS, 25559000., 24973000.), NEPTUNE(
+                PredefinedEphemerisType.NEPTUNE, 24764000., 24341000.), PLUTO(PredefinedEphemerisType.PLUTO, 1195000.,
+                1195000.), EARTH_MOON(PredefinedEphemerisType.EARTH_MOON, 1, 1), SOLAR_SYSTEM_BARYCENTER(
+                PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER, 1, 1);
 
-        private final EphemerisType type;
+        private final PredefinedEphemerisType type;
         private final double ae;
         private final double f;
 
@@ -377,13 +389,13 @@ public class JPLCelestialBodyLoaderTest {
          * @param ap
          *        the polar radius
          */
-        private Body(final EphemerisType type, final double ae, final double ap) {
+        private Body(final PredefinedEphemerisType type, final double ae, final double ap) {
             this.type = type;
             this.ae = ae;
             this.f = MathLib.divide(ae - ap, ae);
         }
 
-        public EphemerisType getEphemerisType() {
+        public PredefinedEphemerisType getEphemerisType() {
             return this.type;
         }
 
@@ -411,7 +423,7 @@ public class JPLCelestialBodyLoaderTest {
         final AbsoluteDate date = new AbsoluteDate(2005, 1, 1, 12, 00, 00);
 
         for (final Body body : Body.values()) {
-            final EphemerisType type = body.getEphemerisType();
+            final PredefinedEphemerisType type = body.getEphemerisType();
 
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
@@ -421,10 +433,12 @@ public class JPLCelestialBodyLoaderTest {
                 // CelestialBarycenter are not concerned
                 return;
             }
-            final CelestialBody celestialBody = (CelestialBody) celestialObject;
 
-            if (type.equals(EphemerisType.EARTH_MOON)
-                    || type.equals(EphemerisType.SOLAR_SYSTEM_BARYCENTER)) {
+            // JPLCelestialBodyLoader defines CelestialBody as IAUCelestialBody
+            final IAUCelestialBody celestialBody = (IAUCelestialBody) celestialObject;
+
+            if (type.equals(PredefinedEphemerisType.EARTH_MOON)
+                    || type.equals(PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER)) {
                 // the shape is not defined for barycenters
                 Assert.assertEquals(null, celestialBody.getShape());
             } else {
@@ -506,7 +520,7 @@ public class JPLCelestialBodyLoaderTest {
         // data to load
         Utils.setDataRoot("regular-dataPBASE");
 
-        for (final EphemerisType type : EphemerisType.values()) {
+        for (final PredefinedEphemerisType type : PredefinedEphemerisType.values()) {
 
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
@@ -547,7 +561,7 @@ public class JPLCelestialBodyLoaderTest {
         Utils.setDataRoot("regular-dataPBASE");
         final AbstractGravityModel attractionModel = new NewtonianGravityModel(2 * Constants.GRS80_EARTH_MU);
 
-        for (final EphemerisType type : EphemerisType.values()) {
+        for (final PredefinedEphemerisType type : PredefinedEphemerisType.values()) {
 
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
@@ -587,7 +601,7 @@ public class JPLCelestialBodyLoaderTest {
         // data to load
         Utils.setDataRoot("regular-dataPBASE");
 
-        for (final EphemerisType ephemerisType : EphemerisType.values()) {
+        for (final PredefinedEphemerisType ephemerisType : PredefinedEphemerisType.values()) {
             // celestial body loader
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
                 JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, ephemerisType);
@@ -599,7 +613,7 @@ public class JPLCelestialBodyLoaderTest {
             final CelestialBody celestialBody = (CelestialBody) celestialObject;
 
             // La Terre est une exception car elle utilise toujours un modèle d'attraction de type PointAttraction
-            if (!ephemerisType.equals(EphemerisType.EARTH)) {
+            if (!ephemerisType.equals(PredefinedEphemerisType.EARTH)) {
                 // central attraction coefficient
                 final double mu = celestialBody.getGM();
                 final GravityModel actual = celestialBody.getGravityModel();
@@ -621,7 +635,7 @@ public class JPLCelestialBodyLoaderTest {
 
     private static void checkDerivative(final String supportedNames, final AbsoluteDate date)
         throws PatriusException {
-        final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(supportedNames, EphemerisType.MERCURY);
+        final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(supportedNames, PredefinedEphemerisType.MERCURY);
         final CelestialPoint body = loader.loadCelestialPoint(CelestialBodyFactory.MERCURY);
         final double h = 20;
 
@@ -643,7 +657,7 @@ public class JPLCelestialBodyLoaderTest {
         final Vector3D estimatedV = new Vector3D(-3 * c, d4, 32 * c, d3, -168 * c, d2, 672 * c, d1);
 
         final Vector3D loadedV = body.getPVCoordinates(date, eme2000).getVelocity();
-        Assert.assertEquals(0, loadedV.subtract(estimatedV).getNorm(), 5.0e-11 * loadedV.getNorm());
+        Assert.assertEquals(0, loadedV.subtract(estimatedV).getNorm(), 5.0e-10 * loadedV.getNorm());
     }
 
     /**
@@ -662,7 +676,7 @@ public class JPLCelestialBodyLoaderTest {
             2 * Constants.GRS80_EARTH_MU);
 
         // Loop over each ephemeris types
-        for (final EphemerisType type : EphemerisType.values()) {
+        for (final PredefinedEphemerisType type : PredefinedEphemerisType.values()) {
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
                 JPLCelestialBodyLoader.DEFAULT_DE_SUPPORTED_NAMES, type, attractionModel);
             final JPLCelestialBodyLoader deserializedLoader = TestUtils.serializeAndRecover(loader);
@@ -671,8 +685,8 @@ public class JPLCelestialBodyLoaderTest {
                     ((JPLHistoricEphemerisLoader) deserializedLoader.getEphemerisLoader()).getLoadedAstronomicalUnit(), 0.);
             Assert.assertEquals(((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedEarthMoonMassRatio(),
                     ((JPLHistoricEphemerisLoader) deserializedLoader.getEphemerisLoader()).getLoadedEarthMoonMassRatio(), 0.);
-            Assert.assertEquals(loader.getLoadedGravitationalCoefficient(EphemerisType.SUN),
-                    deserializedLoader.getLoadedGravitationalCoefficient(EphemerisType.SUN), 0.);
+            Assert.assertEquals(loader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN),
+                    deserializedLoader.getLoadedGravitationalCoefficient(PredefinedEphemerisType.SUN), 0.);
             Assert.assertEquals(((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getLoadedConstant("GMS", "GM_Sun"),
                     ((JPLHistoricEphemerisLoader) deserializedLoader.getEphemerisLoader()).getLoadedConstant("GMS", "GM_Sun"), 0.);
             Assert.assertEquals(((JPLHistoricEphemerisLoader) loader.getEphemerisLoader()).getMaxChunksDuration(),
@@ -694,6 +708,8 @@ public class JPLCelestialBodyLoaderTest {
 
     @Before
     public void setUp() {
+
+        PatriusConfiguration.setPatriusCompatibilityMode(PatriusVersionCompatibility.NEW_MODELS);
         Utils.setDataRoot("regular-data");
     }
 }

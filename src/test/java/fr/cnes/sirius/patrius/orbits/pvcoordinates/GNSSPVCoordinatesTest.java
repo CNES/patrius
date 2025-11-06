@@ -18,6 +18,7 @@
  * @history creation 10/11/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
  * VERSION:4.11:DM:DM-3232:22/05/2023:[PATRIUS] Detection d'extrema dans la classe ExtremaGenericDetector
@@ -35,6 +36,7 @@
 package fr.cnes.sirius.patrius.orbits.pvcoordinates;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -181,5 +183,10 @@ public class GNSSPVCoordinatesTest {
         final GNSSPVCoordinates galileoAlmanacPVCoordinates = new GNSSPVCoordinates(galileoAlmanacParams, weekDate);
 
         Assert.assertEquals(FramesFactory.getITRF(), galileoAlmanacPVCoordinates.getNativeFrame(null));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -17,6 +17,11 @@
  * @history creation 11/10/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-222:22/08/2024: Assurer la compatibilite ascendante
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * VERSION:4.14:OPENFD-319:22/08/2024: Assurer la compatibilite ascendante de la v4.13
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13.5:DM:DM-319:03/07/2024:[PATRIUS] Assurer la compatibilite ascendante de la v4.13
  * VERSION:4.13.2:DM:DM-222:08/03/2024:[PATRIUS] Assurer la compatibilité ascendante
  * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
@@ -172,9 +177,6 @@ public class IERS20032010PrecessionNutation implements PrecessionNutationModel {
     /** IERS convention. */
     private final FrameConvention iersConvention;
 
-    /** Current set. */
-    private CIPCoordinates currentSet;
-
     /** Compute dvs. */
     private boolean rotation;
 
@@ -189,8 +191,11 @@ public class IERS20032010PrecessionNutation implements PrecessionNutationModel {
         this.xDevelopment = loadModel(dataLocation[0]);
         this.yDevelopment = loadModel(dataLocation[1]);
         this.sxy2Development = loadModel(dataLocation[2]);
-        this.iersConvention = convention == PrecessionNutationConvention.IERS2003 ? FrameConvention.IERS2003
-            : FrameConvention.IERS2010;
+        if (convention == PrecessionNutationConvention.IERS2003) {
+            this.iersConvention = FrameConvention.IERS2003;
+        } else {
+            this.iersConvention = FrameConvention.IERS2010;
+        }
     }
 
     /**
@@ -206,10 +211,12 @@ public class IERS20032010PrecessionNutation implements PrecessionNutationModel {
         this.xDevelopment = loadModel(convention.getDataLocation()[0]);
         this.yDevelopment = loadModel(convention.getDataLocation()[1]);
         this.sxy2Development = loadModel(convention.getDataLocation()[2]);
-        this.currentSet = this.computePoleCoordinates(AbsoluteDate.J2000_EPOCH);
         this.rotation = nonConstantRotation;
-        this.iersConvention =
-            convention == PrecessionNutationConvention.IERS2003 ? FrameConvention.IERS2003 : FrameConvention.IERS2010;
+        if (convention == PrecessionNutationConvention.IERS2003) {
+            this.iersConvention = FrameConvention.IERS2003;
+        } else {
+            this.iersConvention = FrameConvention.IERS2010;
+        }
     }
 
     /**

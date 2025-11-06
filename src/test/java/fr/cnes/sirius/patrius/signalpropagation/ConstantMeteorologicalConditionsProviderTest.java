@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les AbstractTropoFactory
  * VERSION:4.11:DM:DM-3295:22/05/2023:[PATRIUS] Ajout de conditions meteorologiques variables dans les modeles
  * de troposphere
@@ -17,15 +18,25 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.signalpropagation;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit test class for the {@link ConstantMeteorologicalConditionsProvider} class.
@@ -161,5 +172,10 @@ public class ConstantMeteorologicalConditionsProviderTest {
         Assert.assertFalse(instance.equals(other));
         Assert.assertFalse(other.equals(instance));
         Assert.assertFalse(instance.hashCode() == other.hashCode());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

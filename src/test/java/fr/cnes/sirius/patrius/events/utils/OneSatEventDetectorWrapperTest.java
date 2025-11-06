@@ -1,3 +1,28 @@
+/**
+ * 
+ * Copyright 2011-2022 CNES
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * 
+ * @history created 22/08/2024
+
+ *
+ * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-283:22/08/2024: Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
+ * END-HISTORY
+ */ 
 package fr.cnes.sirius.patrius.events.utils;
 
 import java.util.HashMap;
@@ -32,12 +57,6 @@ import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
-/**
- * HISTORY
- * VERSION:4.13.3:FA:FA-283:27/03/2024:[PATRIUS] Methode filterEvent() non-wrappe dans OneSatEventDetectorWrapper
- * END-HISTORY
- */
- 
 public class OneSatEventDetectorWrapperTest {
 
     /** String "satID" */
@@ -69,6 +88,7 @@ public class OneSatEventDetectorWrapperTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Orekit initialization
         Utils.setDataRoot("regular-dataPBASE");
         // Set up the dates
@@ -243,5 +263,4 @@ public class OneSatEventDetectorWrapperTest {
         Assert.assertTrue(resetStates.containsValue(state2));
 
     }
-
 }

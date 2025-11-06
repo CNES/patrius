@@ -16,6 +16,8 @@
  * Copyright 2010-2011 Centre National d'Études Spatiales
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le
@@ -152,4 +154,19 @@ public class NewtonianGravityModel extends AbstractHarmonicGravityModel {
         // to the position for the non-central term is zero
         return new double[3][3];
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * This class does not accept the desactivation of the central term since it only contains the central term.
+     * </p>
+     */
+    @Override
+    public void setCentralTermContribution(final boolean centralTermContributionIn) {
+        if (!centralTermContributionIn) {
+            throw new IllegalArgumentException("Newtonian gravity model cannot exclude central term");
+        }
+    }
+
 }

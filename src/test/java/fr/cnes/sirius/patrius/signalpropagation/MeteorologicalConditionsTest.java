@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.11.1:FA:FA-72:30/06/2023:[PATRIUS] Mauvaise prise en compte du MeteoConditionProvider dans les AbstractTropoFactory
@@ -18,18 +19,30 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.signalpropagation;
 
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.TestUtils;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.OutOfRangeException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit test class for the {@link MeteorologicalConditions} class.
@@ -302,5 +315,10 @@ public class MeteorologicalConditionsTest {
             Precision.DOUBLE_COMPARISON_EPSILON);
         Assert.assertEquals(DEFAULT_HUMIDITY + MeteorologicalConditionsTest.ONE, averageHumidity,
             Precision.DOUBLE_COMPARISON_EPSILON);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

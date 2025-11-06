@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2766:18/05/2021:Evol. et corr. dans le package fr.cnes.sirius.patrius.math.linear (suite DM 2300) 
@@ -42,6 +44,7 @@ import fr.cnes.sirius.patrius.math.linear.RealMatrix;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
 import fr.cnes.sirius.patrius.math.linear.SingularMatrixException;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Implementation of a Kalman filter to estimate the state <i>x<sub>k</sub></i>
@@ -169,8 +172,8 @@ public class KalmanFilter {
         }
 
         if (this.transitionMatrix.getColumnDimension() != this.stateEstimation.getDimension()) {
-            throw new DimensionMismatchException(this.transitionMatrix.getColumnDimension(),
-                this.stateEstimation.getDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                this.stateEstimation.getDimension(), this.transitionMatrix.getColumnDimension());
         }
 
         // initialize the error covariance to the process noise if it is not
@@ -306,8 +309,8 @@ public class KalmanFilter {
         // sanity checks
         if (u != null &&
             u.getDimension() != this.controlMatrix.getColumnDimension()) {
-            throw new DimensionMismatchException(u.getDimension(),
-                this.controlMatrix.getColumnDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                u.getDimension(), this.controlMatrix.getColumnDimension());
         }
 
         // project the state estimation ahead (a priori state)
@@ -359,8 +362,8 @@ public class KalmanFilter {
         // sanity checks
         MathUtils.checkNotNull(z);
         if (z.getDimension() != this.measurementMatrix.getRowDimension()) {
-            throw new DimensionMismatchException(z.getDimension(),
-                this.measurementMatrix.getRowDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS,
+                z.getDimension(), this.measurementMatrix.getRowDimension());
         }
 
         // S = H * P(k) - * H' + R

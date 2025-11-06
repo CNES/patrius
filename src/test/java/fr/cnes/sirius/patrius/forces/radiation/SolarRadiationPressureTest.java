@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -95,6 +98,7 @@ import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.EllipsoidBodyShape;
+import fr.cnes.sirius.patrius.bodies.IAUCelestialBody;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
@@ -188,7 +192,7 @@ public class SolarRadiationPressureTest {
         builder.addProperty(new RadiativeProperty(0.5, 0.5, 0.5), "Main");
         builder.initMainPartFrame(new UpdatableFrame(FramesFactory.getGCRF(), Transform.IDENTITY, "Frame"));
         final Assembly assembly = builder.returnAssembly();
-        MassProvider massModel = new MassModel(assembly);
+        final MassProvider massModel = new MassModel(assembly);
 
         // PRS
         final SolarRadiationPressure prs = new SolarRadiationPressure(Constants.SEIDELMANN_UA, Constants.CONST_SOL_N_M2, sun, sunRadius, earth, new DirectRadiativeModel(assembly));
@@ -398,8 +402,8 @@ public class SolarRadiationPressureTest {
     public void testOtherOccultingBody() throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
         // Initialization with occulting body = Moon
-        final CelestialBody sun = CelestialBodyFactory.getSun();
-        final CelestialBody moon = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
+        final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final MassProvider massModel = new SimpleMassModel(1500., DEFAULT);
         final BodyShape moonModel = new OneAxisEllipsoid(1500000, 0, moon.getRotatingFrame(IAUPoleModelType.TRUE), "Moon");
 
@@ -470,9 +474,9 @@ public class SolarRadiationPressureTest {
         // - Satellite behind second body
         // - Satellite not behind any body
         // Initialization with occulting body = Moon
-        final CelestialBody sun = CelestialBodyFactory.getSun();
-        final CelestialBody body1 = CelestialBodyFactory.getEarth();
-        final CelestialBody body2 = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
+        final IAUCelestialBody body1 = (IAUCelestialBody) CelestialBodyFactory.getEarth();
+        final IAUCelestialBody body2 = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final BodyShape body1Model = new OneAxisEllipsoid(6378000, 0, FramesFactory.getGCRF(), "Body1");
         final MassProvider massModel = new SimpleMassModel(1500., DEFAULT);
 
@@ -513,7 +517,7 @@ public class SolarRadiationPressureTest {
         Assert.assertFalse(actualAcc3.getNorm() == 0);
 
         // Case 4: state behind two bodies (same body): acc = 0
-        CelestialBody body3 = CelestialBodyFactory.getEarth();
+        IAUCelestialBody body3 = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         SolarRadiationPressure srp2 = new SolarRadiationPressure(sun, 6378000, new SphericalSpacecraft(50.0, 0.5, 1,
                 0., 0., DEFAULT));
         srp.addOccultingBody(new OneAxisEllipsoid(6378000, 0, body3.getInertialFrame(IAUPoleModelType.CONSTANT),
@@ -564,7 +568,7 @@ public class SolarRadiationPressureTest {
         Assert.assertFalse(actualAcc3.getNorm() == 0);
 
         // Case 4: state behind two bodies (same body): acc = 0
-        body3 = CelestialBodyFactory.getEarth();
+        body3 = (IAUCelestialBody) CelestialBodyFactory.getEarth();
         srp2 = new SolarRadiationPressure(sun, body1Model, new SphericalSpacecraft(50.0, 0.5, 1, 0., 0., DEFAULT));
         srp2.addOccultingBody(new OneAxisEllipsoid(6378000, 0, body3.getInertialFrame(IAUPoleModelType.CONSTANT),
                 "Body2"));
@@ -586,10 +590,10 @@ public class SolarRadiationPressureTest {
     public void testHeliocentric() throws PatriusException {
         // Initialization
         Utils.setDataRoot("regular-dataPBASE");
-        final CelestialBody sun = CelestialBodyFactory.getSun();
-        final CelestialBody body2 = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
+        final IAUCelestialBody body2 = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final SolarRadiationPressure srp = new SolarRadiationPressure(Constants.SEIDELMANN_UA,
-                Constants.CONST_SOL_N_M2, sun, sunRadius, 6378000, new SphericalSpacecraft(50.0, 0.5, 1, 0., 0.,
+            Constants.CONST_SOL_N_M2, sun, this.sunRadius, 6378000, new SphericalSpacecraft(50.0, 0.5, 1, 0., 0.,
                         DEFAULT));
         srp.addOccultingBody(new OneAxisEllipsoid(1500000, 0, body2.getInertialFrame(IAUPoleModelType.CONSTANT),
                 "Body2"));
@@ -664,7 +668,7 @@ public class SolarRadiationPressureTest {
     @Test
     public void testLightingAlignment() throws PatriusException {
         // Initialization
-        SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
+        final SolarRadiationPressure srp = new SolarRadiationPressure(this.sun, this.earth.getARadius(),
                 new SphericalSpacecraft(50.0, 0.5, 0.5, 0.5, 0., DEFAULT));
 
         // Define aligned spacecraft (Earth exactly between Sun and satellite)
@@ -868,7 +872,7 @@ public class SolarRadiationPressureTest {
         final MassProvider massProvider = new MassModel(assembly);
 
         // SRP
-        final SolarRadiationPressure srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius,
+        final SolarRadiationPressure srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
                 this.earth, sc);
 
         this.pos = new Vector3D(-3051443.873181594, 0.08004112908428662, -6299896.119758646);
@@ -1003,7 +1007,7 @@ public class SolarRadiationPressureTest {
 
         final AssemblySphericalSpacecraft sc = new AssemblySphericalSpacecraft(FastMath.PI, 2.2, 1., 0., 0., "Main");
 
-        final SolarRadiationPressure srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius,
+        final SolarRadiationPressure srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
                 this.earth, sc);
 
         Assert.assertEquals(5, sc.getJacobianParameters().size());
@@ -1110,9 +1114,11 @@ public class SolarRadiationPressureTest {
         // SRP
         final Parameter refFlux = new Parameter("refFlux", this.pRef * this.dRef * this.dRef);
         SolarRadiationPressure srp = new SolarRadiationPressure(refFlux, this.sun, this.earth, sc);
-        SolarRadiationPressure srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth,
+        SolarRadiationPressure srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
+            this.earth,
                 sc1);
-        SolarRadiationPressure srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth,
+        SolarRadiationPressure srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius,
+            this.earth,
                 sc2);
 
         srp.addDAccDParam(new SpacecraftState(orbit, attitude, new MassModel(assembly)), kaMain, dAccdParam);
@@ -1136,9 +1142,9 @@ public class SolarRadiationPressureTest {
         sc2 = new DirectRadiativeModel(assembly2);
 
         // SRP
-        srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc);
-        srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc1);
-        srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc2);
+        srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc);
+        srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc1);
+        srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc2);
 
         dAccdParam = new double[3];
         srp.addDAccDParam(new SpacecraftState(orbit, attitude, new MassModel(assembly)), ksMain, dAccdParam);
@@ -1164,9 +1170,9 @@ public class SolarRadiationPressureTest {
         sc2 = new DirectRadiativeModel(assembly2);
 
         // SRP
-        srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc);
-        srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc1);
-        srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc2);
+        srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc);
+        srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc1);
+        srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc2);
 
         dAccdParam = new double[3];
         srp.addDAccDParam(new SpacecraftState(orbit, attitude, new MassModel(assembly)), kdMain, dAccdParam);
@@ -1196,9 +1202,9 @@ public class SolarRadiationPressureTest {
         sc2 = new DirectRadiativeModel(assembly2, k02);
 
         // SRP
-        srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc);
-        srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc1);
-        srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, sunRadius, this.earth, sc2);
+        srp = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc);
+        srp1 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc1);
+        srp2 = new SolarRadiationPressure(this.dRef, this.pRef, this.sun, this.sunRadius, this.earth, sc2);
 
         dAccdParam = new double[3];
         // computeAcceleration should be called before calling addDAccDParam in
@@ -1374,10 +1380,12 @@ public class SolarRadiationPressureTest {
         // Instance
         final SphericalSpacecraft spacecraft = new SphericalSpacecraft(10.0, 1.7, 0, 0, 0, "");
         final EllipsoidBodyShape body = new OneAxisEllipsoid(6378000, 0.001, FramesFactory.getITRF(), "Earth");
-        final SolarRadiationPressure srp = new SolarRadiationPressure(new Parameter("toto", 1.), this.sun, sunRadius,
+        final SolarRadiationPressure srp = new SolarRadiationPressure(new Parameter("toto", 1.), this.sun,
+            this.sunRadius,
                 body, spacecraft, false);
         final SolarRadiationPressure srp2 = new SolarRadiationPressure(this.sun, body, spacecraft, false);
-        final SolarRadiationPressure srp3 = new SolarRadiationPressure(1, 1, this.sun, sunRadius, body, spacecraft,
+        final SolarRadiationPressure srp3 = new SolarRadiationPressure(1, 1, this.sun, this.sunRadius, body,
+            spacecraft,
                 false);
 
         // Spacecraft state
@@ -1504,7 +1512,7 @@ public class SolarRadiationPressureTest {
         final IPartProperty shapeProp = new GeometricProperty(sphere);
         builder.addProperty(shapeProp, mainPart);
         final SolarRadiationPressure solarRadiationPressure2 = new SolarRadiationPressure(200, 10,
-                CelestialBodyFactory.getSun(), sunRadius, earthBody, builder.returnAssembly(), 3);
+            CelestialBodyFactory.getSun(), this.sunRadius, earthBody, builder.returnAssembly(), 3);
         Assert.assertEquals(3, solarRadiationPressure2.getMultiplicativeFactor(), 0);
         final AssemblyBuilder builder2 = new AssemblyBuilder();
 
@@ -1519,9 +1527,9 @@ public class SolarRadiationPressureTest {
         builder2.addProperty(shapeProp, mainPart);
         final Assembly assembly = builder2.returnAssembly();
         final SolarRadiationPressure srp2 = new SolarRadiationPressure(this.dRef, this.pRef,
-                CelestialBodyFactory.getSun(), sunRadius, earthBody, assembly, 12.);
+            CelestialBodyFactory.getSun(), this.sunRadius, earthBody, assembly, 12.);
 
-        final CelestialBody body2 = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody body2 = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final OneAxisEllipsoid moon = new OneAxisEllipsoid(1500000, 0,
                 body2.getInertialFrame(IAUPoleModelType.CONSTANT), "Body2");
         srp2.addOccultingBody(moon);
@@ -1549,8 +1557,8 @@ public class SolarRadiationPressureTest {
     public void testEnrichParameterDescriptors() throws PatriusException {
         Utils.setDataRoot("regular-dataPBASE");
         // Initialization with occulting body = Moon
-        final CelestialBody sun = CelestialBodyFactory.getSun();
-        final CelestialBody moon = CelestialBodyFactory.getMoon();
+        final IAUCelestialBody sun = (IAUCelestialBody) CelestialBodyFactory.getSun();
+        final IAUCelestialBody moon = (IAUCelestialBody) CelestialBodyFactory.getMoon();
         final BodyShape moonModel = new OneAxisEllipsoid(1500000, 0, moon.getRotatingFrame(IAUPoleModelType.TRUE), "Moon");
         final SolarRadiationPressure forceModel = new SolarRadiationPressure(sun, moonModel, new SphericalSpacecraft(
                 50.0, 0.5, 1, 0., 0., DEFAULT));
@@ -1587,9 +1595,9 @@ public class SolarRadiationPressureTest {
 
         // SRP1 and SRP2 are made with different Sun Radiuses
         final SolarRadiationPressure srp1 = new SolarRadiationPressure(Constants.SEIDELMANN_UA,
-                Constants.CONST_SOL_N_M2, sun, 6.95E8, 100., spacecraft);
+            Constants.CONST_SOL_N_M2, this.sun, 6.95E8, 100., spacecraft);
         final SolarRadiationPressure srp2 = new SolarRadiationPressure(Constants.SEIDELMANN_UA,
-                Constants.CONST_SOL_N_M2, sun, Constants.SUN_RADIUS, 100., spacecraft);
+            Constants.CONST_SOL_N_M2, this.sun, Constants.SUN_RADIUS, 100., spacecraft);
 
         // Common Earth-Sun position to get the usual distance
         final Vector3D earthSunPos = this.sun.getPVCoordinates(this.date, FramesFactory.getGCRF()).getPosition();
@@ -1673,5 +1681,10 @@ public class SolarRadiationPressureTest {
             Assert.assertTrue(MathLib.abs(expected.getY() - actual.getY()) <= thr);
             Assert.assertTrue(MathLib.abs(expected.getZ() - actual.getZ()) <= thr);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

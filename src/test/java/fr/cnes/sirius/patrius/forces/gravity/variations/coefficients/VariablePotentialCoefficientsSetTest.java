@@ -17,6 +17,7 @@
  * @history Created 07/11/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.11:FA:FA-3316:22/05/2023:[PATRIUS] Anomalie lors de l'evaluation d'un potentiel variable
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -25,14 +26,23 @@
  */
 package fr.cnes.sirius.patrius.forces.gravity.variations.coefficients;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 import org.testng.Assert;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.forces.gravity.variations.coefficients.VariablePotentialCoefficientsSet.PeriodicComputationMethod;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class
@@ -304,4 +314,9 @@ public class VariablePotentialCoefficientsSetTest {
         Assert.assertEquals(1, sincosLeapYear[3], 1E-15);
     }
 
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

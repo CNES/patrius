@@ -18,6 +18,8 @@
  * @history creation 23/04/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -45,6 +47,7 @@ import fr.cnes.sirius.patrius.assembly.PropertyType;
 import fr.cnes.sirius.patrius.assembly.properties.SensorProperty;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
@@ -190,7 +193,8 @@ public class ExtremaSightAxisDetector extends AbstractSignalPropagationDetector 
                                     final Vector3D sightAxisDirection, final double maxCheck, final double threshold,
                                     final Action actionMin, final Action actionMax, final boolean removeMin,
                                     final boolean removeMax) {
-        super(extremumType, maxCheck, threshold, actionMin, actionMax, removeMin, removeMax);
+        super(extremumType, maxCheck, threshold, actionMin, actionMax, removeMin, removeMax,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, target));
 
         // direction norm test
         if (sightAxisDirection.getNorm() < UtilsPatrius.GEOMETRY_EPSILON) {
@@ -244,7 +248,7 @@ public class ExtremaSightAxisDetector extends AbstractSignalPropagationDetector 
     public ExtremaSightAxisDetector(final int extremumType, final PVCoordinatesProvider target,
         final Vector3D sightAxisDirection, final double maxCheck, final double threshold,
         final Action action, final boolean remove) {
-        super(extremumType, maxCheck, threshold);
+        super(extremumType, maxCheck, threshold, new LinkTypeHandler(SignalPropagationRole.RECEIVER, target));
 
         // direction norm test
         if (sightAxisDirection.getNorm() < UtilsPatrius.GEOMETRY_EPSILON) {
@@ -411,7 +415,7 @@ public class ExtremaSightAxisDetector extends AbstractSignalPropagationDetector 
     public ExtremaSightAxisDetector(final int extremumType, final PVCoordinatesProvider target,
         final Assembly assembly, final String partName, final double maxCheck,
         final double threshold, final Action action, final boolean remove) {
-        super(extremumType, maxCheck, threshold);
+        super(extremumType, maxCheck, threshold, new LinkTypeHandler(SignalPropagationRole.RECEIVER, target));
 
         final boolean hasProperty = assembly.getPart(partName).hasProperty(PropertyType.SENSOR);
 
@@ -519,7 +523,8 @@ public class ExtremaSightAxisDetector extends AbstractSignalPropagationDetector 
                                      final Assembly assembly, final String partName, final double maxCheck,
                                     final double threshold, final Action actionMin, final Action actionMax,
                                     final boolean removeMin, final boolean removeMax) {
-        super(extremumType, maxCheck, threshold, actionMin, actionMax, removeMin, removeMax);
+        super(extremumType, maxCheck, threshold, actionMin, actionMax, removeMin, removeMax,
+                new LinkTypeHandler(SignalPropagationRole.RECEIVER, target));
 
         final boolean hasProperty = assembly.getPart(partName).hasProperty(PropertyType.SENSOR);
 
@@ -678,30 +683,6 @@ public class ExtremaSightAxisDetector extends AbstractSignalPropagationDetector 
      */
     public String getSensorName() {
         return this.sensorName;
-    }
-    
-    /** @inheritDoc */
-    @Override
-    public void setPropagationDelayType(final PropagationDelayType propagationDelayType, final Frame frame){
-        super.setPropagationDelayType(propagationDelayType, frame);
-    }
-    
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.targetPoint;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return s.getOrbit();
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return DatationChoice.RECEIVER;
     }
 
     /**

@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -30,6 +32,7 @@ import fr.cnes.sirius.patrius.math.exception.MaxCountExceededException;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
 import fr.cnes.sirius.patrius.math.util.IterationManager;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * This abstract class defines an iterative solver for the linear system A
@@ -100,12 +103,12 @@ public abstract class IterativeLinearSolver {
                 a.getColumnDimension());
         }
         if (b.getDimension() != a.getRowDimension()) {
-            throw new DimensionMismatchException(b.getDimension(),
-                a.getRowDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS,
+                b.getDimension(), a.getRowDimension());
         }
         if (x0.getDimension() != a.getColumnDimension()) {
-            throw new DimensionMismatchException(x0.getDimension(),
-                a.getColumnDimension());
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                x0.getDimension(), a.getColumnDimension());
         }
     }
 

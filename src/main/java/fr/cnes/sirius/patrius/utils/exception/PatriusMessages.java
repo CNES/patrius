@@ -18,8 +18,20 @@
  * @history creation version 1.0
  *
  * HISTORY
- * VERSION:4.13.4:FA:FA-346:10/06/2024:[PATRIUS] Problème dans l’utilisation du
- * SatToSatMutualVisibilityDetector en mode de propagation MULTI
+ * VERSION:4.15:OPENFD-291:21/11/2024:[PATRIUS] Arguments non remontés dans une Exception
+ * VERSION:4.15:OPENFD-431:21/11/2024:[PATRIUS] Reliquat messages DimensionMismatchException
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-129:22/08/2024: [PATRIUS] Interpolation de trajectoire avec la methode de Lagrange
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
+ * VERSION:4.14:OPENFD-142:22/08/2024: [PATRIUS] Nouvel evenement PlaneCrossingDetector
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
+ * VERSION:4.14:OPENFD-292:22/08/2024: Implementation de multi-propagateurs mixtes
  * VERSION:4.13.1:FA:FA-114:17/01/2024:[PATRIUS] Message d'erreur incomplet
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-119:08/12/2023:[PATRIUS] Ajout d'une methode copy(AbsoluteDate)
@@ -322,6 +334,8 @@ public enum PatriusMessages implements Localizable {
     PDB_NULL_STATE_ID("The input sat ID is null"),
     /** For multi propagation purposes, the user try to add a state with a name already added. */
     PDB_SAT_ID_ALREADY_USED("The input sat ID is already used"),
+    /** For multi propagation purposes, the collection already contains ID or is expected but missing. */
+    PDB_SAT_ID_UNEXPECTED("Unexpected or missing sat ID {0} in collection"),
     /** For multi propagation purposes, the added tolerance is not of dimension-6. */
     PDB_ORBIT_TOLERENCE_LENGTH("The length of the input orbit tolerance is different from 6"),
     /** northing value out of range. */
@@ -566,6 +580,8 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     STATE_JACOBIAN_SHOULD_BE_6X6("state Jacobian is a {0}x{1} matrix, it should be a 6x6 matrix"),
     /** Message. */
+    STATE_VECTOR_JACOBIAN_SIZE_MISMATCH("State vector dimension is {0} but Jacobian dimension is {1}."),
+    /** Message. */
     STATE_AND_PARAMETERS_JACOBIANS_ROWS_MISMATCH("state Jacobian has {0} rows but parameters Jacobian has {1} rows"),
     /** Message. */
     INITIAL_MATRIX_AND_PARAMETERS_NUMBER_MISMATCH(
@@ -709,6 +725,9 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     INVALID_ARRAY_LENGTH("Invalid array length : expecting {0} got {1}"),
     /** Message. */
+    INVALID_ARRAY_LENGTH_EBE("Left side array dimension ({0}) is not the same as right side array dimension ({1}). "
+            + "Element-by-element operation cannot be performed."),
+    /** Message. */
     UNSUPPORTED_ROTATION_ORDER("Not supported rotation order"),
     /** Message. */
     OUT_OF_RANGE_ORDER("Out of range order: supported orders {1}, {2}, {3}, {4}"),
@@ -783,8 +802,6 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     MONO_MULTI_DETECTOR("The detector used does not correspond with the propagation type (mono or multi)"),
     /** Message. */
-    NO_PROP_TYPE("No corresponding propagation type has been found for the detector."),
-    /** Message. */
     ATTITUDE_FORCES_NULL(
             "The attitude for forces computation is null, an attitude for events computation could not be added"),
     /** Message. */
@@ -843,6 +860,10 @@ public enum PatriusMessages implements Localizable {
     AT_LEAST_ONE_COLUMN("matrix must have at least one column"),
     /** Message. */
     AT_LEAST_ONE_ROW("matrix must have at least one row"),
+    /** Message. */
+    ARRAY_AT_LEAST_N_COLUMNS("Array must have at least {0} columns but has {1}."),
+    /** Message. */
+    ARRAY_AT_LEAST_N_ROWS("Array must have at least {0} rows but has {1}."),
     /** Message. */
     BANDWIDTH("bandwidth ({0})"),
     /** Message. */
@@ -919,7 +940,7 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     CUMULATIVE_PROBABILITY_RETURNED_NAN("Cumulative probability function returned NaN for argument {0} p = {1}"),
     /** Message. */
-    DIFFERENT_ROWS_LENGTHS("some rows have length {0} while others have length {1}"),
+    DIFFERENT_ROWS_LENGTHS("Some rows have length {0} while others have length {1}"),
     /** Message. */
     DIFFERENT_ORIG_AND_PERMUTED_DATA("original and permuted data must contain the same elements"),
     /** Message. */
@@ -928,6 +949,8 @@ public enum PatriusMessages implements Localizable {
     DIMENSIONS_MISMATCH_2x2("got {0}x{1} but expected {2}x{3}"),
     /** Message. */
     DIMENSIONS_MISMATCH_SIMPLE("{0} != {1}"),
+    /** Message. */
+    DIMENSIONS_MISMATCH_GENERIC("Dimensions mismatch : {2} has size {0} and {3} has size {1}"),
     /** Message. */
     DIMENSIONS_MISMATCH("dimensions mismatch"),
     /** Message. */
@@ -994,6 +1017,8 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     INDEX_OUT_OF_RANGE("index {0} out of allowed range [{1}, {2}]"),
     /** Message. */
+    INDEX_OUT_OF_RANGE_SIMPLE("index {0} out of allowed range (> {1})."),
+    /** Message. */
     INDEX("index ({0})"),
     /** Message. */
     NOT_FINITE_NUMBER("{0} is not a finite number"),
@@ -1028,6 +1053,9 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     INTEGRATION_METHOD_NEEDS_AT_LEAST_TWO_PREVIOUS_POINTS("multistep method needs at least {0} previous steps, "
             + "got {1}"),
+    /** Message. */
+    INCOMPATIBLE_DIMENSIONS_MULTIPLICATION(
+            "The dimensions are incompatible for multiplication: {0} rows and {1} columns."),
     /** Message. */
     INVALID_BINARY_DIGIT("invalid binary digit: {0}"),
     /** Message. */
@@ -1484,9 +1512,13 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     VECTOR_LENGTH_MISMATCH("vector length mismatch: got {0} but expected {1}"),
     /** Message. */
+    INVALID_ARRAY_VECTOR("Can't create a vector of dimension {0} from an array of dimension {1}."),
+    /** Message. */
     VECTOR_MUST_HAVE_AT_LEAST_ONE_ELEMENT("vector must have at least one element"),
     /** Message. */
     WEIGHT_AT_LEAST_ONE_NON_ZERO("weigth array must contain at least one non-zero value"),
+    /** Message. */
+    POINT_WEIGHT_DIMENSION_MISMATCH("Point array dimension ({0}) and weight array dimension ({1}) are not equal."),
     /** Message. */
     WRONG_BLOCK_LENGTH("wrong array shape (block length = {0}, expected {1})"),
     /** Message. */
@@ -1700,6 +1732,8 @@ public enum PatriusMessages implements Localizable {
     /** Message. */
     INVALID_STATE_VECTOR_INDEX("Invalid state vector index ({0} is not between 0 and 5)."),
     /** Message. */
+    INCOMPATIBLE_STATE_VECTOR_DIMENSIONS("The state vector dimensions are incompatible: {0} != {1}."),
+    /** Message. */
     NULL_LINK_TYPE("The link type is null."),
     /** Message. */
     UNDEFINED_FRAME("The {0} is undefined."),
@@ -1737,6 +1771,9 @@ public enum PatriusMessages implements Localizable {
     CNAV_FOR_GALILEO_ERROR("CNAV broadcast model cannot be used with Galileo satellites."),
     /** Dimension mismatch for linear regression */
     DIMENSION_MISMATCH_REGRESSION("Abscissa and ordinates do not have the same dimensions for a linear regression"),
+    /** Dimension mismatch for function arrays */
+    DIMENSION_MISMATCH_FUNCTION(
+            "Abscissa array (size {0}) and ordinates array (size {1}) do not have the same dimensions."),
     /** Wrong quadratic equation */
     WRONG_QUADRATIC_EQUATION("Wrong quadratic equation: quadratic and linear coefficients are both equal to zero"),
     /** Body not available in the bsp file*/
@@ -1792,8 +1829,167 @@ public enum PatriusMessages implements Localizable {
             "The azimuthal degree ({0}) cannot be greater (in absolute value) to the radial degree ({1})."),
     /** Message. */
     DIFFERENCE_AZIMUTHAL_AND_RADIAL_DEGREES_ODD(
-            "The difference between the azimuthal degree ({0}) and the radial degree ({1}) must be an even number.");
-    
+            "The difference between the azimuthal degree ({0}) and the radial degree ({1}) must be an even number."),
+    /** Message. */
+    DIFFERENT_COMPILER_NUMBER_OF_FREE_PARAMETERS(
+            "The two compilers have different numbers of free parameters: {0} != {1}."),
+    /** Message. */
+    DIFFERENT_COMPILER_ORDERS("The two compilers have different orders: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_COMPILER_ORDERS_FREE_PARAMETERS(
+            "The number of orders ({0}) is different than the number of free parameters ({1})."),
+    /** Message. */
+    INCOMPATIBLE_DERIVATIVES_COMPILER_SIZE(
+            "The derivatives array size ({0}) is different than the size expected by the compiler ({1})."),
+    /** Message. */
+    INVALID_VECTOR_DIMENSION("The vector dimension is invalid: expected {0} but was {1}."),
+    /** Message. */
+    INVALID_COLUMN_DIMENSION("The number of column is invalid: expected {0} but was {1}."),
+    /** Message. */
+    INVALID_ROW_DIMENSION("The number of row is invalid: expected {0} but was {1}."),
+    /** Message. */
+    INCOMPATIBLE_PAIR_ELEMENTS_DIMENSIONS("The dimensions of the elements of the pair are not equal: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_ARRAYS_DIMENSIONS("The dimensions of the two arrays are not equal: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_VECTOR_DIMENSIONS("The dimensions of the two vectors are not equal: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_VECTOR_DIMENSION_SAMPLE("The dimensions of the vector ({0}) is not the same as the dimension of the "
+            + "sample {1}."),
+    /** Message. */
+    INCOMPATIBLE_VECTOR_SQUARE_MATRIX_DIMENSIONS(
+            "The vector dimension ({0}) and the square matrix dimension ({1}) are not equal."),
+    /** Message. */
+    INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS(
+            "The vector dimension ({0}) and the matrix row dimension ({1}) are not equal."),
+    /** Message. */
+    INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS(
+            "The vector dimension ({0}) and the matrix column dimension ({1}) are not equal."),
+    /** Message. */
+    INCOMPATIBLE_MATRIX_ROW_COLUMN_DIMENSIONS(
+            "The matrix row dimension ({0}) and the other matrix column dimension ({1}) are not equal."),
+    /** Message. */
+    INCOMPATIBLE_INTERPOLATION_ARRAYS_DIMENSIONS(
+            "The number of interpolating points ({0}) is different than the number of interpolating values ({1})."),
+    /** Message. */
+    INVALID_NUMBER_OF_PARAMETERS(
+            "The number of parameters is invalid: expected = {0}, actual = {1}."),
+    /** Message. */
+    INVALID_MATRIX_DIMENSION("Matrix dimension is invalid: expected = {0}, actual = {1}."),
+    /** Message. */
+    INVALID_DATA_DIMENSION_NOT_MATCH_COVARIANCE_SIZE(
+            "Invalid additional row of data: data row dimension ({0}) is inconsistent with the size of the "
+                    + "covariance matrix ({1})"),
+    /** Message. */
+    INVALID_ZERNIKE_COEFFICIENTS_ORDER(
+            "The number of Zernike coefficients ({0}) is invalid for order ({1}): {0} != {1}+1."),
+    /** Message. */
+    INCOMPATIBLE_MATRIX_ROW_DIMENSION("Matrices row dimensions are not equal: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_MATRIX_COLUMN_DIMENSION("Matrices column dimensions are not equal: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_LIST_DIMENSION(
+            "Lists dimensions are not equal ({0} != {1})."),
+    /** Message. */
+    INCOMPATIBLE_COUNTER_DIMENSION(
+            "Multi-dimensional counter dimension ({0}) is different than the indices array dimension ({1})."),
+    /** Message. */
+    INCONPATIBLE_DISTRIBUTION_DIMENSION(
+            "Multivariate distribution dimension ({0}) is different than the values array dimension ({1})."),
+    /** Message. */
+    INCONPATIBLE_SIMPLEX_DIMENSION(
+            "Simplex dimension ({0}) is different than the values array dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_STATISTICS_DIMENSION(
+            "Statistics data dimension ({0}) is different than the array dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_DATES_PIECEWISE_FUNCTION_DIMENSION(
+            "The number of dates ({0}) is different than the number of functions ({1})."),
+    /** Message. */
+    INCOMPATIBLE_INTERVALS_OBJECTS_DIMENSION(
+            "The number of intervals ({0}) is different than the number of objects ({1})."),
+    /** Message. */
+    INCOMPATIBLE_POLYNOMIAL_KNOTS_DIMENSION(
+            "The number of polynomials ({0}) is different than the number of knots ({1})."),
+    /** Message. */
+    INCOMPATIBLE_RESIDUALS_OBSERVATION_DIMENSION(
+            "The size of the residual array ({0}) is different than the number of observations ({1})."),
+    /** Message. */
+    INCOMPATIBLE_RESIDUALS_ARRAYS_DIMENSION("The sizes of the two values arrays are different ({0} != {1}). "
+            + "Residuals computation cannot be performed."),
+    /** Message. */
+    INCOMPATIBLE_CHROMOSOME_ARRAYS_DIMENSION(
+            "The size of the first chromosome array ({0}) is different than the size of the second one ({1})."),
+    /** Message. */
+    INCOMPATIBLE_STATE_EQUATIONS_DIMENSION(
+            "The dimension of the state vector ({0}) is different than the size of the set of equation ({1})."),
+    /** Message. */
+    INCOMPATIBLE_PRIMARY_PART_STATE_DIMENSION(
+            "The dimension of the primary part of the state vector ({0}) is different "
+                    + "than the dimension of the state vector itself ({1})."),
+    /** Message. */
+    INCOMPATIBLE_SECONDARY_PART_STATE_DIMENSION("The dimension of the secondary part of the state vector ({0}) is "
+            + "different than the dimension of the state vector itself ({1})."),
+    /** Message. */
+    INCOMPATIBLE_LOWER_BOUND_OPTIMIZER_DIMENSION(
+            "The lower bound dimension ({0}) is different than the optimizer dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_UPPER_BOUND_OPTIMIZER_DIMENSION(
+            "The upper bound dimension ({0}) is different than the optimizer dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_SIGMAS_ARRAY_OPTIMIZER_DIMENSION(
+            "The sigmas array dimension ({0}) is different than the optimizer dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_COMBINATION_DIMENSION(
+            "The combination array dimension ({0}) is different than the expected number of elements ({1})."),
+    /** Message. */
+    INCOMPATIBLE_DERIVATIVES_ARRAY_DERIVATION_ORDER(
+            "The number of derivative values ({0}) is different than the derivation order + 1 ({1})."),
+    /** Message. */
+    INCOMPATIBLE_EQUATION_DATA_MAPPER_DIMENSION(
+            "The equation data array dimension ({0}) is different than the mapper dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_COMPONENT_VARIABLES_DIMENSION("The component's number of variables ({0}) is different than the "
+            + "distribution's number of random variables ({1})."),
+    /** Message. */
+    INCOMPATIBLE_COEFFICIENT_RADIAL_DEGREE(
+            "The number of coefficients ({0}) is different than the radial degree + 1 ({1})."),
+    /** Message. */
+    INCOMPATIBLE_REGRESSION_OBSERVATION("The data array dimension ({0}) is different than the number of observations "
+            + "multiplied by the number of independant variables + 1: {0} != {1}."),
+    /** Message. */
+    INCOMPATIBLE_STEPS_EQUATIONS_DIMENSION(
+            "The steps array dimension ({0}) is different than the equation dimension ({1})."),
+    /** Message. */
+    INCOMPATIBLE_TOLERANCE_SET_DIMENSION(
+            "The vectorial tolerance dimension ({0}) is different than the main set dimension ({1})."),
+    /** Message. */
+    ONLY_SUPPORTS_CELESTIAL_BODY_IAU_ORIENTATION(
+            "The celestial body orientation isn't an instance of CelestialBodyIAUOrientation."),
+    /** Message. */
+    ZERO_NORM_VECTOR_FOR_PLANE_DEFINITION(
+            "The normal vector for plane definition has a zero norm."), 
+    /** Message. */
+    UNKNOWN_ENUM_VALUE(
+            "The value for the enum provided is unknown."),
+    /** Message. */
+    NO_INERTIAL_FRAME_COMPUTED(
+            "No inertial frame computed."),
+    /** Message. */
+    NO_ROTATING_FRAME_COMPUTED(
+            "No rotating frame computed."),
+    /** Message. */
+    NO_LLHCOORDINATES_DEFINED(
+            "No LLHCoordinates defined."),
+    /** Error message when an empty interval is constructed. */
+    EMPTY_INTERVALS_ARE_FORBIDDEN(
+            "Invalid interval: empty intervals are forbidden."),
+    /** Error message when the lower end-point of the interval is infinite and NOT OPEN. */
+    LOWER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE(
+            "Invalid interval: the lower end-point must be open when infinite."),
+    /** Error message when the upper end-point of the interval is infinite and NOT OPEN. */
+    UPPER_ENDPOINT_MUST_BE_OPEN_WHEN_INFINITE(
+            "Invalid interval: the upper end-point must be open when infinite.");
     /**
      * Bogus string constant.
      */

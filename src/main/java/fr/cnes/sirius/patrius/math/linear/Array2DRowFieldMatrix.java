@@ -18,6 +18,9 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -205,7 +208,7 @@ public class Array2DRowFieldMatrix<T extends FieldElement<T>>
             }
             for (int r = 1; r < nRows; r++) {
                 if (d[r].length != nCols) {
-                    throw new DimensionMismatchException(nCols, d[r].length);
+                    throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, nCols, d[r].length);
                 }
             }
             this.data = d;
@@ -389,7 +392,8 @@ public class Array2DRowFieldMatrix<T extends FieldElement<T>>
             this.data = MathArrays.buildArray(this.getField(), subMatrix.length, nCols);
             for (int i = 0; i < this.data.length; ++i) {
                 if (subMatrix[i].length != nCols) {
-                    throw new DimensionMismatchException(nCols, subMatrix[i].length);
+                    throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, nCols,
+                        subMatrix[i].length);
                 }
                 System.arraycopy(subMatrix[i], 0, this.data[i + row], column, nCols);
             }
@@ -451,7 +455,8 @@ public class Array2DRowFieldMatrix<T extends FieldElement<T>>
     public T[] operate(final T[] v) {
         final int nCols = this.getColumnDimension();
         if (v.length != nCols) {
-            throw new DimensionMismatchException(v.length, nCols);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                v.length, nCols);
         }
         final int nRows = this.getRowDimension();
 
@@ -472,7 +477,8 @@ public class Array2DRowFieldMatrix<T extends FieldElement<T>>
     public T[] preMultiply(final T[] v) {
         final int nRows = this.getRowDimension();
         if (v.length != nRows) {
-            throw new DimensionMismatchException(v.length, nRows);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, v.length,
+                nRows);
         }
         final int nCols = this.getColumnDimension();
 

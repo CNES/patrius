@@ -1,5 +1,6 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3155:10/05/2022:[PATRIUS] Ajout d'une methode public contains (AbsoluteDate) a la classe AbsoluteDateInterval
  * VERSION:4.4:FA:FA-2108:04/10/2019:[PATRIUS] Incoherence hash code/equals dans ComparableInterval
@@ -15,21 +16,34 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.time;
 
 import java.io.IOException;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.InputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.io.ObjectInputStream;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.HashMap;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.After;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Rule;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.rules.TestName;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.interval.IntervalEndpointType;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This class verify the behavior of equals and hashCode method on serialized {@link AbsoluteDateInterval}
@@ -251,5 +265,10 @@ public class AbsoluteDateIntervalSerializationTest {
             IntervalEndpointType.OPEN);
         date = new AbsoluteDate(upperEndpoint, TimeScalesFactory.getTAI());
         Assert.assertFalse(interval.contains(date));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

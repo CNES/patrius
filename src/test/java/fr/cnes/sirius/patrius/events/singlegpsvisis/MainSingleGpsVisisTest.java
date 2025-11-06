@@ -18,6 +18,13 @@
  * @history Created 08/01/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-317:21/11/2024:[PATRIUS] Non prise en compte
+ * du centralTermContribution dans ThirdBodyAttraction
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration de la gestion des attractions gravitationnelles dans le propagateur
@@ -41,8 +48,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -60,11 +66,11 @@ import fr.cnes.sirius.patrius.attitudes.AttitudeProvider;
 import fr.cnes.sirius.patrius.attitudes.BodyCenterPointing;
 import fr.cnes.sirius.patrius.attitudes.LofOffset;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.detectors.CircularFieldOfViewDetector;
 import fr.cnes.sirius.patrius.events.detectors.DateDetector;
@@ -104,6 +110,7 @@ import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Calcul de visibilités de satellites GPS - Mise en évidence de problème pour la détection
@@ -237,29 +244,27 @@ public class MainSingleGpsVisisTest {
         // b) Attraction des troisièmes corps
         CelestialBodyFactory.clearCelestialBodyLoaders();
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader(
-            "unxp2000.405", EphemerisType.SUN);
+            "unxp2000.405", PredefinedEphemerisType.SUN);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader(
-            "unxp2000.405", EphemerisType.EARTH_MOON);
+            "unxp2000.405", PredefinedEphemerisType.EARTH_MOON);
         final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader(
             "unxp2000.405",
-            EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+            PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
 
         CelestialBodyFactory.addCelestialBodyLoader(
             CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(
             CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
 
-        final CelestialBody sun = (CelestialBody) loader
-            .loadCelestialPoint(CelestialBodyFactory.SUN);
-        final CelestialBody moon = (CelestialBody) loader
-            .loadCelestialPoint(CelestialBodyFactory.MOON);
+        final CelestialBody sun = loader
+            .loadCelestialBody(CelestialBodyFactory.SUN);
+        final CelestialBody moon = loader
+            .loadCelestialBody(CelestialBodyFactory.MOON);
 
         final GravityModel sunGravityModel = sun.getGravityModel();
-        ((AbstractHarmonicGravityModel) sunGravityModel).setCentralTermContribution(false);
         final ForceModel sunAttraction = new ThirdBodyAttraction(sunGravityModel);
         final GravityModel moonGravityModel = moon.getGravityModel();
-        ((AbstractHarmonicGravityModel) moonGravityModel).setCentralTermContribution(false);
         final ForceModel moonAttraction = new ThirdBodyAttraction(moonGravityModel);
 
         // c) Pression de radiation solaire
@@ -478,5 +483,10 @@ public class MainSingleGpsVisisTest {
         propagator.propagate(tman.shiftedBy(1000));
 
         Assert.assertTrue(this.res);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

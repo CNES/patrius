@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-351:21/11/2024:[PATRIUS] Calcul de la dérivée des coordonnées LLH
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
  * VERSION:4.13:DM:DM-70:08/12/2023:[PATRIUS] Calcul de jacobienne dans OneAxisEllipsoid
@@ -29,9 +31,15 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.CelestialBodyFrame;
+import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
+import fr.cnes.sirius.patrius.math.TestUtils;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
+import fr.cnes.sirius.patrius.orbits.PositionAngle;
+import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
@@ -257,9 +265,259 @@ public class LLHCoordinatesSystemTest {
         checkMatrix(computedJacobian, jacobian, 3e-7, Utils.epsilonTest);
     }
 
+    /**
+     * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
+     * {@link OneAxisEllipsoid} using the analytical formula.
+     * 
+     * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
+     * 
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     */
+    @Test
+    public void testRatesComputationOneAxisEllipsoidAnalytical() throws PatriusException {
+        // Create Earth OneAxisEllipsoid
+        final double ae = 6378137.0;// GRS80 constant
+        final double flattening = 1.0 / 298.257222101;// GRS80 constant
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(ae, flattening, itrf);
+        final AbsoluteDate date = new AbsoluteDate(2010, 7, 9, 20, 30, 0);
+
+        // Create orbit around the Earth in GCRF
+        final KeplerianOrbit orbit = createKeplerianEarthOrbit(gcrf, date);
+
+        // Compute the rates using the analytical implementation
+        final double[] rates = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+
+        // Check result
+        TestUtils.assertEquals(8.851239240946895E-4, rates[0], Utils.epsilonTest);
+        TestUtils.assertEquals(-4.846251522455342E-4, rates[1], Utils.epsilonTest);
+        TestUtils.assertEquals(3.433926875845139, rates[2], Utils.epsilonTest);
+    }
+
+    /**
+     * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
+     * {@link OneAxisEllipsoid} using the finite differences estimation.
+     * 
+     * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
+     * 
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     */
+    @Test
+    public void testRatesComputationOneAxisEllipsoidFiniteDifferences() throws PatriusException {
+        // Create Earth OneAxisEllipsoid
+        final double ae = 6378137.0;// GRS80 constant
+        final double flattening = 1.0 / 298.257222101;// GRS80 constant
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(ae, flattening, itrf);
+        final AbsoluteDate date = new AbsoluteDate(2010, 7, 9, 20, 30, 0);
+
+        // Create orbit around the Earth in GCRF
+        final KeplerianOrbit orbit = createKeplerianEarthOrbit(gcrf, date);
+
+        // Compute the rates using the finite differences implementation
+        LLHCoordinatesSystem.ELLIPSODETIC.forceFiniteDifference = true;
+        final double[] rates = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+
+        // Check result
+        TestUtils.assertEquals(8.851239731405558E-4, rates[0], Utils.epsilonTest);
+        TestUtils.assertEquals(-4.846251523402123E-4, rates[1], Utils.epsilonTest);
+        TestUtils.assertEquals(3.433926892466843, rates[2], Utils.epsilonTest);
+    }
+
+    /**
+     * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
+     * {@link ThreeAxisEllipsoid} using the finite differences estimation.
+     * 
+     * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
+     * 
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     */
+    @Test
+    public void testRatesComputationThreeAxisEllipsoidFiniteDifferences() throws PatriusException {
+        // Create Phobos ThreeAxisEllipsoid
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final AbsoluteDate date = new AbsoluteDate(2010, 7, 9, 20, 30, 0);
+        final ThreeAxisEllipsoid phobos = new ThreeAxisEllipsoid(26.8e3, 22.4e3, 18.4e3, itrf);
+
+        // Create Keplerian orbit around Phobos
+        final KeplerianOrbit orbit = createKeplerianPhobosOrbit(gcrf, date);
+
+        // Compute the rates on using the generic interface
+        final double[] rates = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(phobos, orbit.getPVCoordinates(), gcrf, date);
+        
+        // Check results
+        TestUtils.assertEquals(2.0589672214410548E-5, rates[0], Utils.epsilonTest);
+        TestUtils.assertEquals(-6.679475892668041E-5, rates[1], Utils.epsilonTest);
+        TestUtils.assertEquals(0.22773075634177076, rates[2], Utils.epsilonTest);
+    }
+    
+    /**
+     * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
+     * {@link OneAxisEllipsoid} using the finite differences estimation and the analytical formula.
+     * The two results must agree within a reasonable tolerance.
+     * The input PV is expressed in GCRF so no further transformation is required during the finite differences computation.
+     * 
+     * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
+     * 
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     */
+    @Test
+    public void testRatesComputationOneAxisEllipsoidAnalyticalVsFiniteDifferencesGCRF()
+            throws PatriusException {
+        // Create Earth OneAxisEllipsoid
+        final double ae = 6378137.0;// GRS80 constant
+        final double flattening = 1.0 / 298.257222101;// GRS80 constant
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(ae, flattening, itrf);
+        final AbsoluteDate date = new AbsoluteDate(2010, 7, 9, 20, 30, 0);
+
+        // Create orbit around the Earth in GCRF
+        final KeplerianOrbit orbit = createKeplerianEarthOrbit(gcrf, date);
+
+        // Compute the rates using the analytical implementation
+        final double[] ratesAnalytical = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+
+        // Compute the rates using the finite differences implementation
+        LLHCoordinatesSystem.ELLIPSODETIC.forceFiniteDifference = true;
+        final double[] ratesFiniteDifferences = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+
+        // Check that the two results agree with sufficient precision
+        for (int i = 0; i < 3; i++) {
+            TestUtils.assertEquals(ratesAnalytical[i], ratesFiniteDifferences[i], 1e-7);
+        }
+    }
+
+    /**
+     * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
+     * {@link OneAxisEllipsoid} using the finite differences estimation and the analytical formula.
+     * The two results must agree within a reasonable tolerance.
+     * The input PV is expressed in ITRF.
+     * 
+     * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
+     * 
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     */
+    @Test
+    public void testRatesComputationOneAxisEllipsoidAnalyticalVsFiniteDifferencesITRF()
+            throws PatriusException {
+        // Create Earth OneAxisEllipsoid
+        final double ae = 6378137.0;// GRS80 constant
+        final double flattening = 1.0 / 298.257222101;// GRS80 constant
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(ae, flattening, itrf);
+        final AbsoluteDate date = new AbsoluteDate(2010, 7, 9, 20, 30, 0);
+
+        // Create orbit around the Earth in GCRF
+        final KeplerianOrbit orbit = createKeplerianEarthOrbit(gcrf, date);
+
+        // Create transformation from GCRF to ITRF
+        final Transform gcrfToItrf = gcrf.getTransformTo(itrf, date);
+        final PVCoordinates pvItrf = gcrfToItrf.transformPVCoordinates(orbit.getPVCoordinates());
+
+        // Compute the rates using the analytical implementation
+        final double[] ratesAnalytical = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, pvItrf, itrf, date);
+
+        // Compute the rates using the finite differences implementation
+        LLHCoordinatesSystem.ELLIPSODETIC.forceFiniteDifference = true;
+        final double[] ratesFiniteDifferences = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, pvItrf, itrf, date);
+
+        // Check that the two results agree with sufficient precision
+        for (int i = 0; i < 3; i++) {
+            TestUtils.assertEquals(ratesAnalytical[i], ratesFiniteDifferences[i], 1e-7);
+        }
+    }
+
+    /**
+     * Evaluate the rates of the LLH coordinates from the Cartesian position and velocity on a
+     * {@link OneAxisEllipsoid} and a {@link ThreeAxisEllipsoid} using the public interface.
+     * This tests is mostly here for coverage purposes. The numerical values are checked in other
+     * unit test methods.
+     * 
+     * @testedMethod {@link LLHCoordinatesSystem#computeLLHRates(BodyShape, PVCoordinates, Frame, AbsoluteDate)}
+     * 
+     * @throws PatriusException
+     *         if the precession-nutation model data embedded in the library cannot be read
+     */
+    @Test
+    public void testRatesComputation() throws PatriusException {
+        // Create Earth OneAxisEllipsoid
+        final double ae = 6378137.0;// GRS80 constant
+        final double flattening = 1.0 / 298.257222101;// GRS80 constant
+        final CelestialBodyFrame itrf = FramesFactory.getITRF();
+        final CelestialBodyFrame gcrf = FramesFactory.getGCRF();
+        final OneAxisEllipsoid earth = new OneAxisEllipsoid(ae, flattening, itrf);
+        final AbsoluteDate date = new AbsoluteDate(2010, 7, 9, 20, 30, 0);
+
+        // Create orbit around the Earth in GCRF
+        final KeplerianOrbit orbit = createKeplerianEarthOrbit(gcrf, date);
+
+        // Compute the rates using the generic interface
+        final double[] ratesOneAxisEllipsoid = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(earth, orbit.getPVCoordinates(), gcrf, date);
+
+        // ----------------------------------
+        
+        // Create Phobos ThreeAxisEllipsoid
+        final ThreeAxisEllipsoid phobos = new ThreeAxisEllipsoid(26.8e3, 22.4e3, 18.4e3, itrf);
+
+        // Create Keplerian orbit around Phobos
+        final KeplerianOrbit orbitAroundPhobos = createKeplerianPhobosOrbit(gcrf, date);
+
+        // Compute the rates on using the generic interface
+        final double[] ratesThreeAxisEllipsoid = LLHCoordinatesSystem.ELLIPSODETIC
+                .computeLLHRates(phobos, orbitAroundPhobos.getPVCoordinates(), gcrf, date);
+    }
+
+    /**
+     * Creates a new circular Keplerian orbit around the Earth with an altitude of 700 km at the
+     * given date.
+     * @param frame Frame in whih the orbit is expressed
+     * @param date Date of the initial bulletin
+     * @return KeplerianOrbit object
+     */
+    private KeplerianOrbit createKeplerianEarthOrbit(final CelestialBodyFrame frame,
+            final AbsoluteDate date) {
+        final double mu = 3.986005e14;// GRS80 constant
+        final double ae = 6378137.0;// GRS80 constant
+        return new KeplerianOrbit(ae + 700e3, 0.0, 0.5, 1.2, 1.1, 2.3, PositionAngle.TRUE, frame,
+                date, mu);
+    }
+
+    /**
+     * Creates a new circular Keplerian orbit around Phobos with an altitude of around 15 km at the
+     * given date.
+     * @param frame Frame in whih the orbit is expressed
+     * @param date Date of the initial bulletin
+     * @return KeplerianOrbit object
+     */
+    private KeplerianOrbit createKeplerianPhobosOrbit(final CelestialBodyFrame frame,
+            final AbsoluteDate date) {
+        final double muPhobos = 1.072e16 * 6.6743015e-11;// mass * G
+        return new KeplerianOrbit(40e3, 0.0, 0.5, 1.2, 1.1, 2.3, PositionAngle.TRUE, frame, date,
+                muPhobos);
+    }
+    
     /** The following code is executed once before each test: load the resources and set the frames configuration. */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataPBASE");
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
     }

@@ -18,6 +18,7 @@
  * @history creation 01/11/2015
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2653:18/05/2021:generalisation des sequences et correction/refonte des sequences de segments 
@@ -190,9 +191,9 @@ public class RelativeTabulatedAttitudeLaw implements AttitudeLaw {
                                          final Pair<Double, AngularCoordinates> data,
                                          final Frame frame, final AbsoluteDate refDate) {
         AttitudeLaw attitudeLawAfter = null;
-        if (law.equals(RelativeTabulatedAttitudeLaw.AroundAttitudeType.CONSTANT_ATT)) {
+        if (law == RelativeTabulatedAttitudeLaw.AroundAttitudeType.CONSTANT_ATT) {
             attitudeLawAfter = new ConstantAttitudeLaw(frame, data.getSecond().getRotation());
-        } else if (law.equals(RelativeTabulatedAttitudeLaw.AroundAttitudeType.EXTRAPOLATED_ATT)) {
+        } else if (law == RelativeTabulatedAttitudeLaw.AroundAttitudeType.EXTRAPOLATED_ATT) {
             attitudeLawAfter = new ExtrapolatedAttitudeLaw(frame, new TimeStampedAngularCoordinates(
                 refDate.shiftedBy(data.getFirst()),
                 data.getSecond().getRotation(),

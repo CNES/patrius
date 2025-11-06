@@ -18,13 +18,18 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.12:DM:DM-102:17/08/2023:[PATRIUS] Ajout méthode getNature à l'enum PolynomialType
  * END-HISTORY
  */
 package fr.cnes.sirius.patrius.math.analysis.polynomials;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 
 /**
@@ -48,5 +53,10 @@ public final class PolynomialTypeTest {
         // Non regression on the expected nature values
         Assert.assertEquals("CLASSICAL_POLYNOMIAL_FUNCTION", PolynomialType.CLASSICAL.getNature());
         Assert.assertEquals("CHEBYSHEV_POLYNOMIAL_FUNCTION", PolynomialType.CHEBYSHEV.getNature());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,13 @@
  * @history created 18/03/2015
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-308:21/11/2024:[STELA-PATRIUS] Duplication entre MSIS00Adapter et MSIS2000
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
+ * VERSION:4.14:OPENFD-258:22/08/2024:[PATRIUS] Ephemerides des barycentres planetaires
+ * dans les fichiers JPL historiques
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -61,8 +68,7 @@ import java.util.ArrayList;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -88,10 +94,10 @@ import fr.cnes.sirius.patrius.attitudes.TabulatedAttitude;
 import fr.cnes.sirius.patrius.bodies.CelestialBody;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint;
-import fr.cnes.sirius.patrius.bodies.EphemerisType;
 import fr.cnes.sirius.patrius.bodies.JPLCelestialBodyLoader;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.bodies.PredefinedEphemerisType;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.AnomalyDetector;
@@ -148,7 +154,6 @@ import fr.cnes.sirius.patrius.propagation.numerical.PartialDerivativesEquations;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusFixedStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepHandler;
 import fr.cnes.sirius.patrius.propagation.sampling.PatriusStepInterpolator;
-import fr.cnes.sirius.patrius.stela.forces.atmospheres.MSIS00Adapter;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.time.AbsoluteDateInterval;
 import fr.cnes.sirius.patrius.time.TimeScale;
@@ -157,6 +162,7 @@ import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusExceptionWrapper;
 import fr.cnes.sirius.patrius.utils.exception.PropagationException;
+import junit.framework.Assert;
 
 /**
  * Test class for Orekit numerical propagator. This class was be set in PATRIUS since test cases
@@ -235,27 +241,27 @@ public class NumericalPropagatorTest {
         maxFlux = end.shiftedBy(41 * Constants.JULIAN_DAY);
         minApKp = start.shiftedBy(-60 * 3600);
         maxApKp = end.shiftedBy(12 * 3600);
-        checkPropagationWithDataControl(new MSIS00Adapter(new ContinuousMSISE2000SolarData(
-                getProvider(minFlux, maxFlux, minApKp, maxApKp)), earthShape.getEquatorialRadius(),
-                0, new MeeusSun()), false);
+        checkPropagationWithDataControl(new MSISE2000(
+                new ContinuousMSISE2000SolarData(getProvider(minFlux, maxFlux, minApKp, maxApKp)),
+                earthShape, new MeeusSun()), false);
 
         // MSIS adapter (STELA) with not enough flux data, an exception should be thrown
         minFlux = start.shiftedBy(-40 * Constants.JULIAN_DAY);
         maxFlux = end.shiftedBy(40 * Constants.JULIAN_DAY);
         minApKp = start.shiftedBy(-60 * 3600);
         maxApKp = end.shiftedBy(12 * 3600);
-        checkPropagationWithDataControl(new MSIS00Adapter(new ContinuousMSISE2000SolarData(
-                getProvider(minFlux, maxFlux, minApKp, maxApKp)), earthShape.getEquatorialRadius(),
-                0, new MeeusSun()), true);
+        checkPropagationWithDataControl(new MSISE2000(
+                new ContinuousMSISE2000SolarData(getProvider(minFlux, maxFlux, minApKp, maxApKp)),
+                earthShape, new MeeusSun()), true);
 
         // MSIS adapter (STELA) with not enough Ap data, an exception should be thrown
         minFlux = start.shiftedBy(-41 * Constants.JULIAN_DAY);
         maxFlux = end.shiftedBy(41 * Constants.JULIAN_DAY);
         minApKp = start.shiftedBy(-59 * 3600);
         maxApKp = end.shiftedBy(12 * 3600);
-        checkPropagationWithDataControl(new MSIS00Adapter(new ContinuousMSISE2000SolarData(
-                getProvider(minFlux, maxFlux, minApKp, maxApKp)), earthShape.getEquatorialRadius(),
-                0, new MeeusSun()), true);
+        checkPropagationWithDataControl(new MSISE2000(
+                new ContinuousMSISE2000SolarData(getProvider(minFlux, maxFlux, minApKp, maxApKp)),
+                earthShape, new MeeusSun()), true);
 
         // DTM with enough flux and Kp data, no exception should be thrown
         minFlux = start.shiftedBy(-41 * Constants.JULIAN_DAY);
@@ -689,10 +695,10 @@ public class NumericalPropagatorTest {
             }
 
             @Override
-            public boolean filterEvent(double t,
-                    double[] y,
-                    boolean increasing,
-                    boolean forward) {
+            public boolean filterEvent(final double t,
+                    final double[] y,
+                    final boolean increasing,
+                    final boolean forward) {
                 return false;
             }
         };
@@ -1230,7 +1236,7 @@ public class NumericalPropagatorTest {
             PositionAngle.TRUE);
 
         final JPLCelestialBodyLoader loaderSun = new JPLCelestialBodyLoader("unxp2000.405",
-                EphemerisType.SUN);
+                PredefinedEphemerisType.SUN);
         final CelestialPoint sun = loaderSun.loadCelestialPoint(CelestialBodyFactory.SUN);
         final RadiationSensitive radiativeModel = new DirectRadiativeModel(assembly);
         p.addForceModel(new SolarRadiationPressure(sun,
@@ -1364,8 +1370,8 @@ public class NumericalPropagatorTest {
 
             // Forces
             final JPLCelestialBodyLoader loader = this.initJPLLoader();
-            final CelestialBody sun = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.SUN);
-            final CelestialBody moon = (CelestialBody) loader.loadCelestialPoint(CelestialBodyFactory.MOON);
+            final CelestialBody sun = loader.loadCelestialBody(CelestialBodyFactory.SUN);
+            final CelestialBody moon = loader.loadCelestialBody(CelestialBodyFactory.MOON);
             this.addForceModel(new ThirdBodyAttraction(sun.getGravityModel()));
             this.addForceModel(new ThirdBodyAttraction(moon.getGravityModel()));
             final OneAxisEllipsoid earth = new OneAxisEllipsoid(6378136.46, 1.0 / 298.25765,
@@ -1389,15 +1395,20 @@ public class NumericalPropagatorTest {
         private JPLCelestialBodyLoader initJPLLoader() throws PatriusException {
             CelestialBodyFactory.clearCelestialBodyLoaders();
             final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-                    EphemerisType.SUN);
+                    PredefinedEphemerisType.SUN);
             final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-                    EphemerisType.EARTH_MOON);
+                    PredefinedEphemerisType.EARTH_MOON);
             final JPLCelestialBodyLoader loaderSSB = new JPLCelestialBodyLoader("unxp2000.405",
-                    EphemerisType.SOLAR_SYSTEM_BARYCENTER);
+                    PredefinedEphemerisType.SOLAR_SYSTEM_BARYCENTER);
             CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
             CelestialBodyFactory.addCelestialBodyLoader(
                     CelestialBodyFactory.SOLAR_SYSTEM_BARYCENTER, loaderSSB);
             return loader;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

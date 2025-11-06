@@ -81,4 +81,5 @@ public class EclipticJ2000Provider extends FixedTransformProvider {
             throw new PatriusRuntimeException(PatriusMessages.INTERNAL_ERROR, e);
         }
     }
+
 }

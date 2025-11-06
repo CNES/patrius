@@ -18,6 +18,9 @@
  * @history creation 19/04/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-376:21/11/2024:[PATRIUS] Nombre max d'itérations pour la propagation du signal par SensorModel
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -180,6 +183,12 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /** Epsilon for signal propagation computation. */
     private double epsSignalPropagation = DEFAULT_EPSILON_SIGNAL_PROPAGATION;
+    
+    /**
+     * Maximum number of iterations for signal propagation computation (initialized to
+     * {@link VacuumSignalPropagationModel#DEFAULT_MAX_ITER} by default).
+     */
+    private int maxIter = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
 
     /**
      * Constructor for a sensor model.
@@ -202,7 +211,9 @@ public final class SensorModel implements PVCoordinatesProvider {
         this.maskingAssemblies = new ArrayList<>();
         this.ownSpacecraftIndex = -1;
         this.maskingPartName = "none";
+        this.maxIter = VacuumSignalPropagationModel.DEFAULT_MAX_ITER;
     }
+
 
     /**
      * Resets the sensor property features. Shall be used each time the
@@ -886,7 +897,7 @@ public final class SensorModel implements PVCoordinatesProvider {
         throws PatriusException {
         AbsoluteDate maskingPartDate = spacecraftDate;
         // Light speed case is treated separately for computation times optimization
-        if (propagationDelayType.equals(PropagationDelayType.LIGHT_SPEED)) {
+        if (propagationDelayType == PropagationDelayType.LIGHT_SPEED) {
             // LIGHT_SPEED case
             // Signal propagation frame
             final Frame nativeFrameAssembly = pvProvider.getNativeFrame(spacecraftDate);
@@ -894,12 +905,12 @@ public final class SensorModel implements PVCoordinatesProvider {
             final Frame assemblyInertialFrame = nativeFrameAssembly
                 .getFirstCommonPseudoInertialAncestor(nativeFrameSensor);
             // Handle link type
-            if (linkType.equals(LinkType.DOWNLINK)) {
+            if (linkType == LinkType.DOWNLINK) {
                 maskingPartDate = VacuumSignalPropagationModel.getSignalReceptionDate(pvProvider, this,
-                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame);
+                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame, this.maxIter);
             } else {
                 maskingPartDate = VacuumSignalPropagationModel.getSignalEmissionDate(pvProvider, this,
-                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame);
+                    spacecraftDate, this.epsSignalPropagation, propagationDelayType, assemblyInertialFrame, this.maxIter);
             }
         }
         return maskingPartDate;
@@ -945,20 +956,20 @@ public final class SensorModel implements PVCoordinatesProvider {
             for (int i = 0; i < maskingBodiesNumber; i++) {
                 AbsoluteDate bodyDate = spacecraftDate;
                 // Light speed case is treated separately only for computation times optimization
-                if (propagationDelayType.equals(PropagationDelayType.LIGHT_SPEED)) {
+                if (propagationDelayType == PropagationDelayType.LIGHT_SPEED) {
                     // Signal propagation frame
                     final Frame nativeFrameBody = this.maskingBodies.get(i).getNativeFrame(spacecraftDate);
                     final Frame nativeFrameSensor = getNativeFrame(spacecraftDate);
                     final Frame bodyInertialFrame = nativeFrameBody
                         .getFirstCommonPseudoInertialAncestor(nativeFrameSensor);
                     // Handle link type
-                    if (linkType.equals(LinkType.DOWNLINK)) {
+                    if (linkType == LinkType.DOWNLINK) {
                         bodyDate = VacuumSignalPropagationModel.getSignalReceptionDate(this.maskingBodies.get(i),
                             this, spacecraftDate, this.epsSignalPropagation, propagationDelayType,
-                            bodyInertialFrame);
+                            bodyInertialFrame, this.maxIter);
                     } else {
                         bodyDate = VacuumSignalPropagationModel.getSignalEmissionDate(this.maskingBodies.get(i), this,
-                            spacecraftDate, this.epsSignalPropagation, propagationDelayType, bodyInertialFrame);
+                            spacecraftDate, this.epsSignalPropagation, propagationDelayType, bodyInertialFrame, this.maxIter);
                     }
                 }
 
@@ -1238,8 +1249,8 @@ public final class SensorModel implements PVCoordinatesProvider {
 
     /**
      * Set the epsilon for signal propagation used in
-     * {@link #spacecraftsMaskingDistance(AbsoluteDate, PropagationDelayType, LinkType))} and
-     * {@link #celestialBodiesMaskingDistance(AbsoluteDate)} methods.
+     * {@link #spacecraftsMaskingDistance(AbsoluteDate, AbsoluteDate, PropagationDelayType, LinkType)} and
+     * {@link #celestialBodiesMaskingDistance(AbsoluteDate, AbsoluteDate, PropagationDelayType, LinkType)} methods.
      * This epsilon (in s) directly reflect the accuracy of signal propagation (1s of accuracy = 3E8m of accuracy on
      * distance between emitter and receiver).
      * 
@@ -1247,6 +1258,27 @@ public final class SensorModel implements PVCoordinatesProvider {
      */
     public void setEpsilonSignalPropagation(final double epsilon) {
         this.epsSignalPropagation = epsilon;
+    }
+    
+
+    /**
+     * Getter for the maximum number of iterations for signal propagation when signal propagation is taken into account.
+     * 
+     * @return the maximum number of iterations for signal propagation
+     */
+    public int getMaxIter() {
+        return this.maxIter;
+    }
+
+    /**
+     * Setter for the maximum number of iterations for signal propagation when signal propagation is
+     * taken into account.
+     * 
+     * @param maxIter
+     *        Maximum number of iterations for signal propagation
+     */
+    public void setMaxIter(final int maxIter) {
+        this.maxIter = maxIter;
     }
 
     /**

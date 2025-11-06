@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.11.1:FA:FA-74:30/06/2023:[PATRIUS] Reliquat OGM3320 hash code de Vector3D
  * VERSION:4.11:FA:FA-3320:22/05/2023:[PATRIUS] Mauvaise implementation de la methode hashCode de Vector3D
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -145,7 +147,7 @@ public class Vector3D implements Vector<Euclidean3D> {
      */
     public Vector3D(final double[] v) {
         if (v.length != 3) {
-            throw new DimensionMismatchException(v.length, 3);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ARRAY_VECTOR, 3, v.length);
         }
         this.x = v[0];
         this.y = v[1];

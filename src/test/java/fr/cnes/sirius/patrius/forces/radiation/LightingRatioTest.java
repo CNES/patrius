@@ -15,6 +15,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
  * VERSION:4.13.1:FA:FA-176:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-101:08/12/2023:[PATRIUS] Harmonisation des eclipses pour les evenements et pour la PRS
  * END-HISTORY
@@ -22,6 +25,7 @@
 package fr.cnes.sirius.patrius.forces.radiation;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -160,5 +164,10 @@ public class LightingRatioTest {
         Assert.assertEquals(FramesFactory.getICRF(), lightingRatio.getInertialFrame());
         Assert.assertEquals(0., lightingRatio.getEpsilonSignalPropagation(), 1e-14);
         Assert.assertEquals(100, lightingRatio.getMaxIterSignalPropagation());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

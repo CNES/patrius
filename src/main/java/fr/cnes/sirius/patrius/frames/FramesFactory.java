@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.13:DM:DM-68:08/12/2023:[PATRIUS] Ajout du repere G50 CNES
@@ -83,7 +85,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * <h5>Reference Frames</h5>
  * <p>
  * The user can retrieve those reference frames using various static methods (
- * {@link FramesFactory#getFrame(Predefined)}, {@link #getICRF()}, {@link #getGCRF()}, {@link #getCIRF()},
+ * {@link FramesFactory#getFrame(PredefinedFrameType)}, {@link #getICRF()}, {@link #getGCRF()}, {@link #getCIRF()},
  * {@link #getTIRF()}, {@link #getITRF()}, {@link #getEME2000()}, {@link #getMOD(boolean)}, {@link #getTOD(boolean)},
  * {@link #getGTOD(boolean)}, {@link #getITRFEquinox()}, {@link #getTEME()} and {@link #getVeis1950()}).
  * </p>
@@ -156,7 +158,7 @@ public final class FramesFactory implements Serializable {
     private static final int EIGHT = 8;
 
     /** Predefined frames. */
-    private static final transient Map<Predefined, CelestialBodyFrame> FRAMES = new ConcurrentHashMap<>();
+    private static final transient Map<PredefinedFrameType, CelestialBodyFrame> FRAMES = new ConcurrentHashMap<>();
 
     /** Frames configuration. */
     private static final AtomicReference<FramesConfiguration> CONFIG_REF = new AtomicReference<>();
@@ -180,7 +182,7 @@ public final class FramesFactory implements Serializable {
      */
     // CHECKSTYLE: stop CyclomaticComplexity check
     // Reason: Orekit code kept as such
-    public static Frame getFrame(final Predefined factoryKey) throws PatriusException {
+    public static Frame getFrame(final PredefinedFrameType factoryKey) throws PatriusException {
         // CHECKSTYLE: resume CyclomaticComplexity check
 
         // Initialisation
@@ -285,7 +287,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getGCRF() {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.GCRF;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.GCRF;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -293,7 +295,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getEMB(), new GCRFProvider(), true, factoryKey);
+                    frame = new PredefinedFrame(getEMB(), new GCRFProvider(), true, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -313,7 +315,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getEMB() {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.EMB;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.EMB;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -321,7 +323,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getICRF(), new EMBProvider(), true, factoryKey);
+                    frame = new PredefinedFrame(getICRF(), new EMBProvider(), true, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -356,7 +358,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getCIRF() {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.CIRF;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.CIRF;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -364,7 +366,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getGCRF(), new CIRFProvider(), true, factoryKey);
+                    frame = new PredefinedFrame(getGCRF(), new CIRFProvider(), true, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -385,7 +387,7 @@ public final class FramesFactory implements Serializable {
      */
     public static CelestialBodyFrame getTIRF() throws PatriusException {
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.TIRF;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.TIRF;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -393,7 +395,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getCIRF(), new TIRFProvider(), false, factoryKey);
+                    frame = new PredefinedFrame(getCIRF(), new TIRFProvider(), false, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -415,7 +417,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getITRF() throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.ITRF;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.ITRF;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -424,7 +426,7 @@ public final class FramesFactory implements Serializable {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
                     final Frame tirfFrame = getTIRF();
-                    frame = new FactoryManagedFrame(tirfFrame, new ITRFProvider(), false, factoryKey);
+                    frame = new PredefinedFrame(tirfFrame, new ITRFProvider(), false, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -447,7 +449,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getEME2000() {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.EME2000;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.EME2000;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -455,7 +457,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getGCRF(), new EME2000Provider(), true,
+                    frame = new PredefinedFrame(getGCRF(), new EME2000Provider(), true,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -480,7 +482,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getVeis1950() throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.VEIS_1950;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.VEIS_1950;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -488,7 +490,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(FramesFactory.getGTOD(false), new VEISProvider(), true,
+                    frame = new PredefinedFrame(FramesFactory.getGTOD(false), new VEISProvider(), true,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -513,7 +515,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getG50() throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.G50;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.G50;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -521,7 +523,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(FramesFactory.getGTOD(false), new G50Provider(), true,
+                    frame = new PredefinedFrame(FramesFactory.getGTOD(false), new G50Provider(), true,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -543,7 +545,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getITRFEquinox() throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.ITRF_EQUINOX;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.ITRF_EQUINOX;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -551,7 +553,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getGTOD(true), new ITRFEquinoxProvider(), false,
+                    frame = new PredefinedFrame(getGTOD(true), new ITRFEquinoxProvider(), false,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -579,8 +581,8 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getGTOD(final boolean applyEOPCorr) throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey = applyEOPCorr ? Predefined.GTOD_WITH_EOP_CORRECTIONS
-            : Predefined.GTOD_WITHOUT_EOP_CORRECTIONS;
+        final PredefinedFrameType factoryKey = applyEOPCorr ? PredefinedFrameType.GTOD_WITH_EOP_CORRECTIONS
+            : PredefinedFrameType.GTOD_WITHOUT_EOP_CORRECTIONS;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -588,7 +590,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getTOD(applyEOPCorr), new GTODProvider(), false,
+                    frame = new PredefinedFrame(getTOD(applyEOPCorr), new GTODProvider(), false,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -616,17 +618,17 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getTOD(final boolean applyEOPCorr) throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey;
+        final PredefinedFrameType factoryKey;
         final int interpolationPoints;
         final int pointsPerDay;
         if (applyEOPCorr) {
             // Apply EOP correction
-            factoryKey = Predefined.TOD_WITH_EOP_CORRECTIONS;
+            factoryKey = PredefinedFrameType.TOD_WITH_EOP_CORRECTIONS;
             interpolationPoints = 6;
             pointsPerDay = TWENTY_FOUR;
         } else {
             // Do not apply EOP correction
-            factoryKey = Predefined.TOD_WITHOUT_EOP_CORRECTIONS;
+            factoryKey = PredefinedFrameType.TOD_WITHOUT_EOP_CORRECTIONS;
             interpolationPoints = 6;
             pointsPerDay = EIGHT;
         }
@@ -642,7 +644,7 @@ public final class FramesFactory implements Serializable {
                         interpolationPoints, Constants.JULIAN_DAY / pointsPerDay,
                         PatriusConfiguration.getCacheSlotsNumber(), Constants.JULIAN_YEAR,
                         30 * Constants.JULIAN_DAY);
-                    frame = new FactoryManagedFrame(getMOD(applyEOPCorr), interpolating, true, factoryKey);
+                    frame = new PredefinedFrame(getMOD(applyEOPCorr), interpolating, true, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -668,8 +670,8 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getMOD(final boolean applyEOPCorr) {
 
         // try to find an already built frame
-        final Predefined factoryKey = applyEOPCorr ? Predefined.MOD_WITH_EOP_CORRECTIONS
-            : Predefined.MOD_WITHOUT_EOP_CORRECTIONS;
+        final PredefinedFrameType factoryKey = applyEOPCorr ? PredefinedFrameType.MOD_WITH_EOP_CORRECTIONS
+            : PredefinedFrameType.MOD_WITHOUT_EOP_CORRECTIONS;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -677,7 +679,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(applyEOPCorr ? FramesFactory.getGCRF()
+                    frame = new PredefinedFrame(applyEOPCorr ? FramesFactory.getGCRF()
                         : FramesFactory.getEME2000(), new MODProvider(), true, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -705,7 +707,7 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getTEME() throws PatriusException {
 
         // try to find an already built frame
-        final Predefined factoryKey = Predefined.TEME;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.TEME;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -713,7 +715,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getTOD(false), new TEMEProvider(), true, factoryKey);
+                    frame = new PredefinedFrame(getTOD(false), new TEMEProvider(), true, factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
                     frame = FRAMES.get(factoryKey);
@@ -736,8 +738,8 @@ public final class FramesFactory implements Serializable {
     public static CelestialBodyFrame getEclipticMOD(final boolean applyEOPCorr) {
 
         // try to find an already built frame
-        final Predefined factoryKey = applyEOPCorr ? Predefined.ECLIPTIC_MOD_WITH_EOP_CORRECTIONS
-            : Predefined.ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS;
+        final PredefinedFrameType factoryKey = applyEOPCorr ? PredefinedFrameType.ECLIPTIC_MOD_WITH_EOP_CORRECTIONS
+            : PredefinedFrameType.ECLIPTIC_MOD_WITHOUT_EOP_CORRECTIONS;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -745,7 +747,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getMOD(applyEOPCorr), new EclipticMODProvider(), true,
+                    frame = new PredefinedFrame(getMOD(applyEOPCorr), new EclipticMODProvider(), true,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {
@@ -767,7 +769,7 @@ public final class FramesFactory implements Serializable {
      * @return the EclipticJ2000 frame
      * */
     public static CelestialBodyFrame getEclipticJ2000() {
-        final Predefined factoryKey = Predefined.ECLIPTIC_J2000;
+        final PredefinedFrameType factoryKey = PredefinedFrameType.ECLIPTIC_J2000;
         CelestialBodyFrame frame = FRAMES.get(factoryKey);
 
         // Double-check locking
@@ -775,7 +777,7 @@ public final class FramesFactory implements Serializable {
             synchronized (FramesFactory.class) {
                 if (FRAMES.get(factoryKey) == null) {
                     // Build unique instance
-                    frame = new FactoryManagedFrame(getICRF(), new EclipticJ2000Provider(), true,
+                    frame = new PredefinedFrame(getICRF(), new EclipticJ2000Provider(), true,
                         factoryKey);
                     FRAMES.put(factoryKey, frame);
                 } else {

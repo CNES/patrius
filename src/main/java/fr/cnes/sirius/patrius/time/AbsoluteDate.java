@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
 * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours 
  *          juliens dans TidesToolbox.computeFundamentalArguments() 
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
@@ -57,6 +58,7 @@ import java.time.ZoneOffset;
 import java.util.Date;
 
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
@@ -335,11 +337,7 @@ public class AbsoluteDate
             // is sum + residual, where sum is the closest representable number to the exact
             // result and residual is the missing part that does not fit in the first number
             final double sum = seconds + tsOffset;
-            final double sPrime = sum - tsOffset;
-            final double tPrime = sum - sPrime;
-            final double deltaS = seconds - sPrime;
-            final double deltaT = tsOffset - tPrime;
-            final double residual = deltaS + deltaT;
+            final double residual = Precision.twoSumError(seconds, tsOffset, sum);
             dl = (long) MathLib.floor(sum);
 
             this.offset = (sum - dl) + residual;
@@ -559,11 +557,7 @@ public class AbsoluteDate
                 // at the end, the EXACT result of addition since.offset + elapsedDuration
                 // is sum + residual, where sum is the closest representable number to the exact
                 // result and residual is the missing part that does not fit in the first number
-                final double oPrime = sum - elapsedDuration;
-                final double dPrime = sum - oPrime;
-                final double deltaO = since.offset - oPrime;
-                final double deltaD = elapsedDuration - dPrime;
-                final double residual = deltaO + deltaD;
+                final double residual = Precision.twoSumError(since.offset, elapsedDuration, sum);
                 final long dl = (long) MathLib.floor(sum);
                 this.offset = (sum - dl) + residual;
                 this.epoch = since.epoch + dl;
@@ -1035,20 +1029,12 @@ public class AbsoluteDate
         // TwoSum Moller-Kuth algorithm
         // Initialize offsets
         final double dOffset = this.offset - instant.offset;
-        final double dOffsetAprime = dOffset + instant.offset;
-        final double dOffsetBprime = dOffset - dOffsetAprime;
-        final double dOffsetDeltaA = this.offset - dOffsetAprime;
-        final double dOffsetDeltaB = -instant.offset - dOffsetBprime;
-        final double dOffsetResidual = dOffsetDeltaA + dOffsetDeltaB;
+        final double dOffsetResidual = Precision.twoSumError(this.offset, -instant.offset, dOffset);
 
         // TwoSum Moller-Kuth algorithm
         final double dEpoch = (this.epoch - instant.epoch);
         final double sum = dEpoch + dOffset;
-        final double aPrime = sum - dOffset;
-        final double bPrime = sum - aPrime;
-        final double deltaA = dEpoch - aPrime;
-        final double deltaB = dOffset - bPrime;
-        final double residual = deltaA + deltaB;
+        final double residual = Precision.twoSumError(dEpoch, dOffset, sum);
 
         // offset in seconds between the two instants
         return sum + (residual + dOffsetResidual);

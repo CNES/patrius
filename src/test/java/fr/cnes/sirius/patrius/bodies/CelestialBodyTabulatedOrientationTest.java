@@ -16,6 +16,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * END-HISTORY
  */
@@ -28,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.Attitude;
 import fr.cnes.sirius.patrius.attitudes.TabulatedAttitude;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyOrientation.OrientationType;
@@ -276,6 +278,7 @@ public class CelestialBodyTabulatedOrientationTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         // Attitudes creation
         final Rotation rot1 = new Rotation(false, 0.48, 0.64, 0.36, 0.48);
         final Rotation rot2 = new Rotation(false, 0.64, 0.48, 0.48, 0.36);

@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.11.1:DM:DM-49:30/06/2023:[PATRIUS] Extraction arbre des reperes SPICE et link avec CelestialBodyFactory
  * VERSION:4.10.1:FA:FA-3267:02/12/2022:[PATRIUS] Anomalie dans gestion acceleration null du PVCoordinates (suite)
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -42,5 +44,5 @@ public interface JPLEphemerisLoader extends CelestialBodyEphemerisLoader {
      * @exception PatriusException
      *            if constants cannot be loaded
      */
-    double getLoadedGravitationalCoefficient(final EphemerisType body) throws PatriusException;
+    double getLoadedGravitationalCoefficient(final PredefinedEphemerisType body) throws PatriusException;
 }

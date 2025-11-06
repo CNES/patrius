@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3129:10/05/2022:[PATRIUS] Commentaires TODO ou FIXME 
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -40,6 +41,7 @@ import org.junit.Test;
 
 import fr.cnes.sirius.patrius.ComparisonType;
 import fr.cnes.sirius.patrius.Report;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.TestUtils;
@@ -927,6 +929,7 @@ public class StelaEquinoctialOrbitTest {
      */
     @BeforeClass
     public static void setUp() throws Exception {
+        Utils.clear();
         equi = new StelaEquinoctialOrbit(7000000, 0.01, 0.02, 0.3, 0.4, 0.0, FramesFactory.getEME2000(),
             new AbsoluteDate(), 3.9860044144982E14);
     }

@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -22,11 +24,17 @@
  */
 package fr.cnes.sirius.patrius.bodies;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.CelestialPoint.BodyNature;
+import fr.cnes.sirius.patrius.bodies.bsp.spice.SpiceKernelManager;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.EME2000Provider;
 import fr.cnes.sirius.patrius.frames.transformations.EclipticJ2000Provider;
@@ -154,10 +162,21 @@ public class BasicCelestialPointTest {
      * @referenceVersion 4.13
      *
      * @nonRegressionVersion 4.13
+     * 
+     * @throws IOException 
+     * @throws URISyntaxException 
      */
     @Test
-    public void testCelestialBarycenterBSP() throws PatriusException {
+    public void testCelestialBarycenterBSP() throws PatriusException, IOException, URISyntaxException {
         Utils.setDataRoot("bsp");
+        
+        final String file = new File(ClassLoader
+            .getSystemResource(
+                "bsp" + File.separator + "mar097_20160314_20300101.bsp")
+            .toURI())
+                .getAbsolutePath();
+        SpiceKernelManager.loadSpiceKernel(file);
+        
         // Build EMB
         final CelestialPoint emb = CelestialBodyFactory.getEarthMoonBarycenter();
 
@@ -188,5 +207,10 @@ public class BasicCelestialPointTest {
         Assert.assertNotNull(emb.getEphemeris());
         emb.setEphemeris(null);
         Assert.assertNull(emb.getEphemeris());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

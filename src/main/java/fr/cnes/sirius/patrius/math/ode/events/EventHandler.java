@@ -19,6 +19,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
  * VERSION:4.13:FA:FA-112:08/12/2023:[PATRIUS] Probleme si Earth est utilise comme corps pivot pour mar097.bsp
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -38,7 +39,6 @@
 package fr.cnes.sirius.patrius.math.ode.events;
 
 import fr.cnes.sirius.patrius.events.detectors.LocalTimeAngleDetector;
-import fr.cnes.sirius.patrius.propagation.SpacecraftState;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 
 /**
@@ -231,7 +231,7 @@ public interface EventHandler {
     /**
      * Filter last event: returns true if the last event is a false detection, false otherwise.
      * <p>
-     * This method is called right before {@link #eventOccurred(SpacecraftState, boolean, boolean)} method.
+     * This method is called right before {@link #eventOccurred(double, double[], boolean, boolean)} method.
      * </p>
      * <p>
      * This may be useful in order to filter some events in particular when angles are at stake (see for example

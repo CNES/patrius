@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
@@ -201,7 +203,7 @@ public class BlockFieldMatrix<T extends FieldElement<T>> extends AbstractFieldMa
             final int iHeight = this.blockHeight(iBlock);
             for (int jBlock = 0; jBlock < this.blockColumns; ++jBlock, ++index) {
                 if (blockData[index].length != iHeight * this.blockWidth(jBlock)) {
-                    throw new DimensionMismatchException(blockData[index].length,
+                    throw new DimensionMismatchException(PatriusMessages.WRONG_BLOCK_LENGTH, blockData[index].length,
                         iHeight * this.blockWidth(jBlock));
                 }
                 if (copyArray) {
@@ -244,7 +246,7 @@ public class BlockFieldMatrix<T extends FieldElement<T>> extends AbstractFieldMa
         for (final T[] element : rawData) {
             final int length = element.length;
             if (length != columns) {
-                throw new DimensionMismatchException(columns, length);
+                throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, columns, length);
             }
         }
 
@@ -845,7 +847,7 @@ public class BlockFieldMatrix<T extends FieldElement<T>> extends AbstractFieldMa
         this.checkSubMatrixIndex(row, endRow, column, endColumn);
         for (final T[] subRow : subMatrix) {
             if (subRow.length != refLength) {
-                throw new DimensionMismatchException(refLength, subRow.length);
+                throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS, refLength, subRow.length);
             }
         }
 
@@ -1311,7 +1313,8 @@ public class BlockFieldMatrix<T extends FieldElement<T>> extends AbstractFieldMa
     @Override
     public T[] operate(final T[] v) {
         if (v.length != this.columns) {
-            throw new DimensionMismatchException(v.length, this.columns);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_COLUMN_DIMENSIONS,
+                v.length, this.columns);
         }
         final T[] out = MathArrays.buildArray(this.getField(), this.rows);
         final T zero = this.getField().getZero();
@@ -1353,7 +1356,8 @@ public class BlockFieldMatrix<T extends FieldElement<T>> extends AbstractFieldMa
     public T[] preMultiply(final T[] v) {
 
         if (v.length != this.rows) {
-            throw new DimensionMismatchException(v.length, this.rows);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, v.length,
+                this.rows);
         }
         final T[] out = MathArrays.buildArray(this.getField(), this.columns);
         final T zero = this.getField().getZero();

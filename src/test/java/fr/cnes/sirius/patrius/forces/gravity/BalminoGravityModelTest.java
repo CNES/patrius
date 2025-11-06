@@ -15,6 +15,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-69:30/06/2023:[PATRIUS] Amélioration de la gestion des attractions gravitationnelles dans le propagateur
  * VERSION:4.11:DM:DM-40:22/05/2023:[PATRIUS] Gestion derivees par rapport au coefficient k dans les GravityModel
@@ -45,6 +46,7 @@ import java.io.IOException;
 import java.text.ParseException;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
@@ -1098,5 +1100,10 @@ public class BalminoGravityModelTest {
 
         final BalminoGravityModel forceModel = new BalminoGravityModel(itrf, this.ae,
                 this.mu, c, s);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

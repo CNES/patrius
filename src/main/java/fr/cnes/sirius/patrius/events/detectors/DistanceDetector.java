@@ -19,6 +19,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3282:22/05/2023:[PATRIUS] Amelioration gestion attractions gravitationnelles
@@ -48,7 +49,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 /**
  * Detects when the distance from the spacecraft to a given body reaches a predetermined value.
  * <p>
- * The default implementation behaviour is to {@link EventDetector.Action#STOP stop} propagation when the distance is
+ * The default implementation behaviour is to {@link EventDetector.Action#STOP} stop propagation when the distance is
  * reached. This can be changed by using provided constructors.
  * </p>
  * 
@@ -92,7 +93,7 @@ public class DistanceDetector extends AbstractDetector {
      * convergence threshold ({@link #DEFAULT_THRESHOLD}).
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the distance is
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the distance is
      * reached.
      * </p>
      * <p>
@@ -113,7 +114,7 @@ public class DistanceDetector extends AbstractDetector {
      * Constructor for a DistanceDetector instance with additional maxCheck and threshold parameters
      * 
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the distance is
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the distance is
      * reached.
      * </p>
      * 

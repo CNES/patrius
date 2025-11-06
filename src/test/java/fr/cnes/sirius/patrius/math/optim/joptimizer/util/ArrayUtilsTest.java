@@ -1,8 +1,11 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -43,7 +46,11 @@
 
 package fr.cnes.sirius.patrius.math.optim.joptimizer.util;
 
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import junit.framework.TestCase;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test class for {@link ArrayUtils} class.
@@ -245,5 +252,10 @@ public class ArrayUtilsTest extends TestCase {
         assertEquals(expectedResult2, result2);
         assertEquals(expectedResult3, result3);
         
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes definies dans la façade ALGO DV SIRUS 
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,16 +34,28 @@
 package fr.cnes.sirius.patrius.math.util;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.distribution.RealDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.distribution.UniformRealDistribution;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotFiniteNumberException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.RandomDataGenerator;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusRuntimeException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test cases for the MathUtils class.
@@ -486,5 +499,10 @@ public final class MathUtilsTest {
         Assert.assertTrue(MathUtils.containsNaN(Double.NaN));
         Assert.assertFalse(MathUtils.containsNaN(1.1, 2.2));
         Assert.assertFalse(MathUtils.containsNaN());
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

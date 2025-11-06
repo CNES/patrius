@@ -1,5 +1,7 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes façade ALGO DV SIRUS 
@@ -18,9 +20,11 @@
  */
 /*
  */
+/*
+ */
 package fr.cnes.sirius.patrius.attitudes.directions;
 
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
+
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
@@ -51,7 +55,7 @@ public class NorthNormalToEclipticDirection implements IDirection {
     private static final Frame EARTH_FRAME = FramesFactory.getGCRF();
 
     /** The Sun. */
-    private final CelestialPoint sun;
+    private final PVCoordinatesProvider sun;
 
     /**
      * Constructor for celestial object center direction from Earth center : the celestial object center is the target
@@ -60,7 +64,7 @@ public class NorthNormalToEclipticDirection implements IDirection {
      * @param sun
      *            the Sun
      */
-    public NorthNormalToEclipticDirection(final CelestialPoint sun) {
+    public NorthNormalToEclipticDirection(final PVCoordinatesProvider sun) {
         this.sun = sun;
     }
 

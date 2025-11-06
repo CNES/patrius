@@ -18,6 +18,7 @@
  * @history creation 22/07/2012
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -142,12 +143,14 @@ public class DirectRadiativeWrenchModel implements RadiationWrenchSensitive {
             if (part.hasProperty(PropertyType.RADIATION_APPLICATION_POINT) &&
                 part.hasProperty(PropertyType.RADIATIVE)) {
 
+                final DirectRadiativeModel directRadiativeModel = new DirectRadiativeModel(this.assembly);
+
                 // Force applied on the current part, expressed in the SpacecraftState frame
                 if (part.hasProperty(PropertyType.RADIATIVE_CROSS_SECTION)) {
-                    partComputedForce = DirectRadiativeModel.forceOnSphere(state, part, flux);
+                    partComputedForce = directRadiativeModel.forceOnSphere(state, part, flux);
                 }
                 if (part.hasProperty(PropertyType.RADIATIVE_FACET)) {
-                    partComputedForce = DirectRadiativeModel.forceOnFacet(state, part, flux);
+                    partComputedForce = directRadiativeModel.forceOnFacet(state, part, flux);
                 }
 
                 // Express force in the main part frame (incl. orientation)

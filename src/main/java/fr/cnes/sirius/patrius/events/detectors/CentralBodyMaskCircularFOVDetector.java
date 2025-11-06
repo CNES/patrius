@@ -18,6 +18,8 @@
  * @history creation 01/03/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -42,6 +44,7 @@ package fr.cnes.sirius.patrius.events.detectors;
 import fr.cnes.sirius.patrius.bodies.BodyShape;
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.events.detectors.LinkTypeHandler.SignalPropagationRole;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.IEllipsoid;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
@@ -192,7 +195,7 @@ public class CentralBodyMaskCircularFOVDetector extends AbstractSignalPropagatio
         final double occultedBodyRadius, final BodyShape occultingBody,
         final boolean totalEclipseFlag, final Vector3D center, final double halfAperture,
         final double maxCheck, final double threshold, final Action action, final boolean remove) {
-        super(maxCheck, threshold);
+        super(maxCheck, threshold, new LinkTypeHandler(SignalPropagationRole.RECEIVER, occultedBody));
         this.eclipseDetector = new EclipseDetector(occultedBody, occultedBodyRadius, occultingBody,
             totalEclipseFlag ? 0 : 1, AbstractDetector.DEFAULT_MAXCHECK,
             AbstractDetector.DEFAULT_THRESHOLD);
@@ -225,7 +228,7 @@ public class CentralBodyMaskCircularFOVDetector extends AbstractSignalPropagatio
     public CentralBodyMaskCircularFOVDetector(final EclipseDetector eclipseDetectorIn,
         final CircularFieldOfViewDetector circularFOVDetectorIn, final double maxCheck,
         final double threshold, final Action action, final boolean remove) {
-        super(maxCheck, threshold);
+        super(maxCheck, threshold, eclipseDetectorIn.getLinkTypeHandler());
         this.eclipseDetector = eclipseDetectorIn;
         this.circularFOVDetector = circularFOVDetectorIn;
 
@@ -320,24 +323,6 @@ public class CentralBodyMaskCircularFOVDetector extends AbstractSignalPropagatio
      */
     public CircularFieldOfViewDetector getCircularFOVDetector() {
         return this.circularFOVDetector;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getEmitter(final SpacecraftState s) {
-        return this.eclipseDetector.getEmitter(s);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public PVCoordinatesProvider getReceiver(final SpacecraftState s) {
-        return this.eclipseDetector.getReceiver(s);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public DatationChoice getDatationChoice() {
-        return this.eclipseDetector.getDatationChoice();
     }
 
     /**

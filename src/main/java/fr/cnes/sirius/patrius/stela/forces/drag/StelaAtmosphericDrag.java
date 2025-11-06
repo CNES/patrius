@@ -18,6 +18,7 @@
  * @history created 18/02/2013
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-180:22/08/2024: [PATRIUS] Thread-safety du propagateur STELA-PATRIUS
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Courtes periodes traînee atmospherique et prs
  * VERSION:4.11:DM:DM-3197:22/05/2023:[PATRIUS] Deplacement dans PATRIUS de classes façade ALGO DV SIRUS 
@@ -230,15 +231,18 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
             // True anomaly (upper bound):
             final double vs = bounds[1];
 
+            // Squaring computation
+            final Squaring squaring = new Squaring();
+
             // Computation of squaring points (in mean parameters)
-            squaringPV = Squaring.computeSquaringPoints(this.squaringPoints, orbit, ve, vs);
+            squaringPV = squaring.computeSquaringPoints(this.squaringPoints, orbit, ve, vs);
 
             // Converter without drag
             final OrbitNatureConverter converterNoDrag = getConverterWithoutDrag(converter);
 
             // Drag evaluation for each squaring point (osculating parameters).
             for (int i = 0; i < this.squaringPoints; i++) {
-                final AbsoluteDate squaringDate = Squaring.getSquaringJDCNES()[i];
+                final AbsoluteDate squaringDate = squaring.getSquaringJDCNES()[i];
                 final StelaEquinoctialOrbit orbitMean = new StelaEquinoctialOrbit(squaringPV[i][0], squaringPV[i][2],
                         squaringPV[i][3], squaringPV[i][4], squaringPV[i][5], squaringPV[i][1], frame, squaringDate,
                         orbit.getMu());
@@ -305,6 +309,9 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
     public double[] computeShortPeriods(final StelaEquinoctialOrbit orbit, final OrbitNatureConverter converter)
             throws PatriusException {
 
+        // Squaring computation
+        final Squaring squaring = new Squaring();
+
         // Convert to CIRF if needed
         final StelaEquinoctialOrbit orbitCIRF = new StelaEquinoctialOrbit(orbit.getPVCoordinates(FramesFactory
                 .getCIRF()), FramesFactory.getCIRF(), orbit.getDate(), orbit.getMu());
@@ -322,7 +329,7 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
             final double deltavi = (vs - ve) / (squaringPoints - 1);
 
             // Get list of Squaring Points
-            final double[][] resSquaring = Squaring.computeSquaringPoints(squaringPoints, orbitCIRF, ve, vs);
+            final double[][] resSquaring = squaring.computeSquaringPoints(squaringPoints, orbitCIRF, ve, vs);
 
             // Compute ksi (2nd value in squaring points)
             final double[] ksi = new double[squaringPoints];
@@ -570,15 +577,18 @@ public class StelaAtmosphericDrag extends AbstractStelaGaussContribution {
         // True anomaly (upper bound):
         final double vs = bounds[1];
 
+        // Squaring computation
+        final Squaring squaring = new Squaring();
+
         // Computation of squaring points (in mean parameters)
-        final double[][] squaringPV = Squaring.computeSquaringPoints(this.squaringPoints, orbit, ve, vs);
+        final double[][] squaringPV = squaring.computeSquaringPoints(this.squaringPoints, orbit, ve, vs);
 
         // Deactivate drag short periods for avoiding recursive infinite loop
         final OrbitNatureConverter converterNoDrag = getConverterWithoutDrag(converter);
 
         // Drag evaluation for each squaring point (osculating parameters).
         for (int i = 0; i < this.squaringPoints; i++) {
-            final AbsoluteDate squaringDate = Squaring.getSquaringJDCNES()[i];
+            final AbsoluteDate squaringDate = squaring.getSquaringJDCNES()[i];
             final StelaEquinoctialOrbit orbitMean = new StelaEquinoctialOrbit(squaringPV[i][0], squaringPV[i][2],
                     squaringPV[i][3], squaringPV[i][4], squaringPV[i][5], squaringPV[i][1], frame, squaringDate,
                     orbit.getMu());

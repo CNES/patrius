@@ -16,6 +16,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-247:22/08/2024: [PATRIUS] Correction des tests unitaires sur Jenkins
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.12:DM:DM-62:17/08/2023:[PATRIUS] Création de l'interface BodyPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -31,18 +33,18 @@
 package fr.cnes.sirius.patrius.assembly.models;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -89,6 +91,7 @@ import fr.cnes.sirius.patrius.time.UTCTAILoader;
 import fr.cnes.sirius.patrius.utils.AngularCoordinates;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Unit and validation tests for the RFLinkBudgetModel class.
@@ -389,9 +392,11 @@ public class RFLinkBudgetTest {
      * @throws PatriusException
      * @throws IOException
      * @throws NumberFormatException
+     * @throws URISyntaxException
      */
     @BeforeClass
-    public static void setUpBeforeClass() throws PatriusException, NumberFormatException, IOException {
+    public static void setUpBeforeClass()
+        throws PatriusException, NumberFormatException, IOException, URISyntaxException {
 
         Report.printClassHeader(RFLinkBudgetTest.class.getSimpleName(), "RF link budget");
 
@@ -464,8 +469,10 @@ public class RFLinkBudgetTest {
 
         mu = 0.398600442000000E+15;
         frame = FramesFactory.getEME2000();
-        final URL orbitURL = RFLinkBudgetTest.class.getClassLoader().getResource("RF/FC_EPHPV_NUM_J2000");
-        final BufferedReader reader = new BufferedReader(new FileReader(orbitURL.getPath()));
+        final String orbitURL =
+            new File(ClassLoader.getSystemResource("RF" + File.separator + "FC_EPHPV_NUM_J2000").toURI())
+                .getAbsolutePath();
+        final BufferedReader reader = new BufferedReader(new FileReader(orbitURL));
 
         final List<SpacecraftState> spacecraftList = new ArrayList<>();
         String line;
@@ -499,8 +506,9 @@ public class RFLinkBudgetTest {
 
         // ============================ Attitude ephemeris (read file) ============================
 
-        final URL attitudeURL = RFLinkBudgetTest.class.getClassLoader().getResource("RF/FC_SIMU_CINE");
-        final BufferedReader reader4 = new BufferedReader(new FileReader(attitudeURL.getPath()));
+        final String attitudeURL =
+            new File(ClassLoader.getSystemResource("RF" + File.separator + "FC_SIMU_CINE").toURI()).getAbsolutePath();
+        final BufferedReader reader4 = new BufferedReader(new FileReader(attitudeURL));
 
         final List<Attitude> attitudeList = new ArrayList<>();
         while ((line = reader4.readLine()) != null) {
@@ -583,17 +591,22 @@ public class RFLinkBudgetTest {
         final double[][] inEllipticityFactorzMoins = new double[91][361];
         final double[][] inEllipticityFactorzMoinsUnderSampled = new double[10][36];
 
-        final URL ellipticLossURLzPlus = RFLinkBudgetTest.class.getClassLoader().getResource(
-            "RF/FC_DIAG_PERTES_ELLIPTIQUES_TMTC_Z_PLUS");
-        final URL gainURLzPlus = RFLinkBudgetTest.class.getClassLoader().getResource("RF/FC_DIAG_ANTENNE_TMTC_Z_PLUS");
-        final URL ellipticLossURLzMoins = RFLinkBudgetTest.class.getClassLoader().getResource(
-            "RF/FC_DIAG_PERTES_ELLIPTIQUES_TMTC_Z_MOINS");
-        final URL gainURLzMoins = RFLinkBudgetTest.class.getClassLoader()
-            .getResource("RF/FC_DIAG_ANTENNE_TMTC_Z_MOINS");
-        final BufferedReader reader2 = new BufferedReader(new FileReader(ellipticLossURLzPlus.getPath()));
-        final BufferedReader reader3 = new BufferedReader(new FileReader(gainURLzPlus.getPath()));
-        final BufferedReader reader5 = new BufferedReader(new FileReader(ellipticLossURLzMoins.getPath()));
-        final BufferedReader reader6 = new BufferedReader(new FileReader(gainURLzMoins.getPath()));
+        final String ellipticLossURLzPlus = new File(
+            ClassLoader.getSystemResource("RF" + File.separator + "FC_DIAG_PERTES_ELLIPTIQUES_TMTC_Z_PLUS").toURI())
+                .getAbsolutePath();
+        final String gainURLzPlus =
+            new File(ClassLoader.getSystemResource("RF" + File.separator + "FC_DIAG_ANTENNE_TMTC_Z_PLUS").toURI())
+                .getAbsolutePath();
+        final String ellipticLossURLzMoins = new File(
+            ClassLoader.getSystemResource("RF" + File.separator + "FC_DIAG_PERTES_ELLIPTIQUES_TMTC_Z_MOINS").toURI())
+                .getAbsolutePath();
+        final String gainURLzMoins =
+            new File(ClassLoader.getSystemResource("RF" + File.separator + "FC_DIAG_ANTENNE_TMTC_Z_MOINS").toURI())
+                .getAbsolutePath();
+        final BufferedReader reader2 = new BufferedReader(new FileReader(ellipticLossURLzPlus));
+        final BufferedReader reader3 = new BufferedReader(new FileReader(gainURLzPlus));
+        final BufferedReader reader5 = new BufferedReader(new FileReader(ellipticLossURLzMoins));
+        final BufferedReader reader6 = new BufferedReader(new FileReader(gainURLzMoins));
         // Skip header
         for (int i = 0; i < 9; i++) {
             reader2.readLine();
@@ -744,5 +757,10 @@ public class RFLinkBudgetTest {
 
         linkBudgetModelZplus = new RFLinkBudgetModel(station, satellite, antennaZPlus);
         linkBudgetModelZMoins = new RFLinkBudgetModel(station, satellite, antennaZMoins);
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

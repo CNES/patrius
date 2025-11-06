@@ -17,6 +17,11 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+ * VERSION:4.14:OPENFD-343:22/08/2024: Ajout de regles de codage dans le standard de codage DYNVOL
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
@@ -230,7 +235,7 @@ public final class MatrixUtils {
      * @param summarySize
      *        Sub-corners blocs square dimensions for summary view
      * @return the real matrix format
-     * @see {@link #SUMMARY_FORMAT} specialized with user-specified sub-corners blocs square dimension
+     * @see #SUMMARY_FORMAT specialized with user-specified sub-corners blocs square dimension
      */
     public static RealMatrixFormat buildSummaryMatrixFormat(final int summarySize) {
         return new RealMatrixFormat(OPENING_BRACKET, CLOSING_BRACKET, OPENING_BRACKET, CLOSING_BRACKET,
@@ -969,7 +974,8 @@ public final class MatrixUtils {
                 }
 
                 if (data[i].length != nbCols) {
-                    throw new DimensionMismatchException(data[i].length, nbCols);
+                    throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS,
+                        data[i].length, nbCols);
                 }
             }
         }
@@ -1046,7 +1052,8 @@ public final class MatrixUtils {
                 }
 
                 if (data[i].length != nbCols) {
-                    throw new DimensionMismatchException(data[i].length, nbCols);
+                    throw new DimensionMismatchException(PatriusMessages.DIFFERENT_ROWS_LENGTHS,
+                        data[i].length, nbCols);
                 }
             }
         }
@@ -1460,7 +1467,7 @@ public final class MatrixUtils {
      */
     public static void checkDimension(final int expected, final int actual) {
         if (expected != actual) {
-            throw new DimensionMismatchException(actual, expected);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_MATRIX_DIMENSION, expected, actual);
         }
     }
 
@@ -1527,13 +1534,13 @@ public final class MatrixUtils {
 
         if (!rightToTransposed) {
             if (left.getColumnDimension() != right.getRowDimension()) {
-                throw new DimensionMismatchException(right.getRowDimension(),
-                    left.getColumnDimension());
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_DIMENSIONS_MULTIPLICATION,
+                    right.getRowDimension(), left.getColumnDimension());
             }
         } else {
             if (left.getColumnDimension() != right.getColumnDimension()) {
-                throw new DimensionMismatchException(right.getColumnDimension(),
-                    left.getColumnDimension());
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_DIMENSIONS_MULTIPLICATION,
+                    right.getColumnDimension(), left.getColumnDimension());
             }
         }
     }
@@ -1781,8 +1788,23 @@ public final class MatrixUtils {
      */
     public static void solveLowerTriangularSystem(final RealMatrix rm, final RealVector b) {
         if ((rm == null) || (b == null) || (rm.getRowDimension() != b.getDimension())) {
-            throw new DimensionMismatchException((rm == null) ? 0 : rm.getRowDimension(),
-                (b == null) ? 0 : b.getDimension());
+            int wrong;
+            if (b == null) {
+                wrong = 0;
+            }
+            else { 
+                wrong = b.getDimension();
+            }
+            int expected;
+            if (rm == null) {
+                expected = 0;
+            }
+            else {
+                expected = rm.getRowDimension();
+            }
+            throw new DimensionMismatchException(
+                PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, 
+                wrong, expected);
         }
         if (rm.getColumnDimension() != rm.getRowDimension()) {
             throw new NonSquareMatrixException(rm.getRowDimension(), rm.getColumnDimension());
@@ -1824,8 +1846,23 @@ public final class MatrixUtils {
      */
     public static void solveUpperTriangularSystem(final RealMatrix rm, final RealVector b) {
         if ((rm == null) || (b == null) || (rm.getRowDimension() != b.getDimension())) {
-            throw new DimensionMismatchException((rm == null) ? 0 : rm.getRowDimension(),
-                (b == null) ? 0 : b.getDimension());
+            
+            final int wrong;
+            if ((b == null)) {
+                wrong = 0;
+            } else {
+                wrong = b.getDimension();
+            }
+            
+            final int expected;
+            if (rm == null) {
+                expected = 0;
+            } else {
+                expected = rm.getRowDimension();
+            }
+            
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, wrong,
+                expected);
         }
         if (rm.getColumnDimension() != rm.getRowDimension()) {
             throw new NonSquareMatrixException(rm.getRowDimension(), rm.getColumnDimension());

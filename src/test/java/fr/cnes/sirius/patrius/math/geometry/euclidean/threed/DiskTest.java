@@ -18,6 +18,7 @@
  * @history creation 17/10/11
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -26,13 +27,13 @@
  */
 package fr.cnes.sirius.patrius.math.geometry.euclidean.threed;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
+import junit.framework.Assert;
 
 /**
  * Unit tests for the Disk class.
@@ -83,6 +84,7 @@ public class DiskTest {
      */
     @Before
     public void setUp() {
+        Utils.clear();
         // First disk : center (1.5,0,0) radius 2, normal (1,0,0)
         this.diskOne = new Disk(Vector3D.PLUS_I.scalarMultiply(1.5), Vector3D.PLUS_I, 2.);
         // Lines
@@ -379,5 +381,4 @@ public class DiskTest {
         final String expected = "Disk{center{1; 1; 1},normal{1; 0; 0},radius{4.0}}";
         Assert.assertEquals(expected, result);
     }
-
 }

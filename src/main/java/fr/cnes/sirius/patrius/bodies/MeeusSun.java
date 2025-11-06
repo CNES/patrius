@@ -18,6 +18,10 @@
  * @history created 31/07/12
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:FA:FA-106:08/12/2023:[PATRIUS] calcul alambique des jours
  * juliens dans TidesToolbox.computeFundamentalArguments()
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -86,7 +90,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * @since 1.1
  */
 @SuppressWarnings("PMD.NullAssignment")
-public class MeeusSun extends AbstractCelestialBody {
+public class MeeusSun extends AbstractIAUCelestialBody {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 3593147893747468086L;
@@ -502,7 +506,7 @@ public class MeeusSun extends AbstractCelestialBody {
      */
     public MeeusSun(final MODEL model) throws PatriusException {
         // Temporary workaround in order to deal with PATRIUS non-unicity of frames tree
-        super("Meeus Sun", Constants.JPL_SSD_SUN_GM, IAUPoleFactory.getIAUPole(EphemerisType.SUN),
+        super("Meeus Sun", Constants.JPL_SSD_SUN_GM, IAUPoleFactory.getIAUPole(PredefinedEphemerisType.SUN),
                 model == MODEL.STANDARD ? FramesFactory.getEclipticMOD(true) : (model == MODEL.STELA ? FramesFactory
                         .getMOD(false) : FramesFactory.getEME2000()));
         // model.inertialSunFrame);

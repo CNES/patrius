@@ -18,6 +18,7 @@
  * @history created 27/02/12
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -51,18 +52,18 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * for both.
  * 
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation at minimum or/and
+ * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation at minimum or/and
  * maximum distance depending on extremum type defined. This can be changed by using one of the following constructors :
  * </p>
  * <ul>
  * <li>
- * {@link #ExtremaDistanceDetector(PVCoordinatesProvider, int, double, double, 
+ * {@link #ExtremaDistanceDetector(PVCoordinatesProvider, int, double, double,
  * fr.cnes.sirius.patrius.events.EventDetector.Action)
  * ExtremaDistanceDetector} : the defined action is performed at local minimum OR/AND maximum depending on slope
  * selection defined.
  * <li>
- * {@link #ExtremaDistanceDetector(PVCoordinatesProvider, double, double, 
- * fr.cnes.sirius.patrius.events.EventDetector.Action, 
+ * {@link #ExtremaDistanceDetector(PVCoordinatesProvider, double, double,
+ * fr.cnes.sirius.patrius.events.EventDetector.Action,
  * fr.cnes.sirius.patrius.events.EventDetector.Action)
  * ExtremaDistanceDetector} : the defined actions are performed at local minimum AND maximum.
  * </ul>
@@ -102,7 +103,7 @@ public class ExtremaDistanceDetector extends AbstractDetector {
      * Constructor for a ExtremaDistanceDetector instance.
      * 
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extrema is reached.
      * </p>
      * 
@@ -120,7 +121,7 @@ public class ExtremaDistanceDetector extends AbstractDetector {
      * Constructor for a ExtremaDistanceDetector instance with complimentary parameters.
      * 
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * extrema is reached.
      * </p>
      * 

@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019:[PATRIUS et COLOSUS] Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -37,6 +38,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import fr.cnes.sirius.patrius.Utils;
+
 /**
  * Test cases for the {@link OpenIntToDoubleHashMap}.
  */
@@ -46,6 +49,7 @@ public class OpenIntToDoubleHashMapTest {
 
     @Before
     public void setUp() throws Exception {
+        Utils.clear();
         this.javaMap.put(50, 100.0);
         this.javaMap.put(75, 75.0);
         this.javaMap.put(25, 500.0);
@@ -333,5 +337,4 @@ public class OpenIntToDoubleHashMapTest {
         Assert.assertEquals(1, map.size());
         Assert.assertTrue(Precision.equals(value2, map.get(key2), 1));
     }
-
 }

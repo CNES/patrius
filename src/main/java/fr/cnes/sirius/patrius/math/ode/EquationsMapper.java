@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -28,6 +30,7 @@ package fr.cnes.sirius.patrius.math.ode;
 import java.io.Serializable;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 /**
  * Class mapping the part of a complete state or derivative that pertains
@@ -96,7 +99,8 @@ public class EquationsMapper implements Serializable {
      */
     public void extractEquationData(final double[] complete, final double[] equationData) {
         if (equationData.length != this.dimension) {
-            throw new DimensionMismatchException(equationData.length, this.dimension);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_EQUATION_DATA_MAPPER_DIMENSION,
+                equationData.length, this.dimension);
         }
         System.arraycopy(complete, this.firstIndex, equationData, 0, this.dimension);
     }
@@ -115,7 +119,8 @@ public class EquationsMapper implements Serializable {
      */
     public void insertEquationData(final double[] equationData, final double[] complete) {
         if (equationData.length != this.dimension) {
-            throw new DimensionMismatchException(equationData.length, this.dimension);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_EQUATION_DATA_MAPPER_DIMENSION,
+                equationData.length, this.dimension);
         }
         System.arraycopy(equationData, 0, complete, this.firstIndex, this.dimension);
     }

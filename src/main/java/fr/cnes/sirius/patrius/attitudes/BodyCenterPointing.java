@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.15:OPENFD-309:21/11/2024:[PATRIUS] Réduire les utilisations de CelestialBody au strict nécessaire
+* VERSION:4.15:OPENFD-359:21/11/2024:[PATRIUS] BodyCenterPointing est erroné lorsque 
+ *          le corps central n'est pas la terre 
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:FA:FA-2464:27/05/2020:Anomalie dans le calcul du vecteur rotation des LOF
@@ -35,14 +39,13 @@ package fr.cnes.sirius.patrius.attitudes;
 
 import fr.cnes.sirius.patrius.frames.Frame;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
-import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinatesProvider;
-import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
 import fr.cnes.sirius.patrius.utils.TimeStampedAngularCoordinates;
+import fr.cnes.sirius.patrius.utils.TimeStampedPVCoordinates;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
@@ -72,17 +75,42 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
         Vector3D.ZERO);
 
     /** Body frame. */
-    private final Frame bodyFrame;
+    private final PVCoordinatesProvider bodyCenter;
+
+    /**
+     * Compute keplerian jerk boolean.
+     * Only makes sense if the nearest inertial ancestor of the native frame is centered on the main
+     * attracting body.
+     * The calculations are valid under the Keplerian hypothesis, meaning that the motion is
+     * dominated by the gravitational influence of a single primary body and does not account
+     * for perturbations from other bodies or forces.
+     */
+    private final boolean computeKeplerianJerk;
 
     /**
      * Creates new instance.
      * 
-     * @param bodyFrameIn This frame is the pivot in the transformation from an actual frame to the
-     *        local orbital frame.
+     * @param bodyCenter This PVCoordinatesProvider's frame is the pivot in the transformation from
+     *        an actual frame to the local orbital frame.
      */
-    public BodyCenterPointing(final Frame bodyFrameIn) {
+    public BodyCenterPointing(final PVCoordinatesProvider bodyCenter) {
+        this(bodyCenter, true);
+    }
+
+    /**
+     * Creates new instance.
+     * 
+     * @param bodyCenter This PVCoordinatesProvider's frame is the pivot in the transformation from
+     *        an actual frame to the local orbital frame.
+     * @param computeKeplerianJerk This boolean indicates if the keplerian jerk is to be computed in
+     *        the getAtttiude method or
+     *        if it has to be zero regardless of the acceleration value
+     */
+    public BodyCenterPointing(final PVCoordinatesProvider bodyCenter,
+            boolean computeKeplerianJerk) {
         super();
-        this.bodyFrame = bodyFrameIn;
+        this.bodyCenter = bodyCenter;
+        this.computeKeplerianJerk = computeKeplerianJerk;
     }
 
     /**
@@ -93,7 +121,8 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
      */
     public BodyCenterPointing() {
         super();
-        this.bodyFrame = FramesFactory.getGCRF();
+        this.bodyCenter = FramesFactory.getGCRF();
+        this.computeKeplerianJerk = true;
     }
 
     /** {@inheritDoc} */
@@ -102,16 +131,17 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
                                 final Frame frame) throws PatriusException {
 
         // inertial frame
-        final Frame eme2000 = FramesFactory.getEME2000();
-
+        final Frame inertialFrame =
+                pvProv.getNativeFrame(date).getFirstPseudoInertialAncestor();
         // satellite-target relative vector
-        PVCoordinates pv0 = pvProv.getPVCoordinates(date, eme2000);
+        PVCoordinates pv0 = pvProv.getPVCoordinates(date, inertialFrame);
         if (pv0.getAcceleration() == null) {
             // Set acceleration to zero in case it has not been provided 
             pv0 = new PVCoordinates(pv0.getPosition(), pv0.getVelocity(), Vector3D.ZERO);
         }
         final TimeStampedPVCoordinates deltaP0 =
-            new TimeStampedPVCoordinates(date, pv0, this.getTargetPV(pvProv, date, eme2000));
+                new TimeStampedPVCoordinates(date, pv0,
+                        this.bodyCenter.getPVCoordinates(date, inertialFrame));
 
         // New orekit exception if null position.
         if (deltaP0.getPosition().isZero()) {
@@ -126,11 +156,19 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
         final Vector3D a = pv0.getAcceleration();
         final double r2 = p.getNormSq();
         final double r = MathLib.sqrt(r2);
-        final Vector3D keplerianJerk =
-            new Vector3D(-3 * Vector3D.dotProduct(p, v) / r2, a, -a.getNorm() / r, v);
+        final Vector3D keplerianJerk;
+
+        if (!this.computeKeplerianJerk || a == Vector3D.ZERO) {
+            keplerianJerk = Vector3D.ZERO;
+        } else {
+            keplerianJerk =
+                    new Vector3D(-3 * Vector3D.dotProduct(p, v) / r2, a, -a.getNorm() / r, v);
+        }
+
         final PVCoordinates velocity = new PVCoordinates(v, a, keplerianJerk);
 
         final PVCoordinates los = deltaP0.normalize();
+
         final PVCoordinates normal = PVCoordinates.crossProduct(deltaP0, velocity).normalize();
 
         final TimeStampedAngularCoordinates ac =
@@ -138,25 +176,7 @@ public class BodyCenterPointing extends AbstractAttitudeLaw {
                 this.getSpinDerivativesComputation());
 
         // Transform in new frame
-        return new Attitude(eme2000, ac).withReferenceFrame(frame, this.getSpinDerivativesComputation());
-    }
-
-    /**
-     * Private method to get target PV.
-     * 
-     * @param pvProv local position-velocity provider around current date
-     * @param date the date to compute rotation
-     * @param frame reference frame from which rotation is computed
-     * @return the rotation of reference frame at the given date for the given position-velocity
-     *         state
-     * @throws PatriusException if target PV cannot be computed
-     */
-    private TimeStampedPVCoordinates getTargetPV(final PVCoordinatesProvider pvProv,
-                                                 final AbsoluteDate date, final Frame frame) throws PatriusException {
-        final Transform t = this.bodyFrame.getTransformTo(frame, date, this.getSpinDerivativesComputation());
-        final TimeStampedPVCoordinates pv = new TimeStampedPVCoordinates(date, Vector3D.ZERO, Vector3D.ZERO,
-                getSpinDerivativesComputation() ? Vector3D.ZERO : null);
-        return t.transformPVCoordinates(pv);
+        return new Attitude(inertialFrame, ac).withReferenceFrame(frame, this.getSpinDerivativesComputation());
     }
 
 }

@@ -18,6 +18,10 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -79,7 +83,7 @@ public final class MathArrays {
     public static double[] ebeAdd(final double[] a,
                                   final double[] b) {
         if (a.length != b.length) {
-            throw new DimensionMismatchException(a.length, b.length);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ARRAY_LENGTH_EBE, a.length, b.length);
         }
 
         final double[] result = a.clone();
@@ -105,7 +109,7 @@ public final class MathArrays {
     public static double[] ebeSubtract(final double[] a,
                                        final double[] b) {
         if (a.length != b.length) {
-            throw new DimensionMismatchException(a.length, b.length);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ARRAY_LENGTH_EBE, a.length, b.length);
         }
 
         final double[] result = a.clone();
@@ -131,7 +135,7 @@ public final class MathArrays {
     public static double[] ebeMultiply(final double[] a,
                                        final double[] b) {
         if (a.length != b.length) {
-            throw new DimensionMismatchException(a.length, b.length);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ARRAY_LENGTH_EBE, a.length, b.length);
         }
 
         final double[] result = a.clone();
@@ -157,7 +161,7 @@ public final class MathArrays {
     public static double[] ebeDivide(final double[] a,
                                      final double[] b) {
         if (a.length != b.length) {
-            throw new DimensionMismatchException(a.length, b.length);
+            throw new DimensionMismatchException(PatriusMessages.INVALID_ARRAY_LENGTH_EBE, a.length, b.length);
         }
 
         final double[] result = a.clone();
@@ -702,7 +706,7 @@ public final class MathArrays {
                     throw new NullArgumentException();
                 }
                 if (y.length != len) {
-                    throw new DimensionMismatchException(y.length, len);
+                    throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_ARRAYS_DIMENSIONS, len, y.length);
                 }
                 yValues[j] = y[i];
             }
@@ -819,7 +823,7 @@ public final class MathArrays {
     public static double linearCombination(final double[] a, final double[] b) {
         final int len = a.length;
         if (len != b.length) {
-            throw new DimensionMismatchException(len, b.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_ARRAYS_DIMENSIONS, len, b.length);
         }
 
         final double[] prodHigh = new double[len];
@@ -827,34 +831,22 @@ public final class MathArrays {
 
         for (int i = 0; i < len; i++) {
             final double ai = a[i];
-            final double ca = SPLIT_FACTOR * ai;
-            final double aHigh = ca - (ca - ai);
-            final double aLow = ai - aHigh;
-
             final double bi = b[i];
-            final double cb = SPLIT_FACTOR * bi;
-            final double bHigh = cb - (cb - bi);
-            final double bLow = bi - bHigh;
             prodHigh[i] = ai * bi;
-            final double prodLow = aLow * bLow - (((prodHigh[i] -
-                aHigh * bHigh) -
-                aLow * bHigh) -
-                aHigh * bLow);
+            final double prodLow = Precision.twoProductError(ai, bi, prodHigh[i]);
             prodLowSum += prodLow;
         }
 
         final double prodHighCur = prodHigh[0];
         double prodHighNext = prodHigh[1];
         double sHighPrev = prodHighCur + prodHighNext;
-        double sPrime = sHighPrev - prodHighNext;
-        double sLowSum = (prodHighNext - (sHighPrev - sPrime)) + (prodHighCur - sPrime);
+        double sLowSum = Precision.twoSumError(prodHighCur, prodHighNext, sHighPrev);
 
         final int lenMinusOne = len - 1;
         for (int i = 1; i < lenMinusOne; i++) {
             prodHighNext = prodHigh[i + 1];
             final double sHighCur = sHighPrev + prodHighNext;
-            sPrime = sHighCur - prodHighNext;
-            sLowSum += (prodHighNext - (sHighCur - sPrime)) + (sHighPrev - sPrime);
+            sLowSum += Precision.twoSumError(sHighPrev, prodHighNext, sHighCur);
             sHighPrev = sHighCur;
         }
 
@@ -909,34 +901,17 @@ public final class MathArrays {
         // to hold it as long as we can, combining the high and low order bits together
         // only at the end, after cancellation may have occurred on high order bits
 
-        // split a1 and b1 as two 26 bits numbers
-        final double ca1 = SPLIT_FACTOR * a1;
-        final double a1High = ca1 - (ca1 - a1);
-        final double a1Low = a1 - a1High;
-        final double cb1 = SPLIT_FACTOR * b1;
-        final double b1High = cb1 - (cb1 - b1);
-        final double b1Low = b1 - b1High;
-
         // accurate multiplication a1 * b1
         final double prod1High = a1 * b1;
-        final double prod1Low = a1Low * b1Low - (((prod1High - a1High * b1High) - a1Low * b1High) - a1High * b1Low);
-
-        // split a2 and b2 as two 26 bits numbers
-        final double ca2 = SPLIT_FACTOR * a2;
-        final double a2High = ca2 - (ca2 - a2);
-        final double a2Low = a2 - a2High;
-        final double cb2 = SPLIT_FACTOR * b2;
-        final double b2High = cb2 - (cb2 - b2);
-        final double b2Low = b2 - b2High;
+        final double prod1Low = Precision.twoProductError(a1, b1, prod1High);
 
         // accurate multiplication a2 * b2
         final double prod2High = a2 * b2;
-        final double prod2Low = a2Low * b2Low - (((prod2High - a2High * b2High) - a2Low * b2High) - a2High * b2Low);
+        final double prod2Low = Precision.twoProductError(a2, b2, prod2High);
 
         // accurate addition a1 * b1 + a2 * b2
         final double s12High = prod1High + prod2High;
-        final double s12Prime = s12High - prod2High;
-        final double s12Low = (prod2High - (s12High - s12Prime)) + (prod1High - s12Prime);
+        final double s12Low = Precision.twoSumError(prod1High, prod2High, s12High);
 
         // final rounding, s12 may have suffered many cancellations, we try
         // to recover some bits from the extra words we have saved up to now
@@ -993,51 +968,25 @@ public final class MathArrays {
         // to hold it as long as we can, combining the high and low order bits together
         // only at the end, after cancellation may have occurred on high order bits
 
-        // split a1 and b1 as two 26 bits numbers
-        final double ca1 = SPLIT_FACTOR * a1;
-        final double a1High = ca1 - (ca1 - a1);
-        final double a1Low = a1 - a1High;
-        final double cb1 = SPLIT_FACTOR * b1;
-        final double b1High = cb1 - (cb1 - b1);
-        final double b1Low = b1 - b1High;
-
         // accurate multiplication a1 * b1
         final double prod1High = a1 * b1;
-        final double prod1Low = a1Low * b1Low - (((prod1High - a1High * b1High) - a1Low * b1High) - a1High * b1Low);
-
-        // split a2 and b2 as two 26 bits numbers
-        final double ca2 = SPLIT_FACTOR * a2;
-        final double a2High = ca2 - (ca2 - a2);
-        final double a2Low = a2 - a2High;
-        final double cb2 = SPLIT_FACTOR * b2;
-        final double b2High = cb2 - (cb2 - b2);
-        final double b2Low = b2 - b2High;
+        final double prod1Low = Precision.twoProductError(a1, b1, prod1High);
 
         // accurate multiplication a2 * b2
         final double prod2High = a2 * b2;
-        final double prod2Low = a2Low * b2Low - (((prod2High - a2High * b2High) - a2Low * b2High) - a2High * b2Low);
-
-        // split a3 and b3 as two 26 bits numbers
-        final double ca3 = SPLIT_FACTOR * a3;
-        final double a3High = ca3 - (ca3 - a3);
-        final double a3Low = a3 - a3High;
-        final double cb3 = SPLIT_FACTOR * b3;
-        final double b3High = cb3 - (cb3 - b3);
-        final double b3Low = b3 - b3High;
+        final double prod2Low = Precision.twoProductError(a2, b2, prod2High);
 
         // accurate multiplication a3 * b3
         final double prod3High = a3 * b3;
-        final double prod3Low = a3Low * b3Low - (((prod3High - a3High * b3High) - a3Low * b3High) - a3High * b3Low);
+        final double prod3Low = Precision.twoProductError(a3, b3, prod3High);
 
         // accurate addition a1 * b1 + a2 * b2
         final double s12High = prod1High + prod2High;
-        final double s12Prime = s12High - prod2High;
-        final double s12Low = (prod2High - (s12High - s12Prime)) + (prod1High - s12Prime);
+        final double s12Low = Precision.twoSumError(prod1High, prod2High, s12High);
 
         // accurate addition a1 * b1 + a2 * b2 + a3 * b3
         final double s123High = s12High + prod3High;
-        final double s123Prime = s123High - prod3High;
-        final double s123Low = (prod3High - (s123High - s123Prime)) + (s12High - s123Prime);
+        final double s123Low = Precision.twoSumError(s12High, prod3High, s123High);
 
         // final rounding, s123 may have suffered many cancellations, we try
         // to recover some bits from the extra words we have saved up to now
@@ -1100,68 +1049,33 @@ public final class MathArrays {
         // to hold it as long as we can, combining the high and low order bits together
         // only at the end, after cancellation may have occurred on high order bits
 
-        // split a1 and b1 as two 26 bits numbers
-        final double ca1 = SPLIT_FACTOR * a1;
-        final double a1High = ca1 - (ca1 - a1);
-        final double a1Low = a1 - a1High;
-        final double cb1 = SPLIT_FACTOR * b1;
-        final double b1High = cb1 - (cb1 - b1);
-        final double b1Low = b1 - b1High;
-
         // accurate multiplication a1 * b1
         final double prod1High = a1 * b1;
-        final double prod1Low = a1Low * b1Low - (((prod1High - a1High * b1High) - a1Low * b1High) - a1High * b1Low);
-
-        // split a2 and b2 as two 26 bits numbers
-        final double ca2 = SPLIT_FACTOR * a2;
-        final double a2High = ca2 - (ca2 - a2);
-        final double a2Low = a2 - a2High;
-        final double cb2 = SPLIT_FACTOR * b2;
-        final double b2High = cb2 - (cb2 - b2);
-        final double b2Low = b2 - b2High;
+        final double prod1Low = Precision.twoProductError(a1, b1, prod1High);
 
         // accurate multiplication a2 * b2
         final double prod2High = a2 * b2;
-        final double prod2Low = a2Low * b2Low - (((prod2High - a2High * b2High) - a2Low * b2High) - a2High * b2Low);
-
-        // split a3 and b3 as two 26 bits numbers
-        final double ca3 = SPLIT_FACTOR * a3;
-        final double a3High = ca3 - (ca3 - a3);
-        final double a3Low = a3 - a3High;
-        final double cb3 = SPLIT_FACTOR * b3;
-        final double b3High = cb3 - (cb3 - b3);
-        final double b3Low = b3 - b3High;
+        final double prod2Low = Precision.twoProductError(a2, b2, prod2High);
 
         // accurate multiplication a3 * b3
         final double prod3High = a3 * b3;
-        final double prod3Low = a3Low * b3Low - (((prod3High - a3High * b3High) - a3Low * b3High) - a3High * b3Low);
-
-        // split a4 and b4 as two 26 bits numbers
-        final double ca4 = SPLIT_FACTOR * a4;
-        final double a4High = ca4 - (ca4 - a4);
-        final double a4Low = a4 - a4High;
-        final double cb4 = SPLIT_FACTOR * b4;
-        final double b4High = cb4 - (cb4 - b4);
-        final double b4Low = b4 - b4High;
+        final double prod3Low = Precision.twoProductError(a3, b3, prod3High);
 
         // accurate multiplication a4 * b4
         final double prod4High = a4 * b4;
-        final double prod4Low = a4Low * b4Low - (((prod4High - a4High * b4High) - a4Low * b4High) - a4High * b4Low);
+        final double prod4Low = Precision.twoProductError(a4, b4, prod4High);
 
         // accurate addition a1 * b1 + a2 * b2
         final double s12High = prod1High + prod2High;
-        final double s12Prime = s12High - prod2High;
-        final double s12Low = (prod2High - (s12High - s12Prime)) + (prod1High - s12Prime);
+        final double s12Low = Precision.twoSumError(prod1High, prod2High, s12High);
 
         // accurate addition a1 * b1 + a2 * b2 + a3 * b3
         final double s123High = s12High + prod3High;
-        final double s123Prime = s123High - prod3High;
-        final double s123Low = (prod3High - (s123High - s123Prime)) + (s12High - s123Prime);
+        final double s123Low = Precision.twoSumError(s12High, prod3High, s123High);
 
         // accurate addition a1 * b1 + a2 * b2 + a3 * b3 + a4 * b4
         final double s1234High = s123High + prod4High;
-        final double s1234Prime = s1234High - prod4High;
-        final double s1234Low = (prod4High - (s1234High - s1234Prime)) + (s123High - s1234Prime);
+        final double s1234Low = Precision.twoSumError(s123High, prod4High, s1234High);
 
         // final rounding, s1234 may have suffered many cancellations, we try
         // to recover some bits from the extra words we have saved up to now
@@ -1444,6 +1358,25 @@ public final class MathArrays {
         return a;
     }
 
+    /**
+     * Compute the sum of the elements with {@link Precision#twoSumError(double, double, double)} method to reduce the
+     * round-off errors. This method is closely equivalent to perform the summation in quadruple precision and rounding
+     * the result to a double precision.
+     * 
+     * @param elements
+     *        The elements of the summation
+     * @return the sum with a reduced round-off errors
+     */
+    public static double preciseSum(final double... elements) {
+        double sum = elements[0];
+        double sumErrors = 0.;
+        for (int i = 1; i < elements.length; i++) {
+            final double intermediateSum = sum + elements[i];
+            sumErrors += Precision.twoSumError(sum, elements[i], intermediateSum);
+            sum = intermediateSum;
+        }
+        return sum + sumErrors;
+    }
 
     /**
      * Real-valued function that operate on an array or a part of it.

@@ -19,6 +19,13 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+ * VERSION:4.14:OPENFD-259:22/08/2024:[PATRIUS] Echelle TDB pour evaluer
+ * les polynemes de Chebyshev des fichiers JPL historiques
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -42,7 +49,13 @@
  */
 package fr.cnes.sirius.patrius.propagation.events;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -52,7 +65,7 @@ import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.BetaAngleDetector;
 import fr.cnes.sirius.patrius.events.utils.SignalPropagationWrapperDetector;
@@ -60,6 +73,7 @@ import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CartesianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -117,6 +131,11 @@ public class BetaAngleDetectorTest {
     private static AbsoluteDate iniDate;
 
     /**
+     * A Cartesian orbit used for the tests.
+     */
+    private static CartesianOrbit tISSOrbit3;
+
+    /**
      * Setup for all unit tests in the class.
      * Provides an {@link Orbit}.
      * 
@@ -127,6 +146,7 @@ public class BetaAngleDetectorTest {
     public static void setUpBeforeClass() throws PatriusException {
         // Orekit initialization
         Utils.setDataRoot("regular-dataCNES-2003/de406-ephemerides");
+        
         FramesFactory.clear();
 
         // Some orbit data for the tests
@@ -183,6 +203,7 @@ public class BetaAngleDetectorTest {
      */
     @Test
     public void testBetaAngleDetectorCtor() throws PatriusException {
+        Utils.setDataRoot("regular-dataCNES-2003/de406-ephemerides");
         final EventDetector detector =
             new BetaAngleDetector(-MathUtils.HALF_PI);
         // The constructor did not crash...
@@ -370,7 +391,7 @@ public class BetaAngleDetectorTest {
     @Test
     public void testG() throws PatriusException {
         final EventDetector detector = new BetaAngleDetector(-0.333);
-        final double expectedDot = -0.7964035436316703;
+        final double expectedDot = -0.7964035436646337;
         Assert.assertEquals(expectedDot, detector.g(tISSSpState), Utils.epsilonTest);
     }
 
@@ -399,9 +420,10 @@ public class BetaAngleDetectorTest {
      */
     @Test
     public void testPropagation01() throws PatriusException {
+        
         final double propagShift = 100000.;
         // Note : result changed for PATRIUS 4.2
-        final double expectedShift = 4152.139988849637;
+        final double expectedShift = 4152.139758742088;
         final double angle = -1.13;
 
         // Propagator
@@ -441,9 +463,10 @@ public class BetaAngleDetectorTest {
      */
     @Test
     public void testPropagation02() throws PatriusException {
+        
         final double propagShift = 100000.;
         // Note : result changed for PATRIUS 4.2
-        final double expectedShift = 93862.60893850481;
+        final double expectedShift = 93862.60869126304;
         final double angle = 1.05;
 
         // Propagator
@@ -521,14 +544,14 @@ public class BetaAngleDetectorTest {
         propagator.addEventDetector(wrapper1);
         propagator.addEventDetector(wrapper2);
         final SpacecraftState finalState = propagator.propagate(iniDate.shiftedBy(5000));
-
+        
         // Evaluate the first event detector wrapper (INSTANTANEOUS) (emitter dates should be equal to receiver dates)
         Assert.assertEquals(1, wrapper1.getNBOccurredEvents());
         Assert.assertTrue(wrapper1.getEmitterDatesList().get(0)
             .equals(new AbsoluteDate("2011-11-09T13:03:26.583"), 1e-3));
         Assert.assertTrue(wrapper1.getReceiverDatesList().get(0)
             .equals(new AbsoluteDate("2011-11-09T13:03:26.583"), 1e-3));
-
+        
         // Evaluate the second event detector wrapper (LIGHT_SPEED) (emitter dates should be before receiver dates)
         Assert.assertEquals(1, wrapper2.getNBOccurredEvents());
         Assert.assertTrue(wrapper2.getEmitterDatesList().get(0)
@@ -539,6 +562,71 @@ public class BetaAngleDetectorTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(sun, eventDetector1.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
+    }
+
+    /**
+     * 
+     * @description This test is implemented in the context of FA304. Inside the detection function for
+     *              BetaAngleDetector the used state must be based on an orbit defined in an inertial frame, the added
+     *              condition ensures this is always the case, even though the provided orbit is defined in a
+     *              non-inertial frame.
+     * 
+     * @testPassCriteria The results of the same detector on an orbit defined with an inertial frame and with a
+     *                   non-inertial frame are different (i.e., the method went through the check and the orbit frame
+     *                   was modified). The output of the detector must match the expected output.
+     * 
+     * @testedMethod {@link BetaAngleDetector#g(SpacecraftState)}
+     * 
+     * @throws PatriusException
+     */
+    @Test
+    public void testFA304() throws PatriusException {
+        Utils.setDataRoot("regular-dataPBASE");
+        FramesFactory.clear();
+
+        final double mu = CelestialBodyFactory.getEarth().getGM();
+
+        // Another orbit
+        final double ix = 2156444.05;
+        final double iy = 3611777.68;
+        final double iz = -5316875.46;
+        final double ivz = -6579.446110;
+        final double ivx = 3916.478783;
+        final double ivy = 8.876119;
+        final Vector3D issPos = new Vector3D(ix, iy, iz);
+        final Vector3D issVit = new Vector3D(ivx, ivy, ivz);
+        final PVCoordinates pvCoordinates = new PVCoordinates(issPos, issVit);
+
+        tISSOrbit3 = new CartesianOrbit(pvCoordinates, FramesFactory.getITRF(), iniDate, mu);
+
+        // Creation of the BetaAngleDetector to test
+        final BetaAngleDetector detector = new BetaAngleDetector(MathUtils.DEG_TO_RAD * 25);
+        final AbsoluteDate finalDate = iniDate.shiftedBy(5000);
+
+        // test with a spacecraftState in an inertial frame
+        final KeplerianPropagator propagator1 = new KeplerianPropagator(tISSOrbit);
+        final SpacecraftState s1 = propagator1.propagate(finalDate);
+        final double inertialDetectorOutput = detector.g(s1);
+        assertTrue(s1.getFrame().isPseudoInertial());
+
+        // test with a SpacecraftState in a non-inertial frame
+        final SpacecraftState s2 = new SpacecraftState(tISSOrbit3);
+        assertFalse(s2.getFrame().isPseudoInertial());
+        final double nonInertialDetectorOutput = detector.g(s2);
+
+        // Assert the outputs in the case of an inertial frame and a non inertial frame for the same detector are
+        // different
+        assertNotEquals(inertialDetectorOutput, nonInertialDetectorOutput);
+
+        // Expected value of g output to track potential modifications of the inertiality check
+        assertEquals(-1.16457478972937, detector.g(s2), Precision.DOUBLE_COMPARISON_EPSILON);
+
+    }
+
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

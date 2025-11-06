@@ -20,11 +20,14 @@
  */
 /* 
  * HISTORY
-* VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
-* VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
-* VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
-* VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
-* VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de 
+ *          fournir un message claire 
+ * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
+ * VERSION:4.13:DM:DM-120:08/12/2023:[PATRIUS] Merge de la branche patrius-for-lotus dans Patrius
+ * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
+ * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
+ * VERSION:4.8:DM:DM-3044:15/11/2021:[PATRIUS] Ameliorations du refactoring des sequences
  * VERSION:4.6:FA:FA-2542:27/01/2021:[PATRIUS] Definition d'un champ de vue avec demi-angle de 180° 
  * VERSION:4.5.1:FA:FA-2540:04/08/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear
  * VERSION:4.5:DM:DM-2300:27/05/2020:Evolutions et corrections dans le package fr.cnes.sirius.patrius.math.linear 
@@ -33,19 +36,33 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.util.Arrays;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.function.Function;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.stream.IntStream;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@linkplain AbstractRealMatrix}.
@@ -208,7 +225,7 @@ public class AbstractRealMatrixTest {
     @Test
     public void testConstructorInvalidDataArray() {
         final double[][] invalidData = { { 1. }, { 2., 3. } };
-        final String expectedMessage = "2 != 1";
+        final String expectedMessage = "Some rows have length 2 while others have length 1";
 
         // Two rows of different dimensions
         try {
@@ -2011,7 +2028,7 @@ public class AbstractRealMatrixTest {
         CheckUtils.checkOperateIncompatibleVector(matrix);
 
         // Test the method using a vector which is not an ArrayRealVector
-        final String format = "%d != %d";
+        final String format = "The vector dimension (%d) and the matrix column dimension (%d) are not equal.";
         final int nc = matrix.getColumnDimension();
 
         try {
@@ -2090,7 +2107,7 @@ public class AbstractRealMatrixTest {
         CheckUtils.checkPreMultiplyIncompatibleVector(matrix);
 
         // Test the method using a vector which is not an ArrayRealVector
-        final String format = "%d != %d";
+        final String format = "The vector dimension (%d) and the matrix row dimension (%d) are not equal.";
         final int nr = matrix.getRowDimension();
 
         try {
@@ -4062,5 +4079,10 @@ public class AbstractRealMatrixTest {
         public long getResult() {
             return this.result;
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

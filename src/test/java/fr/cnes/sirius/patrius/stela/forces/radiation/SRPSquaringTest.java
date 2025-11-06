@@ -18,6 +18,7 @@
  * @history Created 22/02/2013
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.11:DM:DM-3287:22/05/2023:[PATRIUS] Ajout des courtes periodes dues a la traînee atmospherique et a la pression de radiation solaire dans STELA
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -35,8 +36,6 @@
 package fr.cnes.sirius.patrius.stela.forces.radiation;
 
 import java.util.ArrayList;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -71,6 +70,7 @@ import fr.cnes.sirius.patrius.time.TimeComponents;
 import fr.cnes.sirius.patrius.time.TimeScalesFactory;
 import fr.cnes.sirius.patrius.utils.Constants;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import junit.framework.Assert;
 
 /**
  * Test class for {@link SRPSquaring}
@@ -1118,5 +1118,10 @@ public class SRPSquaringTest {
         for (int i = 0; i < dExpected.length; i++) {
             checkDouble(dExpected[i], dActual[i], tol, compType);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

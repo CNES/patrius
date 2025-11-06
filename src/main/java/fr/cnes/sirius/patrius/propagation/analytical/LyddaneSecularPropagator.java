@@ -18,6 +18,7 @@
  * @history created 15/02/2016
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-289:21/11/2024:Calcul de l'orbite moyenne sur la discontinuité du modèle Lyddane
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.4:FA:FA-2251:04/10/2019:[PATRIUS] Propagateurs analytique
@@ -284,7 +285,7 @@ public class LyddaneSecularPropagator extends AbstractLyddanePropagator {
     @Override
     public Orbit propagateMeanOrbit(final AbsoluteDate date) throws PatriusException {
         // Mean = secular
-        return this.propagateOrbit(date, this.secularOrbitIn, this.getFrame(), LyddaneParametersType.SECULAR);
+        return this.propagateOrbit(date, this.secularOrbitIn, this.getFrame(), LyddaneParametersType.SECULAR, SubModel.DEFAULT);
     }
 
     /** {@inheritDoc} */
@@ -299,6 +300,6 @@ public class LyddaneSecularPropagator extends AbstractLyddanePropagator {
     @Override
     public Orbit mean2osc(final Orbit orbit) throws PatriusException {
         // Mean = secular, hence propagation from secular parameters = propagation from mean parameters
-        return this.propagateOrbit(orbit.getDate(), orbit, orbit.getFrame(), LyddaneParametersType.OSCULATING);
+        return this.propagateOrbit(orbit.getDate(), orbit, orbit.getFrame(), LyddaneParametersType.OSCULATING, SubModel.DEFAULT);
     }
 }

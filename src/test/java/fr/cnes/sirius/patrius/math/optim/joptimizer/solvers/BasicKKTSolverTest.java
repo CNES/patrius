@@ -1,8 +1,11 @@
 /**
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.6:DM:DM-2591:27/01/2021:[PATRIUS] Intigration et validation JOptimizer
  * END-HISTORY
+ */
+/*
  */
 /*
  */
@@ -42,12 +45,21 @@
  */
 package fr.cnes.sirius.patrius.math.optim.joptimizer.solvers;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
+
 import fr.cnes.sirius.patrius.math.linear.ArrayRealVector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.BlockRealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealMatrix;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.RealVector;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
+import junit.framework.TestCase;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * @author alberto trivellato (alberto.trivellato@gmail.com)
@@ -315,4 +327,9 @@ public class BasicKKTSolverTest extends TestCase {
         fail();
     }
     
+
+    @Before
+    public void setUp() {
+        Utils.clear();
+    }
 }

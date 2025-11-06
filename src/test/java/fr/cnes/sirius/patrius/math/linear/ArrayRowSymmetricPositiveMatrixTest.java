@@ -19,6 +19,9 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * END-HISTORY
@@ -26,21 +29,37 @@
 package fr.cnes.sirius.patrius.math.linear;
 
 import java.util.Locale;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.Random;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.function.Function;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.BeforeClass;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.MathUnsupportedOperationException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NoDataException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NullArgumentException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.linear.ArrayRowSymmetricMatrix.SymmetryType;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Unit tests for {@link ArrayRowSymmetricPositiveMatrix}.
@@ -346,7 +365,7 @@ public class ArrayRowSymmetricPositiveMatrixTest {
     @Test
     public void testConstructorInvalidDataArray() {
         final double[][] invalidData = { { 1. }, { 2., 3. } };
-        final String expectedMessage = "2 != 1";
+        final String expectedMessage = "Some rows have length 2 while others have length 1";
 
         // Test every type of symmetry
         for (final SymmetryType symmetryType : SymmetryType.values()) {
@@ -787,7 +806,7 @@ public class ArrayRowSymmetricPositiveMatrixTest {
             Assert.fail();
         } catch (final DimensionMismatchException e) {
             Assert.assertEquals(DimensionMismatchException.class, e.getClass());
-            Assert.assertEquals("2 != 3", e.getMessage());
+            Assert.assertEquals("Matrix dimension is invalid: expected = 3, actual = 2.", e.getMessage());
         }
     }
 
@@ -2039,7 +2058,7 @@ public class ArrayRowSymmetricPositiveMatrixTest {
     @Test
     public void testMultiplyByIncompatibleMatrix() {
         final SymmetricPositiveMatrix matrix = new ArrayRowSymmetricPositiveMatrix(3);
-        CheckUtils.checkMultiplyIncompatibleRealMatrix(matrix);
+        CheckUtils.checkMultiplySymmetricIncompatibleRealMatrix(matrix);
         CheckUtils.checkMultiplyIncompatibleSymmetricMatrix(matrix);
         CheckUtils.checkMultiplyIncompatibleSymmetricPositiveMatrix(matrix);
         CheckUtils.checkMultiplyIncompatibleDecomposedMatrix(matrix);
@@ -3495,5 +3514,10 @@ public class ArrayRowSymmetricPositiveMatrixTest {
         final ArrayRowSymmetricPositiveMatrix positiveMatrix = new ArrayRowSymmetricPositiveMatrix(
                 SymmetryType.LOWER, matrix.getData(), 0., 0., null, null);
         Assert.assertEquals(isPositive, positiveMatrix.isPositiveSemiDefinite(tolerance));
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

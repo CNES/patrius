@@ -18,6 +18,7 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.5:DM:DM-2253:27/05/2020:Implementation classe distribution de melange de Gaussiennes 
@@ -28,14 +29,23 @@
 package fr.cnes.sirius.patrius.math.distribution;
 
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.math.exception.MathArithmeticException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.exception.NotPositiveException;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.random.Well19937c;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Pair;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * Test that demonstrates the use of {@link MixtureMultivariateRealDistribution} in order to create a mixture model
@@ -275,5 +285,10 @@ public class MixtureMultivariateNormalDistributionTest {
             { 1.0336754331123372, -0.34966029029320644 },
             { 4.743217291882213, 5.750060115251131 }
         };
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

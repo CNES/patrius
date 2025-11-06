@@ -17,6 +17,7 @@
  *
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -32,14 +33,15 @@
 package fr.cnes.sirius.patrius.propagation.events;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.attitudes.directions.ConstantVectorDirection;
 import fr.cnes.sirius.patrius.attitudes.directions.IDirection;
-import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.CelestialBodyFactory;
+import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
 import fr.cnes.sirius.patrius.events.detectors.EclipseDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
@@ -682,5 +684,10 @@ public class GenericEclipseDetectorTest {
             // penumbra events:
             Assert.assertEquals(0, angle - earthTangent, Utils.epsilonTest);
         }
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

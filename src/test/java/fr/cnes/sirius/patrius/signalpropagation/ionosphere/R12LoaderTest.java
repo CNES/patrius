@@ -17,6 +17,7 @@
  * @history created 20/11/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2929:15/11/2021:[PATRIUS] Harmonisation des modeles de troposphere 
@@ -75,6 +76,7 @@ public class R12LoaderTest {
      */
     @BeforeClass
     public static void setUp() {
+        Utils.clear();
         Utils.setDataRoot("bent");
     }
 
@@ -211,4 +213,5 @@ public class R12LoaderTest {
     }
 
     // Serialization tested through the BentModelTest#testSerialization() test
+
 }

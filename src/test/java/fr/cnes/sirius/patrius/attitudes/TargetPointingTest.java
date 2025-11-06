@@ -18,6 +18,9 @@
 /*
  *
  * HISTORY
+* VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+* VERSION:4.14:OPENFD-316:22/08/2024:[Patrius] TargetGroundPointing - Restauration de 
+ *          l'ancienne methode getTargetPosition() 
 * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite 
  *          de convertir les sorties de VacuumSignalPropagation 
 * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait 
@@ -68,6 +71,7 @@ import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3DFunction;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.orbits.CircularOrbit;
 import fr.cnes.sirius.patrius.orbits.KeplerianOrbit;
 import fr.cnes.sirius.patrius.orbits.Orbit;
@@ -188,6 +192,18 @@ public class TargetPointingTest {
         final Rotation rotCompo = rotPv.applyInverseTo(rotPv);
         final double angle = rotCompo.getAngle();
         Assert.assertEquals(angle, 0.0, Utils.epsilonAngle);
+        
+        
+        Vector3D targetPosGCRF = targetAttitudeLaw.getTargetPosition(circ, date, FramesFactory.getGCRF());
+        
+        Frame gcrf = FramesFactory.getGCRF();
+        Transform transform = frameITRF.getTransformTo(gcrf , date);
+        
+        final Vector3D transformedTarget =  transform.transformPosition(targetITRF2005C.getPosition());
+        
+        Assert.assertEquals(transformedTarget.getX(), targetPosGCRF.getX(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(transformedTarget.getY(), targetPosGCRF.getY(), Precision.DOUBLE_COMPARISON_EPSILON);
+        Assert.assertEquals(transformedTarget.getZ(), targetPosGCRF.getZ(), Precision.DOUBLE_COMPARISON_EPSILON);
     }
 
     /**
@@ -551,6 +567,7 @@ public class TargetPointingTest {
     @Before
     public void setUp() {
         try {
+            Utils.clear();
             Utils.setDataRoot("regular-data");
             FramesFactory.setConfiguration(Utils.getIERS2003ConfigurationWOEOP(true));
 
@@ -611,7 +628,7 @@ public class TargetPointingTest {
         final TargetGroundPointing law1 = new TargetGroundPointing(new OneAxisEllipsoid(3678000, 0.001,
             FramesFactory.getTIRF()), Vector3D.PLUS_J, Vector3D.PLUS_K, Vector3D.PLUS_I);
         final TargetGroundPointing law2 = new TargetGroundPointing(new OneAxisEllipsoid(3678000, 0.001,
-            FramesFactory.getTIRF()), Vector3D.PLUS_J, Vector3D.PLUS_K, Vector3D.PLUS_I, 50);
+            FramesFactory.getTIRF()), Vector3D.PLUS_J, Vector3D.PLUS_K, Vector3D.PLUS_I, 500);
 
         // Get rotation
         final Orbit orbit = new KeplerianOrbit(7000000, 0.001, 0.5, 0.6, 0.7, 0.8, PositionAngle.TRUE,

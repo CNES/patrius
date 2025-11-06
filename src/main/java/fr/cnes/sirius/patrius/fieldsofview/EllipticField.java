@@ -18,6 +18,9 @@
  * @history created 16/04/2012
  *
  * HISTORY
+ * VERSION:4.14.1:OPENFD-396:10/09/2024:[PATRIUS] Erreurs et oublis dans les classes issues de IGeometricFieldOfView
+ * VERSION:4.14:OPENFD-173:22/08/2024: Ajout d'une nouvelle interface IGeometricaFieldOfView
+ * VERSION:4.14:OPENFD-311:22/08/2024: [PATRIUS] getInputCoord sur EllipsoidPoint
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2097:15/05/2019: Mise en conformite du code avec le nouveau standard de codage DYNVOL
@@ -32,6 +35,7 @@ import fr.cnes.sirius.patrius.math.Comparators;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.InfiniteEllipticCone;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.FastMath;
+import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.Precision;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
 import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
@@ -51,9 +55,9 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @since 1.2
  * 
  */
-public final class EllipticField implements IFieldOfView {
+public final class EllipticField implements IGeometricFieldOfView {
 
-     /** Serializable UID. */
+    /** Serializable UID. */
     private static final long serialVersionUID = -2411394755445476577L;
 
     /** the name of the field */
@@ -70,6 +74,9 @@ public final class EllipticField implements IFieldOfView {
 
     /** Semi major axis direction */
     private final Vector3D uAxisDir;
+
+    /** Semi minor axis direction */
+    private final Vector3D vAxisDir;
 
     /** Semi major angle */
     private final double semiA;
@@ -89,7 +96,7 @@ public final class EllipticField implements IFieldOfView {
      *        origin of the cone
      * @param mainDirection
      *        the direction defining the center of the field
-     * @param majorSemiAxisDirection
+     * @param semiMajAxisDir
      *        the direction defining the semi major axis of the field
      * @param angleA
      *        the angular aperture along semi major axis (in rad)
@@ -99,7 +106,7 @@ public final class EllipticField implements IFieldOfView {
      *         if the origin is not correct
      */
     public EllipticField(final String name, final Vector3D origin, final Vector3D mainDirection,
-        final Vector3D majorSemiAxisDirection, final double angleA, final double angleB) {
+                         final Vector3D semiMajAxisDir, final double angleA, final double angleB) {
 
         if (origin == Vector3D.NaN || origin == Vector3D.NEGATIVE_INFINITY || origin == Vector3D.POSITIVE_INFINITY) {
             throw new IllegalArgumentException(
@@ -114,19 +121,21 @@ public final class EllipticField implements IFieldOfView {
          */
         if (this.inversionCheck(angleA)) {
             this.cone =
-                new InfiniteEllipticCone(Vector3D.ZERO, mainDirection.negate(), majorSemiAxisDirection, FastMath.PI
-                    - angleA, FastMath.PI - angleB);
+                new InfiniteEllipticCone(Vector3D.ZERO, mainDirection.negate(), semiMajAxisDir, FastMath.PI
+                        - angleA,
+                    FastMath.PI - angleB);
         } else {
-            this.cone = new InfiniteEllipticCone(Vector3D.ZERO, mainDirection, majorSemiAxisDirection, angleA, angleB);
+            this.cone = new InfiniteEllipticCone(Vector3D.ZERO, mainDirection, semiMajAxisDir, angleA, angleB);
         }
 
         // storage for toString purposes
         this.center = origin;
         this.mainDir = mainDirection.normalize();
         this.uAxisDir =
-            majorSemiAxisDirection.subtract(
-                this.mainDir.scalarMultiply(majorSemiAxisDirection.dotProduct(this.mainDir)))
+            semiMajAxisDir.subtract(
+                this.mainDir.scalarMultiply(semiMajAxisDir.dotProduct(this.mainDir)))
                 .normalize();
+        this.vAxisDir = Vector3D.crossProduct(this.mainDir, this.uAxisDir);
         this.semiA = angleA;
         this.semiB = angleB;
 
@@ -144,16 +153,14 @@ public final class EllipticField implements IFieldOfView {
      */
     private static void sanityCheck(final double angleA, final double angleB) {
         // angle aperture test
-        if (angleA < Precision.DOUBLE_COMPARISON_EPSILON || Comparators.greaterOrEqual(angleA, FastMath.PI)) {
-            throw PatriusException.createIllegalArgumentException(PatriusMessages.PDB_ANGLE_OUTSIDE_INTERVAL);
-        }
         // angle aperture test
-        if (angleB < Precision.DOUBLE_COMPARISON_EPSILON || Comparators.greaterOrEqual(angleB, FastMath.PI)) {
+        if (angleA < Precision.DOUBLE_COMPARISON_EPSILON || Comparators.greaterOrEqual(angleA, FastMath.PI)
+                || angleB < Precision.DOUBLE_COMPARISON_EPSILON || Comparators.greaterOrEqual(angleB, FastMath.PI)) {
             throw PatriusException.createIllegalArgumentException(PatriusMessages.PDB_ANGLE_OUTSIDE_INTERVAL);
         }
         // make sure the angles definition makes a cone
         if (angleB > Precision.DOUBLE_COMPARISON_EPSILON && angleB <= FastMath.PI / 2 && angleA >= FastMath.PI / 2
-            && angleA <= FastMath.PI) {
+                && angleA <= FastMath.PI) {
             throw PatriusException.createIllegalArgumentException(PatriusMessages.PDB_ANGLE_OUTSIDE_INTERVAL);
         }
         sanityCheck2(angleA, angleB);
@@ -171,11 +178,11 @@ public final class EllipticField implements IFieldOfView {
 
         // make sure the angles definition makes a cone
         if (Comparators.equals(angleA, FastMath.PI / 2, Precision.DOUBLE_COMPARISON_EPSILON)
-            || Comparators.equals(angleB, FastMath.PI / 2, Precision.DOUBLE_COMPARISON_EPSILON)) {
+                || Comparators.equals(angleB, FastMath.PI / 2, Precision.DOUBLE_COMPARISON_EPSILON)) {
             throw PatriusException.createIllegalArgumentException(PatriusMessages.PDB_ANGLE_OUTSIDE_INTERVAL);
         }
         if (angleA > Precision.DOUBLE_COMPARISON_EPSILON && angleA <= FastMath.PI / 2 && angleB >= FastMath.PI / 2
-            && angleB <= FastMath.PI) {
+                && angleB <= FastMath.PI) {
             throw PatriusException.createIllegalArgumentException(PatriusMessages.PDB_ANGLE_OUTSIDE_INTERVAL);
         }
     }
@@ -199,9 +206,26 @@ public final class EllipticField implements IFieldOfView {
 
     /** {@inheritDoc} */
     @Override
-    public double getAngularDistance(final Vector3D direction) {
-        return this.inverted ? -this.getTrueAngularDistance(direction) : this.getTrueAngularDistance(direction);
+    public double getAngularDistance(final Vector3D direction, final AngularDistanceType method) {
+        final double ans;
+        switch (method) {
+            case MINIMAL:
+                if (this.inverted) {
+                    ans = -this.getTrueMinimalAngularDistance(direction);
+                } else {
+                    ans = this.getTrueMinimalAngularDistance(direction);
+                }
+                break;
+            case DIRECTIONAL:
+                final double angularOpening = this.getAngularOpening(direction);
+                ans = angularOpening - Vector3D.angle(this.getMainDirection(), direction);
 
+                break;
+            default:
+                // NO TEST: this case should never happen
+                throw new IllegalArgumentException(PatriusMessages.UNKNOWN_ENUM_VALUE.getSourceString());
+        }
+        return ans;
     }
 
     /**
@@ -212,9 +236,9 @@ public final class EllipticField implements IFieldOfView {
      *        the direction vector (expressed in the tropocentric coordinate system of the object)
      * @return the angular distance
      */
-    private double getTrueAngularDistance(final Vector3D direction) {
-
+    private double getTrueMinimalAngularDistance(final Vector3D direction) {
         final double exit;
+
         /*
          * We assume the direction defined by the origin and closest point on the cone is a good approximation of the
          * closest direction on the cone
@@ -222,7 +246,7 @@ public final class EllipticField implements IFieldOfView {
         final Vector3D closestPoint = this.cone.closestPointTo(direction);
 
         if (closestPoint.getX() == this.cone.getOrigin().getX() && closestPoint.getY() == this.cone.getOrigin().getY()
-            && closestPoint.getZ() == this.cone.getOrigin().getZ()) {
+                && closestPoint.getZ() == this.cone.getOrigin().getZ()) {
             /*
              * If the closest point is the apex, return a default value. Continuity of the getTrueAngularDistance
              * function is assured.
@@ -239,6 +263,51 @@ public final class EllipticField implements IFieldOfView {
             exit = sign * Vector3D.angle(closestPoint, direction);
         }
         return exit;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public double getAngularOpening(final Vector3D directionIn) {
+
+        // Check that direction has a non-zero norm
+        if (directionIn.getNorm() < Precision.DOUBLE_COMPARISON_EPSILON) {
+            throw new IllegalArgumentException();
+        }
+
+        final double ans;
+        // If direction is colinear with mainDir (mainDir pointing towards direction), we return the biggest angle
+        if (Vector3D.angle(directionIn, this.getMainDirection()) < Precision.DOUBLE_COMPARISON_EPSILON) {
+            ans = this.semiA;
+        } else {
+            // The Angular opening is defined as the intersection between the FOV and the plane containing the input
+            // direction and the main axis
+
+            final double uComponent = directionIn.normalize().dotProduct(this.uAxisDir);
+            final double vComponent = directionIn.normalize().dotProduct(this.vAxisDir);
+            final double theta = Math.atan2(vComponent, uComponent);
+
+            // 1 = rho^2(cos(theta)^2 /tan^2 (a) + sin(theta)^2 /tan^2 (b)
+            final double cosT = Math.cos(theta);
+            final double sinT = Math.sin(theta);
+            final double tanA = Math.tan(this.semiA);
+            final double tanB = Math.tan(this.semiB);
+            final double rho = Math.sqrt(1 / (Math.pow(cosT / tanA, 2) + Math.pow(sinT / tanB, 2)));
+
+            if (this.inverted) {
+                ans = MathLib.PI - Math.atan(rho);
+            } else {
+                ans = MathLib.atan(rho);
+            }
+        }
+        return ans;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Vector3D getMainDirection() {
+        return this.mainDir;
+
     }
 
     /** {@inheritDoc} */

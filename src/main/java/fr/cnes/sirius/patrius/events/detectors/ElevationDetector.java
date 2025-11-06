@@ -18,6 +18,7 @@
 /*
  *
  * HISTORY
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -44,8 +45,8 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * This class finds elevation events (i.e. satellite raising and setting).
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at raising and
- * to {@link EventDetector.Action#STOP stop} propagation at setting. This can be changed by using provided constructors.
+ * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at raising and
+ * to {@link EventDetector.Action#STOP} stop propagation at setting. This can be changed by using provided constructors.
  * </p>
  * 
  * @see fr.cnes.sirius.patrius.propagation.Propagator#addEventDetector(EventDetector)
@@ -102,8 +103,8 @@ public class ElevationDetector extends AbstractDetector {
      * handle, otherwise some short passes could be missed.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE continue} propagation at raising
-     * and to {@link EventDetector.Action#STOP stop} propagation at setting.
+     * The default implementation behavior is to {@link EventDetector.Action#CONTINUE} continue propagation at raising
+     * and to {@link EventDetector.Action#STOP} stop propagation at setting.
      * </p>
      * 
      * @param elevationIn threshold elevation value (rad)

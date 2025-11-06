@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-4:08/12/2023:[PATRIUS] Lien entre un repere predefini et un CelestialBody
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
@@ -660,7 +662,7 @@ public class Frame implements PVCoordinatesProvider {
     private static final class LazyRootHolder {
 
         /** Unique instance. */
-        private static final CelestialBodyFrame INSTANCE = new CelestialBodyFrame(Predefined.ICRF.getName(), true) {
+        private static final CelestialBodyFrame INSTANCE = new CelestialBodyFrame(PredefinedFrameType.ICRF.getName(), true) {
 
             /** Serializable UID. */
             private static final long serialVersionUID = -2654403496396721543L;

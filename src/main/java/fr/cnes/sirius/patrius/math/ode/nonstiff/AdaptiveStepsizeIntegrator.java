@@ -20,6 +20,8 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.8:DM:DM-2922:15/11/2021:[PATRIUS] suppression de l'utilisation de la reflexion Java dans patrius 
@@ -256,11 +258,13 @@ public abstract class AdaptiveStepsizeIntegrator extends AbstractIntegrator {
         this.mainSetDimension = equations.getPrimaryMapper().getDimension();
 
         if ((this.vecAbsoluteTolerance != null) && (this.vecAbsoluteTolerance.length != this.mainSetDimension)) {
-            throw new DimensionMismatchException(this.mainSetDimension, this.vecAbsoluteTolerance.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_TOLERANCE_SET_DIMENSION,
+                this.vecAbsoluteTolerance.length, this.mainSetDimension);
         }
 
         if ((this.vecRelativeTolerance != null) && (this.vecRelativeTolerance.length != this.mainSetDimension)) {
-            throw new DimensionMismatchException(this.mainSetDimension, this.vecRelativeTolerance.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_TOLERANCE_SET_DIMENSION,
+                this.vecRelativeTolerance.length, this.mainSetDimension);
         }
 
     }

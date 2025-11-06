@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * END-HISTORY
  */
@@ -21,7 +23,6 @@ package fr.cnes.sirius.patrius.bodies;
 
 import fr.cnes.sirius.patrius.attitudes.TabulatedAttitude;
 import fr.cnes.sirius.patrius.frames.Frame;
-import fr.cnes.sirius.patrius.frames.FramesFactory;
 import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.exception.NotStrictlyPositiveException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Rotation;
@@ -236,10 +237,9 @@ public class CelestialBodyTabulatedOrientation implements CelestialBodyOrientati
                 // Frames composition: INERTIAL_TO_ROTATING = inv(ICRF_TO_INERTIAL) + ICRF_TO_ROTATING
                 final AngularCoordinates angCoord1 = getAngularCoordinates(date, OrientationType.ICRF_TO_INERTIAL);
                 final AngularCoordinates angCoord2 = getAngularCoordinates(date, OrientationType.ICRF_TO_ROTATING);
-                final Frame icrf = FramesFactory.getICRF();
-                final Frame f1 = new Frame(icrf, new Transform(date, angCoord1).getInverse(), "f1");
-                final Frame f2 = new Frame(f1, new Transform(date, angCoord2), "f2");
-                final Transform t = icrf.getTransformTo(f2, date);
+                final Transform t1 = new Transform(date, angCoord1).getInverse();
+                final Transform t2 = new Transform(date, angCoord2);
+                final Transform t = new Transform(date, t1, t2, true);
                 coord = t.getAngular();
                 break;
 

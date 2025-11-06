@@ -14,6 +14,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-245:22/08/2024: Ajout d'un constructeur dans AbstractCelestialBody
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -44,7 +46,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * </p>
  *
  * @author Emmanuel Bignon
- * 
+ *
  * @since 4.13
  */
 @SuppressWarnings("PMD.NullAssignment")
@@ -76,7 +78,7 @@ public abstract class AbstractCelestialPoint implements CelestialPoint {
 
     /**
      * Constructor with parent frame.
-     * 
+     *
      * @param name
      *        name
      * @param gm
@@ -95,7 +97,7 @@ public abstract class AbstractCelestialPoint implements CelestialPoint {
         this.ephemeris = ephemeris;
 
         // Build frames
-        if (convention.equals(SpiceJ2000ConventionEnum.ICRF)) {
+        if (convention == SpiceJ2000ConventionEnum.ICRF) {
             // ICRF
             this.icrfFrame = new CelestialBodyFrame(parentFrame, new ICRFOriented(parentFrame), name + SPACE
                     + ICRF_FRAME_NAME, true, this);
@@ -104,14 +106,14 @@ public abstract class AbstractCelestialPoint implements CelestialPoint {
             this.eme2000Frame = new CelestialBodyFrame(parentFrame, new ICRFOriented(parentFrame), name + SPACE
                     + EME2000_FRAME_NAME, true, this);
         }
-        
+
         // Build other frames
         setFrameTree();
     }
 
     /**
      * Constructor with icrf frame.
-     * 
+     *
      * @param name
      *        name
      * @param gm
@@ -235,6 +237,7 @@ public abstract class AbstractCelestialPoint implements CelestialPoint {
         builder.append("- Name: " + this.name + end);
         builder.append("- Corps type: " + this.getClass().getSimpleName() + " class" + end);
         builder.append("- GM: " + getGM() + end);
+
         // Add all frames
         builder.append("- ICRF frame: " + getICRF().toString() + end);
         builder.append("- EME2000 frame: " + getEME2000().toString() + end);

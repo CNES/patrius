@@ -17,6 +17,7 @@
  * @history creation 16/03/2015
  *
  * HISTORY
+ * VERSION:4.15.1:OPENFD-487:28/01/2025:[PATRIUS] Probleme de convergence dans meanToHyperbolicEccentric
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3242:22/05/2023:[PATRIUS] Parametres circulaires pour orbites hyperboliques
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
@@ -33,6 +34,7 @@
  */
 package fr.cnes.sirius.patrius.orbits.orbitalparameters;
 
+import fr.cnes.sirius.patrius.math.exception.ConvergenceException;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
@@ -389,18 +391,25 @@ public class CircularParameters extends AbstractOrbitalParameters {
 	 * @return alphaE eccentric argument of latitude
 	 */
     private double hyperbolicMeanToEccentric(final double alphaM) {
-        // Creation of keplerian parameters
+        
+    	// Creation of keplerian parameters
         final double pa = MathLib.atan2(this.ey, this.ex);
         final double e = MathLib.sqrt(MathLib.pow(this.ex, 2)
                 + MathLib.pow(this.ey, 2));
         final double m = alphaM - pa;
         // resolution of hyperbolic Kepler equation for hyperbolic parameters
-        double h = -m;
+        final double maxShift = 5.0;
+        
+        // Use a local threshold to avoid numerical problems
+        final double localThreshold = MathLib.max(THRESHOLD, MathLib.abs(m) * THRESHOLD);
+
+        // resolution of hyperbolic Kepler equation for keplerian parameters
+        double h = 0;
         double shift = 0.0;
-        double hpM = 0.0;
+        double hpM = m;
         int iter = 0;
         do {
-            // Iteration until convergence
+            // Loop until convergence
             final double[] sinhcosh = MathLib.sinhAndCosh(h);
             final double sinh = sinhcosh[0];
             final double cosh = sinhcosh[1];
@@ -408,11 +417,29 @@ public class CircularParameters extends AbstractOrbitalParameters {
             final double f1 = e * cosh - 1;
             final double f0 = f2 - hpM;
             final double f12 = 2 * f1;
-            // Update loop variables
+
+            // Update loop variable
             shift = f0 * f12 / (f1 * f12 - f0 * f2);
+            
+            // Apply saturation on the shift, to avoid divergence
+            if (shift > maxShift) {
+            	shift = maxShift;
+            }
+            if (shift < -maxShift) {
+            	shift = -maxShift;
+            }
+            
+            // Apply shift
             hpM -= shift;
             h = hpM - m;
-        } while ((++iter < MAX_ITERATIONS) && (MathLib.abs(shift) > THRESHOLD));
+            ++iter;
+
+        } while ((iter < MAX_ITERATIONS) && (MathLib.abs(shift) > localThreshold));
+        
+        if (iter >= MAX_ITERATIONS) {
+            throw new ConvergenceException();
+        }
+
         // Add of perigee argument to create alphaE
         return h + pa;
     }

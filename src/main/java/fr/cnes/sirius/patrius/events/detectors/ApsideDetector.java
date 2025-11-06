@@ -18,6 +18,10 @@
 /*
  *
  * HISTORY
+ * VERSION:4.15.4:OPENFD-663:17/07/2025:[PATRIUS] Problème de Frame dans SolarTimeAngleDetector
+* VERSION:4.14:OPENFD-304:22/08/2024: [Patrius] Repere de la vitesse dans le detecteur d'angle d'aspect solaire
+* VERSION:4.14:OPENFD-253:22/08/2024: [PATRIUS] Problemes e l'utilisation des bsp planetaires
+* VERSION:4.14:OPENFD-179:22/08/2024: [PATRIUS] Gestion emetteur/recepteur dans les detecteurs d'evenements
 * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
 * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
 * VERSION:4.9:DM:DM-3143:10/05/2022:[PATRIUS] Nouvelle interface OrbitEventDetector et nouvelles classes
@@ -36,6 +40,8 @@ package fr.cnes.sirius.patrius.events.detectors;
 
 import fr.cnes.sirius.patrius.events.AbstractDetector;
 import fr.cnes.sirius.patrius.events.EventDetector;
+import fr.cnes.sirius.patrius.frames.Frame;
+import fr.cnes.sirius.patrius.frames.transformations.Transform;
 import fr.cnes.sirius.patrius.math.geometry.euclidean.threed.Vector3D;
 import fr.cnes.sirius.patrius.orbits.Orbit;
 import fr.cnes.sirius.patrius.orbits.pvcoordinates.PVCoordinates;
@@ -48,13 +54,13 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusException;
  * This class finds apside crossing events (i.e. apogee and/or perigee crossing).
  * </p>
  * <p>
- * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation at apogee or/and perigee
+ * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation at apogee or/and perigee
  * crossing depending on slope selection defined {@link ApsideDetector#PERIGEE}, {@link ApsideDetector#APOGEE} and
  * {@link ApsideDetector#PERIGEE_APOGEE}. This can be changed by overriding one of the following constructors :
  * </p>
  * <ul>
  * <li>
- * {@link #ApsideDetector(double, double, fr.cnes.sirius.patrius.events.EventDetector.Action, 
+ * {@link #ApsideDetector(double, double, fr.cnes.sirius.patrius.events.EventDetector.Action,
  * fr.cnes.sirius.patrius.events.EventDetector.Action)
  * ApsideDetector} : the defined action is performed at apogee OR/AND perigee depending on slope selection defined.
  * <li>
@@ -94,7 +100,7 @@ public class ApsideDetector extends AbstractDetector {
      * threshold according to orbit size
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * apside is reached.
      * </p>
      * 
@@ -115,7 +121,7 @@ public class ApsideDetector extends AbstractDetector {
      * The orbit is used only to set an upper bound for the max check interval to period/3
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * apside is reached.
      * </p>
      * 
@@ -133,7 +139,7 @@ public class ApsideDetector extends AbstractDetector {
     /**
      * Build a new instance.
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * apside is reached.
      * </p>
      * 
@@ -216,7 +222,7 @@ public class ApsideDetector extends AbstractDetector {
      * Handle an apside crossing event and choose what to do next.
      * </p>
      * <p>
-     * The default implementation behavior is to {@link EventDetector.Action#STOP stop} propagation when the expected
+     * The default implementation behavior is to {@link EventDetector.Action#STOP} stop propagation when the expected
      * apside is reached.
      * </p>
      * 
@@ -263,7 +269,14 @@ public class ApsideDetector extends AbstractDetector {
     @Override
     @SuppressWarnings("PMD.ShortMethodName")
     public double g(final SpacecraftState state) throws PatriusException {
-        final PVCoordinates pv = state.getPVCoordinates();
+        // Verify if the state frame is pseudo-inertial and performs a conversion of the PVCoordinates if not
+        PVCoordinates pv = state.getPVCoordinates();
+        final Frame stateFrame = state.getFrame();
+        if (!stateFrame.isPseudoInertial()) {
+            final Frame workFrame = stateFrame.getFirstPseudoInertialAncestor();
+            final Transform t = stateFrame.getTransformTo(workFrame, state.getDate());
+            pv = t.transformPVCoordinates(pv);
+        }
         return Vector3D.dotProduct(pv.getPosition(), pv.getVelocity());
     }
 

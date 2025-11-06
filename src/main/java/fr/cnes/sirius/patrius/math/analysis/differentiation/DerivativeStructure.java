@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.3:DM:DM-2089:15/05/2019:[PATRIUS] passage a Java 8
@@ -37,6 +39,7 @@ import fr.cnes.sirius.patrius.math.exception.NumberIsTooLargeException;
 import fr.cnes.sirius.patrius.math.util.MathArrays;
 import fr.cnes.sirius.patrius.math.util.MathLib;
 import fr.cnes.sirius.patrius.math.util.MathUtils;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 // CHECKSTYLE: stop MagicNumber check
 // Reason: model - Commons-Math code
@@ -265,7 +268,8 @@ public class DerivativeStructure implements RealFieldElement<DerivativeStructure
     public DerivativeStructure(final int parameters, final int order, final double... derivatives) {
         this(parameters, order);
         if (derivatives.length != this.data.length) {
-            throw new DimensionMismatchException(derivatives.length, this.data.length);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_DERIVATIVES_COMPILER_SIZE,
+                derivatives.length, this.data.length);
         }
         System.arraycopy(derivatives, 0, this.data, 0, this.data.length);
     }
@@ -815,7 +819,8 @@ public class DerivativeStructure implements RealFieldElement<DerivativeStructure
      */
     public DerivativeStructure compose(final double... f) {
         if (f.length != this.getOrder() + 1) {
-            throw new DimensionMismatchException(f.length, this.getOrder() + 1);
+            throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_DERIVATIVES_ARRAY_DERIVATION_ORDER,
+                f.length, this.getOrder() + 1);
         }
         final DerivativeStructure result = new DerivativeStructure(this.compiler);
         this.compiler.compose(this.data, 0, f, result.data, 0);

@@ -13,6 +13,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.13:DM:DM-132:08/12/2023:[PATRIUS] Suppression de la possibilite
  * de convertir les sorties de VacuumSignalPropagation
@@ -40,7 +42,7 @@ import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
  * @author Emmanuel Bignon
  * @since 4.11.1
  */
-public class Earth implements CelestialBody {
+public class Earth implements IAUCelestialBody {
 
     /** Serializable UID. */
     private static final long serialVersionUID = 800054277277715849L;
@@ -180,31 +182,31 @@ public class Earth implements CelestialBody {
     /** {@inheritDoc} */
     @Override
     public String getName() {
-        return name;
+        return this.name;
     }
 
     /** {@inheritDoc} */
     @Override
     public BodyShape getShape() {
-        return shape;
+        return this.shape;
     }
 
     /** {@inheritDoc} */
     @Override
     public void setShape(final BodyShape shapeIn) {
-        shape = shapeIn;
+        this.shape = shapeIn;
     }
 
     /** {@inheritDoc} */
     @Override
     public GravityModel getGravityModel() {
-        return gravityModel;
+        return this.gravityModel;
     }
 
     /** {@inheritDoc} */
     @Override
     public void setGravityModel(final GravityModel modelIn) {
-        gravityModel = modelIn;
+        this.gravityModel = modelIn;
     }
 
     /** {@inheritDoc} */

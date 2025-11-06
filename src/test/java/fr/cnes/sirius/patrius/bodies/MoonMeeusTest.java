@@ -18,6 +18,11 @@
  * @history creation 01/08/2012
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
+ * VERSION:4.14:OPENFD-172:22/08/2024:[PATRIUS] Harmonisation de la gestion
+ * des reperes predefinis et des corps predefinis
  * VERSION:4.13:DM:DM-37:08/12/2023:[PATRIUS] Date d'evenement et propagation du signal
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:DM:DM-3:08/12/2023:[PATRIUS] Distinction entre corps celestes et barycentres
@@ -101,7 +106,7 @@ public class MoonMeeusTest {
     }
 
     /** Moon */
-    private CelestialBody moon;
+    private IAUCelestialBody moon;
     
     /** Moon's radius */
     private double radius;
@@ -174,10 +179,10 @@ public class MoonMeeusTest {
         final Frame gcrf = FramesFactory.getGCRF();
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.MOON, loader);
@@ -230,10 +235,10 @@ public class MoonMeeusTest {
         final Frame gcrf = FramesFactory.getGCRF();
 
         final JPLCelestialBodyLoader loader = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.MOON);
+            PredefinedEphemerisType.MOON);
 
         final JPLCelestialBodyLoader loaderEMB = new JPLCelestialBodyLoader("unxp2000.405",
-            EphemerisType.EARTH_MOON);
+            PredefinedEphemerisType.EARTH_MOON);
 
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.EARTH_MOON, loaderEMB);
         CelestialBodyFactory.addCelestialBodyLoader(CelestialBodyFactory.MOON, loader);
@@ -392,6 +397,7 @@ public class MoonMeeusTest {
      */
     @Before
     public void setUp() throws PatriusException {
+        Utils.clear();
         Utils.setDataRoot("regular-dataCNES-2003");
         FramesFactory.setConfiguration(Utils.getIERS2003Configuration(true));
         this.moon = new MeeusMoon();

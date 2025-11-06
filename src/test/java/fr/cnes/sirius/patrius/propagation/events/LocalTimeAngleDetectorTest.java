@@ -16,6 +16,11 @@
  *
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-:22/08/2024:
+ * VERSION:4.14:OPENFD-141:22/08/2024: Isolation des algorithmes de somme et produit precis
+ * VERSION:4.14:OPENFD-178:22/08/2024: [PATRIUS] Renommage de l'enumere DatationChoice
+ * VERSION:4.14:OPENFD-161:22/08/2024:[PATRIUS] Adaptation de l'interface CelestialBody
+ * car l'orientation n'est pas forcement IAU
  * VERSION:4.13.1:FA:FA-177:17/01/2024:[PATRIUS] Reliquat OPENFD
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-79:08/12/2023:[PATRIUS] Probleme dans la fonction g de LocalTimeAngleDetector
@@ -57,10 +62,10 @@ import fr.cnes.sirius.patrius.bodies.CelestialPoint;
 import fr.cnes.sirius.patrius.bodies.IAUPoleFactory;
 import fr.cnes.sirius.patrius.bodies.IAUPoleModelType;
 import fr.cnes.sirius.patrius.bodies.MeeusSun;
-import fr.cnes.sirius.patrius.bodies.UserCelestialBody;
+import fr.cnes.sirius.patrius.bodies.UserIAUCelestialBody;
 import fr.cnes.sirius.patrius.events.EventDetector;
 import fr.cnes.sirius.patrius.events.EventDetector.Action;
-import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.DatationChoice;
+import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.EventDatationType;
 import fr.cnes.sirius.patrius.events.detectors.AbstractSignalPropagationDetector.PropagationDelayType;
 import fr.cnes.sirius.patrius.events.detectors.LocalTimeAngleDetector;
 import fr.cnes.sirius.patrius.events.postprocessing.EventsLogger;
@@ -210,7 +215,7 @@ public class LocalTimeAngleDetectorTest {
         // Evaluate the AbstractSignalPropagationDetector's abstract methods implementation
         Assert.assertEquals(sun, eventDetector1.getEmitter(null));
         Assert.assertEquals(finalState.getOrbit(), eventDetector1.getReceiver(finalState));
-        Assert.assertEquals(DatationChoice.RECEIVER, eventDetector1.getDatationChoice());
+        Assert.assertEquals(EventDatationType.RECEIVER, eventDetector1.getEventDatationType());
     }
 
     /**
@@ -885,12 +890,12 @@ public class LocalTimeAngleDetectorTest {
      */
     @Test
     public void testLocalTimeAngleDetectorMarsMoon() throws PatriusException {
-        final CelestialBodyFrame marsFrame = CelestialBodyFactory.getMars().getInertialFrame(IAUPoleModelType.TRUE);
+        final CelestialBodyFrame marsFrame = CelestialBodyFactory.getMars().getInertialFrame();
         // Mars moon orbit
         final Orbit moonOrbit = new KeplerianOrbit(9377.1E+03, 0.0151, FastMath.toRadians(1.075), 0.0, 0.0, 0.0,
                 PositionAngle.TRUE, marsFrame, iniDate, Constants.JPL_SSD_MARS_SYSTEM_GM);
         // Mars moon body
-        final UserCelestialBody moonCelestialBody = new UserCelestialBody("", moonOrbit, 0,
+        final UserIAUCelestialBody moonCelestialBody = new UserIAUCelestialBody("", moonOrbit, 0,
                 IAUPoleFactory.getIAUPole(null), FramesFactory.getEME2000(), null);
 
         final Orbit spacecraftOrbit = new KeplerianOrbit(6000.0E+03, 0.009, FastMath.toRadians(2), 0.0, 0.0, 0.0,

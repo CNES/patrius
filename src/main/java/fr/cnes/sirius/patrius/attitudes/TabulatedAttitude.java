@@ -18,6 +18,7 @@
  * @history creation 15/02/12
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-310:22/08/2024: [PATRIUS] Attribut "name" dans LLHCoordinates
  * VERSION:4.13:DM:DM-5:08/12/2023:[PATRIUS] Orientation d'un corps celeste sous forme de quaternions
  * VERSION:4.11.1:FA:FA-61:30/06/2023:[PATRIUS] Code inutile dans la classe RediffusedFlux
  * VERSION:4.11:DM:DM-3315:22/05/2023:[PATRIUS] TabulatedAttitude compatible liste d'extension de Attitude
@@ -332,7 +333,7 @@ public class TabulatedAttitude implements AttitudeLeg {
         if (pos == -1) {
             // Particular case: first attitude
             final Attitude attitudeTemp;
-            if (this.filter.equals(AngularDerivativesFilter.USE_R)) {
+            if (this.filter == AngularDerivativesFilter.USE_R) {
                 // Interpolate the first attitude rotation rate to be consistent with the rotation
                 final List<Attitude> attitudesList = new ArrayList<>();
                 attitudesList.add(this.attitudes[0]);
@@ -349,7 +350,7 @@ public class TabulatedAttitude implements AttitudeLeg {
                 && date.equals(this.attitudes[pos + 1].getDate())) {
             // Particular case: date matches attitude date from array
             final Attitude attitudeTemp;
-            if (this.filter.equals(AngularDerivativesFilter.USE_R)) {
+            if (this.filter == AngularDerivativesFilter.USE_R) {
                 // Interpolate the attitude rotation rate to be consistent with the rotation
                 final List<Attitude> attitudesList = new ArrayList<>();
                 attitudesList.add(this.attitudes[pos]);

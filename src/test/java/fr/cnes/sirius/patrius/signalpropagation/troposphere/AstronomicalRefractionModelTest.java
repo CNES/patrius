@@ -13,28 +13,51 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
+ * END-HISTORY
  */
 package fr.cnes.sirius.patrius.signalpropagation.troposphere;
 
 import java.util.ArrayList;
+import fr.cnes.sirius.patrius.Utils;
 import java.util.List;
+import fr.cnes.sirius.patrius.Utils;
 
 import org.junit.Assert;
+import fr.cnes.sirius.patrius.Utils;
+import org.junit.Before;
+import fr.cnes.sirius.patrius.Utils;
 import org.junit.Test;
+import fr.cnes.sirius.patrius.Utils;
 
 import fr.cnes.sirius.patrius.bodies.EllipsoidPoint;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.bodies.OneAxisEllipsoid;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.frames.FramesFactory;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.parameter.Parameter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.math.util.Pair;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.signalpropagation.ConstantMeteorologicalConditionsProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditions;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.signalpropagation.MeteorologicalConditionsProvider;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.time.AbsoluteDate;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.Constants;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.StringTablePrinter;
+import fr.cnes.sirius.patrius.Utils;
 import fr.cnes.sirius.patrius.utils.exception.PatriusException;
+import fr.cnes.sirius.patrius.Utils;
 
 /**
  * This test validates the {@link AstronomicalRefractionModel astronomical refraction model} elevation corrections
@@ -1187,5 +1210,10 @@ public class AstronomicalRefractionModelTest {
         }
 
         return errors;
+    }
+
+    @Before
+    public void setUp() {
+        Utils.clear();
     }
 }

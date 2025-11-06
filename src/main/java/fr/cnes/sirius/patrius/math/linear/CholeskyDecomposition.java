@@ -18,6 +18,8 @@
  * limitations under the License.
  *
  * HISTORY
+ * VERSION:4.14:OPENFD-151:22/08/2024:L'exception DimensionMismatchException ne permet pas de
+ * fournir un message claire
  * VERSION:4.10:DM:DM-3185:03/11/2022:[PATRIUS] Decoupage de Patrius en vue de la mise a disposition dans GitHub
  * VERSION:4.9:FA:FA-3128:10/05/2022:[PATRIUS] Historique des modifications et Copyrights 
  * VERSION:4.7:DM:DM-2767:18/05/2021:Evolutions et corrections diverses 
@@ -34,6 +36,7 @@ import java.util.function.Function;
 
 import fr.cnes.sirius.patrius.math.exception.DimensionMismatchException;
 import fr.cnes.sirius.patrius.math.util.MathLib;
+import fr.cnes.sirius.patrius.utils.exception.PatriusMessages;
 
 //CHECKSTYLE: stop CommentRatio check
 //Reason: model - Commons-Math code kept as such
@@ -306,7 +309,8 @@ public class CholeskyDecomposition implements Decomposition {
             final int m = this.lTData.length;
             if (b.getDimension() != m) {
                 // Exception
-                throw new DimensionMismatchException(b.getDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_DIMENSIONS, b.getDimension(),
+                    m);
             }
 
             final double[] x = b.toArray();
@@ -342,7 +346,8 @@ public class CholeskyDecomposition implements Decomposition {
             final int m = this.lTData.length;
             if (b.getRowDimension() != m) {
                 // Exception
-                throw new DimensionMismatchException(b.getRowDimension(), m);
+                throw new DimensionMismatchException(PatriusMessages.INCOMPATIBLE_VECTOR_MATRIX_ROW_DIMENSIONS, m,
+                    b.getRowDimension());
             }
 
             final int nColB = b.getColumnDimension();

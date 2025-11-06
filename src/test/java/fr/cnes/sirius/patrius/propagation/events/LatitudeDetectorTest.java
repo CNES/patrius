@@ -18,6 +18,7 @@
  * @history created 10/07/12
  *
  * HISTORY
+ * VERSION:4.15:OPENFD-385:21/11/2024:Execution en parallele des tests concernant EclipticJ2000Provider
  * VERSION:4.13:DM:DM-44:08/12/2023:[PATRIUS] Organisation des classes de detecteurs d'evenements
  * VERSION:4.13:FA:FA-144:08/12/2023:[PATRIUS] la methode BodyShape.getBodyFrame devrait
  * retourner un CelestialBodyFrame
@@ -304,6 +305,7 @@ public class LatitudeDetectorTest {
 
     @Before
     public void setUp() {
+        Utils.clear();
         // frame and date
         this.EME2000Frame = FramesFactory.getEME2000();
         this.date = AbsoluteDate.J2000_EPOCH;
