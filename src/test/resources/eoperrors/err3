@@ -1,0 +1,13 @@
+
+
+                   INTERNATIONAL EARTH ROTATION SERVICE
+                        EARTH ROTATION PARAMETERS
+                          EOP (IERS) C04
+
+  error : no data lines at all
+             FORMAT(3(I4),I7,2(F11.6),2(F12.7),2(F12.6),2(F11.6),2(F12.7),2F12.6)
+**********************************************************************************
+  
+      Date      MJD      x          y        UT1-UTC       LOD         dX        dY        x Err     y Err   UT1-UTC Err  Lod Err     dY Err       dY Err  
+                         "          "           s           s          "         "           "          "          s         s            "           "
+     (0h UTC)
